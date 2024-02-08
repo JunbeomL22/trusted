@@ -1,5 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./quantlib/Cargo.toml"
+        "./quantlib/Cargo.toml",
+        ".\\trading-engine\\orderbook\\Cargo.toml",
+        ".\\trading-engine\\orderbook\\Cargo.toml"
     ]
 }
