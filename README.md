@@ -1,2 +1,3 @@
-# trusted
+# tRusted
+
 trading system
