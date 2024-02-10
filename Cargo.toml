@@ -2,8 +2,8 @@
 resolver = "2"
 
 members = [
-    "trading-engine/*",
     "quantlib",
+    "trading-engine",
     "examples/*",
 ]
 

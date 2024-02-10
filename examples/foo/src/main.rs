@@ -5,10 +5,8 @@ use env_logger;
 //use time::{Date, Weekday, Month, Day};
 
 
-
-
 fn main() {
-    
     env_logger::init();
+    println!("Hello, world!")
     
 }

@@ -2,6 +2,17 @@
     "rust-analyzer.linkedProjects": [
         "./quantlib/Cargo.toml",
         ".\\trading-engine\\orderbook\\Cargo.toml",
-        ".\\trading-engine\\orderbook\\Cargo.toml"
+        ".\\trading-engine\\orderbook\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml",
+        ".\\trading-engine\\Cargo.toml"
     ]
 }
