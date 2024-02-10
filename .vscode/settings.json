@@ -13,6 +13,15 @@
         ".\\trading-engine\\Cargo.toml",
         ".\\trading-engine\\Cargo.toml",
         ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml"
-    ]
+        ".\\trading-engine\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml",
+        ".\\quantlib\\Cargo.toml"
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": false
 }

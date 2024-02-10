@@ -17,13 +17,13 @@ impl FromU8 for Side {
             0 => Some(Side::NoSide),
             1 => Some(Side::Buy),
             2 => Some(Side::Sell),
-            _ => None,
+            _ => None, 
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BookType {
+pub enum BookType { 
     L1 = 1,
     L2 = 2,
     L3 = 3,
@@ -39,3 +39,4 @@ impl FromU8 for BookType {
         }
     }
 }
+

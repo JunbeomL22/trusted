@@ -346,6 +346,7 @@ dependencies = [
  "quantlib",
  "simba",
  "time",
+ "trading-engine",
 ]
 
 [[package]]

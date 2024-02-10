@@ -1,12 +1,10 @@
-#![allow(unused)]
-use simba::simd::{AutoU64x4, AutoU64x8};
-
+use trading_engine::base::conversions::{f64_to_fixed_i64, FIXED_PRECISION};
 use env_logger;
-//use time::{Date, Weekday, Month, Day};
 
-
-fn main() {
+fn main () 
+{
     env_logger::init();
-    println!("Hello, world!")
-    
+    let x = f64_to_fixed_i64(1.234, 3);
+    println!("{:?}", x);
+    println!("{:?}", FIXED_PRECISION);
 }
