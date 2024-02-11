@@ -2,7 +2,6 @@
 /// reference: https://github.com/nautechsystems/nautilus_trader
 /// 
 use anyhow::{bail, Result};
-
 pub const FIXED_PRECISION: u8 = 9;
 pub const FIXED_SCALAR: f64 = 1_000_000_000.0; // 10.0**FIXED_PRECISION
 
@@ -22,6 +21,7 @@ pub fn f64_to_fixed_i64(value: f64, precision: u8) -> i64 {
     rounded * pow2
 }
 
+#[must_use]
 pub fn f64_to_fixed_u64(value: f64, precision: u8) -> u64 {
     assert!(precision <= FIXED_PRECISION, "precision exceeded maximum 9");
     let pow1 = 10_u64.pow(u32::from(precision));
@@ -39,8 +39,6 @@ pub fn fixed_i64_to_f64(value: i64) -> f64 {
 pub fn fixed_u64_to_f64(value: u64) -> f64 {
     (value as f64) / FIXED_SCALAR
 }
-
-
 
 #[cfg(test)]
 mod tests {

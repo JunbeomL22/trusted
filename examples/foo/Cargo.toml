@@ -22,3 +22,4 @@ criterion = { version = "0.5.1"}
 [[bench]]
 name = "foo"
 harness = false
+

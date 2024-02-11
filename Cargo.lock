@@ -613,6 +613,7 @@ name = "quantlib"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "criterion",
  "korean-lunar-calendar",
  "log",
  "simba",
