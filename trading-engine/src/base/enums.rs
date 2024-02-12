@@ -5,18 +5,18 @@ pub trait FromU8 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Side {
+pub enum OrderSide {
     NoSide = 0,
     Buy = 1,
     Sell = 2,
 }
 
-impl FromU8 for Side {
+impl FromU8 for OrderSide {
     fn from_u8(v: u8) -> Option<Self> {
         match v {
-            0 => Some(Side::NoSide),
-            1 => Some(Side::Buy),
-            2 => Some(Side::Sell),
+            0 => Some(OrderSide::NoSide),
+            1 => Some(OrderSide::Buy),
+            2 => Some(OrderSide::Sell),
             _ => None, 
         }
     }

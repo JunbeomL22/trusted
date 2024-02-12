@@ -1,5 +1,6 @@
-use crate::definitions::{Real, Integer};
+use crate::definitions::{Real};
 use std::fmt::Display;
+use num_traits::Num;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum ExtraPolationType
@@ -19,16 +20,17 @@ impl Display for ExtraPolationType
         }
     }
 }
-pub trait RealInterpolator1D
+pub trait InterpolatorReal1D
 {
-    fn interpolate(&self, x: Real) -> Real;
+    fn interpolate(&self, x: Real) -> Real; 
     /// Interpolate for a vector of x. This function does not check if x is sorted.
     fn vectorized_interpolate_sorted_input(&self, x: &Vec<Real>) -> Vec<Real>;
 }
 
 /// I have chosen the domain to be Integer type to avoid floating point comparison error.
-pub trait IntegerInterpolator1D
+pub trait Interpolator1D<T>
+where T: Num + Copy + PartialOrd
 {
-    fn interpolate(&self, x: Integer) -> Real;
-    fn vectorized_interpolate_sorted_input(&self, x: &Vec<Integer>) -> Vec<Real>;
+    fn interpolate(&self, x: T) -> Real;
+    fn vectorized_interpolate_sorted_input(&self, x: &Vec<T>) -> Vec<Real>;
 }

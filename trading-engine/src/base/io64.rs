@@ -1,6 +1,6 @@
 /// The price struct used in trading system
 /// This is made for avoiding floating posint error
-/// value = 10101, precision = 2 means the price is 101.01.
+/// value = 1,234,000,000 and precision = 3. Then the original value was 1.234
 pub struct IoI64 {
     value: i64,
     precision: u8,

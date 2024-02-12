@@ -1,7 +1,7 @@
 use time::{Date, Month, Weekday, OffsetDateTime};
 use crate::time::conventions::BusinessDayConvention;
 use crate::time::conventions::DayCountConvention;
-use crate::definitions::Real;
+use crate::definitions::{Real, Time};
 use crate::time::constants::{EASTER_MONDAYS, FIRST_EASTER_MONDAY, LAST_EASTER_MONDAY};
 use log::warn;
 pub trait Holidays {
@@ -177,23 +177,26 @@ pub trait Calendar {
         }
     }
 
+    /// This year fraction is calculated mostly for coupon amount
+    /// Thus, the functino considers only the days between date_from and date_upto
+    /// For the exact time, use get_time_difference function (calculated by ActACtIsda Fasion)
     fn year_fraction(&self, 
                     date_from: &OffsetDateTime, 
                     date_upto: &OffsetDateTime, 
-                    day_count: &DayCountConvention) -> Real {
+                    day_count: &DayCountConvention) -> Time {
         // BoB
         let res = match day_count {
             DayCountConvention::Actual365Fixed => {
                 let days = *date_upto - *date_from;
-                days.whole_days() as Real / 365.0
+                days.whole_days() as Time / 365.0
                 },
             DayCountConvention::Actual360 => {
                 let days = *date_upto - *date_from;
-                days.whole_days() as Real / 360.0
+                days.whole_days() as Time / 360.0
                 },
             DayCountConvention::Actual364 => {
                 let days = *date_upto - *date_from;
-                days.whole_days() as Real / 364.0
+                days.whole_days() as Time / 364.0
                 },
             DayCountConvention::Thirty360 => {
                 let (year_from, month_from, day_from, _, _) = self.unpack_date(date_from);
@@ -202,32 +205,51 @@ pub trait Calendar {
                 days += 360 * (year_upto - year_from);
                 days += 30 * (month_upto as i32 - month_from as i32);
                 days += day_upto as i32 - day_from as i32;
-                days as Real / 360.0
+                days as Time / 360.0
                 },
+            //Each month is treated normally and the year is assumed to be 365 days. 
+            //For example, in a period from February 1, 2005, to April 1, 2005, the Factor is considered to be 59 days divided by 365.
+            //The CouponFactor uses the same formula, replacing Date2 by Date3. 
+            //In general, coupon payments will vary from period to period, due to the differing number of days in the periods. 
+            //The formula applies to both regular and irregular coupon periods.
+            //Reference: https://www.isda.org/a/7jEEA/2006-ISDA-Definitions-Section-4.16.pdf
             DayCountConvention::ActActIsda => {
-                let days = (*date_upto - *date_from).whole_days() as Real;
+                let days = (*date_upto - *date_from).whole_days() as Time;
+                let year_from = date_from.year();
+                let year_upto = date_upto.year();
+                let leap_year_from = self.is_leap_year(year_from);
+                let leap_year_upto = self.is_leap_year(year_upto);
 
-                if self.is_leap_year(date_from.year()) {
-                    days / 366.0
+                if year_from == year_upto {
+                    if leap_year_from {
+                        days / 366.0
+                    } else {
+                        days / 365.0
+                    }
                 } else {
-                    days / 365.0
-                }
-                },
-            };
-        res        
-    }
+                    let last_day_of_year_from = self.last_day_of_month(year_from, Month::December);
+                    let first_day_of_year_upto = Date::from_calendar_date(year_upto, Month::January, 1).unwrap();
+                    let days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
+                    days_from /= if leap_year_from { 366.0 } else { 365.0 };
+                    let days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
+                    days_upto /= if leap_year_upto { 366.0 } else { 365.0 };
 
+                    days_from + days_upto
+                    }
+                },        
+            };
+        res
+    }
     //last_day_of month, not last business day of month
     fn last_day_of_month(&self, year: i32, month: Month) -> Date {
-        match month {
+        let last_day = match month {
             Month::January | Month::March | Month::May | Month::July | Month::August | Month::October | Month::December => {
-            Date::from_calendar_date(year, month, 31).unwrap()
+                Date::from_calendar_date(year, month, 31).unwrap()
             },
 
             Month::April | Month::June | Month::September | Month::November => {
                 Date::from_calendar_date(year, month, 30).unwrap()
             },
-
             Month::February => {
                 if self.is_leap_year(year) {
                     Date::from_calendar_date(year, month, 29).unwrap()
@@ -235,13 +257,53 @@ pub trait Calendar {
                     Date::from_calendar_date(year, month, 28).unwrap()
                 }
             },
-        }
+        };
+        last_day
     }
 
     fn is_leap_year(&self, year: i32) -> bool {
         (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
     }
 
+    /// returns the time in yearly fraction
+    /// If start_date and end_date is not in the leap year, then the time is calculated as Act365 fasion
+    /// If start_date is in the leap year and end_date is not in the leap year, 
+    /// then, at the first, calculate the time from start_date to the end of the leap year as Act366 fasion
+    /// at the second, calculate the time from the start of the end_date to the end_date as Act365 fasion
+    /// then, sum up the two times
+    /// If start_date is not in leap year and end_date is in the leap year,
+    /// then, calculate the time from start_date to the end of year of start_date as Act365 fasion
+    /// at the second, calculate the time from the start of the end_date to the end_date as Act366 fasion
+    /// then, sum up the two times
+    fn get_time_difference(&self, 
+                            start_date: &OffsetDateTime, 
+                            end_date: &OffsetDateTime) -> Time {
+        let year_from = date_from.year();
+        let year_upto = date_upto.year();
+        let leap_year_from = self.is_leap_year(year_from);
+        let leap_year_upto = self.is_leap_year(year_upto);
+
+        if year_from == year_upto {
+            let days = ((*end_date - *start_date).as_seconds_f64() / 60.0 / 60.0 / 24.0) as Time;
+            if leap_year_from {
+                days / 366.0
+            } else {
+                days / 365.0
+            }
+        } else {
+            let last_day_of_year_from = self.last_day_of_month(year_from, Month::December);
+            // patch the midnight time to the last_day of the year_from
+            let last_day_of_year_from = OffsetDateTime::new(last_day_of_year_from, time::Time::midnight());
+
+            let first_day_of_year_upto = Date::from_calendar_date(year_upto, Month::January, 1).unwrap();
+            let days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
+            days_from /= if leap_year_from { 366.0 } else { 365.0 };
+            let days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
+            days_upto /= if leap_year_upto { 366.0 } else { 365.0 };
+
+            days_from + days_upto
+            }
+    }
 }
 
 pub struct NullCalendar {}

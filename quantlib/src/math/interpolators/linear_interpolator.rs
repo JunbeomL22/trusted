@@ -1,9 +1,9 @@
 use crate::definitions::Real;
 use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_input};
-use crate::math::interpolator::{RealInterpolator1D, ExtraPolationType};
+use crate::math::interpolator::{InterpolatorReal1D, ExtraPolationType};
 
 #[derive(Debug, Clone)]
-pub struct LinearInterpolatorReal1D
+pub struct LinearInterpolator1D
 {
     domain: Vec<Real>,
     value: Vec<Real>,
@@ -12,22 +12,21 @@ pub struct LinearInterpolatorReal1D
     allow_extrapolation: bool,
 }
 
-
-impl LinearInterpolatorReal1D
+impl LinearInterpolator1D
 {
     pub fn new(domain: Vec<Real>, 
                 value: Vec<Real>, 
                 extrapolation_type: ExtraPolationType,
-                allow_extrapolation: bool) -> LinearInterpolatorReal1D {
+                allow_extrapolation: bool) -> LinearInterpolator1D {
         let n = domain.len();
         assert_eq!(n, value.len());
         // the domain must be sorted
         assert!(domain.windows(2).all(|w| w[0] <= w[1]));
         let mut derivatives = vec![0.0; n-1];
         for i in 0..n-1 {
-            derivatives[i] = (value[i+1] - value[i]) / (domain[i+1] - domain[i]);
+            derivatives[i] = (value[i+1] - value[i]) / ((domain[i+1] - domain[i]));
         }
-        LinearInterpolatorReal1D {
+        LinearInterpolator1D {
             domain,
             value,
             derivatives,
@@ -37,7 +36,7 @@ impl LinearInterpolatorReal1D
     }
 }
 
-impl RealInterpolator1D for LinearInterpolatorReal1D 
+impl InterpolatorReal1D for LinearInterpolator1D
 {
     fn interpolate(&self, x: Real) -> Real
     {
@@ -135,10 +134,7 @@ mod tests {
     fn test_linear_interpolator_real_1d() {
         let domain: Vec<Real> = vec![1.0, 2.0, 3.0];
         let value: Vec<Real> = vec![1.0, 3.0, 2.0];
-        let interpolator = LinearInterpolatorReal1D::new(domain.clone(), 
-                                                                                    value.clone(),
-                                                                                    ExtraPolationType::Flat,
-                                                                                    true);
+        let interpolator = LinearInterpolator1D::new(domain.clone(), value.clone(), ExtraPolationType::Flat, true);
         assert_eq!(interpolator.interpolate(0.5), 1.0);
         assert_eq!(interpolator.interpolate(1.5), 2.0);
         assert_eq!(interpolator.interpolate(2.5), 2.5);
@@ -149,10 +145,7 @@ mod tests {
 
         assert_eq!(res, vec![1.0, 2.0, 2.5, 2.0]);
 
-        let interpolator = LinearInterpolatorReal1D::new(domain, 
-                                                                                    value,
-                                                                                    ExtraPolationType::Linear,
-                                                                                    true);
+        let interpolator = LinearInterpolator1D::new(domain, value,ExtraPolationType::Linear,true);
         let input: Vec<Real> = vec![0.5, 1.5, 2.5, 3.5];
         let res = interpolator.vectorized_interpolate_sorted_input(&input);
         assert_eq!(res, vec![0.0, 2.0, 2.5, 1.5]);

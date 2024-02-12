@@ -40,9 +40,15 @@ pub fn fixed_u64_to_f64(value: u64) -> f64 {
     (value as f64) / FIXED_SCALAR
 }
 
+#[must_use]
+pub fn string_to_fixed_i64(value: &str, precision: u8) -> Result<i64> {
+    let value = value.parse::<f64>()?;
+    Ok(f64_to_fixed_i64(value, precision))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn test_check_fixed_precision() {
@@ -50,11 +56,12 @@ mod tests {
         assert!(check_fixed_precision(10).is_err());
     }
 
-    #[test]
-    fn test_f64_to_fixed_i64() {
-        assert_eq!(f64_to_fixed_i64(1.234, 3), 1234000000);
-        assert_eq!(f64_to_fixed_i64(1.2345, 9), 1234500000);
-        assert_eq!(f64_to_fixed_i64(1_000_000_000.5, 1), 1_000_000_000_500_000_000);
+    #[rstest]
+    #[case(1.236, 3, 1236000000)]
+    #[case(1.236, 2, 1240000000)]
+    #[case(1_000_000_000.5, 1, 1_000_000_000_500_000_000)]
+    fn test_f64_to_fixed_i64(#[case] value: f64, #[case] precision: u8, #[case] expected: i64) {
+        assert_eq!(f64_to_fixed_i64(value, precision), expected);
     }
 }
 

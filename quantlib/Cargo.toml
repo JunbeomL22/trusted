@@ -13,6 +13,7 @@ korean-lunar-calendar = "1.0.0"
 chrono = "0.4.33"
 log = "0.4.14"
 criterion = "0.5.1"
+num-traits = "0.2.18"
 
 [[bench]]
 name = "find_index"

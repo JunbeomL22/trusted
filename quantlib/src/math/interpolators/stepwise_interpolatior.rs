@@ -1,22 +1,25 @@
-use crate::definitions::{Real, Integer};
+use crate::definitions::Real;
 use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_input};
-use crate::math::interpolator::InterpolatorInteger1D;
+use crate::math::interpolator::Interpolator1D;
+use num_traits::Num;
 
-pub struct StepWiseInterpolatorInteger1D
+pub struct StepWiseInterpolator1D<T>
+where T: Num + PartialOrd + Copy
 {
-    domain: Vec<Integer>,
+    domain: Vec<T>,
     value: Vec<Real>,
     allow_extrapolation: bool,
 }
 
-impl IntegerStepWiseInterpolator1D
+impl<T> StepWiseInterpolator1D<T>
+where T: Num + PartialOrd + Copy
 {
-    pub fn new(domain: Vec<Integer>, value: Vec<Real>, allow_extrapolation: bool) -> StepWiseInterpolatorInteger1D {
+    pub fn new(domain: Vec<T>, value: Vec<Real>, allow_extrapolation: bool) -> StepWiseInterpolator1D<T> {
         let n = domain.len();
         assert_eq!(n, value.len());
         // the domain must be sorted
         assert!(domain.windows(2).all(|w| w[0] <= w[1]));
-        StepWiseInterpolatorInteger1D {
+        StepWiseInterpolator1D {
             domain,
             value,
             allow_extrapolation,
@@ -24,9 +27,10 @@ impl IntegerStepWiseInterpolator1D
     }
 }
 
-impl IntegerInterpolator1D for IntegerStepWiseInterpolator1D
+impl<T> Interpolator1D<T> for StepWiseInterpolator1D<T>
+where T: Num + PartialOrd + Copy
 {
-    fn interpolate(&self, x: Integer) -> Real
+    fn interpolate(&self, x: T) -> Real
     {
         let n = self.domain.len();
         if x < self.domain[0] {
@@ -47,7 +51,7 @@ impl IntegerInterpolator1D for IntegerStepWiseInterpolator1D
         self.value[index]
     }
 
-    fn vectorized_interpolate_sorted_input(&self, x: &Vec<Integer>) -> Vec<Real>
+    fn vectorized_interpolate_sorted_input(&self, x: &Vec<T>) -> Vec<Real>
     {
         let length = x.len();
         let mut result = vec![0.0; length];
@@ -73,13 +77,12 @@ impl IntegerInterpolator1D for IntegerStepWiseInterpolator1D
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::definitions::Real;
 
     #[test]
     fn test_interpolate() {
         let domain = vec![1,   3,   6,   8,   11];
         let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
-        let interpolator = IntegerStepWiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepWiseInterpolator1D::new(domain, value, true);
         assert_eq!(interpolator.interpolate(0), 1.0);
         assert_eq!(interpolator.interpolate(1), 1.0);
         assert_eq!(interpolator.interpolate(2), 1.0);
@@ -100,7 +103,7 @@ mod tests {
         let domain = vec![1,   3,   6,   8,   11];
         let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
 
-        let interpolator = IntegerStepWiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepWiseInterpolator1D::new(domain, value, true);
         let x = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let result = interpolator.vectorized_interpolate_sorted_input(&x);
         assert_eq!(result, vec![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]);
