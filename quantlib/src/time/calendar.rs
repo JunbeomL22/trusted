@@ -1,7 +1,8 @@
-use time::{Date, Month, Weekday, OffsetDateTime};
+use time::{Date, Month, Weekday, OffsetDateTime, UtcOffset};
+use time;
 use crate::time::conventions::BusinessDayConvention;
 use crate::time::conventions::DayCountConvention;
-use crate::definitions::{Real, Time};
+use crate::definitions::Time;
 use crate::time::constants::{EASTER_MONDAYS, FIRST_EASTER_MONDAY, LAST_EASTER_MONDAY};
 use log::warn;
 pub trait Holidays {
@@ -278,34 +279,37 @@ pub trait Calendar {
     fn get_time_difference(&self, 
                             start_date: &OffsetDateTime, 
                             end_date: &OffsetDateTime) -> Time {
-        let year_from = date_from.year();
-        let year_upto = date_upto.year();
-        let leap_year_from = self.is_leap_year(year_from);
-        let leap_year_upto = self.is_leap_year(year_upto);
+        let year_start = start_date.date().year();
+        let year_end = end_date.date().year();
+        let leap_year_start = self.is_leap_year(year_start);
+        let leap_year_end = self.is_leap_year(year_end);
 
-        if year_from == year_upto {
+        if year_start == year_end {
             let days = ((*end_date - *start_date).as_seconds_f64() / 60.0 / 60.0 / 24.0) as Time;
-            if leap_year_from {
+            if leap_year_start {
                 days / 366.0
             } else {
                 days / 365.0
             }
         } else {
-            let last_day_of_year_from = self.last_day_of_month(year_from, Month::December);
             // patch the midnight time to the last_day of the year_from
-            let last_day_of_year_from = OffsetDateTime::new(last_day_of_year_from, time::Time::midnight());
+            let start_date_offset = start_date.offset();
+            let last_day_of_year_start = self.last_day_of_month(year_start, Month::December);
 
-            let first_day_of_year_upto = Date::from_calendar_date(year_upto, Month::January, 1).unwrap();
-            let days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
-            days_from /= if leap_year_from { 366.0 } else { 365.0 };
-            let days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
-            days_upto /= if leap_year_upto { 366.0 } else { 365.0 };
+            let midnight_last_day_of_year_start = OffsetDateTime::new(last_day_of_year_start, time::Time::MIDNIGHT, start_date_offset);
 
-            days_from + days_upto
+            let res1 = (midnight_last_day_of_year_start - *start_date).as_seconds_f64() / 60.0 / 60.0 / 24.0;
+            res1 /= if leap_year_start { 366.0 } else { 365.0 };
+            let res2 = (*end_date - midnight_last_day_of_year_start).as_seconds_f64() / 60.0 / 60.0 / 24.0;
+            
+            res2 /= if leap_year_end { 366.0 } else { 365.0 };
+
+            res1 + res2
             }
     }
 }
 
+#[derive(Default, Clone, Debug)]
 pub struct NullCalendar {}
 impl Calendar for NullCalendar {
     fn is_weekend(&self, date: &OffsetDateTime) -> bool {
@@ -332,6 +336,7 @@ impl Calendar for NullCalendar {
 mod tests {
     use super::*;
     use time::macros::{date, datetime};
+    use rstest::rstest;
 
     #[test]
     fn test_is_weekend() {
@@ -367,4 +372,14 @@ mod tests {
         assert_eq!(calendar.last_day_of_month(2020, Month::February), date!(2020-02-29)); // 2020 is a leap year
         assert_eq!(calendar.last_day_of_month(2021, Month::December), date!(2021-12-31)); // December always has 31 days
     }
+
+    #[test]
+    fn test_get_time_difference() {
+        let calendar = NullCalendar {};
+        let start_date = datetime!(2021-12-3 0:0:0 UTC); // Friday, 3rd December 2021
+        let end_date = datetime!(2021-12-4 0:0:0 UTC); // Saturday, 4th December 2021
+
+        assert_eq!(calendar.get_time_difference(&start_date, &end_date), 1.0 / 365.0);
+    }
+
 }

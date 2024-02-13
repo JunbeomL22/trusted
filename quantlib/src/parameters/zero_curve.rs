@@ -1,5 +1,6 @@
 use crate::parameters::enums::ZeroCurveCode;
-use crate::parameter::{EvaluationDate, CurveData};
+use crate::parameter::EvaluationDate;
+use crate::data::vector_data::VectorData;
 use crate::definitions::Real;
 use time::OffsetDateTime;
 /// ZeroCurve is a curve of zero rates which implements Parameter (Observer) trait.
@@ -9,6 +10,6 @@ pub struct ZeroCurve {
     evaluation_date: EvaluationDate,
     dates: Vec<OffsetDateTime>,
     times: Vec<Real>,
-    zero_rates: CurveData,
+    zero_rates: VectorData,
     name : ZeroCurveCode,
 }

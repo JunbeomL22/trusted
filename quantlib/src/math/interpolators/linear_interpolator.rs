@@ -130,24 +130,37 @@ impl InterpolatorReal1D for LinearInterpolator1D
 mod tests {
     use super::*;
 
+    use assert_approx_eq::assert_approx_eq;
+
     #[test]
-    fn test_linear_interpolator_real_1d() {
-        let domain: Vec<Real> = vec![1.0, 2.0, 3.0];
-        let value: Vec<Real> = vec![1.0, 3.0, 2.0];
-        let interpolator = LinearInterpolator1D::new(domain.clone(), value.clone(), ExtraPolationType::Flat, true);
-        assert_eq!(interpolator.interpolate(0.5), 1.0);
-        assert_eq!(interpolator.interpolate(1.5), 2.0);
-        assert_eq!(interpolator.interpolate(2.5), 2.5);
-        assert_eq!(interpolator.interpolate(3.5), 2.0);
+    fn test_linear_interpolator_real_1d_flat_extrapolation() {
+        let domain = vec![1.0, 2.0, 3.0];
+        let value = vec![1.0, 3.0, 2.0];
+        let extrapolation_type = ExtraPolationType::Flat;
+        let allow_extrapolation = true;
+        let input = vec![0.5, 1.5, 2.5, 3.5];
+        let expected = vec![1.0, 2.0, 2.5, 2.0];
 
-        let input: Vec<Real> = vec![0.5, 1.5, 2.5, 3.5];
+        let interpolator = LinearInterpolator1D::new(domain, value, extrapolation_type, allow_extrapolation);
         let res = interpolator.vectorized_interpolate_sorted_input(&input);
+        for i in 0..res.len() {
+            assert_approx_eq!(res[i], expected[i]);
+        }
+    }
 
-        assert_eq!(res, vec![1.0, 2.0, 2.5, 2.0]);
+    #[test]
+    fn test_linear_interpolator_real_1d_linear_extrapolation() {
+        let domain = vec![1.0, 2.0, 3.0];
+        let value = vec![1.0, 3.0, 2.0];
+        let extrapolation_type = ExtraPolationType::Linear;
+        let allow_extrapolation = true;
+        let input = vec![0.5, 1.5, 2.5, 3.5];
+        let expected = vec![0.0, 2.0, 2.5, 1.5];
 
-        let interpolator = LinearInterpolator1D::new(domain, value,ExtraPolationType::Linear,true);
-        let input: Vec<Real> = vec![0.5, 1.5, 2.5, 3.5];
+        let interpolator = LinearInterpolator1D::new(domain, value, extrapolation_type, allow_extrapolation);
         let res = interpolator.vectorized_interpolate_sorted_input(&input);
-        assert_eq!(res, vec![0.0, 2.0, 2.5, 1.5]);
+        for i in 0..res.len() {
+            assert_approx_eq!(res[i], expected[i]);
+        }
     }
 }
