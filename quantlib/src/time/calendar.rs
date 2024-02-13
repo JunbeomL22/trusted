@@ -230,9 +230,9 @@ pub trait Calendar {
                 } else {
                     let last_day_of_year_from = self.last_day_of_month(year_from, Month::December);
                     let first_day_of_year_upto = Date::from_calendar_date(year_upto, Month::January, 1).unwrap();
-                    let days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
+                    let mut days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
                     days_from /= if leap_year_from { 366.0 } else { 365.0 };
-                    let days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
+                    let mut days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
                     days_upto /= if leap_year_upto { 366.0 } else { 365.0 };
 
                     days_from + days_upto
@@ -276,9 +276,7 @@ pub trait Calendar {
     /// then, calculate the time from start_date to the end of year of start_date as Act365 fasion
     /// at the second, calculate the time from the start of the end_date to the end_date as Act366 fasion
     /// then, sum up the two times
-    fn get_time_difference(&self, 
-                            start_date: &OffsetDateTime, 
-                            end_date: &OffsetDateTime) -> Time {
+    fn get_time_difference(&self, start_date: &OffsetDateTime, end_date: &OffsetDateTime) -> Time {
         let year_start = start_date.date().year();
         let year_end = end_date.date().year();
         let leap_year_start = self.is_leap_year(year_start);
@@ -296,11 +294,11 @@ pub trait Calendar {
             let start_date_offset = start_date.offset();
             let last_day_of_year_start = self.last_day_of_month(year_start, Month::December);
 
-            let midnight_last_day_of_year_start = OffsetDateTime::new(last_day_of_year_start, time::Time::MIDNIGHT, start_date_offset);
+            let midnight_last_day_of_year_start = OffsetDateTime::new_in_offset(last_day_of_year_start, time::Time::MIDNIGHT, start_date_offset);
 
-            let res1 = (midnight_last_day_of_year_start - *start_date).as_seconds_f64() / 60.0 / 60.0 / 24.0;
+            let mut res1 = (midnight_last_day_of_year_start - *start_date).as_seconds_f64() as Time / 60.0 / 60.0 / 24.0;
             res1 /= if leap_year_start { 366.0 } else { 365.0 };
-            let res2 = (*end_date - midnight_last_day_of_year_start).as_seconds_f64() / 60.0 / 60.0 / 24.0;
+            let mut res2 = (*end_date - midnight_last_day_of_year_start).as_seconds_f64() as Time / 60.0 / 60.0 / 24.0;
             
             res2 /= if leap_year_end { 366.0 } else { 365.0 };
 
@@ -311,27 +309,45 @@ pub trait Calendar {
 
 #[derive(Default, Clone, Debug)]
 pub struct NullCalendar {}
+
 impl Calendar for NullCalendar {
     fn is_weekend(&self, date: &OffsetDateTime) -> bool {
         self._is_weekend(date)
     }
+
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
         self._is_holiday(date)
     }
-    fn is_removed_holiday(&self, _date: &OffsetDateTime) -> bool { false }
-    fn is_added_holiday(&self, _date: &OffsetDateTime) -> bool { false }
-    fn is_base_holiday(&self, _date: &OffsetDateTime) -> bool { false }
-    fn calendar_name(&self) -> &str { "NullCalendar" }
+
+    fn is_removed_holiday(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
+
+    fn is_added_holiday(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
+
+    fn is_base_holiday(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
+
+    fn calendar_name(&self) -> &str {
+        "NullCalendar"
+    }
+
     fn add_holidays(&mut self, _date: &Date) {}
+
     fn remove_holidays(&mut self, _date: &Date) {}
-    fn display_holidays(&self, 
-                        date_from: &OffsetDateTime, 
-                        date_upto: &OffsetDateTime,
-                        include_weekend: bool) {
+
+    fn display_holidays(
+        &self,
+        date_from: &OffsetDateTime,
+        date_upto: &OffsetDateTime,
+        include_weekend: bool,
+    ) {
         self._display_holidays(date_from, date_upto, include_weekend);
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

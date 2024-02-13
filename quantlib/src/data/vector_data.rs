@@ -1,5 +1,5 @@
 use crate::definitions::{Real, Time};
-use crate::time::calendar::NullCalendar;
+use crate::time::calendar::{Calendar, NullCalendar};
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -26,10 +26,11 @@ impl VectorData {
     }
 
     pub fn from_offsetdatetime(value: Vec<Real>, dates: Vec<OffsetDateTime>, market_datetime: OffsetDateTime, name: String) -> VectorData {
+        let times = (&dates).iter().map(|date| NullCalendar::default().get_time_difference(&market_datetime, date)).collect();
         VectorData {
             value,
             dates: Some(dates),
-            times: dates.iter().map(|date| NullCalendar::default().year_fraction(market_datetime, *date)).collect(),
+            times: times,
             market_datetime,
             observers: vec![],
             name: name,
@@ -53,10 +54,12 @@ impl VectorData {
         }
     }
 
-    pub fn reset_data(&mut self, value: Vec<Real>, datetime: Vec<OffsetDateTime>) {
+    pub fn reset_data(&mut self, value: Vec<Real>, 
+                    datetime: Option<Vec<OffsetDateTime>>,
+                    times: Option<Vec<Time>>) {
         self.value = value;
         self.dates = Some(datetime);
-        self.times = datetime.iter().map(|date| NullCalendar::default().year_fraction(self.market_datetime, *date)).collect();
+        self.times = datetime.iter().map(|date| NullCalendar::default().get_time_difference(&self.market_datetime, date)).collect();
         self.notify_observers();
     }
 

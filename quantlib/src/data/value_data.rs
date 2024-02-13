@@ -97,9 +97,9 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let mut value_data = ValueData::new(1.0, OffsetDateTime::now(), MarketDataType::Spot, "test".to_string());
-        let mut mock_parameter = MockParameter { value: 1.0 };
-        value_data.observers.push(Box::new(mock_parameter));
+        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(), MarketDataType::Spot, "test".to_string());
+        let mock_parameter = MockParameter { value: 1.0 };
+        value_data.observers.push(Box::new(&mock_parameter));
         value_data = value_data + 1.0;
         assert_eq!(value_data.value, 2.0);
         assert_eq!(mock_parameter.value, 2.0);

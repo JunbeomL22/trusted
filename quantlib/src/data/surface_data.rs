@@ -1,7 +1,8 @@
 use crate::definitions::{Real, Time};
 use std::ops::{Add, Sub, Mul, Div};
-use time::{OffsetDateTime, Duration};
+use time::OffsetDateTime;
 use crate::parameter::Parameter;
+use crate::time::calendar::{NullCalendar, Calendar};
 
 pub struct SurfaceData {
     value: Vec<Vec<Real>>,
@@ -13,37 +14,51 @@ pub struct SurfaceData {
 }
 
 impl SurfaceData {
-    pub fn new(value: Vec<Vec<Real>>, market_datetime: OffsetDateTime, name: String) -> SurfaceData {
-        SurfaceData {
-            value,
-            date_strike: None,
-            time_strike: vec![],
-            market_datetime,
-            observers: vec![],
-            name: name,
-        }
-    }
-
-    pub fn from_date_strike(value: Vec<Vec<Real>>, date_strike: Vec<Vec<(OffsetDateTime, Real)>>, market_datetime: OffsetDateTime, name: String) -> SurfaceData {
-        SurfaceData {
-            value,
-            date_strike: Some(date_strike),
-            time_strike: date_strike.iter().map(|row| row.iter().map(|(date, _)| NullCalendar::default().year_fraction(market_datetime, *date)).collect()).collect(),
-            market_datetime,
-            observers: vec![],
-            name: name,
-        }
-    }
-
-    pub fn from_time_strike(value: Vec<Vec<Real>>, time_strike: Vec<Vec<(Time, Real)>>, market_datetime: OffsetDateTime, name: String) -> SurfaceData {
-        SurfaceData {
-            value,
-            date_strike: None,
-            time_strike: time_strike,
-            market_datetime: market_datetime,
-            observers: vec![],
-            name: name,
-        }
+    pub fn new(value: Vec<Vec<Real>>, 
+            date_strike: Option<Vec<Vec<(OffsetDateTime, Real)>>>, 
+            time_strike: Option<Vec<Vec<(Time, Real)>>>, 
+            market_datetime: OffsetDateTime, 
+            name: String) -> SurfaceData {
+        let res = match date_strike {
+                    Some(_date_strike) => {
+                        assert_eq!(value.len(), _date_strike.len(), "Vectors must be the same length");
+                        for (row, date_strike_row) in value.iter().zip(&_date_strike) {
+                            assert_eq!(row.len(), date_strike_row.len(), "Inner vectors must be the same length");
+                        }
+                        let calendar = NullCalendar::default();
+                        let time_strike = _date_strike.iter().map(|row| row.iter().map(|(date, strike)| (calendar.get_time_difference(&market_datetime, date), *strike)).collect()).collect();
+                        SurfaceData {
+                            value,
+                            date_strike: Some(_date_strike),
+                            time_strike: time_strike,
+                            market_datetime: market_datetime,
+                            observers: vec![],
+                            name: name,
+                        }
+                    },
+            None => {
+                match time_strike {
+                    Some(time_strike) => {
+                        assert_eq!(value.len(), time_strike.len(), "Vectors must be the same length");
+                        for (row, time_strike_row) in value.iter().zip(&time_strike) {
+                            assert_eq!(row.len(), time_strike_row.len(), "Inner vectors must be the same length");
+                        }
+                        SurfaceData {
+                            value,
+                            date_strike: None,
+                            time_strike: time_strike,
+                            market_datetime: market_datetime,
+                            observers: vec![],
+                            name: name,
+                        }
+                    },
+                    None => {
+                        panic!("Either date_strike or time_strike must be provided")
+                    },
+                }
+            },
+        };
+        res
     }
 
     fn notify_observers(&mut self) {
