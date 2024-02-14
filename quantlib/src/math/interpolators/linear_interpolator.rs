@@ -79,7 +79,7 @@ impl InterpolatorReal1D for LinearInterpolator1D
     }
 
     /// Interpolate for a vector of x. This function does not check if x is sorted.
-    fn vectorized_interpolate_sorted_input(&self, x: &Vec<Real>) -> Vec<Real> {
+    fn vectorized_interpolate_for_sorted_input(&self, x: &Vec<Real>) -> Vec<Real> {
         let x_n = x.len();
         let domain_n = self.domain.len();
         let indices = vectorized_search_index_for_sorted_input(&self.domain, &x);
@@ -142,7 +142,7 @@ mod tests {
         let expected = vec![1.0, 2.0, 2.5, 2.0];
 
         let interpolator = LinearInterpolator1D::new(domain, value, extrapolation_type, allow_extrapolation);
-        let res = interpolator.vectorized_interpolate_sorted_input(&input);
+        let res = interpolator.vectorized_interpolate_for_sorted_input(&input);
         for i in 0..res.len() {
             assert_approx_eq!(res[i], expected[i]);
         }
@@ -158,7 +158,7 @@ mod tests {
         let expected = vec![0.0, 2.0, 2.5, 1.5];
 
         let interpolator = LinearInterpolator1D::new(domain, value, extrapolation_type, allow_extrapolation);
-        let res = interpolator.vectorized_interpolate_sorted_input(&input);
+        let res = interpolator.vectorized_interpolate_for_sorted_input(&input);
         for i in 0..res.len() {
             assert_approx_eq!(res[i], expected[i]);
         }

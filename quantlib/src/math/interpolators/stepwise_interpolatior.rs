@@ -51,7 +51,7 @@ where T: Num + PartialOrd + Copy
         self.value[index]
     }
 
-    fn vectorized_interpolate_sorted_input(&self, x: &Vec<T>) -> Vec<Real>
+    fn vectorized_interpolate_for_sorted_input(&self, x: &Vec<T>) -> Vec<Real>
     {
         let length = x.len();
         let mut result = vec![0.0; length];
@@ -105,7 +105,7 @@ mod tests {
 
         let interpolator = StepWiseInterpolator1D::new(domain, value, true);
         let x = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-        let result = interpolator.vectorized_interpolate_sorted_input(&x);
+        let result = interpolator.vectorized_interpolate_for_sorted_input(&x);
         assert_eq!(result, vec![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]);
     }
 }

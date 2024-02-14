@@ -3,6 +3,7 @@ use crate::time::calendar::{Calendar, NullCalendar};
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
+use crate::data::observable::Observable;
 use std::fmt;
 
 pub struct VectorData {
@@ -12,6 +13,18 @@ pub struct VectorData {
     market_datetime: OffsetDateTime,
     observers: Vec<Box<dyn Parameter>>,
     name: String,
+}
+
+impl Observable for VectorData {
+    fn notify_observers(&mut self) {
+        for observer in &mut self.observers {
+            observer.update();
+        }
+    }
+
+    fn add_observer(&mut self, observer: Box<dyn Parameter>) {
+        self.observers.push(observer);
+    }
 }
 
 impl fmt::Debug for VectorData {
@@ -37,7 +50,7 @@ impl VectorData {
             name: name
         }
     }
-
+    
     pub fn from_offsetdatetime(value: Vec<Real>, dates: Vec<OffsetDateTime>, market_datetime: OffsetDateTime, name: String) -> VectorData {
         let times = (&dates).iter().map(|date| NullCalendar::default().get_time_difference(&market_datetime, date)).collect();
         VectorData {
@@ -61,12 +74,17 @@ impl VectorData {
         }
     }
 
-    fn notify_observers(&mut self) {
-        for observer in &mut self.observers {
-            observer.update();
-        }
+    pub fn get_value(&self) -> Vec<Real> {
+        self.value.clone()
     }
 
+    pub fn get_times(&self) -> Vec<Time> {
+        self.times.clone()
+    }
+
+    pub fn get_dates(&self) -> Option<Vec<OffsetDateTime>> {
+        self.dates.clone()
+    }
     /// This resets data.
     /// recieve dates and times as optional arguments.
     /// If times is not None, it will be saved as the input not calculated from dates vector
@@ -88,14 +106,6 @@ impl VectorData {
         }
 
         assert!(self.value.len() == self.times.len(), "The length of value and times must be the same");
-    }
-
-    pub fn get_value(&self) -> Vec<Real> {
-        self.value.clone()
-    }
-
-    pub fn get_times(&self) -> Vec<Time> {
-        self.times.clone()
     }
 
 }

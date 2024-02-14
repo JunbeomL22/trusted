@@ -737,6 +737,7 @@ dependencies = [
  "korean-lunar-calendar",
  "log",
  "num-traits",
+ "regex",
  "rstest",
  "simba",
  "time",
