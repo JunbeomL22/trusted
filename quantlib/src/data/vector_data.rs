@@ -3,6 +3,7 @@ use crate::time::calendar::{Calendar, NullCalendar};
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
+use std::fmt;
 
 pub struct VectorData {
     value: Vec<Real>,
@@ -11,6 +12,18 @@ pub struct VectorData {
     market_datetime: OffsetDateTime,
     observers: Vec<Box<dyn Parameter>>,
     name: String,
+}
+
+impl fmt::Debug for VectorData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VectorData")
+            .field("value", &self.value)
+            .field("dates", &self.dates)
+            .field("times", &self.times)
+            .field("market_datetime", &self.market_datetime)
+            .field("name", &self.name)
+            .finish()
+    }
 }
 
 impl VectorData {
@@ -54,13 +67,35 @@ impl VectorData {
         }
     }
 
+    /// This resets data.
+    /// recieve dates and times as optional arguments.
+    /// If times is not None, it will be saved as the input not calculated from dates vector
+    /// If datetime is not None and times is None, the times will be calculated from the dates vector.
+    /// Otherwise, the times and dates will be used as is.
     pub fn reset_data(&mut self, value: Vec<Real>, 
-                    datetime: Option<Vec<OffsetDateTime>>,
-                    times: Option<Vec<Time>>) {
+                dates: Option<Vec<OffsetDateTime>>,
+                times: Option<Vec<Time>>,
+                market_datetime: Option<OffsetDateTime>) {
         self.value = value;
-        self.dates = Some(datetime);
-        self.times = datetime.iter().map(|date| NullCalendar::default().get_time_difference(&self.market_datetime, date)).collect();
-        self.notify_observers();
+        if let Some(market_datetime) = market_datetime {
+            self.market_datetime = market_datetime;
+        }
+
+        if let Some(times) = times {
+            self.times = times;
+        } else if let Some(dates) = dates {
+            self.times = (&dates).iter().map(|date| NullCalendar::default().get_time_difference(&self.market_datetime, &date)).collect();
+        }
+
+        assert!(self.value.len() == self.times.len(), "The length of value and times must be the same");
+    }
+
+    pub fn get_value(&self) -> Vec<Real> {
+        self.value.clone()
+    }
+
+    pub fn get_times(&self) -> Vec<Time> {
+        self.times.clone()
     }
 
 }

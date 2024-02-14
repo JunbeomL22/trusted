@@ -3,7 +3,9 @@ use crate::parameter::EvaluationDate;
 use crate::data::vector_data::VectorData;
 use crate::definitions::{Real, Time};
 use crate::parameter::Parameter;
-use crate::math::interpolators::linear_interpolator::{self, LinearInterpolator1D};
+use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
+use crate::math::interpolator::InterpolatorReal1D;
+use crate::math::interpolator::ExtraPolationType;
 //use time::OffsetDateTime;
 /// ZeroCurve is a curve of zero rates which implements Parameter (Observer) trait.
 /// Input is a vector of dates and a vector of zero rates of Data (observable) type.
@@ -15,13 +17,17 @@ pub struct ZeroCurve {
     discount_factors: Vec<Real>,
     discount_interpolator: LinearInterpolator1D,
     code: ZeroCurveCode,
+    name: String,
 }
 
 impl ZeroCurve {
-    pub fn new(evaluation_date: EvaluationDate, data: VectorData, code: ZeroCurveCode) -> ZeroCurve {
+    pub fn new(evaluation_date: EvaluationDate, data: VectorData, extrapolate_type: ExtraPolationType, code: ZeroCurveCode, name: String) -> ZeroCurve {
         let discount_times = data.get_times();
-        let discount_factors = data.get_values();
-        let discount_interpolator = linear_interpolator::LinearInterpolator1D::new(discount_times.clone(), discount_factors.clone());
+        let discount_factors = data.get_value();
+        let discount_interpolator = linear_interpolator::LinearInterpolator1D::new(discount_times.clone(),
+         discount_factors.clone(), 
+         extrapolate_type,
+         true);
         ZeroCurve {
             evaluation_date,
             data,
@@ -29,6 +35,7 @@ impl ZeroCurve {
             discount_factors,
             discount_interpolator,
             code,
+            name,
         }
     }
     pub fn get_discount_factor(&self, time: Time) -> Real {
@@ -43,9 +50,11 @@ impl ZeroCurve {
     pub fn get_code(&self) -> ZeroCurveCode {
         self.code
     }
-    pub fn get_data(&self) -> VectorData {
-        self.data.clone()
+
+    pub fn get_data(&self) -> &VectorData {
+        &self.data
     }
+
     pub fn get_evaluation_date(&self) -> EvaluationDate {
         self.evaluation_date
     }
@@ -57,7 +66,7 @@ impl ZeroCurve {
 impl Parameter for ZeroCurve {
     fn update(&mut self) {
         self.discount_times = self.data.get_times();
-        self.discount_factors = self.data.get_values();
-        self.discount_interpolator = linear_interpolator::LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone());
+        self.discount_factors = self.data.get_value();
+        self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone());
     }
 }
