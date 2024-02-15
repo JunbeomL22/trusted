@@ -30,16 +30,12 @@ mod tests {
 
         enum MockEnum {
             A,
-            B,
         }
         let a = MockEnum::A;
         assert_eq!(type_name(&a), "MockEnum");
 
-        struct MockStruct {
-            a: i32,
-            b: f64,
-        }
-        let s = MockStruct { a: 5, b: 5.0 };
+        struct MockStruct {} // Empty struct;
+        let s = MockStruct {};
         assert_eq!(type_name(&s), "MockStruct");
     }
 }

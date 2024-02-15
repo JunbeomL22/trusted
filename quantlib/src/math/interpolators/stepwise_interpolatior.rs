@@ -3,6 +3,7 @@ use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_
 use crate::math::interpolator::Interpolator1D;
 use num_traits::Num;
 
+#[derive(Clone, Debug)]
 pub struct StepWiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {

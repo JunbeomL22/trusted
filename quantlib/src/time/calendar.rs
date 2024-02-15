@@ -445,7 +445,7 @@ mod tests {
         let start_date = datetime!(2020-01-01 00:00:00 UTC); 
         let end_date = datetime!(2021-01-01 00:00:00 -06:00); 
         let res = calendar.get_time_difference(&start_date, &end_date);
-        let expected: Time = (1.0 + 0.25 / 365.);
+        let expected: Time = 1.0 + 0.25 / 365.; 
         assert!(
             (res - expected).abs() < 1e-5,
             "calculated time difference from {} to {} = {}, expected = {}",
@@ -491,7 +491,7 @@ mod tests {
         let start_date = datetime!(2021-01-01 0:0:0 UTC);
         
         for i in 1..=100 {
-            let end_date = add_period(start_date, &format!("{}Y", i));
+            let end_date = add_period(&start_date, &format!("{}Y", i));
             let result = calendar.year_fraction(&start_date, &end_date, &DayCountConvention::ActActIsda);
             assert!((result - i as Time).abs() < 1e-5,
                 "calculated year_fraction from {} to {} = {}, expected = {}",

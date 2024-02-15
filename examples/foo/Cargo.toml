@@ -15,6 +15,7 @@ simba = { version = "0.8.1" }
 nalgebra = { version = "0.32.3", features = ["serde-serialize"] }
 env_logger = { version = "0.11.1"}
 criterion = { version = "0.5.1"}
+plotters = "0.3.5"
 # very unstable and not recommended for use. 
 # packed_simd 0.3.9 can not be compiled with the stable version  or Rust 1.76.9 at the moment of Feb 10 2024.
 # packed_simd = { version = "0.3.9"} 

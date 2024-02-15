@@ -47,14 +47,14 @@ impl EvaluationDate {
 
 impl AddAssign<&str> for EvaluationDate {
     fn add_assign(&mut self, rhs: &str) {
-        self.date = add_period(self.date, rhs);
+        self.date = add_period(&self.date, rhs);
         self.notify_observers();
     }
 }
 
 impl SubAssign<&str> for EvaluationDate {
     fn sub_assign(&mut self, rhs: &str) {
-        self.date = sub_period(self.date, rhs);
+        self.date = sub_period(&self.date, rhs);
         self.notify_observers();
     }
 }

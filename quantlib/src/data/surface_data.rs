@@ -3,13 +3,15 @@ use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
 use crate::time::calendar::{NullCalendar, Calendar};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct SurfaceData {
     value: Vec<Vec<Real>>,
     date_strike: Option<Vec<Vec<(OffsetDateTime, Real)>>>,
     time_strike: Vec<Vec<(Time, Real)>>,
     market_datetime: OffsetDateTime,
-    observers: Vec<Box<dyn Parameter>>,
+    observers: Rc<RefCell<Vec<Box<dyn Parameter>>>>,
     name: String,
 }
 
@@ -42,7 +44,7 @@ impl SurfaceData {
                         date_strike: Some(_date_strike),
                         time_strike: time_strike,
                         market_datetime: market_datetime,
-                        observers: vec![],
+                        observers: Rc::new(RefCell::new(vec![])),
                         name: name,
                     }
                 },
@@ -69,7 +71,7 @@ impl SurfaceData {
                                 date_strike: None,
                                 time_strike: time_strike,
                                 market_datetime: market_datetime,
-                                observers: vec![],
+                                observers: Rc::new(RefCell::new(vec![])),
                                 name: name,
                             }
                         },
@@ -83,10 +85,35 @@ impl SurfaceData {
     }
 
     fn notify_observers(&mut self) {
-        for observer in &mut self.observers {
+        for observer in &mut *self.observers.borrow_mut() {
             observer.update();
         }
     }
+
+    pub fn add_observer(&mut self, observer: Box<dyn Parameter>) {
+        self.observers.borrow_mut().push(observer);
+    }
+
+    pub fn get_value(&self) -> &Vec<Vec<Real>> {
+        &self.value
+    }
+
+    pub fn get_date_strike(&self) -> Option<&Vec<Vec<(OffsetDateTime, Real)>> > {
+        self.date_strike.as_ref()
+    }
+
+    pub fn get_time_strike(&self) -> &Vec<Vec<(Time, Real)>> {
+        &self.time_strike
+    }
+
+    pub fn get_market_datetime(&self) -> &OffsetDateTime {
+        &self.market_datetime
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
 }
 
 

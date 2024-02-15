@@ -10,7 +10,8 @@ pub enum ZeroCurveCode{
     USDOIS = 7,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Compounding {
-    Simple,
-    Continuous,
+    Simple = 0,
+    Continuous = 1,
 }

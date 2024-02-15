@@ -34,25 +34,27 @@ fn from_month_to_i32(month: Month) -> i32 {
         Month::October => 9,
         Month::November => 10,
         Month::December => 11,
-        _ => panic!("Invalid month: {}", month.to_string()),
     }
 }
 
+/// This uses regularexpression to parse the string and add the duration to the datetime
+/// "Y" is year, "M" is month, "W" is week, "D" is day, "h" is hour, "min" is minute, "sec" is second. They are case sensitive
 /// # Examples
 /// ```
 /// use time::macros::datetime;
+/// use quantlib::utils::string_arithmetic::add_period;
+/// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
 /// let y = add_period(x, "1y1m1D1h1min1sec");
 /// println!("{}", y); // 2022-02-02 01:01:01 UTC
-/// "Y" is year, "M" is month, "W" is week, "D" is day, "h" is hour, "min" is minute, "sec" is second. case sensitive
-/// This uses regularexpression to parse the string and add the duration to the datetime
 /// ```
-pub fn add_period(datetime: OffsetDateTime, duration: &str) -> OffsetDateTime {
+/// 
+pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     let re = regex::Regex::new(r"(\d+)(Y|M|W|D|h|min|sec)+").unwrap();
     if !re.is_match(duration) {
-        panic!("Invalid duration: {}", duration);
+        panic!("panic at add_period(datetime: {}, duration: {})", datetime, duration);
     }
-    let mut new_datetime = datetime;
+    let mut new_datetime = *datetime;
     // panic where the duration is invalid
     for cap in re.captures_iter(duration) {
         let value = cap[1].parse::<i64>().unwrap();
@@ -85,21 +87,24 @@ pub fn add_period(datetime: OffsetDateTime, duration: &str) -> OffsetDateTime {
     new_datetime
 }
 
+/// "Y" is year, "M" is month, "D" is day, "W" is week, "h" is hour, "min" is minute, "sec" is second. Y, M, D, h are case sensitive
+/// This uses regularexpression to parse the string and add the duration to the datetime
 /// # Examples
 /// ```
 /// use time::macros::datetime;
+/// use quantlib::utils::string_arithmetic::sub_period;
+/// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
 /// let y = sub_period(x, "1y1m1D1h1min1sec");
 /// println!("{}", y); // 2019-11-29 22:58:59 UTC
-/// "Y" is year, "M" is month, "D" is day, "W" is week, "h" is hour, "min" is minute, "sec" is second. Y, M, D, h are case sensitive
-/// This uses regularexpression to parse the string and add the duration to the datetime
 /// ```
-pub fn sub_period(datetime: OffsetDateTime, duration: &str) -> OffsetDateTime {
+/// 
+pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     let re = regex::Regex::new(r"(\d+)(Y|M|W|D|h|min|sec)+").unwrap();
     if !re.is_match(duration) {
         panic!("Invalid duration: {}", duration);
     }
-    let mut new_datetime = datetime;
+    let mut new_datetime = *datetime;
     for cap in re.captures_iter(duration) {
         let value = cap[1].parse::<i64>().unwrap();
         let unit = &cap[2];
@@ -200,81 +205,81 @@ mod tests {
     #[test]
     fn test_add_period() {
         let x = datetime!(2021-01-01 00:00:00 UTC);
-        let y = add_period(x, "1Y1M1D1h1min1sec");
+        let y = add_period(&x, "1Y1M1D1h1min1sec");
         assert_eq!(y, datetime!(2022-02-02 01:01:01 UTC));
 
-        let mut y = add_period(x, "1M");
+        let mut y = add_period(&x, "1M");
         assert_eq!(y, datetime!(2021-02-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-03-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-04-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-05-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-06-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-07-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-08-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-09-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-10-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-11-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2021-12-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2022-01-01 00:00:00 UTC));
-        y = add_period(y, "1M");
+        y = add_period(&y, "1M");
         assert_eq!(y, datetime!(2022-02-01 00:00:00 UTC));
     }
 
     #[test]
     fn test_sub_period() {
         let x = datetime!(2021-01-01 00:00:00 UTC);
-        let y = sub_period(x, "1Y1M1D1h1min1sec");
+        let y = sub_period(&x, "1Y1M1D1h1min1sec");
         assert_eq!(y, datetime!(2019-11-29 22:58:59 UTC));
 
-        let y = sub_period(x, "1M");
+        let y = sub_period(&x, "1M");
         assert_eq!(y, datetime!(2020-12-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-11-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-10-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-09-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-08-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-07-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-06-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-05-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-04-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-03-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-02-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2020-01-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2019-12-01 00:00:00 UTC));
-        let y = sub_period(y, "1M");
+        let y = sub_period(&y, "1M");
         assert_eq!(y, datetime!(2019-11-01 00:00:00 UTC));
     }
 
     #[test]
     fn test_add_week_in_leap_year() {
         let x = datetime!(2024-02-28 00:00:00 UTC);
-        let y = add_period(x, "1W");
+        let y = add_period(&x, "1W");
         assert_eq!(y, datetime!(2024-03-06 00:00:00 UTC));
 
         let x = datetime!(2023-02-28 00:00:00 UTC);
-        let y = add_period(x, "1W");
+        let y = add_period(&x, "1W");
         assert_eq!(y, datetime!(2023-03-07 00:00:00 UTC));
     }
 }

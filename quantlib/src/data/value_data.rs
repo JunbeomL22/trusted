@@ -2,7 +2,6 @@ use crate::definitions::Real;
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
-use crate::data::data_types::MarketDataType;
 use crate::data::observable::Observable;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -11,7 +10,6 @@ pub struct ValueData {
     value: Real,
     market_datetime: OffsetDateTime,
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
-    data_type: MarketDataType,
     name: String,
 }
 
@@ -28,12 +26,11 @@ impl Observable for ValueData {
 }
 
 impl ValueData {
-    pub fn new(value: Real, market_datetime: OffsetDateTime, data_type: MarketDataType, name: String) -> ValueData {
+    pub fn new(value: Real, market_datetime: OffsetDateTime, name: String) -> ValueData {
         ValueData {
             value,
             market_datetime,
             observers: vec![],
-            data_type,
             name,
         }
     }
@@ -42,6 +39,18 @@ impl ValueData {
         self.value = value;
         self.market_datetime = market_datetime;
         self.notify_observers();
+    }
+
+    pub fn get_value(&self) -> Real {
+        self.value
+    }
+
+    pub fn get_market_datetime(&self) -> &OffsetDateTime {
+        &self.market_datetime
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 }
 
@@ -89,7 +98,6 @@ mod tests {
     use crate::data::observable::Observable;
     use crate::data::value_data::ValueData;
     use crate::parameter::Parameter;
-    use crate::data::data_types::MarketDataType;
     use time::OffsetDateTime;
     use crate::definitions::Real;
     use std::rc::Rc;
@@ -112,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(), MarketDataType::Spot, "test".to_string());
+        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(),"test".to_string());
         let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0 }));
         value_data.add_observer(mock_parameter.clone());
         value_data = value_data + 1.0;
@@ -120,6 +128,15 @@ mod tests {
         assert_eq!(mock_parameter.borrow().get_value(), 2.0);
     }
 
+    #[test]
+    fn test_reset_data() {
+        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(),"test".to_string());
+        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0 }));
+        value_data.add_observer(mock_parameter.clone());
+        value_data.reset_data(2.0, OffsetDateTime::now_utc());
+        assert_eq!(value_data.value, 2.0);
+        assert_eq!(mock_parameter.borrow().get_value(), 2.0);
+    }
 }
 
 

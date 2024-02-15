@@ -1,3 +1,4 @@
+/*
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarketDataType {
     Spot = 0,
@@ -12,3 +13,4 @@ pub enum MarketDataType {
     Correlation = 9,
     BaseFxRate = 10,
 }
+*/
