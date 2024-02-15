@@ -4,10 +4,12 @@ use crate::utils::string_arithmetic::{add_period, sub_period};
 use crate::data::observable::Observable;
 use crate::parameter::Parameter;
 use std::fmt::Debug;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct EvaluationDate {
     date: OffsetDateTime,
-    observers: Vec<Box<dyn Parameter>>,
+    observers: Vec<Rc<RefCell<dyn Parameter>>>,
 }
 
 impl Debug for EvaluationDate {
@@ -21,11 +23,11 @@ impl Debug for EvaluationDate {
 impl Observable for EvaluationDate {
     fn notify_observers(&mut self) {
         for observer in &mut self.observers {
-            observer.update();
+            observer.borrow_mut().update();
         }
     }
 
-    fn add_observer(&mut self, observer: Box<dyn Parameter>) {
+    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
     }
 }
@@ -62,6 +64,8 @@ mod tests {
     use super::*;
     use crate::parameter::Parameter;
     use time::macros::datetime;
+    use std::rc::Rc;
+    use std::cell::RefCell;
 
     struct TestParameter {
         pub value: i32,
@@ -77,21 +81,21 @@ mod tests {
     fn test_add_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
-        let test_param = TestParameter { value: 0 };
-        eval_date.add_observer(Box::new(test_param));
+        let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
+        eval_date.add_observer(test_param.clone());
         eval_date += "1D";
         assert_eq!(eval_date.get_date(), datetime!(2020-01-02 00:00:00 UTC));
-        assert_eq!(test_param.value, 1);
+        assert_eq!(test_param.borrow().value, 1);
     }
 
     #[test]
     fn test_sub_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
-        let test_param = TestParameter { value: 0 };
-        eval_date.add_observer(Box::new(test_param));
+        let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
+        eval_date.add_observer(test_param.clone());
         eval_date -= "1D";
         assert_eq!(eval_date.get_date(), datetime!(2019-12-31 00:00:00 UTC));
-        assert_eq!(test_param.value, 1);
+        assert_eq!(test_param.borrow().value, 1);
     }
 }

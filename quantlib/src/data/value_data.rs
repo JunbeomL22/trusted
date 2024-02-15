@@ -4,11 +4,13 @@ use time::OffsetDateTime;
 use crate::parameter::Parameter;
 use crate::data::data_types::MarketDataType;
 use crate::data::observable::Observable;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct ValueData {
     value: Real,
     market_datetime: OffsetDateTime,
-    observers: Vec<Box<dyn Parameter>>,
+    observers: Vec<Rc<RefCell<dyn Parameter>>>,
     data_type: MarketDataType,
     name: String,
 }
@@ -16,11 +18,11 @@ pub struct ValueData {
 impl Observable for ValueData {
     fn notify_observers(&mut self) {
         for observer in &mut self.observers {
-            observer.update();
+            observer.borrow_mut().update();
         }
     }
 
-    fn add_observer(&mut self, observer: Box<dyn Parameter>) {
+    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
     }
 }
@@ -90,11 +92,18 @@ mod tests {
     use crate::data::data_types::MarketDataType;
     use time::OffsetDateTime;
     use crate::definitions::Real;
-
+    use std::rc::Rc;
+    use std::cell::RefCell; 
+    
     struct MockParameter {
         value: Real,
     }
 
+    impl MockParameter {
+        fn get_value(&self) -> Real {
+            self.value
+        }
+    }
     impl Parameter for MockParameter {
         fn update(&mut self) {
             self.value += 1.0;
@@ -104,11 +113,11 @@ mod tests {
     #[test]
     fn test_add() {
         let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(), MarketDataType::Spot, "test".to_string());
-        let mock_parameter = MockParameter { value: 1.0 };
-        value_data.add_observer(Box::new(mock_parameter));
+        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0 }));
+        value_data.add_observer(mock_parameter.clone());
         value_data = value_data + 1.0;
         assert_eq!(value_data.value, 2.0);
-        assert_eq!(mock_parameter.value, 2.0);
+        assert_eq!(mock_parameter.borrow().get_value(), 2.0);
     }
 
 }

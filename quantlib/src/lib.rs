@@ -3,6 +3,7 @@ pub mod instruments;
 pub mod definitions;
 pub mod math;
 pub mod utils;
+pub mod util;
 pub mod parameters;
 pub mod parameter;
 pub mod data;

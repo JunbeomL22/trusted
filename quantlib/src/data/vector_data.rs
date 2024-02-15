@@ -1,28 +1,30 @@
 use crate::definitions::{Real, Time};
 use crate::time::calendar::{Calendar, NullCalendar};
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
 use crate::data::observable::Observable;
 use std::fmt;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct VectorData {
     value: Vec<Real>,
     dates: Option<Vec<OffsetDateTime>>,
     times: Vec<Time>,
     market_datetime: OffsetDateTime,
-    observers: Vec<Box<dyn Parameter>>,
+    observers: Vec<Rc<RefCell<dyn Parameter>>>,
     name: String,
 }
 
 impl Observable for VectorData {
     fn notify_observers(&mut self) {
         for observer in &mut self.observers {
-            observer.update();
+            observer.borrow_mut().update();
         }
     }
 
-    fn add_observer(&mut self, observer: Box<dyn Parameter>) {
+    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
     }
 }
@@ -40,37 +42,46 @@ impl fmt::Debug for VectorData {
 }
 
 impl VectorData {
-    pub fn new(value: Vec<Real>, dates: Option<Vec<OffsetDateTime>>, times: Vec<Time>, market_datetime: OffsetDateTime, name: String) -> VectorData {
-        VectorData {
-            value,
-            dates,
-            times,
-            market_datetime,
-            observers: vec![],
-            name: name
+    pub fn new(value: Vec<Real>, dates: Option<Vec<OffsetDateTime>>, times: Option<Vec<Time>>, market_datetime: OffsetDateTime, name: String) -> VectorData {
+        // sanity check first
+        if dates == None && times == None {
+            panic!("VectorData::new => Both dates and times cannot be None (occured at {})", name);
         }
-    }
-    
-    pub fn from_offsetdatetime(value: Vec<Real>, dates: Vec<OffsetDateTime>, market_datetime: OffsetDateTime, name: String) -> VectorData {
-        let times = (&dates).iter().map(|date| NullCalendar::default().get_time_difference(&market_datetime, date)).collect();
-        VectorData {
-            value,
-            dates: Some(dates),
-            times: times,
-            market_datetime,
-            observers: vec![],
-            name: name,
-        }
-    }
 
-    pub fn from_time(value: Vec<Real>, times: Vec<Time>, market_datetime: OffsetDateTime, name: String) -> VectorData {
-        VectorData {
-            value,
-            dates: None,
-            times,
-            market_datetime,
-            observers: vec![],
-            name: name,
+        if let Some(dates) = &dates {
+            assert_eq!(
+                value.len(), 
+                dates.len(),
+                "VectorData::new => The length of value and dates must be the same (occured at {}),\n value: {:?},\n dates: {:?}\n",
+                name, value, dates);
+            
+
+            let times: Vec<Time> = dates.iter().map(|date| NullCalendar::default().get_time_difference(&market_datetime, date)).collect();
+            
+            VectorData {
+                value,
+                dates: Some(dates.to_vec()),
+                times: times,
+                market_datetime: market_datetime,
+                observers: Vec::new(),
+                name: name,
+            }
+        } else {
+            assert_eq!(
+                value.len(), 
+                times.as_ref().unwrap().len(),
+                "VectorData::new => The length of value and times must be the same (occured at {}),\n value: {:?},\n times: {:?}",
+                name, value, times.as_ref().unwrap()
+            );
+
+            VectorData {
+                value,
+                dates,
+                times: times.unwrap(),
+                market_datetime,
+                observers: Vec::new(),
+                name,
+            }
         }
     }
 
@@ -108,6 +119,41 @@ impl VectorData {
         assert!(self.value.len() == self.times.len(), "The length of value and times must be the same");
     }
 
+}
+impl AddAssign<Real> for VectorData {
+    fn add_assign(&mut self, rhs: Real) {
+        for value in &mut self.value {
+            *value += rhs;
+        }
+        self.notify_observers();
+    }
+}
+
+impl SubAssign<Real> for VectorData {
+    fn sub_assign(&mut self, rhs: Real) {
+        for value in &mut self.value {
+            *value -= rhs;
+        }
+        self.notify_observers();
+    }
+}
+
+impl MulAssign<Real> for VectorData {
+    fn mul_assign(&mut self, rhs: Real) {
+        for value in &mut self.value {
+            *value *= rhs;
+        }
+        self.notify_observers();
+    }
+}
+
+impl DivAssign<Real> for VectorData {
+    fn div_assign(&mut self, rhs: Real) {
+        for value in &mut self.value {
+            *value /= rhs;
+        }
+        self.notify_observers();
+    }
 }
 
 impl Add<Real> for VectorData {
@@ -162,7 +208,12 @@ impl Add<Vec<Real>> for VectorData {
     type Output = Self;
 
     fn add(mut self, rhs: Vec<Real>) -> Self::Output {
-        assert_eq!(self.value.len(), rhs.len(), "Vectors must be the same length");
+        assert_eq!(
+            self.value.len(), 
+            rhs.len(), 
+            "unmatched size => self: {:?}, rhs: {:?}", 
+            &self.value, &rhs
+        );
         for (value, rhs_value) in self.value.iter_mut().zip(rhs) {
             *value += rhs_value;
         }
@@ -175,7 +226,12 @@ impl Sub<Vec<Real>> for VectorData {
     type Output = Self;
 
     fn sub(mut self, rhs: Vec<Real>) -> Self::Output {
-        assert_eq!(self.value.len(), rhs.len(), "Vectors must be the same length");
+        assert_eq!(
+            self.value.len(), 
+            rhs.len(), 
+            "unmatched size => self: {:?}, rhs: {:?}", 
+            &self.value, &rhs
+        );
         for (value, rhs_value) in self.value.iter_mut().zip(rhs) {
             *value -= rhs_value;
         }
@@ -190,7 +246,12 @@ impl Mul<Vec<Real>> for VectorData {
     type Output = Self;
 
     fn mul(mut self, rhs: Vec<Real>) -> Self::Output {
-        assert_eq!(self.value.len(), rhs.len(), "Vectors must be the same length");
+        assert_eq!(
+            self.value.len(), 
+            rhs.len(), 
+            "unmatched size => self: {:?}, rhs: {:?}", 
+            &self.value, &rhs
+        );
         for (value, rhs_value) in self.value.iter_mut().zip(rhs) {
             *value *= rhs_value;
         }
@@ -203,7 +264,12 @@ impl Div<Vec<Real>> for VectorData {
     type Output = Self;
 
     fn div(mut self, rhs: Vec<Real>) -> Self::Output {
-        assert_eq!(self.value.len(), rhs.len(), "Vectors must be the same length");
+        assert_eq!(
+            self.value.len(), 
+            rhs.len(), 
+            "unmatched size => self: {:?}, rhs: {:?}", 
+            &self.value, &rhs
+        );
         for (value, rhs_value) in self.value.iter_mut().zip(rhs) {
             *value /= rhs_value;
         }

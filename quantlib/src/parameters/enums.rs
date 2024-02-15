@@ -9,3 +9,8 @@ pub enum ZeroCurveCode{
     USDIRS = 6,
     USDOIS = 7,
 }
+
+pub enum Compounding {
+    Simple,
+    Continuous,
+}

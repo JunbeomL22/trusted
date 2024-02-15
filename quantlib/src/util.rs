@@ -1,26 +1,18 @@
-use time::{Duration, Weekday, Month};
-use regex::Regex;
-use std::error::Error;
-
-fn parse_duration(input: &str) -> Result<Duration, Box<dyn Error>> {
-    let re = Regex::new(r"(?i)(\d+)(y|Y|M|m|D|d|H|h|min|s|sec)")?;
-    let mut duration = Duration::zero();
-
-    for cap in re.captures_iter(input) {
-        let value = cap[1].parse::<i64>()?; // Use i64 to match the type expected by time::Duration
-        match &cap[2].to_lowercase()[..] {
-            "y" => duration += Duration::years(value),
-            "m" => duration += Duration::months(value),
-            "d" => duration += Duration::days(value),
-            "h" => duration += Duration::hours(value),
-            "min" => duration += Duration::minutes(value),
-            "s" | "sec" => duration += Duration::seconds(value),
-            // You might adjust the year/month approximation as needed
-            _ => return Err("Unrecognized time unit".into()),
-        }
-    }
-
-    Ok(duration)
+/// This return the type name of a variable (only name, not the full path)
+/// 
+/// # Examples
+/// ```
+/// use quantlib::util::type_name;
+/// let x: i32 = 5;
+/// assert_eq!(type_name(&x), "i32");
+/// let s: String = "hello".to_string();
+/// assert_eq!(type_name(&s), "String");
+/// ```
+/// 
+pub fn type_name<T>(_: &T) -> &'static str {
+    let full_name = std::any::type_name::<T>();
+    let parts: Vec<&str> = full_name.split("::").collect();
+    *parts.last().unwrap_or(&full_name)
 }
 
 #[cfg(test)]
@@ -28,13 +20,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_duration() {
-        let input = "2M";
-        let result = parse_duration(input);
-        assert_eq!(result, Ok(Duration {months: 2, days: 0, hours: 0, minutes: 0, seconds: 0, milliseconds: 0, microseconds: 0, nanoseconds: 0}));
+    fn test_type_name() {
+        let x: i32 = 5;
+        assert_eq!(type_name(&x), "i32");
+        let y: f64 = 5.0;
+        assert_eq!(type_name(&y), "f64");
+        let z: String = "hello".to_string();
+        assert_eq!(type_name(&z), "String");
 
-        let input = "1y2m";
-        let result = parse_duration(input);
-        assert_eq!(result, Ok(Duration {years: 1, months: 2, days: 0, hours: 0, minutes: 0, seconds: 0, milliseconds: 0, microseconds: 0, nanoseconds: 0}));
+        enum MockEnum {
+            A,
+            B,
+        }
+        let a = MockEnum::A;
+        assert_eq!(type_name(&a), "MockEnum");
+
+        struct MockStruct {
+            a: i32,
+            b: f64,
+        }
+        let s = MockStruct { a: 5, b: 5.0 };
+        assert_eq!(type_name(&s), "MockStruct");
     }
 }

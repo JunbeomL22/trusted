@@ -15,11 +15,16 @@ pub struct LinearInterpolator1D
 impl LinearInterpolator1D
 {
     pub fn new(domain: Vec<Real>, 
-                value: Vec<Real>, 
-                extrapolation_type: ExtraPolationType,
-                allow_extrapolation: bool) -> LinearInterpolator1D {
+            value: Vec<Real>, 
+            extrapolation_type: ExtraPolationType,
+            allow_extrapolation: bool) -> LinearInterpolator1D {
         let n = domain.len();
-        assert_eq!(n, value.len());
+        if n != value.len() {
+            let mut message = format!("domain and value must have the same length");
+            message.push_str(&format!("\ndomain: {:?}", domain));
+            message.push_str(&format!("\nvalue: {:?}", value));
+            panic!("{}", message);
+        }
         // the domain must be sorted
         assert!(domain.windows(2).all(|w| w[0] <= w[1]));
         let mut derivatives = vec![0.0; n-1];

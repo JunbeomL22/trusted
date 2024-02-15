@@ -1,5 +1,4 @@
-use time::{Date, Month, Weekday, OffsetDateTime, UtcOffset};
-use time;
+use time::{Date, Month, Weekday, OffsetDateTime};
 use crate::time::conventions::BusinessDayConvention;
 use crate::time::conventions::DayCountConvention;
 use crate::definitions::Time;
@@ -181,27 +180,34 @@ pub trait Calendar {
     /// This year fraction is calculated mostly for coupon amount
     /// Thus, the functino considers only the days between date_from and date_upto
     /// For the exact time, use get_time_difference function (calculated by ActACtIsda Fasion)
-    fn year_fraction(&self, 
-                    date_from: &OffsetDateTime, 
-                    date_upto: &OffsetDateTime, 
-                    day_count: &DayCountConvention) -> Time {
-        // BoB
+    fn year_fraction(
+            &self, 
+            start_date: &OffsetDateTime, 
+            end_date: &OffsetDateTime, 
+            day_count: &DayCountConvention) -> Time {
+        // sanity check
+        assert!(
+            start_date <= end_date,
+            "start_date should be less than or equal to end_date: start_date: {:?}, end_date: {:?}",
+            start_date,
+            end_date
+        );
         let res = match day_count {
             DayCountConvention::Actual365Fixed => {
-                let days = *date_upto - *date_from;
+                let days = *end_date - *start_date;
                 days.whole_days() as Time / 365.0
                 },
             DayCountConvention::Actual360 => {
-                let days = *date_upto - *date_from;
+                let days = *end_date - *start_date;
                 days.whole_days() as Time / 360.0
                 },
             DayCountConvention::Actual364 => {
-                let days = *date_upto - *date_from;
+                let days = *end_date - *start_date;
                 days.whole_days() as Time / 364.0
                 },
             DayCountConvention::Thirty360 => {
-                let (year_from, month_from, day_from, _, _) = self.unpack_date(date_from);
-                let (year_upto, month_upto, day_upto, _, _) = self.unpack_date(date_upto);
+                let (year_from, month_from, day_from, _, _) = self.unpack_date(start_date);
+                let (year_upto, month_upto, day_upto, _, _) = self.unpack_date(end_date);
                 let mut days = 0;
                 days += 360 * (year_upto - year_from);
                 days += 30 * (month_upto as i32 - month_from as i32);
@@ -215,33 +221,38 @@ pub trait Calendar {
             //The formula applies to both regular and irregular coupon periods.
             //Reference: https://www.isda.org/a/7jEEA/2006-ISDA-Definitions-Section-4.16.pdf
             DayCountConvention::ActActIsda => {
-                let days = (*date_upto - *date_from).whole_days() as Time;
-                let year_from = date_from.year();
-                let year_upto = date_upto.year();
-                let leap_year_from = self.is_leap_year(year_from);
-                let leap_year_upto = self.is_leap_year(year_upto);
+                let mut frac: Time = 0.0;
+                let start_year = start_date.year();
+                let end_year = end_date.year();
 
-                if year_from == year_upto {
-                    if leap_year_from {
-                        days / 366.0
-                    } else {
-                        days / 365.0
-                    }
-                } else {
-                    let last_day_of_year_from = self.last_day_of_month(year_from, Month::December);
-                    let first_day_of_year_upto = Date::from_calendar_date(year_upto, Month::January, 1).unwrap();
-                    let mut days_from = (last_day_of_year_from - (*date_from).date()).whole_days() as Time;
-                    days_from /= if leap_year_from { 366.0 } else { 365.0 };
-                    let mut days_upto = ((*date_upto).date() - first_day_of_year_upto).whole_days() as Time;
-                    days_upto /= if leap_year_upto { 366.0 } else { 365.0 };
+                for year in start_year..=end_year {
+                    let days_in_year = if self.is_leap_year(year) { 366.0 } else { 365.0 };
 
-                    days_from + days_upto
-                    }
-                },        
+                    if year == start_year {
+                        let days = if end_year == start_year {
+                            (*end_date - *start_date).whole_days() as Time
+                        } else {
+                            let last_day_of_year = Date::from_calendar_date(year, Month::December, 31).unwrap();
+                            (last_day_of_year - start_date.date()).whole_days() as Time
+                        };
+                        frac += days / days_in_year;
+                    } 
+                    else if year == end_year {
+                        let last_day_of_previous_year = Date::from_calendar_date(year - 1 , Month::December, 31).unwrap();
+                        let days = (end_date.date() - last_day_of_previous_year).whole_days() as Time;
+                        frac += days / days_in_year;
+                    } 
+                    else {
+                        frac += 1.0; // Full year
+                    };
+                }
+                frac
+                },
             };
         res
     }
-    //last_day_of month, not last business day of month
+
+    /// The last calendar day of a month, not the last business day
     fn last_day_of_month(&self, year: i32, month: Month) -> Date {
         let last_day = match month {
             Month::January | Month::March | Month::May | Month::July | Month::August | Month::October | Month::December => {
@@ -277,33 +288,44 @@ pub trait Calendar {
     /// at the second, calculate the time from the start of the end_date to the end_date as Act366 fasion
     /// then, sum up the two times
     fn get_time_difference(&self, start_date: &OffsetDateTime, end_date: &OffsetDateTime) -> Time {
-        let year_start = start_date.date().year();
-        let year_end = end_date.date().year();
-        let leap_year_start = self.is_leap_year(year_start);
-        let leap_year_end = self.is_leap_year(year_end);
+        //let midnight_last_day_of_year_start = OffsetDateTime::new_in_offset(last_day_of_year_start, time::Time::MIDNIGHT, start_date_offset);
+        let mut frac: Time = 0.0;
+        let start_year = start_date.year();
+        let end_year = end_date.year();
 
-        if year_start == year_end {
-            let days = ((*end_date - *start_date).as_seconds_f64() / 60.0 / 60.0 / 24.0) as Time;
-            if leap_year_start {
-                days / 366.0
-            } else {
-                days / 365.0
-            }
-        } else {
-            // patch the midnight time to the last_day of the year_from
+        for year in start_year..=end_year {
+            let days_in_year: Time = if self.is_leap_year(year) { 366.0 } else { 365.0 };
             let start_date_offset = start_date.offset();
-            let last_day_of_year_start = self.last_day_of_month(year_start, Month::December);
-
-            let midnight_last_day_of_year_start = OffsetDateTime::new_in_offset(last_day_of_year_start, time::Time::MIDNIGHT, start_date_offset);
-
-            let mut res1 = (midnight_last_day_of_year_start - *start_date).as_seconds_f64() as Time / 60.0 / 60.0 / 24.0;
-            res1 /= if leap_year_start { 366.0 } else { 365.0 };
-            let mut res2 = (*end_date - midnight_last_day_of_year_start).as_seconds_f64() as Time / 60.0 / 60.0 / 24.0;
-            
-            res2 /= if leap_year_end { 366.0 } else { 365.0 };
-
-            res1 + res2
-            }
+            if year == start_year {
+                let days = if end_year == start_year {
+                    (*end_date - *start_date).as_seconds_f64() as Time / (24.0 * 60.0 * 60.0)
+                } else {
+                    let last_day_of_year_start = Date::from_calendar_date(year, Month::December, 31).unwrap();
+                    let last_day_of_year = OffsetDateTime::new_in_offset(
+                                                                    last_day_of_year_start, 
+                                                                    time::Time::MIDNIGHT, 
+                                                                    start_date_offset
+                                                                );
+                    (last_day_of_year - *start_date).as_seconds_f64() as Time / (24.0 * 60.0 * 60.0)
+                };
+                
+                frac += days as Time / days_in_year;
+            } 
+            else if year == end_year {
+                let _last_day_of_previous_year = Date::from_calendar_date(year - 1 , Month::December, 31).unwrap();
+                let last_day_of_previous_year = OffsetDateTime::new_in_offset(
+                                                                    _last_day_of_previous_year, 
+                                                                    time::Time::MIDNIGHT, 
+                                                                    start_date_offset
+                                                                );
+                let days = (*end_date - last_day_of_previous_year).as_seconds_f64() as Time / (24.0 * 60.0 * 60.0);
+                frac += days / days_in_year;
+            } 
+            else {
+                frac += 1.0; // Full year
+            };
+        }
+        frac
     }
 }
 
@@ -352,7 +374,7 @@ impl Calendar for NullCalendar {
 mod tests {
     use super::*;
     use time::macros::{date, datetime};
-    use rstest::rstest;
+    use crate::utils::string_arithmetic::add_period;
 
     #[test]
     fn test_is_weekend() {
@@ -392,10 +414,92 @@ mod tests {
     #[test]
     fn test_get_time_difference() {
         let calendar = NullCalendar {};
-        let start_date = datetime!(2021-12-3 0:0:0 UTC); // Friday, 3rd December 2021
-        let end_date = datetime!(2021-12-4 0:0:0 UTC); // Saturday, 4th December 2021
 
-        assert_eq!(calendar.get_time_difference(&start_date, &end_date), 1.0 / 365.0);
+        // one year 
+        let start_date = datetime!(2021-12-3 00:00:00 UTC); // Friday, 3rd December 2021
+        let end_date = datetime!(2021-12-4 00:00:00 UTC); // Saturday, 4th December 2021
+        let res = calendar.get_time_difference(&start_date, &end_date);
+        assert!(
+            (res - 1.0 / 365.0).abs() < 1e-5,
+            "calculated time difference from {} to {} = {}, expected = {}",
+            start_date,
+            end_date,
+            res,
+            1.0 / 365.0
+        );
+
+        // same datetime but with different offset
+        let start_date = datetime!(2021-12-3 00:00:00 UTC); // Friday, 3rd December 2021
+        let end_date = datetime!(2021-12-3 00:00:00 -12:00); // Friday, 3rd December 2021
+        let res = calendar.get_time_difference(&start_date, &end_date);
+        assert!(
+            (res - 0.5 / 365.0).abs() < 1e-5,
+            "calculated time difference from {} to {} = {}, expected = {}",
+            start_date,
+            end_date,
+            res,
+            0.5 / 365.0
+        );
+
+        // one year difference where the start_date is leap_year with different offset
+        let start_date = datetime!(2020-01-01 00:00:00 UTC); 
+        let end_date = datetime!(2021-01-01 00:00:00 -06:00); 
+        let res = calendar.get_time_difference(&start_date, &end_date);
+        let expected: Time = (1.0 + 0.25 / 365.);
+        assert!(
+            (res - expected).abs() < 1e-5,
+            "calculated time difference from {} to {} = {}, expected = {}",
+            start_date,
+            end_date,
+            res,
+            expected
+        );
+
+        // one year and one day difference where the start_date is leap_year with different offset
+        let start_date = datetime!(2020-01-02 00:00:00 UTC); 
+        let end_date = datetime!(2021-01-01 00:00:00 -06:00); 
+        let res = calendar.get_time_difference(&start_date, &end_date);
+        let expected: Time = 1.0 + 0.25 / 365. - 1.0 / 366.; // leap_year
+        assert!(
+            (res - expected).abs() < 1e-5,
+            "calculated time difference from {} to {} = {}, expected = {}",
+            start_date,
+            end_date,
+            res,
+            expected
+        );
+
+        // one year and one day difference where the start_date is leap_year with different offset
+        let start_date = datetime!(2020-01-01 00:00:00 UTC); 
+        let end_date = datetime!(2021-01-02 00:00:00 -06:00); 
+        let res = calendar.get_time_difference(&start_date, &end_date);
+        let expected: Time = 1.0 + 0.25 / 365. + 1.0 / 365.; // leap_year
+        assert!(
+            (res - expected).abs() < 1e-5,
+            "calculated time difference from {} to {} = {}, expected = {}",
+            start_date,
+            end_date,
+            res,
+            expected
+        );
+
     }
 
+    #[test]
+    fn test_act_act_isda() {
+        let calendar = NullCalendar {};
+        let start_date = datetime!(2021-01-01 0:0:0 UTC);
+        
+        for i in 1..=100 {
+            let end_date = add_period(start_date, &format!("{}Y", i));
+            let result = calendar.year_fraction(&start_date, &end_date, &DayCountConvention::ActActIsda);
+            assert!((result - i as Time).abs() < 1e-5,
+                "calculated year_fraction from {} to {} = {}, expected = {}",
+                start_date,
+                end_date,
+                result,
+                i
+            );
+        }
+    }
 }

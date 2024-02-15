@@ -20,43 +20,64 @@ impl SurfaceData {
             market_datetime: OffsetDateTime, 
             name: String) -> SurfaceData {
         let res = match date_strike {
-                    Some(_date_strike) => {
-                        assert_eq!(value.len(), _date_strike.len(), "Vectors must be the same length");
-                        for (row, date_strike_row) in value.iter().zip(&_date_strike) {
-                            assert_eq!(row.len(), date_strike_row.len(), "Inner vectors must be the same length");
+                Some(_date_strike) => {
+                    if value.len() != _date_strike.len() {
+                        let mut message = String::from("SurfaceData::new => unmatched size\n");
+                        message.push_str(&format!("value: {:?}\n", value));
+                        message.push_str(&format!("date_strike: {:?}", _date_strike));
+                        panic!("{}", message);
+                    } 
+                    for (row, date_strike_row) in value.iter().zip(&_date_strike) {
+                        if row.len() != date_strike_row.len() {
+                            let mut message = String::from("SurfaceData::new => unmatched size\n");
+                            message.push_str(&format!("value: {:?}\n", value));
+                            message.push_str(&format!("date_strike: {:?}", _date_strike));
+                            panic!("{}", message);
                         }
-                        let calendar = NullCalendar::default();
-                        let time_strike = _date_strike.iter().map(|row| row.iter().map(|(date, strike)| (calendar.get_time_difference(&market_datetime, date), *strike)).collect()).collect();
-                        SurfaceData {
-                            value,
-                            date_strike: Some(_date_strike),
-                            time_strike: time_strike,
-                            market_datetime: market_datetime,
-                            observers: vec![],
-                            name: name,
-                        }
-                    },
-            None => {
-                match time_strike {
-                    Some(time_strike) => {
-                        assert_eq!(value.len(), time_strike.len(), "Vectors must be the same length");
-                        for (row, time_strike_row) in value.iter().zip(&time_strike) {
-                            assert_eq!(row.len(), time_strike_row.len(), "Inner vectors must be the same length");
-                        }
-                        SurfaceData {
-                            value,
-                            date_strike: None,
-                            time_strike: time_strike,
-                            market_datetime: market_datetime,
-                            observers: vec![],
-                            name: name,
-                        }
-                    },
-                    None => {
-                        panic!("Either date_strike or time_strike must be provided")
-                    },
-                }
-            },
+                    }
+                    let calendar = NullCalendar::default();
+                    let time_strike = _date_strike.iter().map(|row| row.iter().map(|(date, strike)| (calendar.get_time_difference(&market_datetime, date), *strike)).collect()).collect();
+                    SurfaceData {
+                        value,
+                        date_strike: Some(_date_strike),
+                        time_strike: time_strike,
+                        market_datetime: market_datetime,
+                        observers: vec![],
+                        name: name,
+                    }
+                },
+                None => {
+                    match time_strike {
+                        Some(time_strike) => {
+                            if value.len() != time_strike.len() {
+                                let mut message = String::from("SurfaceData::new => unmatched size\n");
+                                message.push_str(&format!("value: {:?}\n", value));
+                                message.push_str(&format!("time_strike: {:?}", time_strike));
+                                panic!("{}", message);
+                            }
+
+                            for (row, time_strike_row) in value.iter().zip(&time_strike) {
+                                if row.len() != time_strike_row.len() {
+                                    let mut message = String::from("SurfaceData::new => unmatched size\n");
+                                    message.push_str(&format!("value: {:?}\n", value));
+                                    message.push_str(&format!("time_strike: {:?}", time_strike_row));
+                                    panic!("{}", message);
+                                }
+                            }
+                            SurfaceData {
+                                value,
+                                date_strike: None,
+                                time_strike: time_strike,
+                                market_datetime: market_datetime,
+                                observers: vec![],
+                                name: name,
+                            }
+                        },
+                        None => {
+                            panic!("Either date_strike or time_strike must be provided")
+                        },
+                    }
+                },
         };
         res
     }
