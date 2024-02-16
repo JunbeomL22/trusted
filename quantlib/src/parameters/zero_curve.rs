@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 use crate::parameters::enums::{ZeroCurveCode, Compounding};
 use crate::evaluation_date::EvaluationDate;
-use crate::data::vector_data::VectorData;
+use crate::data::{vector_data::VectorData, observable::Observable};
 use crate::definitions::{Real, Time};
 use crate::parameter::Parameter;
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
@@ -19,7 +19,7 @@ use std::fmt::Debug;
 #[derive(Clone, Debug)]
 pub struct ZeroCurve {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    data: Rc<RefCell<VectorData>>,
+    //data: Rc<RefCell<VectorData>>,
     rate_interpolator: LinearInterpolator1D,
     discount_times: Vec<Time>,
     discount_factors: Vec<Real>,
@@ -41,10 +41,10 @@ impl ZeroCurve {
     /// "1Y6M", "2Y", "2Y6M", "3Y", 
     /// "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
     /// "12Y", "15Y", "17Y", "20Y",
-    ///"25Y", "30Y", "40Y", "50Y", "70Y", "100Y"
+    ///"25Y", "30Y", "50Y", "100Y"
     pub fn new(evaluation_date: Rc<RefCell<EvaluationDate>>, data: Rc<RefCell<VectorData>>, code: ZeroCurveCode, name: String) -> ZeroCurve {
-        let rate_times = data.get_times();
-        let zero_rates = data.get_value();
+        let rate_times = data.borrow().get_times();
+        let zero_rates = data.borrow().get_value();
         let time_calculator =  NullCalendar {};
 
         let rate_interpolator = LinearInterpolator1D::new(rate_times.clone(), zero_rates.clone(), ExtraPolationType::Flat, true);
@@ -55,19 +55,20 @@ impl ZeroCurve {
             "1Y6M", "2Y", "2Y6M", "3Y", 
             "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
             "12Y", "15Y", "17Y", "20Y",
-            "25Y", "30Y", "40Y", "50Y", "70Y", "100Y"
+            "25Y", "30Y", "50Y", "100Y"
             ];
 
-        let discount_times: Vec<Time> = period_leteral.iter().map(|period| add_period(&evaluation_date.get_date(), period))
-            .map(|date| time_calculator.get_time_difference(&evaluation_date.get_date(), &date)).collect();
+        let eval_date = evaluation_date.borrow().get_date();
+        let discount_times: Vec<Time> = period_leteral.iter().map(|period| add_period(&eval_date, period))
+            .map(|date| time_calculator.get_time_difference(&eval_date, &date)).collect();
         let interpolated_rates = rate_interpolator.vectorized_interpolate_for_sorted_input(&discount_times);
         let discount_factors: Vec<Real> = interpolated_rates.iter().zip(&discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
         
         let discount_interpolator = LinearInterpolator1D::new(discount_times.clone(), discount_factors.clone(), ExtraPolationType::None, false);
         
-        ZeroCurve {
-            evaluation_date,
-            data,
+        let res = ZeroCurve {
+            evaluation_date: evaluation_date.clone(),
+            //data: data.clone(),
             rate_interpolator,
             discount_times,
             discount_factors,
@@ -75,7 +76,8 @@ impl ZeroCurve {
             time_calculator,
             code,
             name,
-        }
+        };
+        res
     }
     pub fn get_discount_factor(&self, time: Time) -> Real {
         self.discount_interpolator.interpolate(time)
@@ -86,7 +88,7 @@ impl ZeroCurve {
     }
 
     pub fn get_discount_factor_at_date(&self, date: &OffsetDateTime) -> Real {
-        self.get_discount_factor(self.time_calculator.get_time_difference(&self.evaluation_date.get_date(), date))
+        self.get_discount_factor(self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date))
     }
 
     pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &Vec<OffsetDateTime>) -> Vec<Real> {
@@ -140,8 +142,8 @@ impl ZeroCurve {
             compounding
             );
 
-        let t1 = self.time_calculator.get_time_difference(&self.evaluation_date.get_date(), date1);
-        let t2 = self.time_calculator.get_time_difference(&self.evaluation_date.get_date(), date2);
+        let t1 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date1);
+        let t2 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date2);
         self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
@@ -157,7 +159,7 @@ impl ZeroCurve {
         res
     }
     pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Real {
-        let time = self.time_calculator.get_time_difference(&self.evaluation_date.get_date(), date);
+        let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date);
         self.get_short_rate_from_time(time)
     }
 
@@ -177,25 +179,31 @@ impl ZeroCurve {
         &self.name
     }
 
-    pub fn get_data(&self) -> &VectorData {
-        &self.data
-    }
-
-    pub fn get_evaluation_date(&self) -> &EvaluationDate {
+    pub fn get_evaluation_date(&self) -> &Rc<RefCell<EvaluationDate>> {
         &self.evaluation_date
     }
-    pub fn set_data(&mut self, data: Rc<VectorData>) {
-        self.data = data;
-        self.update();
-    }
+
+    //pub fn get_data(&self) -> &Rc<RefCell<VectorData>> {
+    //    &self.data
+    //}
+    //
+    //pub fn set_data(&mut self, data: &Rc<RefCell<VectorData>>) {
+    //    self.data = data.clone();
+    //    self.update();
+    //}
 }
 
 impl Parameter for ZeroCurve {
-    fn update(&mut self) {
-        let rate_times = self.data.get_times();
-        let zero_rates = self.data.get_value();
+    fn update(&mut self, data: &dyn Observable) {
+        let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
+        let rate_times = data.get_times();
+        let zero_rates = data.get_value();
 
-        self.rate_interpolator = LinearInterpolator1D::new(rate_times, zero_rates, ExtraPolationType::Flat, true);
+        self.rate_interpolator = LinearInterpolator1D::new(
+            rate_times,
+            zero_rates,
+            ExtraPolationType::Flat, 
+            true);
 
         let interpolated_rates = self.rate_interpolator.vectorized_interpolate_for_sorted_input(&self.discount_times);
         self.discount_factors = interpolated_rates.iter().zip(&self.discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
@@ -215,7 +223,7 @@ mod tests {
     #[test]
     fn test_zero_curve() {
         let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
-        let evaluation_date = EvaluationDate::new(eval_dt);
+        let evaluation_date = RefCell::new(EvaluationDate::new(eval_dt));
 
         let param_dt = datetime!(2020-01-01 00:00:00 UTC);
         let dates = vec![
@@ -235,7 +243,13 @@ mod tests {
             "vector data in test_zero_curve".to_string()
         );
 
-        let zero_curve = ZeroCurve::new(Rc::new(evaluation_date), Rc::new(data), ZeroCurveCode::Undefined, "test".to_string());
+
+        let zero_curve = ZeroCurve::new(
+            Rc::new(evaluation_date),
+            Rc::new(RefCell::new(data)), 
+            ZeroCurveCode::Undefined, 
+            "test".to_string()
+        );
 
         let cal = NullCalendar {};
         let times: Vec<Time> = dates

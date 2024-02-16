@@ -5,13 +5,15 @@ use crate::parameter::Parameter;
 use crate::time::calendar::{NullCalendar, Calendar};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::any::Any;
+use super::observable::Observable;
 
 pub struct SurfaceData {
     value: Vec<Vec<Real>>,
     date_strike: Option<Vec<Vec<(OffsetDateTime, Real)>>>,
     time_strike: Vec<Vec<(Time, Real)>>,
     market_datetime: OffsetDateTime,
-    observers: Rc<RefCell<Vec<Box<dyn Parameter>>>>,
+    observers: Vec<Rc<RefCell<dyn Parameter>>>,
     name: String,
 }
 
@@ -44,7 +46,7 @@ impl SurfaceData {
                         date_strike: Some(_date_strike),
                         time_strike: time_strike,
                         market_datetime: market_datetime,
-                        observers: Rc::new(RefCell::new(vec![])),
+                        observers: vec![],
                         name: name,
                     }
                 },
@@ -71,7 +73,7 @@ impl SurfaceData {
                                 date_strike: None,
                                 time_strike: time_strike,
                                 market_datetime: market_datetime,
-                                observers: Rc::new(RefCell::new(vec![])),
+                                observers: vec![],
                                 name: name,
                             }
                         },
@@ -82,16 +84,6 @@ impl SurfaceData {
                 },
         };
         res
-    }
-
-    fn notify_observers(&mut self) {
-        for observer in &mut *self.observers.borrow_mut() {
-            observer.update();
-        }
-    }
-
-    pub fn add_observer(&mut self, observer: Box<dyn Parameter>) {
-        self.observers.borrow_mut().push(observer);
     }
 
     pub fn get_value(&self) -> &Vec<Vec<Real>> {
@@ -116,7 +108,22 @@ impl SurfaceData {
 
 }
 
+impl Observable for SurfaceData {
+    fn notify_observers(&mut self) {
+        let observers = self.observers.clone();
+        for observer in observers {
+            observer.borrow_mut().update(self);
+        }
+    }
 
+    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
+        self.observers.push(observer);
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 impl Add<Real> for SurfaceData {
     type Output = Self;
 

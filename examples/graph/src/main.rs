@@ -6,6 +6,7 @@ use quantlib::time::calendar::{Calendar, NullCalendar};
 use time::{OffsetDateTime, macros::datetime};
 use quantlib::definitions::{Time, Real};
 use std::rc::Rc;
+use std::cell::RefCell;
 use quantlib::utils::string_arithmetic::add_period;
 use quantlib::parameters::enums::{ZeroCurveCode, Compounding};
 use plotters::prelude::*;
@@ -41,11 +42,10 @@ fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> 
     Ok(())
 }
 
-
 fn main() {
     env_logger::init();
     let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
-    let evaluation_date = EvaluationDate::new(eval_dt);
+    let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_dt)));
 
     let param_dt = datetime!(2020-01-01 00:00:00 UTC);
     let dates = vec![
@@ -64,7 +64,9 @@ fn main() {
         "vector data in test_zero_curve".to_string()
     );
 
-    let zero_curve = ZeroCurve::new(Rc::new(evaluation_date), Rc::new(data), ZeroCurveCode::Undefined, "test".to_string());
+    let data = Rc::new(RefCell::new(data));
+
+    let zero_curve = ZeroCurve::new(evaluation_date.clone(), data,clone(), ZeroCurveCode::Undefined, "test".to_string());
 
     // make a timestep from 0 to 10 years by 0.1
     let t_values: Vec<Time> = (0..=100).map(|i| i as Time / 10.0).collect::<Vec<Time>>();
@@ -74,5 +76,5 @@ fn main() {
     for i in 1..t_values.len() {
         zero_curve_values[i] = zero_curve.get_forward_rate_between_times(0.0, t_values[i], Compounding::Continuous);
     }
-    plot_vectors(&t_values, &zero_curve_values, "zero_rate.png").expect("Failed to plot vectors.");
+    plot_vectors(&t_values, &zero_curve_values, "./graphs/zero_rate_test.png").expect("Failed to plot vectors.");
 }

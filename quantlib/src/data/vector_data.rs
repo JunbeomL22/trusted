@@ -7,6 +7,7 @@ use crate::data::observable::Observable;
 use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::any::Any;
 
 pub struct VectorData {
     value: Vec<Real>,
@@ -19,13 +20,18 @@ pub struct VectorData {
 
 impl Observable for VectorData {
     fn notify_observers(&mut self) {
-        for observer in &mut self.observers {
-            observer.borrow_mut().update();
+        let observers = self.observers.clone();
+        for observer in observers {
+            observer.borrow_mut().update(self);
         }
     }
 
     fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

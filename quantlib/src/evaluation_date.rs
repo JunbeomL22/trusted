@@ -6,6 +6,7 @@ use crate::parameter::Parameter;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::any::Any;
 
 pub struct EvaluationDate {
     date: OffsetDateTime,
@@ -22,13 +23,18 @@ impl Debug for EvaluationDate {
 
 impl Observable for EvaluationDate {
     fn notify_observers(&mut self) {
-        for observer in &mut self.observers {
-            observer.borrow_mut().update();
+        let observers = self.observers.clone();
+        for observer in observers {
+            observer.borrow_mut().update(self);
         }
     }
 
     fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -72,7 +78,7 @@ mod tests {
     }
 
     impl Parameter for TestParameter {
-        fn update(&mut self) {
+        fn update(&mut self, data: &dyn Observable) {
             self.value += 1;
         }
     }
@@ -81,8 +87,10 @@ mod tests {
     fn test_add_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
+        
         let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
         eval_date.add_observer(test_param.clone());
+
         eval_date += "1D";
         assert_eq!(eval_date.get_date(), datetime!(2020-01-02 00:00:00 UTC));
         assert_eq!(test_param.borrow().value, 1);

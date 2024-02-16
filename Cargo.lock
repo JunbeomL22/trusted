@@ -468,7 +468,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "examples-foo"
+name = "examples-graph"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "criterion",
+ "env_logger",
+ "korean-lunar-calendar",
+ "nalgebra",
+ "plotters",
+ "quantlib",
+ "simba",
+ "time",
+ "trading-engine",
+]
+
+[[package]]
+name = "examples-toymodel"
 version = "0.1.0"
 dependencies = [
  "chrono",

@@ -5,6 +5,7 @@ use crate::parameter::Parameter;
 use crate::data::observable::Observable;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::any::Any;
 
 pub struct ValueData {
     value: Real,
@@ -15,13 +16,18 @@ pub struct ValueData {
 
 impl Observable for ValueData {
     fn notify_observers(&mut self) {
-        for observer in &mut self.observers {
-            observer.borrow_mut().update();
+        let observers = self.observers.clone();
+        for observer in observers {
+            observer.borrow_mut().update(self);
         }
     }
 
     fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
         self.observers.push(observer);
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -113,7 +119,7 @@ mod tests {
         }
     }
     impl Parameter for MockParameter {
-        fn update(&mut self) {
+        fn update(&mut self, data: &dyn Observable) {
             self.value += 1.0;
         }
     }
@@ -121,11 +127,13 @@ mod tests {
     #[test]
     fn test_add() {
         let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(),"test".to_string());
-        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0 }));
-        value_data.add_observer(mock_parameter.clone());
+        let mock_parameter = MockParameter { value: 1.0 };
+        let mock_parameter_rc = Rc::new(RefCell::new(mock_parameter));
+
+        value_data.add_observer(mock_parameter_rc.clone());
         value_data = value_data + 1.0;
         assert_eq!(value_data.value, 2.0);
-        assert_eq!(mock_parameter.borrow().get_value(), 2.0);
+        assert_eq!(mock_parameter_rc.borrow().get_value(), 2.0);
     }
 
     #[test]
