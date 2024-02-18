@@ -45,7 +45,7 @@ fn from_month_to_i32(month: Month) -> i32 {
 /// use quantlib::utils::string_arithmetic::add_period;
 /// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
-/// let y = add_period(x, "1y1m1D1h1min1sec");
+/// let y = add_period(&x, "1y1m1D1h1min1sec");
 /// println!("{}", y); // 2022-02-02 01:01:01 UTC
 /// ```
 /// 
@@ -95,7 +95,7 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
 /// use quantlib::utils::string_arithmetic::sub_period;
 /// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
-/// let y = sub_period(x, "1y1m1D1h1min1sec");
+/// let y = sub_period(&x, "1y1m1D1h1min1sec");
 /// println!("{}", y); // 2019-11-29 22:58:59 UTC
 /// ```
 /// 

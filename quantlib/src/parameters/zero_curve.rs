@@ -12,14 +12,12 @@ use crate::utils::string_arithmetic::add_period;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
-
 /// ZeroCurve is a curve of zero rates which implements Parameter (Observer) trait.
 /// Input is a vector of dates and a vector of zero rates of Data (observable) type.
 /// when the zero rates are updated, the zero curve will be updated.
 #[derive(Clone, Debug)]
 pub struct ZeroCurve {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    //data: Rc<RefCell<VectorData>>,
     rate_interpolator: LinearInterpolator1D,
     discount_times: Vec<Time>,
     discount_factors: Vec<Real>,
@@ -34,28 +32,28 @@ impl ZeroCurve {
     /// For performance reasons, zero curve caches discount and then interpolate the discount factor
     /// To reproduce the linear interest rate linear interpolation as much as possible, 
     /// the discount factors are cached by the interpolated rate in between the times of the input data.
-    /// The interpolated tenors of the given rate are:
-    /// "0D", "1D", 
-    /// "1W", "2W", 
-    /// "1M", "2M", "3M", "4M", "5M", "6M", "7M", "8M", "9M", "10M", "11M", "1Y", 
-    /// "1Y6M", "2Y", "2Y6M", "3Y", 
-    /// "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
-    /// "12Y", "15Y", "17Y", "20Y",
-    ///"25Y", "30Y", "50Y", "100Y"
-    pub fn new(evaluation_date: Rc<RefCell<EvaluationDate>>, data: Rc<RefCell<VectorData>>, code: ZeroCurveCode, name: String) -> ZeroCurve {
-        let rate_times = data.borrow().get_times();
-        let zero_rates = data.borrow().get_value();
+    /// The interpolated tenors of the given rate are:\n
+    /// "0D", "1D", \n
+    /// "1W", "2W", \n
+    /// "1M", "2M", "3M", "4M", "5M", "6M", "9M", "1Y", \n
+    /// "1Y6M", "2Y", "2Y6M", "3Y", \n
+    /// "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",\n
+    /// "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"\n
+    /// This setup is chosen for afety and clean code but it is not the most efficient way. 
+    /// I leave the optimization for later.
+    pub fn new(evaluation_date: Rc<RefCell<EvaluationDate>>, data: &VectorData, code: ZeroCurveCode, name: String) -> ZeroCurve {
+        let rate_times = data.get_times();
+        let zero_rates = data.get_value();
         let time_calculator =  NullCalendar {};
 
         let rate_interpolator = LinearInterpolator1D::new(rate_times.clone(), zero_rates.clone(), ExtraPolationType::Flat, true);
         let period_leteral = vec![
             "0D", "1D", 
             "1W", "2W", 
-            "1M", "2M", "3M", "4M", "5M", "6M", "7M", "8M", "9M", "10M", "11M", "1Y", 
+            "1M", "2M", "3M", "4M", "5M", "6M", "9M", "1Y", 
             "1Y6M", "2Y", "2Y6M", "3Y", 
             "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
-            "12Y", "15Y", "17Y", "20Y",
-            "25Y", "30Y", "50Y", "100Y"
+            "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"
             ];
 
         let eval_date = evaluation_date.borrow().get_date();
@@ -246,7 +244,7 @@ mod tests {
 
         let zero_curve = ZeroCurve::new(
             Rc::new(evaluation_date),
-            Rc::new(RefCell::new(data)), 
+            &data, 
             ZeroCurveCode::Undefined, 
             "test".to_string()
         );

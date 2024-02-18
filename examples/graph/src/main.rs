@@ -64,9 +64,7 @@ fn main() {
         "vector data in test_zero_curve".to_string()
     );
 
-    let data = Rc::new(RefCell::new(data));
-
-    let zero_curve = ZeroCurve::new(evaluation_date.clone(), data,clone(), ZeroCurveCode::Undefined, "test".to_string());
+    let zero_curve = ZeroCurve::new(evaluation_date.clone(), &data, ZeroCurveCode::Undefined, "test".to_string());
 
     // make a timestep from 0 to 10 years by 0.1
     let t_values: Vec<Time> = (0..=100).map(|i| i as Time / 10.0).collect::<Vec<Time>>();

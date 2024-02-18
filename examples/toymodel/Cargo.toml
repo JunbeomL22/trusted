@@ -11,8 +11,6 @@ korean-lunar-calendar = { version = "1.0.0"}
 time = { version = "0.3.20", features = ["macros"]}
 quantlib = { version = "0.1.0", path = "../../quantlib" }
 trading-engine = { version = "0.1.0", path = "../../trading-engine" }
-simba = { version = "0.8.1" }
-nalgebra = { version = "0.32.3", features = ["serde-serialize"] }
 env_logger = { version = "0.11.1"}
 criterion = { version = "0.5.1"}
 plotters = "0.3.5"

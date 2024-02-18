@@ -8,7 +8,6 @@ name = "quantlib"
 
 [dependencies]
 time = { version = "0.3.20", features = ["macros"]}
-simba = "0.8.1"
 korean-lunar-calendar = "1.0.0"
 chrono = "0.4.33"
 log = "0.4.14"
@@ -16,10 +15,26 @@ criterion = "0.5.1"
 num-traits = "0.2.18"
 assert_approx_eq = "1.1.0"
 regex = "1.10.3"
+ndarray = "0.15.6"
+ndarray-linalg = {version = "0.16.0", features = ["openblas"]}
+rand = "0.8.5"
+rand_distr = "0.4.3"
 
 [dev-dependencies]
 rstest = "0.18.2"
 
 [[bench]]
 name = "find_index"
+harness = false
+
+[[bench]]
+name = "sampling"
+harness = false
+
+[[bench]]
+name = "binary_search_ndarray_vector_comparison"
+harness = false
+
+[[bench]]
+name = "construction_ndarray"
 harness = false

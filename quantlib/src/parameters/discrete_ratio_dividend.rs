@@ -2,11 +2,11 @@ use time::{OffsetDateTime, UtcOffset};
 use time;
 use crate::definitions::{Time, Real, Integer};
 use crate::evaluation_date::EvaluationDate;
-use crate::math::interpolators::stepwise_interpolatior::StepWiseInterpolator1D;
+use crate::math::interpolators::stepwise_interpolatior::StepwiseInterpolator1D;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::time::calendar::NullCalendar;
-use crate::data::data::vector_data::VectorData;
+use crate::data::vector_data::VectorData;
 
 #[derive(Clone, Debug)]
 pub struct DiscreteRatioDividend {
@@ -17,10 +17,11 @@ pub struct DiscreteRatioDividend {
     time_calculator: NullCalendar,
     ex_dividend_times: Vec<Time>,
     dividend_yields: Vec<Real>,
-    deduction_interpolator: StepWiseInterpolator1D<Real>,
+    deduction_interpolator: StepwiseInterpolator1D<Real>,
     name: String,
 }
 
+/*
 impl DiscreteRatioDividend {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
@@ -55,7 +56,7 @@ impl DiscreteRatioDividend {
             dividend_yields.clone(),
         );
         let deduction_interpolator = StepWiseInterpolator1D::new(
-            dividend_times.clone(),
+            ex_dividend_times.clone(),
             dividend_yields.clone(),
         );
         DiscreteRatioDividend {
@@ -71,3 +72,4 @@ impl DiscreteRatioDividend {
         }
     }
 }
+*/

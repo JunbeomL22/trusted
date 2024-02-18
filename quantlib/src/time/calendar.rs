@@ -329,7 +329,7 @@ pub trait Calendar {
     }
 }
 
-#[derive(Default, Clone, Debug, Default)]
+#[derive(Default, Clone, Debug)]
 pub struct NullCalendar {}
 
 impl Calendar for NullCalendar {

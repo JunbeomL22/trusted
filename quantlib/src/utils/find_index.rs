@@ -55,13 +55,13 @@ pub fn binary_search_index<T: PartialOrd + Copy>(vec: &[T], value: T) -> usize {
 /// If we have to deal with extremely large input vector, we can add the iteration number to perform binary search
 /// # Example
 /// ```
-/// use quantlib::utils::find_index::vectorized_search_index_for_sorted_input;
+/// use quantlib::utils::find_index::vectorized_search_index_for_sorted_vector;
 /// let vec = vec![1.0, 2.0, 6.0, 9.0, 11.0];
 /// let search_vec = vec![0.5, 5.0, 10.0];
-/// let index = vectorized_search_index_for_sorted_input(&vec, &search_vec);
+/// let index = vectorized_search_index_for_sorted_vector(&vec, &search_vec);
 /// println!("{:?}", index); // [0, 2, 4]
 /// ```
-pub fn vectorized_search_index_for_sorted_input<T: PartialOrd + Copy>(vec: &[T], search_vec: &[T]) -> Vec<usize> {
+pub fn vectorized_search_index_for_sorted_vector<T: PartialOrd + Copy>(vec: &[T], search_vec: &[T]) -> Vec<usize> {
     let length = search_vec.len();
     let mut result = vec![0; length];
     if length <= 2 {
@@ -132,19 +132,19 @@ mod tests {
     }
 
     #[test]
-    fn test_vectorized_binary_search_index_for_sorted_input() {
+    fn test_vectorized_binary_search_index_for_sorted_vector() {
         let vec: Vec<Real> = vec![1.0, 2.0, 6.0, 9.0, 11.0];
 
         let search_vec = vec![8.0];
-        let index = vectorized_search_index_for_sorted_input(&vec, &search_vec);
+        let index = vectorized_search_index_for_sorted_vector(&vec, &search_vec);
         assert_eq!(index, vec![2]);
 
         let search_vec = vec![3.0, 8.0];
-        let index = vectorized_search_index_for_sorted_input(&vec, &search_vec);
+        let index = vectorized_search_index_for_sorted_vector(&vec, &search_vec);
         assert_eq!(index, vec![1, 2]);
 
         let search_vec = vec![0.0, 0.0, 0.1, 1.0, 2.0, 6.0, 9.0, 10.0, 11.0, 12.0];
-        let index = vectorized_search_index_for_sorted_input(&vec, &search_vec);
+        let index = vectorized_search_index_for_sorted_vector(&vec, &search_vec);
         assert_eq!(index, vec![0, 0, 0, 0, 1, 2, 3, 3, 4, 4]);
     }
 }

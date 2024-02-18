@@ -1,10 +1,10 @@
 use crate::definitions::Real;
-use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_input};
+use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_vector};
 use crate::math::interpolator::Interpolator1D;
 use num_traits::Num;
 
 #[derive(Clone, Debug)]
-pub struct StepWiseInterpolator1D<T>
+pub struct StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
     domain: Vec<T>,
@@ -12,15 +12,15 @@ where T: Num + PartialOrd + Copy
     allow_extrapolation: bool,
 }
 
-impl<T> StepWiseInterpolator1D<T>
+impl<T> StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
-    pub fn new(domain: Vec<T>, value: Vec<Real>, allow_extrapolation: bool) -> StepWiseInterpolator1D<T> {
+    pub fn new(domain: Vec<T>, value: Vec<Real>, allow_extrapolation: bool) -> StepwiseInterpolator1D<T> {
         let n = domain.len();
         assert_eq!(n, value.len());
         // the domain must be sorted
         assert!(domain.windows(2).all(|w| w[0] <= w[1]));
-        StepWiseInterpolator1D {
+        StepwiseInterpolator1D {
             domain,
             value,
             allow_extrapolation,
@@ -28,7 +28,7 @@ where T: Num + PartialOrd + Copy
     }
 }
 
-impl<T> Interpolator1D<T> for StepWiseInterpolator1D<T>
+impl<T> Interpolator1D<T> for StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
     fn interpolate(&self, x: T) -> Real
@@ -61,7 +61,7 @@ where T: Num + PartialOrd + Copy
                 result[i] = self.interpolate(x[i]);
             }
         } else {
-            let index = vectorized_search_index_for_sorted_input(&self.domain, x);
+            let index = vectorized_search_index_for_sorted_vector(&self.domain, x);
             let left_bound = self.domain[0];
             let right_bound = self.domain[self.domain.len()-1];
             for i in 0..length {
@@ -83,7 +83,7 @@ mod tests {
     fn test_interpolate() {
         let domain = vec![1,   3,   6,   8,   11];
         let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
-        let interpolator = StepWiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepwiseInterpolator1D::new(domain, value, true);
         assert_eq!(interpolator.interpolate(0), 1.0);
         assert_eq!(interpolator.interpolate(1), 1.0);
         assert_eq!(interpolator.interpolate(2), 1.0);
@@ -104,7 +104,7 @@ mod tests {
         let domain = vec![1,   3,   6,   8,   11];
         let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
 
-        let interpolator = StepWiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepwiseInterpolator1D::new(domain, value, true);
         let x = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let result = interpolator.vectorized_interpolate_for_sorted_input(&x);
         assert_eq!(result, vec![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]);

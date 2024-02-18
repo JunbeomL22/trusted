@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_input};
+use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_vector};
 use crate::math::interpolator::{InterpolatorReal1D, ExtraPolationType};
 
 #[derive(Debug, Clone)]
@@ -87,7 +87,7 @@ impl InterpolatorReal1D for LinearInterpolator1D
     fn vectorized_interpolate_for_sorted_input(&self, x: &Vec<Real>) -> Vec<Real> {
         let x_n = x.len();
         let domain_n = self.domain.len();
-        let indices = vectorized_search_index_for_sorted_input(&self.domain, &x);
+        let indices = vectorized_search_index_for_sorted_vector(&self.domain, &x);
         let mut result = vec![0.0; x_n];
 
         for i in 0..x_n {
