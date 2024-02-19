@@ -34,8 +34,8 @@ fn benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Search Index Benchmarks (vector)");
 
-    group.sample_size(100);
-    group.measurement_time(std::time::Duration::new(5, 0));
+    //group.sample_size(100);
+    //group.measurement_time(std::time::Duration::new(5, 0));
 
     group.bench_function("vectorized_search_index_for_sorted_vector", |b| {
         b.iter(|| vectorized_search_index_for_sorted_vector(black_box(&vec), black_box(&search_vec)))

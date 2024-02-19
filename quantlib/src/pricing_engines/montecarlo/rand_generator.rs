@@ -1,5 +1,6 @@
 use ndarray::Array2;
-use ndarray_linalg::cholesky::*;
+//use ndarray_linalg::cholesky::*;
+use crate::utils::chlescky_factorization::cholesky_decomposition;
 use crate::definitions::Real;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
@@ -13,7 +14,7 @@ pub fn correlated_path(steps: usize, correlation: &Array2<Real>) -> Array2<Real>
     let n = correlation.shape()[0];
     let mut rng = thread_rng();
     let normal: Normal<Real> = Normal::new(0.0, 1.0).unwrap();
-    let cholesky = correlation.cholesky(UPLO::Lower).unwrap();
+    let cholesky = cholesky_decomposition(correlation).unwrap();
 
     let mut msg = String::from("better to calculate cholesky decomposition once and use it for all paths.");
     msg.push_str( "In addition, check BLAS is being used. Currently disabled for multi developing environment");
@@ -52,7 +53,7 @@ mod tests {
         msg.push_str(&format!(" * sampled covariance: \n{}\n", &recalc_cov));
 
         println!("{}", msg);
-        let cholesky = (&correlation_matrix).cholesky(UPLO::Lower).unwrap();
+        let cholesky = cholesky_decomposition(&correlation_matrix).unwrap();
         
         //let expected_cov = cholesky.t().dot(&cholesky);
         assert_eq!(

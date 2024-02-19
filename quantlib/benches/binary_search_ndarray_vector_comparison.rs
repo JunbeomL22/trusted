@@ -3,7 +3,7 @@ use ndarray::Array1;
 use quantlib::vectorized_search_index_for_sorted_ndarray;
 use quantlib::vectorized_search_index_for_sorted_vector;
 use quantlib::Real;
-use std;
+//use std;
 
 fn benchmark(c: &mut Criterion) {
     let vec: Vec<Real> = (0..2000).map(|x| x as Real).collect();
@@ -11,9 +11,9 @@ fn benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Search Index Benchmarks (ndarray)");
     
-    group.sample_size(100);
-    group.warm_up_time(std::time::Duration::new(2, 0));
-    group.measurement_time(std::time::Duration::new(5, 0));
+    //group.sample_size(100);
+    //group.warm_up_time(std::time::Duration::new(3, 0));
+    //group.measurement_time(std::time::Duration::new(5, 0));
 
     group.bench_function("vectorized_search_index_for_sorted_vector", |b| {
         b.iter(|| vectorized_search_index_for_sorted_vector(black_box(&vec), black_box(&search_vec)))

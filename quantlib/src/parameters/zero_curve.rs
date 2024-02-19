@@ -34,16 +34,18 @@ impl ZeroCurve {
     /// To reproduce the linear interest rate linear interpolation as much as possible, 
     /// the discount factors are cached by the interpolated rate in between the times of the input data.
     /// The interpolated tenors of the given rate are:\n
-    /// "0D", "1D", \n
-    /// "1W", "2W", \n
-    /// "1M", "2M", "3M", "4M", "5M", "6M", "9M", "1Y", \n
-    /// "1Y6M", "2Y", "2Y6M", "3Y", \n
-    /// "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",\n
-    /// "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"\n
+    /// 
+    /// ["0D", "1D", 
+    /// "1W", "2W", 
+    /// "1M", "2M", "3M", "4M", "5M", "6M", "9M", "1Y", 
+    /// "1Y6M", "2Y", "2Y6M", "3Y", 
+    /// "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
+    /// "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"]
+    /// 
     /// This setup is chosen for afety and clean code but it is not the most efficient way. 
     /// I leave the optimization for later.
     pub fn new(
-        evaluation_date: &Rc<RefCell<EvaluationDate>>, 
+        evaluation_date: Rc<RefCell<EvaluationDate>>, 
         data: &VectorData, 
         code: ZeroCurveCode, 
         name: String
@@ -64,9 +66,15 @@ impl ZeroCurve {
 
         let eval_date = evaluation_date.clone();
         let discount_times: Array1<Time> = period_leteral
-        .iter().
-        map(|&period| time_calculator.get_time_difference(&eval_date, &add_period(&eval_date, period)))
+        .iter()
+        .map(
+            |&period| time_calculator.get_time_difference(
+            &eval_date.borrow().get_date_clone(), 
+            &add_period(&eval_date.borrow().get_date_clone(), period)
+            )
+        )
         .collect();
+
         let interpolated_rates = rate_interpolator.vectorized_interpolate_for_sorted_ndarray(&discount_times);
         let discount_factors: Array1<Real> = (&interpolated_rates * &discount_times).mapv(|x| (-x).exp());
         
@@ -99,7 +107,7 @@ impl ZeroCurve {
     }
 
     pub fn get_discount_factor_at_date(&self, date: &OffsetDateTime) -> Real {
-        self.get_discount_factor(self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date))
+        self.get_discount_factor(self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date))
     }
 
     pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &Vec<OffsetDateTime>) -> Vec<Real> {
@@ -153,8 +161,8 @@ impl ZeroCurve {
             compounding
             );
 
-        let t1 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date1);
-        let t2 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date2);
+        let t1 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date1);
+        let t2 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date2);
         self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
@@ -170,7 +178,7 @@ impl ZeroCurve {
         res
     }
     pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Real {
-        let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date(), date);
+        let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date);
         self.get_short_rate_from_time(time)
     }
 
@@ -194,14 +202,6 @@ impl ZeroCurve {
         self.evaluation_date.clone()
     }
 
-    //pub fn get_data(&self) -> &Rc<RefCell<VectorData>> {
-    //    &self.data
-    //}
-    //
-    //pub fn set_data(&mut self, data: &Rc<RefCell<VectorData>>) {
-    //    self.data = data.clone();
-    //    self.update();
-    //}
 }
 
 impl Parameter for ZeroCurve {
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn test_zero_curve() {
         let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
-        let evaluation_date = RefCell::new(EvaluationDate::new(eval_dt));
+        let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_dt)));
 
         let param_dt = datetime!(2020-01-01 00:00:00 UTC);
         let dates = vec![
@@ -257,9 +257,9 @@ mod tests {
 
 
         let zero_curve = ZeroCurve::new(
-            Rc::new(evaluation_date),
-            &data, 
-            ZeroCurveCode::Undefined, 
+            evaluation_date,
+            &data,
+            ZeroCurveCode::Undefined,
             "test".to_string()
         );
 

@@ -46,7 +46,7 @@ impl EvaluationDate {
         }
     }
 
-    pub fn get_date(&self) -> OffsetDateTime {
+    pub fn get_date_clone(&self) -> OffsetDateTime {
         self.date.clone()
     }
 }
@@ -92,7 +92,7 @@ mod tests {
         eval_date.add_observer(test_param.clone());
 
         eval_date += "1D";
-        assert_eq!(eval_date.get_date(), datetime!(2020-01-02 00:00:00 UTC));
+        assert_eq!(eval_date.get_date_clone(), datetime!(2020-01-02 00:00:00 UTC));
         assert_eq!(test_param.borrow().value, 1);
     }
 
@@ -103,7 +103,7 @@ mod tests {
         let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
         eval_date.add_observer(test_param.clone());
         eval_date -= "1D";
-        assert_eq!(eval_date.get_date(), datetime!(2019-12-31 00:00:00 UTC));
+        assert_eq!(eval_date.get_date_clone(), datetime!(2019-12-31 00:00:00 UTC));
         assert_eq!(test_param.borrow().value, 1);
     }
 }

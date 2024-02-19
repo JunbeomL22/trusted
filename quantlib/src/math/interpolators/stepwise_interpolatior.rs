@@ -12,12 +12,20 @@ where T: Num + PartialOrd + Copy
     domain: Array1<T>,
     value: Array1<Real>,
     allow_extrapolation: bool,
+    left_extrapolation_value: Option<Real>,
+    right_extrapolation_value: Option<Real>,
 }
 
 impl<T> StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
-    pub fn new(domain: Array1<T>, value: Array1<Real>, allow_extrapolation: bool) -> StepwiseInterpolator1D<T> {
+    pub fn new(
+        domain: Array1<T>, 
+        value: Array1<Real>, 
+        allow_extrapolation: bool,
+        left_extrapolation_value: Option<Real>,
+        right_extrapolation_value: Option<Real>,
+    ) -> StepwiseInterpolator1D<T> {
         let n = domain.len();
         assert_eq!(n, value.len());
         // the domain must be sorted
@@ -30,6 +38,8 @@ where T: Num + PartialOrd + Copy
             domain,
             value,
             allow_extrapolation,
+            left_extrapolation_value,
+            right_extrapolation_value,
         }
     }
 }
@@ -42,14 +52,23 @@ where T: Num + PartialOrd + Copy
         let n = self.domain.len();
         if x < self.domain[0] {
             if self.allow_extrapolation {
-                return self.value[0];
+                if self.left_extrapolation_value.is_none() {
+                    return self.value[0] 
+                } else {
+                    return self.left_extrapolation_value.unwrap();
+                }
+                
             } else {
                 panic!("x is out of range");
             }
         }
         if x > self.domain[n-1] {
             if self.allow_extrapolation {
-                return self.value[n-1];
+                if self.right_extrapolation_value.is_none() {
+                    return self.value[n-1];
+                } else {
+                    return self.right_extrapolation_value.unwrap();
+                }
             } else {
                 panic!("x is out of range");
             }
@@ -90,7 +109,13 @@ mod tests {
     fn test_interpolate() {
         let domain = array![1,   3,   6,   8,   11];
         let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
-        let interpolator = StepwiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepwiseInterpolator1D::new(
+            domain, 
+            value, 
+            true,
+            Some(1.0),
+            Some(11.0),
+        );
         assert_eq!(interpolator.interpolate(0), 1.0);
         assert_eq!(interpolator.interpolate(1), 1.0);
         assert_eq!(interpolator.interpolate(2), 1.0);
@@ -111,7 +136,13 @@ mod tests {
         let domain = array![1,   3,   6,   8,   11];
         let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
 
-        let interpolator = StepwiseInterpolator1D::new(domain, value, true);
+        let interpolator = StepwiseInterpolator1D::new(
+                                domain, 
+                                value, 
+                                true,
+                                None,
+                                None,
+                            );
         let x = array![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let result = interpolator.vectorized_interpolate_for_sorted_ndarray(&x);
         assert_eq!(

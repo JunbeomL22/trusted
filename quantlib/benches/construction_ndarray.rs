@@ -26,7 +26,7 @@ fn vec_to_array_conversion(vec: Vec<f32>) -> Array1<f32> {
 fn benchmarks(c: &mut Criterion) {
     let mut group = c.benchmark_group("Construction Benchmarks");
 
-    for n in [1000, 10000, 100000].iter() {
+    for n in [1000000].iter() {
         group.bench_with_input(BenchmarkId::new("vec_construction", n), n, |b, &n| {
             b.iter(|| vec_construction(n));
         });
