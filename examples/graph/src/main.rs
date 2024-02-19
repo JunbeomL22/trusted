@@ -10,6 +10,8 @@ use std::cell::RefCell;
 use quantlib::utils::string_arithmetic::add_period;
 use quantlib::parameters::enums::{ZeroCurveCode, Compounding};
 use plotters::prelude::*;
+use ndarray::array;
+use ndarray::Array1;
 
 fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Define the size of the chart
@@ -49,7 +51,7 @@ fn main() {
 
     let param_dt = datetime!(2020-01-01 00:00:00 UTC);
     let dates = vec![
-        add_period(&param_dt, "1M"), 
+        add_period(&param_dt, "1M"),
         add_period(&param_dt, "1Y"),
         add_period(&param_dt, "2Y"),
         add_period(&param_dt, "3Y"),
@@ -57,19 +59,24 @@ fn main() {
         ];
 
     let data = VectorData::new(
-        vec![0.02, 0.025, 0.03, 0.035, 0.04],
+        array![0.02, 0.025, 0.03, 0.035, 0.04],
         Some(dates.clone()), 
         None, 
         param_dt, 
         "vector data in test_zero_curve".to_string()
     );
 
-    let zero_curve = ZeroCurve::new(evaluation_date.clone(), &data, ZeroCurveCode::Undefined, "test".to_string());
+    let zero_curve = ZeroCurve::new(
+        evaluation_date.clone(), 
+        &data, 
+        ZeroCurveCode::Undefined, 
+        "test".to_string()
+    );
 
     // make a timestep from 0 to 10 years by 0.1
     let t_values: Vec<Time> = (0..=100).map(|i| i as Time / 10.0).collect::<Vec<Time>>();
-    //let discount_values = zero_curve.get_vectorized_discount_factor_for_sorted_time(&t_values);
-    //let short_rate_values = zero_curve.get_vectorized_short_rate_for_sorted_times(&t_values);
+    // let discount_values = zero_curve.get_vectorized_discount_factor_for_sorted_time(&t_values);
+    // let short_rate_values = zero_curve.get_vectorized_short_rate_for_sorted_times(&t_values);
     let mut zero_curve_values = vec![0.0; t_values.len()];
     for i in 1..t_values.len() {
         zero_curve_values[i] = zero_curve.get_forward_rate_between_times(0.0, t_values[i], Compounding::Continuous);

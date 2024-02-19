@@ -15,7 +15,9 @@ pub fn correlated_path(steps: usize, correlation: &Array2<Real>) -> Array2<Real>
     let normal: Normal<Real> = Normal::new(0.0, 1.0).unwrap();
     let cholesky = correlation.cholesky(UPLO::Lower).unwrap();
 
-    info!("(correlated_path) somehow not optimized");
+    let mut msg = String::from("better to calculate cholesky decomposition once and use it for all paths.");
+    msg.push_str( "In addition, check BLAS is being used. Currently disabled for multi developing environment");
+    info!("{}", msg);
     cholesky.dot(&Array2::from_shape_fn((n, steps), |_| normal.sample(&mut rng) as Real))
 }
 

@@ -1,25 +1,31 @@
 use crate::definitions::Real;
-use crate::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_vector};
+use crate::utils::find_index_ndarray::{binary_search_index_ndarray, vectorized_search_index_for_sorted_ndarray};
 use crate::math::interpolator::Interpolator1D;
+use ndarray::Array1;
+use crate::util::is_ndarray_sorted;
 use num_traits::Num;
 
 #[derive(Clone, Debug)]
 pub struct StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
-    domain: Vec<T>,
-    value: Vec<Real>,
+    domain: Array1<T>,
+    value: Array1<Real>,
     allow_extrapolation: bool,
 }
 
 impl<T> StepwiseInterpolator1D<T>
 where T: Num + PartialOrd + Copy
 {
-    pub fn new(domain: Vec<T>, value: Vec<Real>, allow_extrapolation: bool) -> StepwiseInterpolator1D<T> {
+    pub fn new(domain: Array1<T>, value: Array1<Real>, allow_extrapolation: bool) -> StepwiseInterpolator1D<T> {
         let n = domain.len();
         assert_eq!(n, value.len());
         // the domain must be sorted
-        assert!(domain.windows(2).all(|w| w[0] <= w[1]));
+        assert!(
+            is_ndarray_sorted(&domain),
+            "(StepwiseInterpolator1D) domain must be sorted:"
+        );
+
         StepwiseInterpolator1D {
             domain,
             value,
@@ -48,20 +54,20 @@ where T: Num + PartialOrd + Copy
                 panic!("x is out of range");
             }
         }
-        let index = binary_search_index(&self.domain, x);
+        let index = binary_search_index_ndarray(&self.domain, x);
         self.value[index]
     }
 
-    fn vectorized_interpolate_for_sorted_input(&self, x: &Vec<T>) -> Vec<Real>
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Array1<Real>
     {
         let length = x.len();
-        let mut result = vec![0.0; length];
+        let mut result = Array1::zeros(length);
         if length <= 2 {
             for i in 0..length {
                 result[i] = self.interpolate(x[i]);
             }
         } else {
-            let index = vectorized_search_index_for_sorted_vector(&self.domain, x);
+            let index = vectorized_search_index_for_sorted_ndarray(&self.domain, x);
             let left_bound = self.domain[0];
             let right_bound = self.domain[self.domain.len()-1];
             for i in 0..length {
@@ -78,11 +84,12 @@ where T: Num + PartialOrd + Copy
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ndarray::array;
 
     #[test]
     fn test_interpolate() {
-        let domain = vec![1,   3,   6,   8,   11];
-        let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
+        let domain = array![1,   3,   6,   8,   11];
+        let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
         let interpolator = StepwiseInterpolator1D::new(domain, value, true);
         assert_eq!(interpolator.interpolate(0), 1.0);
         assert_eq!(interpolator.interpolate(1), 1.0);
@@ -101,12 +108,15 @@ mod tests {
 
     #[test]
     fn test_vectorized_interpolate_sorted_input() {
-        let domain = vec![1,   3,   6,   8,   11];
-        let value  = vec![1.0, 3.0, 6.0, 9.0, 11.0];
+        let domain = array![1,   3,   6,   8,   11];
+        let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
 
         let interpolator = StepwiseInterpolator1D::new(domain, value, true);
-        let x = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-        let result = interpolator.vectorized_interpolate_for_sorted_input(&x);
-        assert_eq!(result, vec![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]);
+        let x = array![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        let result = interpolator.vectorized_interpolate_for_sorted_ndarray(&x);
+        assert_eq!(
+            result, 
+            array![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]
+        );
     }
 }

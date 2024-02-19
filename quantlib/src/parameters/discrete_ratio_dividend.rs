@@ -1,25 +1,66 @@
 use time::{OffsetDateTime, UtcOffset};
 use time;
+use crate::data::vector_data::VectorData;
 use crate::definitions::{Time, Real, Integer};
 use crate::evaluation_date::EvaluationDate;
 use crate::math::interpolators::stepwise_interpolatior::StepwiseInterpolator1D;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::time::calendar::NullCalendar;
-use crate::data::vector_data::VectorData;
+use crate::data::observable::Observable;
+use ndarray::Array1;
 
 #[derive(Clone, Debug)]
 pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,
     marking_offsetdatetime: OffsetDateTime,
-    date_serial_numbers: Vec<Integer>, // days from 1970-01-01
+    date_serial_numbers: Array1<Integer>, // days from 1970-01-01
     time_calculator: NullCalendar,
-    ex_dividend_times: Vec<Time>,
-    dividend_yields: Vec<Real>,
-    deduction_interpolator: StepwiseInterpolator1D<Real>,
+    ex_dividend_times: Array1<Time>,
+    dividend_yields: Array1<Real>,
+    deduction_interpolator: StepwiseInterpolator1D<Integer>,
     name: String,
 }
+
+impl DiscreteRatioDividend {
+    pub fn new(
+        evaluation_date: &Rc<RefCell<EvaluationDate>>,
+        data: &VectorData, // dividend amount
+        marking_offset: UtcOffset,
+        spot: Real,
+        name: String,
+    ) -> DiscreteRatioDividend {
+        let marking_offsetdatetime = OffsetDateTime::new_in_offset(
+            time::Date::from_ymd(1970, 1, 1),
+            time::Time::from_hms(18, 0, 0), 
+            &marking_offset
+        );
+        
+        let eval_date = evaluation_date.clone();
+        let ex_dividend_dates = data.get_dates_clone();
+
+        let dt_clone = eval_date.borrow().get_date_clone();
+
+        if (ex_dividend_dates[0] - dt_clone).abs() > time::Duration::days(1) {
+            ex_dividend_dates.insert(0, dt_clone);  
+        }
+        
+        let date_serial_numbers: Array1<Integer> = Array1::from_vec(
+            ex_dividend_dates
+            .iter()
+            .map(|x| x.num_days_from_ce())
+            .collect());
+        let time_calculator = NullCalendar::new();
+        let ex_dividend_times: Array1<Time> = Array1::from_vec(
+            ex_dividend_dates
+            .iter()
+            .map(|x| time_calculator.get_time_difference(eval_date.borrow().get_date(), *x))
+            .collect());
+        let dividend_yields = data.get_values().map(|x| x / spot).collect();
+
+    }
+
 
 /*
 impl DiscreteRatioDividend {

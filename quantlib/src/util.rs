@@ -1,3 +1,5 @@
+use ndarray::Array1;
+use crate::definitions::Real;
 /// This return the type name of a variable (only name, not the full path)
 /// 
 /// # Examples
@@ -13,6 +15,17 @@ pub fn type_name<T>(_: &T) -> &'static str {
     let full_name = std::any::type_name::<T>();
     let parts: Vec<&str> = full_name.split("::").collect();
     *parts.last().unwrap_or(&full_name)
+}
+
+pub fn is_ndarray_sorted<T>(arr: &Array1<T>) -> bool 
+where T: PartialOrd
+{
+    for i in 0..arr.len() - 1 {
+        if arr[i] > arr[i + 1] {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]

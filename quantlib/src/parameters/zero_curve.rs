@@ -12,6 +12,7 @@ use crate::utils::string_arithmetic::add_period;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use ndarray::Array1;
 /// ZeroCurve is a curve of zero rates which implements Parameter (Observer) trait.
 /// Input is a vector of dates and a vector of zero rates of Data (observable) type.
 /// when the zero rates are updated, the zero curve will be updated.
@@ -19,8 +20,8 @@ use std::fmt::Debug;
 pub struct ZeroCurve {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     rate_interpolator: LinearInterpolator1D,
-    discount_times: Vec<Time>,
-    discount_factors: Vec<Real>,
+    discount_times: Array1<Time>,
+    discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
     time_calculator: NullCalendar,
     code: ZeroCurveCode,
@@ -41,9 +42,14 @@ impl ZeroCurve {
     /// "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"\n
     /// This setup is chosen for afety and clean code but it is not the most efficient way. 
     /// I leave the optimization for later.
-    pub fn new(evaluation_date: Rc<RefCell<EvaluationDate>>, data: &VectorData, code: ZeroCurveCode, name: String) -> ZeroCurve {
-        let rate_times = data.get_times();
-        let zero_rates = data.get_value();
+    pub fn new(
+        evaluation_date: &Rc<RefCell<EvaluationDate>>, 
+        data: &VectorData, 
+        code: ZeroCurveCode, 
+        name: String
+    ) -> ZeroCurve {
+        let rate_times = data.get_times_clone();
+        let zero_rates = data.get_value_clone();
         let time_calculator =  NullCalendar {};
 
         let rate_interpolator = LinearInterpolator1D::new(rate_times.clone(), zero_rates.clone(), ExtraPolationType::Flat, true);
@@ -56,13 +62,20 @@ impl ZeroCurve {
             "12Y", "15Y", "20Y", "30Y", "50Y", "100Y"
             ];
 
-        let eval_date = evaluation_date.borrow().get_date();
-        let discount_times: Vec<Time> = period_leteral.iter().map(|period| add_period(&eval_date, period))
-            .map(|date| time_calculator.get_time_difference(&eval_date, &date)).collect();
-        let interpolated_rates = rate_interpolator.vectorized_interpolate_for_sorted_input(&discount_times);
-        let discount_factors: Vec<Real> = interpolated_rates.iter().zip(&discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
+        let eval_date = evaluation_date.clone();
+        let discount_times: Array1<Time> = period_leteral
+        .iter().
+        map(|&period| time_calculator.get_time_difference(&eval_date, &add_period(&eval_date, period)))
+        .collect();
+        let interpolated_rates = rate_interpolator.vectorized_interpolate_for_sorted_ndarray(&discount_times);
+        let discount_factors: Array1<Real> = (&interpolated_rates * &discount_times).mapv(|x| (-x).exp());
         
-        let discount_interpolator = LinearInterpolator1D::new(discount_times.clone(), discount_factors.clone(), ExtraPolationType::None, false);
+        let discount_interpolator = LinearInterpolator1D::new(
+            discount_times.clone(), 
+            discount_factors.clone(), 
+            ExtraPolationType::None, 
+            false
+        );
         
         let res = ZeroCurve {
             evaluation_date: evaluation_date.clone(),
@@ -81,8 +94,8 @@ impl ZeroCurve {
         self.discount_interpolator.interpolate(time)
     }
 
-    pub fn get_vectorized_discount_factor_for_sorted_time(&self, times: &Vec<Time>) -> Vec<Real> {
-        self.discount_interpolator.vectorized_interpolate_for_sorted_input(times)
+    pub fn get_vectorized_discount_factor_for_sorted_time(&self, times: &Array1<Time>) -> Array1<Real> {
+        self.discount_interpolator.vectorized_interpolate_for_sorted_ndarray(times)
     }
 
     pub fn get_discount_factor_at_date(&self, date: &OffsetDateTime) -> Real {
@@ -161,11 +174,11 @@ impl ZeroCurve {
         self.get_short_rate_from_time(time)
     }
 
-    pub fn get_cached_discount_factors(&self) -> Vec<Real> {
+    pub fn get_cached_discount_factors_clone(&self) -> Array1<Real> {
         self.discount_factors.clone()
     }
 
-    pub fn get_cached_discount_times(&self) -> Vec<Time> {
+    pub fn get_cached_discount_times_clone(&self) -> Array1<Time> {
         self.discount_times.clone()
     }
 
@@ -173,12 +186,12 @@ impl ZeroCurve {
         self.code
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    pub fn get_name_clone(&self) -> String {
+        self.name.clone()
     }
 
-    pub fn get_evaluation_date(&self) -> &Rc<RefCell<EvaluationDate>> {
-        &self.evaluation_date
+    pub fn get_evaluation_date_clone(&self) -> Rc<RefCell<EvaluationDate>> {
+        self.evaluation_date.clone()
     }
 
     //pub fn get_data(&self) -> &Rc<RefCell<VectorData>> {
@@ -194,8 +207,8 @@ impl ZeroCurve {
 impl Parameter for ZeroCurve {
     fn update(&mut self, data: &dyn Observable) {
         let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
-        let rate_times = data.get_times();
-        let zero_rates = data.get_value();
+        let rate_times = data.get_times_clone();
+        let zero_rates = data.get_value_clone();
 
         self.rate_interpolator = LinearInterpolator1D::new(
             rate_times,
@@ -203,7 +216,7 @@ impl Parameter for ZeroCurve {
             ExtraPolationType::Flat, 
             true);
 
-        let interpolated_rates = self.rate_interpolator.vectorized_interpolate_for_sorted_input(&self.discount_times);
+        let interpolated_rates = self.rate_interpolator.vectorized_interpolate_for_sorted_ndarray(&self.discount_times);
         self.discount_factors = interpolated_rates.iter().zip(&self.discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
         
         self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone(), ExtraPolationType::None, false);
@@ -217,6 +230,7 @@ mod tests {
     use time::macros::datetime;
     use std::rc::Rc;
     use crate::time::calendar::{Calendar, NullCalendar};
+    use ndarray::array;
 
     #[test]
     fn test_zero_curve() {
@@ -234,7 +248,7 @@ mod tests {
             ];
 
         let data = VectorData::new(
-            vec![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
+            array![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
             Some(dates.clone()), 
             None, 
             param_dt, 
