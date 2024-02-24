@@ -1,5 +1,6 @@
 pub mod time;
 pub mod instruments;
+pub mod instrument;
 pub mod definitions;
 pub mod math;
 pub mod utils;

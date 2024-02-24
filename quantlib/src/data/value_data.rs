@@ -6,7 +6,8 @@ use crate::data::observable::Observable;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::Any;
-
+/// value: Real, market_datetime: OffsetDateTime, name: String
+/// The examples are flat volatility, constant continuous dividend yield
 pub struct ValueData {
     value: Real,
     market_datetime: OffsetDateTime,

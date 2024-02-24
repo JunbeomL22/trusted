@@ -115,7 +115,7 @@ impl InterpolatorReal1D for LinearInterpolator1D
                     panic!("x is out of range");
                 }
             }
-            else if x[i] > self.domain[domain_n - 1] {
+            else if x[i] >= self.domain[domain_n - 1] {
                 if self.allow_extrapolation {
                     if self.extrapolation_type == ExtraPolationType::Flat {
                         result[i] = self.value[domain_n-1];
@@ -130,9 +130,11 @@ impl InterpolatorReal1D for LinearInterpolator1D
                 else {
                     panic!("x is out of range");
                 }
-            }
-            else {
-                result[i] = self.value[indices[i]] + self.derivatives[indices[i]] * (x[i] - self.domain[indices[i]]);
+            } 
+            else 
+            {
+                let idx = indices[i];
+                result[i] = self.value[idx] + self.derivatives[idx] * (x[i] - self.domain[idx]);
             }
         }
         result

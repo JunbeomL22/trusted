@@ -1,4 +1,3 @@
-use num_traits::Zero;
 use time::OffsetDateTime;
 use crate::parameters::enums::{ZeroCurveCode, Compounding};
 use crate::evaluation_date::EvaluationDate;

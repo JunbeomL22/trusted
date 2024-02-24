@@ -151,8 +151,19 @@ impl DiscreteRatioDividend {
         result
     }
 
+    pub fn get_evaluation_date_clone(&self) -> Rc<RefCell<EvaluationDate>> {
+        self.evaluation_date.clone()
+    }
+
     pub fn get_name(&self) -> &String {
         &self.name
+    }
+
+    pub fn get_dividend(&self) -> Vec<(OffsetDateTime, Real)> {
+        self.ex_dividend_dates
+        .iter()
+        .zip(self.dividend_yields.iter())
+        .map(|(date, yield_value)| (*date, self.spot * (*yield_value))).collect()
     }
 }
 
@@ -217,13 +228,12 @@ impl Parameter for DiscreteRatioDividend {
         }
     }
 
-    /// this does not change the original self.evalaution_date
+    /// this does not change the original data such as
+    /// self.evalaution_date, self.ex_dividend_dates, self.dividend_yields
+    /// but only change the dividend_deduction interpolator
     fn update_evaluation_date(&mut self, date: &EvaluationDate) {
-        //self.evaluation_date = Rc::new(RefCell::new(date.clone()));
         let eval_dt: OffsetDateTime = date.get_date_clone();
-        // keep the original ex-dividend dates and dividend yeilds, etc
-        // only recalculate date_serial_number_for_interpolator,
-        // dividend_yields_for_interpolator, and deduction_interpolator
+
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
         let mut div_yields_vec = self.dividend_yields.to_vec();
         let mut date_serial_numbers_for_interpolator = self.date_serial_numbers.clone();
