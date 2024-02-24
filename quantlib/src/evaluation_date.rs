@@ -6,8 +6,8 @@ use crate::parameter::Parameter;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::any::Any;
 
+#[derive(Clone)]
 pub struct EvaluationDate {
     date: OffsetDateTime,
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
@@ -25,7 +25,7 @@ impl Observable for EvaluationDate {
     fn notify_observers(&mut self) {
         let observers = self.observers.clone();
         for observer in observers {
-            observer.borrow_mut().update(self);
+            observer.borrow_mut().update_evaluation_date(self);
         }
     }
 
@@ -78,7 +78,7 @@ mod tests {
     }
 
     impl Parameter for TestParameter {
-        fn update(&mut self, data: &dyn Observable) {
+        fn update_evaluation_date(&mut self, data: &EvaluationDate) {
             self.value += 1;
         }
     }

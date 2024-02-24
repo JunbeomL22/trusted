@@ -1,3 +1,4 @@
+use num_traits::Zero;
 use time::OffsetDateTime;
 use crate::parameters::enums::{ZeroCurveCode, Compounding};
 use crate::evaluation_date::EvaluationDate;
@@ -6,6 +7,8 @@ use crate::definitions::{Real, Time};
 use crate::parameter::Parameter;
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::math::interpolator::InterpolatorReal1D;
+use crate::math::interpolator::Interpolator1D;
+use crate::math::interpolators::stepwise_interpolatior::ConstantInterpolator1D;
 use crate::math::interpolator::ExtraPolationType;
 use crate::time::calendar::{NullCalendar, Calendar};
 use crate::utils::string_arithmetic::add_period;
@@ -13,13 +16,20 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use ndarray::Array1;
+
+#[derive(Clone, Debug)]
+enum ZeroCurveInterpolator {
+    Constant(ConstantInterpolator1D),
+    Linear(LinearInterpolator1D),
+}
+
 /// ZeroCurve is a curve of zero rates which implements Parameter (Observer) trait.
 /// Input is a vector of dates and a vector of zero rates of Data (observable) type.
 /// when the zero rates are updated, the zero curve will be updated.
 #[derive(Clone, Debug)]
 pub struct ZeroCurve {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    rate_interpolator: LinearInterpolator1D,
+    rate_interpolator: ZeroCurveInterpolator,
     discount_times: Array1<Time>,
     discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
@@ -54,7 +64,38 @@ impl ZeroCurve {
         let zero_rates = data.get_value_clone();
         let time_calculator =  NullCalendar {};
 
-        let rate_interpolator = LinearInterpolator1D::new(rate_times.clone(), zero_rates.clone(), ExtraPolationType::Flat, true);
+        assert!(
+            rate_times.len() == zero_rates.len(),
+            "error: rate_times.len() != zero_rates.len() in ZeroCurve::new. data = \n{:?}\n zero_rates = {:?}\n rate_times = {:?}",
+            data,
+            zero_rates,
+            rate_times,
+        );
+
+        assert!(
+            zero_rates.len() >= 1,
+            "error: zero_rates.len() < 1 in ZeroCurve::new. data = \n{:?}\n zero_rates = {:?}\n rate_times = {:?}",
+            data,
+            zero_rates,
+            rate_times,
+        );
+
+        let rate_interpolator: ZeroCurveInterpolator;
+
+        if zero_rates.len() == 1 {
+            rate_interpolator = ZeroCurveInterpolator::Constant(
+                ConstantInterpolator1D::new(zero_rates[0])
+            );
+        } else {
+            rate_interpolator = ZeroCurveInterpolator::Linear(
+                LinearInterpolator1D::new(
+                    rate_times.clone(),
+                    zero_rates.clone(), 
+                    ExtraPolationType::Flat, 
+                    true)
+            );
+        }
+        
         let period_leteral = vec![
             "0D", "1D", 
             "1W", "2W", 
@@ -75,7 +116,11 @@ impl ZeroCurve {
         )
         .collect();
 
-        let interpolated_rates = rate_interpolator.vectorized_interpolate_for_sorted_ndarray(&discount_times);
+        let interpolated_rates = match &rate_interpolator {
+            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&discount_times), 
+            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&discount_times),
+        };
+        
         let discount_factors: Array1<Real> = (&interpolated_rates * &discount_times).mapv(|x| (-x).exp());
         
         let discount_interpolator = LinearInterpolator1D::new(
@@ -134,17 +179,14 @@ impl ZeroCurve {
             compounding
             );
 
-        let tau = t2 - t1; // tau must not be negligibly small
-        assert!(
-            tau > 1e-8,
-            "(error: tau is negligibly small) occured in get_forward_rate_between_times(t1: {}, t2: {}, compounding: {:?})",
-            t1, 
-            t2,
-            compounding
-        );
-
-        let disc = self.get_discount_factor_between_times(t1, t2);
-
+        let tau = t2 - t1;
+        
+        let disc: Real;
+        if tau.abs() > 1e-6 {
+            disc = self.get_discount_factor_between_times(t1, t2);
+        } else {
+            disc = self.get_discount_factor_between_times(t1, t2 + 1e-5);
+        }
         
         match compounding {
             Compounding::Simple => (1.0 - disc) / tau,
@@ -154,7 +196,7 @@ impl ZeroCurve {
 
     pub fn get_forward_rate_between_dates(&self, date1: &OffsetDateTime, date2: &OffsetDateTime, compounding: Compounding) -> Real {
         assert!(
-            date1 <= date2,
+            (&date1) <= (&date2),
             "(error: date1 > date2) occured in get_forward_rate_between_dates(date1: {:?}, date2: {:?}, compounding: {:?})",
             date1,
             date2,
@@ -210,13 +252,42 @@ impl Parameter for ZeroCurve {
         let rate_times = data.get_times_clone();
         let zero_rates = data.get_value_clone();
 
-        self.rate_interpolator = LinearInterpolator1D::new(
-            rate_times,
+        assert!(
+            rate_times.len() == zero_rates.len(),
+            "error: rate_times.len() != zero_rates.len() in ZeroCurve::new in ZeroCurve::update. data = \n{:?}\n zero_rates = {:?}\n rate_times = {:?}",
+            data,
             zero_rates,
-            ExtraPolationType::Flat, 
-            true);
+            rate_times,
+        );
 
-        let interpolated_rates = self.rate_interpolator.vectorized_interpolate_for_sorted_ndarray(&self.discount_times);
+        assert!(
+            zero_rates.len() >= 1,
+            "error: zero_rates.len() < 1 in ZeroCurve::new in ZeroCurve::update. data = \n{:?}\n zero_rates = {:?}\n rate_times = {:?}",
+            data,
+            zero_rates,
+            rate_times,
+        );
+
+        if zero_rates.len() == 1 {
+            self.rate_interpolator = ZeroCurveInterpolator::Constant(
+                ConstantInterpolator1D::new(zero_rates[0])
+            );
+        } else {
+            self.rate_interpolator = ZeroCurveInterpolator::Linear(
+                LinearInterpolator1D::new(
+                    rate_times.clone(),
+                    zero_rates.clone(), 
+                    ExtraPolationType::Flat, 
+                    true
+                )
+            );
+        }
+
+        let interpolated_rates = match &self.rate_interpolator {
+            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&self.discount_times), 
+            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&self.discount_times),
+        };
+        
         self.discount_factors = interpolated_rates.iter().zip(&self.discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
         
         self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone(), ExtraPolationType::None, false);

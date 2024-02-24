@@ -28,10 +28,16 @@ where T: Num + PartialOrd + Copy
     ) -> StepwiseInterpolator1D<T> {
         let n = domain.len();
         assert_eq!(n, value.len());
+
+        assert!(
+            n!=0, 
+            "(StepwiseInterpolator1D::new) domain and value must not be empty"
+        );
+
         // the domain must be sorted
         assert!(
             is_ndarray_sorted(&domain),
-            "(StepwiseInterpolator1D) domain must be sorted:"
+            "(StepwiseInterpolator1D::new) domain must be sorted:"
         );
 
         StepwiseInterpolator1D {
@@ -59,7 +65,7 @@ where T: Num + PartialOrd + Copy
                 }
                 
             } else {
-                panic!("x is out of range");
+                panic!("(occured at StepwiseInterpolator1D::interpolate) x is out of range");
             }
         }
         if x > self.domain[n-1] {
@@ -70,7 +76,7 @@ where T: Num + PartialOrd + Copy
                     return self.right_extrapolation_value.unwrap();
                 }
             } else {
-                panic!("x is out of range");
+                panic!("(occured at StepwiseInterpolator1D::interpolate) x is out of range");
             }
         }
         let index = binary_search_index_ndarray(&self.domain, x);
@@ -91,11 +97,42 @@ where T: Num + PartialOrd + Copy
             let right_bound = self.domain[self.domain.len()-1];
             for i in 0..length {
                 if !self.allow_extrapolation && (x[i] < left_bound || x[i] > right_bound) {
-                    panic!("Value out of domain range and extrapolation is not allowed");
+                    panic!("(occured at StepwiseInterpolator1D::vectorized_interpolate_for_sorted_ndarray)\nValue out of domain range and extrapolation is not allowed");
                 }
                 result[i] = self.value[index[i]];
             }
         }
+        result
+    }
+}
+
+/// ConstantInterpolator1D is a type of StepwiseInterpolator1D that gives only one value for any input.
+#[derive(Debug, Clone)]
+pub struct ConstantInterpolator1D
+{
+    value: Real,
+}
+
+impl ConstantInterpolator1D
+{
+    pub fn new(value: Real) -> ConstantInterpolator1D {
+        ConstantInterpolator1D {
+            value,
+        }
+    }
+}
+
+impl<T> Interpolator1D<T> for ConstantInterpolator1D
+where T: Num + PartialOrd + Copy
+{
+    fn interpolate(&self, _x: T) -> Real
+    {
+        self.value
+    }
+
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Array1<Real>
+    {
+        let result = Array1::from_elem(x.len(), self.value);
         result
     }
 }

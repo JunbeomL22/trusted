@@ -19,6 +19,18 @@ pub struct VectorData {
     name: String,
 }
 
+impl fmt::Debug for VectorData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VectorData")
+            .field("value", &self.value)
+            .field("dates", &self.dates)
+            .field("times", &self.times)
+            .field("market_datetime", &self.market_datetime)
+            .field("name", &self.name)
+            .finish()
+    }
+}
+
 impl Observable for VectorData {
     fn notify_observers(&mut self) {
         let observers = self.observers.clone();
@@ -36,19 +48,13 @@ impl Observable for VectorData {
     }
 }
 
-impl fmt::Debug for VectorData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("VectorData")
-            .field("value", &self.value)
-            .field("dates", &self.dates)
-            .field("times", &self.times)
-            .field("market_datetime", &self.market_datetime)
-            .field("name", &self.name)
-            .finish()
-    }
-}
 
 impl VectorData {
+    /// value: Array1<Real>,
+    /// dates: Option<Vec<OffsetDateTime>>,
+    /// times: Option<Array1<Time>>,
+    /// market_datetime: OffsetDateTime,
+    /// name: String
     pub fn new(
         value: Array1<Real>, 
         dates: Option<Vec<OffsetDateTime>>, 
@@ -154,13 +160,13 @@ impl VectorData {
         self.notify_observers();
     }
 
-    /// add bimp_value to self.value wehere self.times in (t1, t2]
-    fn add_bump_value(&mut self, t1: Time, t2: Time, bump_value: Real) {
+    /// add bimp_value to self.value wehere self.times in [t1, t2)
+    fn bimp_time_interval(&mut self, from_t: Time, before_t: Time, bump_value: Real) {
         assert!(
-            t1 < t2, 
-            "(occured at) add_bump_value(t1: {}, t2: {}, bump_value: {})",
-            t1,
-            t2,
+            from_t < before_t,
+            "(occured at) add_bump_value(from_t: {}, before_t: {}, bump_value: {})",
+            from_t,
+            before_t,
             bump_value
         );
 
@@ -169,7 +175,29 @@ impl VectorData {
         let eps = 1e-8;
 
         while i < time_length {
-            if self.times[i] > t1 + eps && self.times[i] <= t2 + eps {
+            if self.times[i] >= from_t - eps && self.times[i] < before_t - eps {
+                self.value[i] += bump_value;
+            }
+            i += 1;
+        }
+        self.notify_observers();
+    }
+
+    fn bump_date_interval(&mut self, from_date: OffsetDateTime, before_date: OffsetDateTime, bump_value: Real) {
+        assert!(
+            from_date < before_date,
+            "(occured at) bump_date_interval(from_date: {}, before_date: {}, bump_value: {})",
+            from_date,
+            before_date,
+            bump_value
+        );
+
+        let mut i = 0;
+        let time_length = self.dates.as_ref().unwrap().len();
+        let eps = time::Duration::seconds(1);
+
+        while i < time_length {
+            if self.dates.as_ref().unwrap()[i] >= from_date - eps && self.dates.as_ref().unwrap()[i] <= before_date + eps {
                 self.value[i] += bump_value;
             }
             i += 1;

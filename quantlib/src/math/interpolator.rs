@@ -28,7 +28,7 @@ pub trait InterpolatorReal1D
     fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<Real>) -> Array1<Real>;
 }
 
-/// I have chosen the domain to be Integer type to avoid floating point comparison error.
+/// I have chosen the domain to be Integer type to avoid floating point comparison error.]
 pub trait Interpolator1D<T>
 where T: Num + Copy + PartialOrd
 {
