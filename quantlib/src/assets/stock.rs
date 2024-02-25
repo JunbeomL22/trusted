@@ -1,7 +1,9 @@
 use crate::data::observable::Observable;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
+use crate::evaluation_date::EvaluationDate;
 use crate::parameter::Parameter;
 use time::OffsetDateTime;
+use crate::definitions::{Real, SEOUL_OFFSET};
 
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend
@@ -12,21 +14,25 @@ pub struct Stock {
     cached_datetime: OffsetDateTime,
     dividend: Option<DiscreteRatioDividend>,
     name: String,
+    code: String,
 }
 
 impl Stock {
     pub fn new(
         last_price: Real, 
-        market_datetime: OffsetDateTime, 
+        market_datetime: OffsetDateTime,
         dividend: Option<DiscreteRatioDividend>,
-        name: String
+        name: String,
+        code: String,
     ) -> Stock {
+        let cached_datetime = market_datetime.clone();
         Stock {
             last_price,
-            market_datetime.clone(),
-            cached_datetime: market_datetime,
+            market_datetime,
+            cached_datetime,
             dividend,
             name,
+            code,
         }
     }
 
@@ -56,16 +62,16 @@ impl Parameter for Stock {
             let eval_dt = data.get_date_clone();
             if self.market_datetime < eval_dt {   
                 let mut deduction: Real = 0.0;
-                for (&date, &div) in dividend.get_dividend().iter() {
-                    if (date > self.market_datetime) && (date <= eval_dt) {
+                for (date, div) in dividend.get_dividend().iter() {
+                    if (*date > self.market_datetime) && (*date <= eval_dt) {
                         self.last_price -= div;
                     }
                 }
                 self.market_datetime = eval_dt;   
             } else {
                 let mut addition: Real = 0.0;
-                for (&date, &div) in dividend.get_dividend().iter() {
-                    if (date > eval_dt) && (date <= self.market_datetime) {
+                for (date, div) in dividend.get_dividend().iter() {
+                    if (*date > eval_dt) && (*date <= self.market_datetime) {
                         self.last_price += div;
                     }
                 }
@@ -82,15 +88,16 @@ mod tests {
     use time::OffsetDateTime;
     use time;
     use crate::evaluation_date::EvaluationDate;
-    use crate::definitions::{CLOSING_TIME, SOUTH_KOREA_OFFSET};
+    use crate::definitions::{CLOSING_TIME, SEOUL_OFFSET};
     use std::rc::Rc;
     use std::cell::RefCell;
     use crate::data::vector_data::VectorData;
+    use ndarray::Array1;
 
     #[test]
     fn test_stock_update_evaluation_date() {
-        let (h, m, s) = SOUTH_KOREA_OFFSET;
-        let offset = time::UtcOffset::from_hms(h, m, s);
+        let (h, m, s) = SEOUL_OFFSET;
+        let offset = time::UtcOffset::from_hms(h, m, s).unwrap();
         let eval_dt = OffsetDateTime::new_in_offset(
             time::macros::date!(2021-01-01),
             CLOSING_TIME,
@@ -111,20 +118,19 @@ mod tests {
 
         let spot = 100.0;
         let div_amounts = vec![1.0, 1.0, 1.0];
-        let mut dividend = DiscreteRatioDividend::new(HashMap::new());
         let data = VectorData::new(
-            div_amounts.clone(),
+            Array1::from_vec(div_amounts.clone()),
             Some(div_dates.clone()),
             None,
             eval_dt.clone(),
-            "dividend vecto data".to_string()
+            "dividend vecto data".to_string(),
         );
 
         let dividend = DiscreteRatioDividend::new(
-            evalaution_date.clone(),
+            evaluation_date.clone(),
             &data,
-            spot,
             offset,
+            spot,
             "MockStock".to_string(),
         );
 
@@ -133,7 +139,8 @@ mod tests {
                 spot,
                 eval_dt.clone(),
                 Some(dividend),
-                "MockStock".to_string()
+                "MockStock".to_string(),
+                "MockCode".to_string(),
             )
         ));
 
@@ -141,7 +148,7 @@ mod tests {
 
         for i in 1..div_dates.len() {
             let period_str = format!("{}D", i);
-            *evaluation_date.borrow_mut() += period_str;
+            *evaluation_date.borrow_mut() += period_str.as_str();
             assert!(
                 (stock.borrow().get_last_price() - (spot - i as Real)).abs() < 1.0e-10,
                 "period_str: {}, stock: {}",

@@ -13,12 +13,12 @@ mod tests {
     use quantlib::data::vector_data::VectorData;
     use quantlib::parameters::enums::ZeroCurveCode;
     //use quantlib::utils::string_arithmetic::{add_period, sub_period};
-    use quantlib::definitions::{CLOSING_TIME, SOUTH_KOREA_OFFSET};
+    use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
 
     #[test]
     fn test_shared_evaluation_date() {
         // Create a shared EvaluationDate
-        let (h, m, s) = SOUTH_KOREA_OFFSET;
+        let (h, m, s) = SEOUL_OFFSET;
 
         let evaluation_offset = time::UtcOffset::from_hms(h, m, s).unwrap();
 

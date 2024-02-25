@@ -1,42 +1,45 @@
 use crate::definitions::Real;
-use time::OffsetDateTime;
+use time::{OffsetDateTime, format_description};
 use serde::{Deserialize, Serialize};
-use crate::parameters::currency::Currency;
+use crate::assets::currency::Currency;
 use crate::instrument::Instrument;
 //
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
-    strike: Real,
-    listing_date: OffsetDateTime,
-    last_trada_date: OffsetDateTime,
+    first_trade_date: OffsetDateTime,
+    last_trade_date: OffsetDateTime,
+    maturity: OffsetDateTime,
     settlement_date: OffsetDateTime,
     unit_notional: Real,
     currency: Currency,
-    underlyings: Vec<String>,
+    underlying_names: Vec<String>,
     name: String,
     code: String,
 }
 
-impl EquityFutures {
+impl StockFutures {
     pub fn new(
-        strike: Real,
+        first_trade_date: OffsetDateTime,
+        last_trade_date: OffsetDateTime,
         maturity: OffsetDateTime,
+        settlement_date: OffsetDateTime,
         unit_notional: Real,
         currency: Currency,
-        underlying: String,
-    ) -> EquityFutures {
-        EquityFutures {
-            strike,
+        underlying_name: String,
+        name: String,
+        code: String,
+    ) -> StockFutures {
+        StockFutures {
+            first_trade_date,
+            last_trade_date,
             maturity,
+            settlement_date,
             unit_notional,
             currency,
-            vec![underlying],
-
+            underlying_names: vec![underlying_name],
+            name,
+            code,
         }
-    }
-
-    pub fn get_strike(&self) -> Real {
-        self.strike
     }
 
     pub fn get_maturity(&self) -> &OffsetDateTime {
@@ -48,11 +51,11 @@ impl EquityFutures {
     }
 
     pub fn get_underlying_asset(&self) -> &Vec<String> {
-        &self.underlying_asset
+        &self.underlying_names
     }
 }
 
-impl Instrument for EquityFutures {
+impl Instrument for StockFutures {
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -69,33 +72,23 @@ impl Instrument for EquityFutures {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use time::macros::datetime;
     #[test]
-    fn test_equity_futures_serialization() {
-        let equity_futures = EquityFutures::new(
-            OffsetDateTime::now(), 
-            250_000.0, 
-            Currency::KRW, 
-            "KOSPI200".to_string()
+    fn test_stock_futures_serialization() {
+        let stock_futures = StockFutures::new(
+            datetime!(2021-01-01 09:00:00 +09:00),
+            datetime!(2022-01-01 15:40:00 +09:00),
+            datetime!(2022-01-01 15:40:00 +09:00),
+            datetime!(2022-01-01 15:40:00 +09:00),
+            100.0,
+            Currency::KRW,
+            "KOSPI200".to_string(),
+            "KOSPI2 Fut Mar24".to_string(),
+            "165AAA".to_string(),
         );
-        let serialized = to_string(&equity_futures).unwrap();
-        println!("{:?}", serialized);
-        let deserialized: EquityFutures = from_str(&serialized).unwrap();
 
-        assert_eq!(deserialized, equity_futures);
-    }
-
-    #[test] // json serialization
-    fn test_equity_futures_json() {
-        let equity_futures = EquityFutures::new(
-            OffsetDateTime::now(), 
-            250_000.0, 
-            Currency::KRW, 
-            "KOSPI200".to_string()
-        );
-        let json = json!(equity_futures);
-        println!("{:?}", json);
-        let deserialized: EquityFutures = serde_json::from_value(json).unwrap();
-
-        assert_eq!(deserialized, equity_futures);
+        let serialized = serde_json::to_string(&stock_futures).unwrap();
+        let deserialized: StockFutures = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(stock_futures, deserialized);
     }
 }

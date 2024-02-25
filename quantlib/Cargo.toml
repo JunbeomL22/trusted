@@ -7,7 +7,7 @@ edition = "2021"
 name = "quantlib"
 
 [dependencies]
-time = { version = "0.3.20", features = ["macros"]}
+time = { version = "0.3.34", features = ["macros", "serde", "formatting", "parsing"] }
 korean-lunar-calendar = "1.0.0"
 chrono = "0.4.33"
 log = "0.4.14"
