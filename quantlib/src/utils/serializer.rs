@@ -1,7 +1,7 @@
-use time::{OffsetDateTime, format_description};
+use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct Mock {
     pub name: String,
     pub dt: OffsetDateTime,
@@ -19,12 +19,18 @@ impl Mock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, to_string, from_str};
+    use time::macros::datetime;
+    use serde_json::{to_string, from_str};
+
     #[test]
     fn test_mock_serialization() {
-        let mock = Mock::new("test".to_string(), OffsetDateTime::parse("2021-01-01T00:00:00+00:00", &format_description!(""))).unwrap();
-        let serialized = to_string(&mock).unwrap();
+        let mock = Mock::new(
+            "test".to_string(), 
+            datetime!(2021-01-01 00:00:00 +0000)
+        );
+        let serialized = to_string(&mock).unwrap();    
         let deserialized: Mock = from_str(&serialized).unwrap();
         assert_eq!(mock, deserialized);
+    
     }
 }

@@ -6,10 +6,12 @@ use crate::parameter::Parameter;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::cell::RefCell;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct EvaluationDate {
     date: OffsetDateTime,
+    #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
 }
 

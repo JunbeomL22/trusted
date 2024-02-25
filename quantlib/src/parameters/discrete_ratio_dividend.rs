@@ -18,7 +18,7 @@ enum DividendInterpolator {
     Constant(ConstantInterpolator1D),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,

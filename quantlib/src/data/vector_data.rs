@@ -9,12 +9,15 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::Any;
 use ndarray::Array1;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct VectorData {
     value: Array1<Real>,
     dates: Option<Vec<OffsetDateTime>>,
     times: Array1<Time>,
     market_datetime: OffsetDateTime,
+    #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     name: String,
 }
