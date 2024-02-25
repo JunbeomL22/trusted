@@ -8,7 +8,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EvaluationDate {
     date: OffsetDateTime,
     #[serde(skip)]

@@ -1,5 +1,6 @@
 pub mod stock_futures_engine;
 pub mod engine;
+pub mod calculation_result;
 pub mod montecarlo {
     pub mod rand_generator;
 }

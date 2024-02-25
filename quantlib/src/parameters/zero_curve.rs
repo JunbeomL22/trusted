@@ -14,7 +14,7 @@ use crate::utils::string_arithmetic::add_period;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
-use ndarray::Array1;
+use ndarray::{Array1, array};
 
 #[derive(Clone, Debug)]
 enum ZeroCurveInterpolator {
@@ -141,6 +141,23 @@ impl ZeroCurve {
             name,
         };
         res
+    }
+
+    pub fn dummy_curve(&self) -> ZeroCurve {
+        let eval_date = self.evaluation_date.clone();
+        let data = VectorData::new(
+            array![0.0],
+            None, 
+            None, 
+            eval_date.borrow().get_date_clone(), 
+            "dummy curve in ZeroCurve::null_curve".to_string()
+        );
+        ZeroCurve::new(
+            eval_date,
+            &data,
+            ZeroCurveCode::Undefined,
+            "dummy curve in ZeroCurve::null_curve".to_string()
+        )
     }
     pub fn get_discount_factor(&self, time: Time) -> Real {
         self.discount_interpolator.interpolate(time)

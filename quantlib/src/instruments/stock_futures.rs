@@ -6,6 +6,7 @@ use crate::instrument::Instrument;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
+    average_price: Real,
     first_trade_date: OffsetDateTime,
     last_trade_date: OffsetDateTime,
     maturity: OffsetDateTime,
@@ -17,8 +18,26 @@ pub struct StockFutures {
     code: String,
 }
 
+impl Default for StockFutures {
+    fn default() -> StockFutures {
+        StockFutures {
+            average_price: 0.0,
+            first_trade_date: OffsetDateTime::now_utc(),
+            last_trade_date: OffsetDateTime::now_utc(),
+            maturity: OffsetDateTime::now_utc(),
+            settlement_date: OffsetDateTime::now_utc(),
+            unit_notional: 0.0,
+            currency: Currency::KRW,
+            underlying_names: vec![],
+            name: "".to_string(),
+            code: "".to_string(),
+        }
+    }
+}
+
 impl StockFutures {
     pub fn new(
+        average_price: Real,
         first_trade_date: OffsetDateTime,
         last_trade_date: OffsetDateTime,
         maturity: OffsetDateTime,
@@ -30,6 +49,7 @@ impl StockFutures {
         code: String,
     ) -> StockFutures {
         StockFutures {
+            average_price,
             first_trade_date,
             last_trade_date,
             maturity,
@@ -67,6 +87,14 @@ impl Instrument for StockFutures {
     fn get_currency(&self) -> &Currency {
         &self.currency
     }
+
+    fn clone_box(&self) -> Box<dyn Instrument> {
+        Box::new(self.clone())
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 // make a test for serialization
 #[cfg(test)]
@@ -76,6 +104,7 @@ mod tests {
     #[test]
     fn test_stock_futures_serialization() {
         let stock_futures = StockFutures::new(
+            100.0,
             datetime!(2021-01-01 09:00:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),

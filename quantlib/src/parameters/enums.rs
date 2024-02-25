@@ -8,6 +8,7 @@ pub enum ZeroCurveCode{
     USDGOV = 5,
     USDIRS = 6,
     USDOIS = 7,
+    KSD = 8, // KOFR -5bp
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

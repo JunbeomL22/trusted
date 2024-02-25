@@ -4,7 +4,7 @@ use crate::evaluation_date::EvaluationDate;
 use crate::parameter::Parameter;
 use time::OffsetDateTime;
 use crate::definitions::Real;
-use serde::{Serialize, Deserialize};
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend
@@ -53,7 +53,43 @@ impl Stock {
     pub fn get_name(&self) -> &String {
         &self.name
     }
+
+    /// If the dividend is None, this returns 1.0
+    pub fn get_dividend_deduction_ratio(&self, datetime: &OffsetDateTime) -> Real {
+        if let Some(dividend) = &self.dividend {
+            dividend.get_deduction_ratio(datetime)
+        } else {
+            1.0
+        }
+    }
 }
+
+/// implments arithmetic for Real
+/// This operates only on the last_price
+impl AddAssign<Real> for Stock {
+    fn add_assign(&mut self, rhs: Real) {
+        self.last_price += rhs;
+    }
+}
+
+impl SubAssign<Real> for Stock {
+    fn sub_assign(&mut self, rhs: Real) {
+        self.last_price -= rhs;
+    }
+}
+
+impl MulAssign<Real> for Stock {
+    fn mul_assign(&mut self, rhs: Real) {
+        self.last_price *= rhs;
+    }
+}
+
+impl DivAssign<Real> for Stock {
+    fn div_assign(&mut self, rhs: Real) {
+        self.last_price /= rhs;
+    }
+}
+
 
 impl Parameter for Stock {
     /// the stock price must be deducted by the dividend

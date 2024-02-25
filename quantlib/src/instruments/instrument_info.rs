@@ -1,16 +1,55 @@
 use crate::instrument::Instrument;
 use crate::instruments::stock_futures::StockFutures;
-
+use std::{any::Any, fmt::Debug};
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
-#[derive(Serialize, Deserialize)]
 pub struct InstrumentInfo {
     instrument: Box<dyn Instrument>,
+}
+
+impl Clone for InstrumentInfo {
+    fn clone(&self) -> Self {
+        Self {
+            instrument: self.instrument.clone(),
+        }
+    }
+}
+
+impl PartialEq for InstrumentInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.instrument.get_name() == other.instrument.get_name() &&
+        self.instrument.get_currency() == other.instrument.get_currency() &&
+        self.instrument.get_code() == other.instrument.get_code() &&
+        self.instrument.type_name() == other.instrument.type_name()
+    }
+}
+
+impl Debug for InstrumentInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstrumentInfo")
+            .field("Name", &self.instrument.get_name())
+            .field("Code", &self.instrument.get_code())
+            .field("Currency", &self.instrument.get_currency())
+            .field("Type", &self.instrument.type_name())
+            .finish()
+    }
 }
 
 impl InstrumentInfo {
     pub fn new(instrument: Box<dyn Instrument>) -> Self {
         InstrumentInfo { instrument }
+    }
+    
+    pub fn type_name(&self) -> &str {
+        self.instrument.type_name()
+    }
+}
+
+impl Default for InstrumentInfo {
+    fn default() -> Self {
+        InstrumentInfo {
+            instrument: Box::new(StockFutures::default()),
+        }
     }
 }
 
@@ -19,12 +58,14 @@ impl Serialize for InstrumentInfo {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: Serializer,
     {
-        if let Some(stock_futures) = self.instrument.downcast_ref::<StockFutures>() {
-            // If the downcast is successful, serialize the StockFutures
+        let any = self.instrument.as_any();
+        if let Some(stock_futures) = any.downcast_ref::<StockFutures>()
+        {
             return StockFutures::serialize(stock_futures, serializer);
         }
-        // If the downcast was not successful, return an error
-        Err(serde::ser::Error::custom("Object was not of type StockFutures"))
+        else {
+            return Err(serde::ser::Error::custom("Undefined serialization for InstrumentInfo."));
+        }
     }
 }
 
@@ -48,6 +89,7 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use serde_json::{to_string, from_str};
+    use crate::assets::currency::Currency;
 
     #[test]
     fn test_instrument_info_serialization() {
@@ -57,15 +99,22 @@ mod tests {
             datetime!(2021-01-01 00:00:00 +0000),
             datetime!(2021-01-01 00:00:00 +0000),
             100.0,
-            "USD".to_string(),
+            Currency::USD,
             "AAPL".to_string(),
-            "AAPL".to_string(),
+            "NameAAPL".to_string(),
+            "CodeAAPL".to_string(),
         );
+
         let instrument_info = InstrumentInfo::new(Box::new(stock_futures));
+
         let serialized = to_string(&instrument_info).unwrap();
+
         println!("serialized = {:?}", serialized);
+
         let deserialized: InstrumentInfo = from_str(&serialized).unwrap();
+
         println!("deserialized = {:?}", deserialized);
-        assert_eq!(instrument_info.instrument, deserialized.instrument);
+
+        assert_eq!(instrument_info, deserialized);
     }
 }
