@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use crate::assets::currency::Currency;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+use crate::definitions::Real;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstrumentInfo {
@@ -9,6 +10,7 @@ pub struct InstrumentInfo {
     code: String,
     currency: Currency,
     instrument_type: String,
+    unit_notional: Real,
     maturity: Option<OffsetDateTime>,
 }
 
@@ -19,6 +21,7 @@ impl Default for InstrumentInfo {
             code: "".to_string(),
             currency: Currency::NIL,
             instrument_type: "".to_string(),
+            unit_notional: 1.0,
             maturity: None,
         }
     }
@@ -30,6 +33,7 @@ impl InstrumentInfo {
         code: String,
         currency: Currency,
         instrument_type: String,
+        unit_notional: Real,
         maturity: Option<OffsetDateTime>,
     ) -> InstrumentInfo {
         InstrumentInfo {
@@ -37,6 +41,7 @@ impl InstrumentInfo {
             code,
             currency,
             instrument_type,
+            unit_notional,
             maturity,
         }
     }
@@ -44,12 +49,33 @@ impl InstrumentInfo {
     pub fn type_name(&self) -> &str {
         &self.instrument_type
     }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_code(&self) -> &String {
+        &self.code
+    }
+
+    pub fn get_currency(&self) -> &Currency {
+        &self.currency
+    }
+
+    pub fn get_unit_notional(&self) -> Real {
+        self.unit_notional
+    }
+
+    pub fn get_maturity(&self) -> &Option<OffsetDateTime> {
+        &self.maturity
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json;
+
     use crate::assets::currency::Currency;
 
     #[test]
@@ -59,6 +85,7 @@ mod tests {
             "CodeAAPL".to_string(),
             Currency::USD,
             "StockFutures".to_string(),
+            100.0,
             None,
         );
 

@@ -6,6 +6,7 @@ use crate::definitions::Real;
 pub trait Engine {
     fn npv(&self) -> HashMap<String, Real>; // Code -> NPV
     fn set_npv(&mut self); 
+    fn set_value(&mut self);
     fn fx_exposure(&self) -> HashMap<String, Real>; // Code -> FX Exposure
     fn set_fx_exposure(&mut self);
     fn delta(&self) -> HashMap<String, HashMap<String, Real>>; // Code -> (Underlying Code -> Delta)
@@ -13,7 +14,9 @@ pub trait Engine {
     fn set_gamma(&mut self) {}
     fn set_vega(&mut self) {}
     fn set_vega_structure(&mut self) {}
+    fn theta(&self) -> HashMap<String, Real>; // Code -> Theta
     fn set_theta(&mut self) {}
+    fn rho(&self) -> HashMap<String, HashMap<String, Real>>; // Code -> Rho
     fn set_rho(&mut self) {}
     fn set_rho_structure(&mut self) {}
     fn get_calculation_result(&self) -> &HashMap<String, CalculationResult>;

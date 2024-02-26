@@ -118,6 +118,10 @@ impl VectorData {
         }
     }
 
+    pub fn get_name_clone(&self) -> String {
+        self.name.clone()
+    }
+
     pub fn get_value_clone(&self) -> Array1<Real> {
         self.value.clone()
     }

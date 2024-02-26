@@ -18,3 +18,9 @@ pub const MARKING_DATE: time::Date = time::macros::date!(1970-01-01); // to make
 
 // hours, minutes, seconds
 pub const SEOUL_OFFSET: (i8, i8, i8) = (9, 0, 0);
+
+// pnl units
+pub const DELTA_PNL_UNIT: Real = 0.01;
+pub const GAMMA_PNL_UNIT: Real = 0.01;
+pub const VEGA_PNL_UNIT: Real = 0.01;
+pub const RHO_PNL_UNIT: Real = 0.0001;

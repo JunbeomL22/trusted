@@ -3,7 +3,7 @@ use quantlib::Real;
 use ndarray::Array2;
 use ndarray::prelude::*;
 //use ndarray_linalg::cholesky::*;
-use quantlib::utils::chlescky_factorization::cholesky_decomposition;
+use quantlib::utils::cholescky_factorization::cholesky_decomposition;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 

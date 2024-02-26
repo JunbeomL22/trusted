@@ -1,6 +1,6 @@
 use ndarray::Array2;
 //use ndarray_linalg::cholesky::*;
-use crate::utils::chlescky_factorization::cholesky_decomposition;
+use crate::utils::cholescky_factorization::cholesky_decomposition;
 use crate::definitions::Real;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};

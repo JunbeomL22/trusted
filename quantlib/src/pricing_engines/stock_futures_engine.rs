@@ -9,7 +9,11 @@ use crate::pricing_engines::engine::Engine;
 use crate::pricing_engines::calculation_result::CalculationResult;
 use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use std::collections::HashMap;
+use std::vec;
+use crate::data::vector_data::VectorData;
 use crate::instrument::Instrument;
+use crate::definitions::Time;
+use crate::definitions::{DELTA_PNL_UNIT, RHO_PNL_UNIT};
 //
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -72,6 +76,7 @@ impl StockFuturesEngine {
                 code.clone(),
                 instrument.get_currency().clone(),
                 instrument.type_name().to_string(),
+                instrument.get_unit_notional(),
                 Some(instrument.get_maturity().clone()),
             );
 
@@ -115,6 +120,7 @@ impl StockFuturesEngine {
 impl Engine for StockFuturesEngine {
     fn calculate(&mut self) {
         self.set_npv();
+        self.set_value();
         self.set_fx_exposure();
         if self.configuration.get_delta_calculation() {
             self.set_delta();
@@ -125,6 +131,11 @@ impl Engine for StockFuturesEngine {
         if self.configuration.get_rho_calculation() {
             self.set_rho();
         }
+
+        if self.configuration.get_theta_calculation() {
+            self.set_theta();
+        }
+
     }
     fn npv(&self) -> HashMap<String, Real> {
         let mut npv: HashMap<String, Real> = HashMap::new();
@@ -144,6 +155,16 @@ impl Engine for StockFuturesEngine {
         }
     }
 
+    fn set_value(&mut self) {
+        for instrument in &self.instruments {
+            let code = instrument.get_code();
+            self.results.get_mut(code)
+            .expect(format!("{} is not in the results", code).as_str())
+            .set_value();
+        }
+    }
+
+    /// 1% pnl delta
     fn delta(&self) -> HashMap<String, HashMap<String, Real>> {
         let mut all_deltas: HashMap<String, HashMap<String, Real>> = HashMap::new();
 
@@ -160,7 +181,8 @@ impl Engine for StockFuturesEngine {
                 *self.stock.borrow_mut() *= (1.0 - delta_bump_ratio) / (1.0 + delta_bump_ratio);
                 let down_price = self.fair_forward(instrument.get_maturity());
                 *self.stock.borrow_mut() /= 1.0 - delta_bump_ratio;
-                let delta = (up_price - down_price) / (2.0 * delta_bump_ratio * self.stock.borrow().get_last_price());
+                let mut delta = (up_price - down_price) / 2.0 * DELTA_PNL_UNIT / delta_bump_ratio;
+                delta *= instrument.get_unit_notional();
                 instrument_delta.insert(underlying_code.clone(), delta);
             }
             all_deltas.insert(code.clone(), instrument_delta);
@@ -175,6 +197,8 @@ impl Engine for StockFuturesEngine {
         }
     }
 
+    /// fx exposure in value based, i.e., unit_notional is condeired
+    /// fx_exposure = (npv - average_trade_price) * unit_notional
     fn fx_exposure(&self) -> HashMap<String, Real> {
         let mut fx_exposure_map: HashMap<String, Real> = HashMap::new();
         for instrument in &self.instruments {
@@ -183,7 +207,7 @@ impl Engine for StockFuturesEngine {
             .expect(format!("{} is not in the results", code).as_str())
             .get_npv()
             .expect(format!("{} does not have npv", code).as_str());
-            let fx_exposure = npv - instrument.get_average_trade_price();
+            let fx_exposure = (npv - instrument.get_average_trade_price()) * instrument.get_unit_notional();
             fx_exposure_map.insert(code.clone(), fx_exposure);
         }
         fx_exposure_map
@@ -196,6 +220,109 @@ impl Engine for StockFuturesEngine {
         }
     }
 
+    fn theta(&self) -> HashMap<String, Real> {
+        let mut all_thetas: HashMap<String, Real> = HashMap::new();
+        
+        // find the minimum maturity in the futures
+        let mut min_maturity = self.instruments[0].get_maturity();
+        for instrument in &self.instruments {
+            if instrument.get_maturity() < min_maturity {
+                min_maturity = instrument.get_maturity();
+            }
+        }
+        // adjust theta_day so that it does not exceed the maturity
+        let mut theta_sec = (self.configuration.get_theta_day() * 24 * 60 * 60) as Time;
+
+        let gap_sec = (*min_maturity - self.evaluation_date.borrow().get_date_clone()).whole_seconds() as Time;
+
+        if  gap_sec < theta_sec {
+            theta_sec = gap_sec;
+        };
+
+        let theta_day_string = format!("{}sec", theta_sec);
+        *self.evaluation_date.borrow_mut() += theta_day_string.as_str();
+        let up_price = self.npv();
+        *self.evaluation_date.borrow_mut() -= theta_day_string.as_str();
+
+        for instrument in &self.instruments {
+            let code = instrument.get_code();
+            let npv = self.results.get(code)
+            .expect(format!("{} is not in the results", code).as_str())
+            .get_npv()
+            .expect(format!("{} does not have npv", code).as_str());
+            let theta = (up_price.get(code).unwrap() - npv) / self.configuration.get_theta_day() as Real;
+            all_thetas.insert(code.clone(), theta * instrument.get_unit_notional());
+        }
+        all_thetas
+    }
+
+    fn set_theta(&mut self) {
+        // set theta day in results
+        let theta_day = self.configuration.get_theta_day();
+        for (_, result) in &mut self.results {
+            result.set_theta_day(theta_day);
+        }
+
+        let theta = self.theta();
+        // set thetas to the results
+        for (code, value) in theta {
+            self.results.get_mut(&code).unwrap().set_theta(value);
+        }
+    }
+
+    fn rho(&self) -> HashMap<String, HashMap<String, Real>> {
+        let rho_bump_value = self.configuration.get_rho_bump_value();
+        // make a hash map for the VectorData with the key as its name
+        let mut curve_map: HashMap<String, Rc<RefCell<VectorData>>> = HashMap::new();
+        // collateral curve
+        curve_map.insert(
+            self.collateral_curve.borrow().get_name_clone(),
+            self.collateral_curve.borrow().get_data_clone()
+        );
+        // borrowing curve
+        curve_map.insert(
+            self.borrowing_curve.borrow().get_name_clone(),
+            self.borrowing_curve.borrow().get_data_clone()
+        );
+
+        let mut vec_format: Vec<(String, String, Real)> = vec![]; // inst_code, curve_name, rho
+
+        for (curve_name, curve_data) in curve_map {
+            *curve_data.borrow_mut() += rho_bump_value;
+            let up_price = self.npv();
+            *curve_data.borrow_mut() -= rho_bump_value;
+            for instrument in &self.instruments {
+                let code = instrument.get_code();
+                let npv = self.results.get(code)
+                .expect(format!("{} is not in the results", code).as_str())
+                .get_npv()
+                .expect(format!("{} does not have npv", code).as_str());
+                let rho = (up_price.get(code).unwrap() - npv) / rho_bump_value * RHO_PNL_UNIT;
+                let unit = instrument.get_unit_notional();
+                vec_format.push((code.clone(), curve_name.clone(), rho*unit));
+            }
+        }
+        let mut all_rhos: HashMap<String, HashMap<String, Real>> = HashMap::new();
+        // convert vec_format to all_rhos
+        for (code, curve_name, rho) in vec_format {
+            if all_rhos.contains_key(&code) {
+                all_rhos.get_mut(&code).unwrap().insert(curve_name, rho);
+            } else {
+                let mut curve_rho: HashMap<String, Real> = HashMap::new();
+                curve_rho.insert(curve_name, rho);
+                all_rhos.insert(code.clone(), curve_rho);
+            }
+        }
+        all_rhos
+    }
+
+    fn set_rho(&mut self) {
+        let rho = self.rho();
+        for (inst_code, value) in rho {
+            self.results.get_mut(&inst_code).unwrap().set_rho(value.clone());
+        }
+    }
+
     fn get_calculation_result(&self) -> &HashMap<String, CalculationResult> {
         &self.results
     }
@@ -204,7 +331,8 @@ impl Engine for StockFuturesEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assets::currency::Currency, instruments::{instrument_info::InstrumentInfo, stock_futures::StockFutures}, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
+    use crate::data::observable::Observable;
+    use crate::{assets::currency::Currency, instruments::stock_futures::StockFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
     use time::{macros::datetime, UtcOffset};
     use crate::definitions::SEOUL_OFFSET;
     use crate::parameters::enums::ZeroCurveCode;
@@ -225,7 +353,7 @@ mod tests {
 
         // make a vector data for dividend ratio
         let dividend_data = VectorData::new(
-            Array1::from(vec![1.0, 0.5]),
+            Array1::from(vec![3.0, 3.0]),
             Some(vec![datetime!(2024-01-15 00:00:00 +09:00), datetime!(2024-02-15 00:00:00 +09:00)]),
             None,
             market_datetime.clone(),
@@ -255,7 +383,7 @@ mod tests {
         );
 
         // make a zero curve which represents KSD curve which is equivelantly KRWGOV - 5bp
-        let ksd_data = VectorData::new(
+        let _ksd_data = VectorData::new(
             Array1::from(vec![0.0345, 0.0345]),
             Some(vec![datetime!(2021-01-02 16:00:00 +09:00), datetime!(2022-01-01 00:00:00 +09:00)]),
             None,
@@ -263,16 +391,24 @@ mod tests {
             "KSD".to_string(),
         );
 
+        let ksd_data = Rc::new(
+            RefCell::new(
+                _ksd_data
+            )
+        );
+
         let ksd_curve = Rc::new(
             RefCell::new(
                 ZeroCurve::new(
                     evaluation_date.clone(),
-                    &ksd_data,
+                    ksd_data.clone(),
                     ZeroCurveCode::KSD,
                     "KSD".to_string(),
                 )
             )
         );
+
+        ksd_data.borrow_mut().add_observer(ksd_curve.clone());
 
         let dummy_curve = Rc::new(
             RefCell::new(ZeroCurve::dummy_curve())
@@ -297,7 +433,11 @@ mod tests {
         // make a stock futures engine
         let configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
-        .with_delta_bump_ratio(0.01); // 1% bump for delta calculation
+        .with_delta_bump_ratio(0.01) // 1% bump for delta calculation
+        .with_theta_calculation(true)
+        .with_theta_day(20) // 1 day for theta calculation
+        .with_rho_calculation(true)
+        .with_rho_bump_value(0.0001); // 0.01% bump for rho calculation
 
         let mut engine = StockFuturesEngine::initialize(
             stock.clone(),
@@ -309,13 +449,32 @@ mod tests {
 
         // test calculate
         engine.calculate();
-        println!("stock futures engine has been calculated successfully");
-        println!("configuration = {:?}", engine.configuration);
-        println!("stock = {:?}", engine.stock.borrow());
-        println!("instruments = {:?}", engine.instruments);
-        println!("results = {:?}", engine.results);
+        println!("stock futures calculation example:\n");
+        println!("  *configuration = {:?}\n", engine.configuration);
+        println!("  *stock = {:?}\n", engine.stock.borrow());
+        println!("  *instruments = {:?}\n", engine.instruments);
+        println!("  *results = {:?}\n", engine.results);
         
-        assert!(true);
+        assert!(engine.results.len() > 0);
+        assert!(
+            (engine.stock.borrow().get_last_price() - 350.0).abs() < 1.0e-6,
+            "stock price: {}, expected: 350.0. Have you changed any logic in stock and StockFuturesEngine::theta?",
+            engine.stock.borrow().get_last_price()
+        );
+
+        //check delta is approximately 865,966.75
+        assert!(
+            (engine.results.get("165XXXX").as_ref().unwrap().get_delta().as_ref().unwrap().get("KOSPI2").unwrap() - 865_966.75).abs() < 1.0e-6,
+            "delta is not approximately 865,966.75. delta: {}, expected: 865,966.75",
+            engine.results.get("165XXXX").as_ref().unwrap().get_delta().as_ref().unwrap().get("KOSPI2").unwrap()
+        );
+
+        //check theta is approximately -8,153.9155
+        assert!(
+            (engine.results.get("165XXXX").as_ref().unwrap().get_theta().unwrap() + 8_153.9155).abs() < 1.0e-6,
+            "theta is not approximately -8,153.9155. theta: {}, expected: -8,153.9155",
+            engine.results.get("165XXXX").as_ref().unwrap().get_theta().unwrap()
+        );
 
     }
 }

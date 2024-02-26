@@ -84,6 +84,10 @@ impl Instrument for StockFutures {
         &self.name
     }
 
+    fn get_unit_notional(&self) -> Real {
+        self.unit_notional
+    }
+    
     fn get_maturity(&self) -> &OffsetDateTime {
         &self.maturity
     }

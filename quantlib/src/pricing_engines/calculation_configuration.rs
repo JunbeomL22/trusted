@@ -1,5 +1,6 @@
 use crate::definitions::{Real, Integer};
 use serde::{Serialize, Deserialize};
+use anyhow::{anyhow, Result};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StickynessType {
@@ -78,8 +79,27 @@ impl CalculationConfiguration {
         gamma_bump_ratio: Real,
         vega_bump_value: Real,
         rho_bump_value: Real,
-    ) -> CalculationConfiguration {
-        CalculationConfiguration {
+    ) -> Result<CalculationConfiguration> {
+        if delta != gamma {
+            return Err(anyhow!("delta and gamma must be both true or both false"));
+        }
+        if delta_bump_ratio <= 0.0 {
+            return Err(anyhow!("delta_bump_ratio must be > 0.0, got {}", delta_bump_ratio));
+        }
+        if gamma_bump_ratio <= 0.0 {
+            return Err(anyhow!("gamma_bump_ratio must be > 0.0, got {}", gamma_bump_ratio));
+        }
+        if rho_bump_value <= 0.0 {
+            return Err(anyhow!("rho_bump must be > 0.0, got {}", rho_bump_value));
+        }
+        if vega_bump_value <= 0.0 {
+            return Err(anyhow!("vega_bump must be > 0.0, got {}", vega_bump_value));
+        }
+        if theta_day <= 0 {
+            return Err(anyhow!("theta_day must be > 0, got {}", theta_day));
+        }
+        
+        Ok(CalculationConfiguration {
             npv,
             delta,
             gamma,
@@ -95,7 +115,12 @@ impl CalculationConfiguration {
             vega_bump_value,
             rho_bump_value,
             theta_day,
-        }
+        })
+    }
+
+    pub fn with_theta_day(mut self, theta_day: Integer) -> CalculationConfiguration {
+        self.theta_day = theta_day;
+        self
     }
 
     pub fn with_delta_calculation(mut self, delta: bool) -> CalculationConfiguration {
@@ -155,11 +180,6 @@ impl CalculationConfiguration {
 
     pub fn with_rho_bump_value(mut self, rho_bump_value: Real) -> CalculationConfiguration {
         self.rho_bump_value = rho_bump_value;
-        self
-    }
-
-    pub fn with_theta_day(mut self, theta_day: Integer) -> CalculationConfiguration {
-        self.theta_day = theta_day;
         self
     }
 

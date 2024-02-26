@@ -33,6 +33,7 @@ pub struct ZeroCurve {
     discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
     time_calculator: NullCalendar,
+    data: Rc<RefCell<VectorData>>,
     code: ZeroCurveCode,
     name: String,
 }
@@ -53,14 +54,18 @@ impl ZeroCurve {
     /// 
     /// This setup is chosen for afety and clean code but it is not the most efficient way. 
     /// I leave the optimization for later.
+    pub fn get_data_clone(&self) -> Rc<RefCell<VectorData>> {
+        self.data.clone()
+    }
+    
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>, 
-        data: &VectorData, 
+        data: Rc<RefCell<VectorData>>,
         code: ZeroCurveCode, 
         name: String
     ) -> ZeroCurve {
-        let rate_times = data.get_times_clone();
-        let zero_rates = data.get_value_clone();
+        let rate_times = data.borrow().get_times_clone();
+        let zero_rates = data.borrow().get_value_clone();
         let time_calculator =  NullCalendar {};
 
         assert!(
@@ -131,12 +136,12 @@ impl ZeroCurve {
         
         let res = ZeroCurve {
             evaluation_date: evaluation_date.clone(),
-            //data: data.clone(),
             rate_interpolator,
             discount_times,
             discount_factors,
             discount_interpolator,
             time_calculator,
+            data,
             code,
             name,
         };
@@ -146,16 +151,18 @@ impl ZeroCurve {
     pub fn dummy_curve() -> ZeroCurve {
         let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
         let evaluation_date = Rc::new(RefCell::new(dt));
-        let data = VectorData::new(
+        let _data = VectorData::new(
             array![0.0],
             Some(vec![datetime!(2080-01-01 00:00:00 UTC)]), // dummy date
             None, 
             evaluation_date.borrow().get_date_clone(), 
             "dummy curve in ZeroCurve::null_curve".to_string()
         );
+
+        let data = Rc::new(RefCell::new(_data));
         ZeroCurve::new(
             evaluation_date,
-            &data,
+            data,
             ZeroCurveCode::Undefined,
             "dummy curve in ZeroCurve::null_curve".to_string()
         )
@@ -335,7 +342,7 @@ mod tests {
             add_period(&param_dt, "5Y")
             ];
 
-        let data = VectorData::new(
+        let _data = VectorData::new(
             array![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
             Some(dates.clone()), 
             None, 
@@ -343,13 +350,19 @@ mod tests {
             "vector data in test_zero_curve".to_string()
         );
 
+        let data = Rc::new(RefCell::new(_data));
 
-        let zero_curve = ZeroCurve::new(
+
+        let _zero_curve = ZeroCurve::new(
             evaluation_date,
-            &data,
+            data.clone(),
             ZeroCurveCode::Undefined,
             "test".to_string()
         );
+
+        let zero_curve = Rc::new(RefCell::new(_zero_curve));
+        
+        data.borrow_mut().add_observer(zero_curve.clone());
 
         let cal = NullCalendar {};
         let times: Vec<Time> = dates
@@ -369,10 +382,10 @@ mod tests {
         let allow_error = 1e-6;
         for i in 0..times.len() {
             assert!(
-                (zero_curve.get_discount_factor(times[i]) - expected_discount_factors[i]) < allow_error,
+                (zero_curve.borrow().get_discount_factor(times[i]) - expected_discount_factors[i]) < allow_error,
                 "i: {}, zero_curve.get_discount_factor(times[i]): {}, expected_discount_factors[i]: {}",
                 i,
-                zero_curve.get_discount_factor(times[i]),
+                zero_curve.borrow().get_discount_factor(times[i]),
                 expected_discount_factors[i]
                 );
         }
