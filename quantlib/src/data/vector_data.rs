@@ -164,7 +164,7 @@ impl VectorData {
     }
 
     /// add bimp_value to self.value wehere self.times in [t1, t2)
-    fn bimp_time_interval(&mut self, from_t: Time, before_t: Time, bump_value: Real) {
+    fn bump_time_interval(&mut self, from_t: Time, before_t: Time, bump_value: Real) {
         assert!(
             from_t < before_t,
             "(occured at) add_bump_value(from_t: {}, before_t: {}, bump_value: {})",
@@ -316,3 +316,31 @@ impl DivAssign<Array1<Real>> for VectorData {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+    use time::macros::datetime;
+    use ndarray::array;
+
+    #[test]
+    fn test_vector_data_serialization() {
+        let vector_data = VectorData::new(
+            array![1.0, 2.0, 3.0, 4.0, 5.0], 
+            None, 
+            Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
+            datetime!(2020-01-01 00:00:00 UTC), 
+            "test_vector_data_serialization".to_string()
+        );
+
+        let serialized = serde_json::to_string(&vector_data).unwrap();
+        println!("VectorData serialized = {}", serialized);
+        let desrialized: VectorData = serde_json::from_str(&serialized).unwrap();
+        println!("VectorData deserialized = {:?}", desrialized);
+        
+        // value check
+        assert_eq!(vector_data.get_value_clone(), desrialized.get_value_clone());
+        // times check
+        assert_eq!(vector_data.get_times_clone(), desrialized.get_times_clone());
+    }
+} 

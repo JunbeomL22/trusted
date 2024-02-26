@@ -1,9 +1,5 @@
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::definitions::{Real, Integer};
-//use crate::evaluation_date::EvaluationDate;
-//use time::Duration;
-//use std::rc::Rc;
-//use std::cell::RefCell;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::{Duration, OffsetDateTime};
@@ -12,8 +8,12 @@ use time::{Duration, OffsetDateTime};
 /// It is used to store the result of the calculation of the pricing engine.
 /// instrument: InstrumentInfo
 /// evaluation_date: OffsetDateTime
-/// npv: Option<Real>
+///
+/// npv: Option<Real>: Net Present Value
+/// exclude cashflow at evaluation date, not considering unit_notional
+///
 /// delta: Option<HashMap<String, Real>>
+///
 /// gamma: Option<HashMap<String, Real>>
 /// vega: Option<HashMap<String, Real>>
 /// vega_strucure: Option<HashMap<String, HashMap<Duration, Real>>>
@@ -28,6 +28,7 @@ pub struct CalculationResult {
     instrument: InstrumentInfo,
     evaluation_date: OffsetDateTime,
     npv: Option<Real>, 
+    fx_exposure: Option<Real>,
     delta: Option<HashMap<String, Real>>,
     gamma: Option<HashMap<String, Real>>,
     vega: Option<HashMap<String, Real>>,
@@ -45,6 +46,7 @@ impl Default for CalculationResult {
             instrument: InstrumentInfo::default(),
             evaluation_date: OffsetDateTime::now_utc(),
             npv: None,
+            fx_exposure: None,
             delta: None,
             gamma: None,
             vega: None,
@@ -65,6 +67,7 @@ impl CalculationResult {
             instrument,
             evaluation_date,
             npv: None,
+            fx_exposure: None,
             delta: None,
             gamma: None,
             vega: None,
@@ -76,8 +79,17 @@ impl CalculationResult {
             cashflow_inbetween: None,
         }
     }
+
     pub fn set_npv(&mut self, npv: Real) {
         self.npv = Some(npv);
+    }
+
+    pub fn get_npv(&self) -> Option<Real> {
+        self.npv
+    }
+
+    pub fn set_fx_exposure(&mut self, fx_exposure: Real) {
+        self.fx_exposure = Some(fx_exposure);
     }
 
     pub fn set_delta(&mut self, delta: HashMap<String, Real>) {
@@ -116,7 +128,7 @@ impl CalculationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assets::currency::Currency, instruments::{instrument_info::InstrumentInfo, stock_futures::StockFutures}};
+    use crate::{assets::currency::Currency, instrument::Instrument, instruments::{instrument_info::InstrumentInfo, stock_futures::StockFutures}};
     use time::macros::datetime;
     use std::collections::HashMap;
 
@@ -167,18 +179,25 @@ mod tests {
     #[test] // test serialization
     fn test_calculation_result_serialization() {
         let stock_futures = StockFutures::new(
+            300.0,
             datetime!(2021-01-01 09:00:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
-            100.0,
+            250_000.0,
             Currency::KRW,
             "KOSPI200".to_string(),
             "KOSPI200".to_string(),
             "KOSPI200".to_string(),
         );
 
-        let instrument = InstrumentInfo::new(Box::new(stock_futures));
+        let instrument = InstrumentInfo::new(
+            stock_futures.get_name().clone(),
+            stock_futures.get_code().clone(),
+            stock_futures.get_currency().clone(),
+            stock_futures.type_name().to_string(),
+            Some(stock_futures.get_maturity().clone()),
+        );
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
@@ -188,7 +207,8 @@ mod tests {
         delta.insert("KOSPI200".to_string(), 0.1);
         result.set_delta(delta);
 
-        let serialized = serde_json::to_string(&result).unwrap();
+        let serialized = serde_json::to_string_pretty(&result).unwrap();
+        println!("serialized = {}", serialized);
         let deserialized: CalculationResult = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(deserialized, result);

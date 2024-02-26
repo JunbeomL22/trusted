@@ -6,7 +6,7 @@ use crate::instrument::Instrument;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
-    average_price: Real,
+    average_trade_price: Real,
     first_trade_date: OffsetDateTime,
     last_trade_date: OffsetDateTime,
     maturity: OffsetDateTime,
@@ -21,7 +21,7 @@ pub struct StockFutures {
 impl Default for StockFutures {
     fn default() -> StockFutures {
         StockFutures {
-            average_price: 0.0,
+            average_trade_price: 0.0,
             first_trade_date: OffsetDateTime::now_utc(),
             last_trade_date: OffsetDateTime::now_utc(),
             maturity: OffsetDateTime::now_utc(),
@@ -37,7 +37,7 @@ impl Default for StockFutures {
 
 impl StockFutures {
     pub fn new(
-        average_price: Real,
+        average_trade_price: Real,
         first_trade_date: OffsetDateTime,
         last_trade_date: OffsetDateTime,
         maturity: OffsetDateTime,
@@ -49,7 +49,7 @@ impl StockFutures {
         code: String,
     ) -> StockFutures {
         StockFutures {
-            average_price,
+            average_trade_price,
             first_trade_date,
             last_trade_date,
             maturity,
@@ -73,11 +73,19 @@ impl StockFutures {
     pub fn get_underlying_asset(&self) -> &Vec<String> {
         &self.underlying_names
     }
+
+    pub fn get_average_trade_price(&self) -> Real {
+        self.average_trade_price
+    }
 }
 
 impl Instrument for StockFutures {
     fn get_name(&self) -> &String {
         &self.name
+    }
+
+    fn get_maturity(&self) -> &OffsetDateTime {
+        &self.maturity
     }
 
     fn get_code(&self) -> &String {

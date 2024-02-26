@@ -1,6 +1,7 @@
 use crate::assets::currency::Currency;
 use std::any::Any;
 use crate::util::type_name;
+use time::OffsetDateTime;
 
 pub trait Instrument: Any {
     fn as_any(&self) -> &dyn Any;
@@ -9,6 +10,7 @@ pub trait Instrument: Any {
     fn get_currency(&self) -> &Currency;
     fn type_name(&self) -> &str { type_name(&self) }
     fn clone_box(&self) -> Box<dyn Instrument>;
+    fn get_maturity(&self) -> &OffsetDateTime;
 }
 
 impl Clone for Box<dyn Instrument> {
@@ -16,5 +18,3 @@ impl Clone for Box<dyn Instrument> {
         self.clone_box()
     }
 }
-
-

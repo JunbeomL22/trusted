@@ -1,4 +1,4 @@
-use crate::data::observable::Observable;
+use crate::assets::currency::Currency;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameter::Parameter;
@@ -13,6 +13,7 @@ pub struct Stock {
     last_price: Real,
     market_datetime: OffsetDateTime,
     dividend: Option<DiscreteRatioDividend>,
+    currency: Currency,
     name: String,
     code: String,
 }
@@ -22,6 +23,7 @@ impl Stock {
         last_price: Real, 
         market_datetime: OffsetDateTime,
         dividend: Option<DiscreteRatioDividend>,
+        currency: Currency,
         name: String,
         code: String,
     ) -> Stock {
@@ -29,6 +31,7 @@ impl Stock {
             last_price,
             market_datetime,
             dividend,
+            currency,
             name,
             code,
         }
@@ -52,6 +55,10 @@ impl Stock {
 
     pub fn get_name(&self) -> &String {
         &self.name
+    }
+
+    pub fn get_currency(&self) -> &Currency {
+        &self.currency
     }
 
     /// If the dividend is None, this returns 1.0
@@ -129,6 +136,7 @@ mod tests {
     use std::cell::RefCell;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
+    use crate::data::observable::Observable;
 
     #[test]
     fn test_stock_update_evaluation_date() {
@@ -175,6 +183,7 @@ mod tests {
                 spot,
                 eval_dt.clone(),
                 Some(dividend),
+                Currency::KRW,
                 "MockStock".to_string(),
                 "MockCode".to_string(),
             )

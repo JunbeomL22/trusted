@@ -1,4 +1,4 @@
-use time::OffsetDateTime;
+use time::{OffsetDateTime, macros::datetime};
 use crate::parameters::enums::{ZeroCurveCode, Compounding};
 use crate::evaluation_date::EvaluationDate;
 use crate::data::{vector_data::VectorData, observable::Observable};
@@ -143,17 +143,18 @@ impl ZeroCurve {
         res
     }
 
-    pub fn dummy_curve(&self) -> ZeroCurve {
-        let eval_date = self.evaluation_date.clone();
+    pub fn dummy_curve() -> ZeroCurve {
+        let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
+        let evaluation_date = Rc::new(RefCell::new(dt));
         let data = VectorData::new(
             array![0.0],
+            Some(vec![datetime!(2080-01-01 00:00:00 UTC)]), // dummy date
             None, 
-            None, 
-            eval_date.borrow().get_date_clone(), 
+            evaluation_date.borrow().get_date_clone(), 
             "dummy curve in ZeroCurve::null_curve".to_string()
         );
         ZeroCurve::new(
-            eval_date,
+            evaluation_date,
             &data,
             ZeroCurveCode::Undefined,
             "dummy curve in ZeroCurve::null_curve".to_string()
