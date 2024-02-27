@@ -286,6 +286,7 @@ mod tests {
     use crate::parameters::enums::ZeroCurveCode;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
+    use crate::pricing_engines::engine::Engine;
 
     #[test]
     fn test_stock_futures_engine() {
@@ -387,16 +388,23 @@ mod tests {
         .with_rho_calculation(true)
         .with_rho_bump_value(0.0001); // 0.01% bump for rho calculation
 
-        let mut engine = StockFuturesEngine::initialize(
+        let mut pricer = StockFuturesPricer::initialize(
             stock.clone(),
             ksd_curve.clone(),
             dummy_curve.clone(),
-            evaluation_date.clone())
-            .with_instruments(&vec![futures])
-            .with_configuration(configuration);
-
+            evaluation_date.clone()
+        );
+            
+        // make engine for stock futures
+        let mut engine = Engine::new(
+            configuration,
+            stock.clone(),
+            vec![Instrument::StockFutures(futures)],
+            pricer
+        );
+        
         // test calculate
-        engine.calculate();
+        pricer.calculate();
         println!("stock futures calculation example:\n");
         println!("  *configuration = {:?}\n", engine.configuration);
         println!("  *stock = {:?}\n", engine.stock.borrow());

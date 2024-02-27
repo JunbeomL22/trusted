@@ -205,7 +205,7 @@ mod tests {
             stock_futures.get_name().clone(),
             stock_futures.get_code().clone(),
             stock_futures.get_currency().clone(),
-            stock_futures.type_name().to_string(),
+            stock_futures.get_type_name().to_string(),
             stock_futures.get_unit_notional(),
             Some(stock_futures.get_maturity().clone()),
         );

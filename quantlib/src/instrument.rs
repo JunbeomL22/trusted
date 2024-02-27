@@ -32,3 +32,7 @@ impl Instrument {
         }
     }
 }
+
+pub struct Instruments {
+    instruments: Vec<Instrument>,
+}

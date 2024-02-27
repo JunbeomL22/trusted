@@ -4,7 +4,7 @@ use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use crate::parameters::zero_curve::{self, ZeroCurve};
 use crate::util::type_name;
-use crate::instruments::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::bond::fixed_coupon_bond::FixedCouponBond;
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::Instrument;
 use crate::pricing_engines::calculation_result::CalculationResult;
@@ -115,6 +115,23 @@ impl Engine {
         }
     }
 
+    /// Set the value of the instruments which means npv * unit_notional
+    pub fn set_value(&mut self) {
+        for (_code, result) in self.calculation_result.iter_mut() {
+            result.set_value();
+        }
+    }
+
+
+    pub fn calculate(&mut self) {
+        self.set_npv();
+        self.set_value();
+        // if delta is true, calculate delta
+        if self.calculation_configuration.get_delta_calculation() {
+            self.set_delta();
+        }
+
+    }
     pub fn get_calculation_result(&self) -> &HashMap<String, CalculationResult> {
         &self.calculation_result
     }
