@@ -58,7 +58,7 @@ fn main() {
         add_period(&param_dt, "5Y")
         ];
 
-    let data = VectorData::new(
+    let _data = VectorData::new(
         array![0.02, 0.025, 0.03, 0.035, 0.04],
         Some(dates.clone()), 
         None, 
@@ -66,9 +66,11 @@ fn main() {
         "vector data in test_zero_curve".to_string()
     );
 
+    let data = Rc::new(RefCell::new(_data));
+
     let zero_curve = ZeroCurve::new(
         evaluation_date.clone(), 
-        &data, 
+        data.clone(), 
         ZeroCurveCode::Undefined, 
         "test".to_string()
     );

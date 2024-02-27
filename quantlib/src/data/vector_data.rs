@@ -1,6 +1,7 @@
 use crate::definitions::{Real, Time};
 use crate::time::calendar::{Calendar, NullCalendar};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
+use num_traits::Zero;
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
 use crate::data::observable::Observable;

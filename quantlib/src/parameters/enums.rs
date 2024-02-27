@@ -35,3 +35,34 @@ pub enum Compounding {
     Simple = 0,
     Continuous = 1,
 }
+
+
+pub enum CrateRating {
+    Undefined = 0,
+    AAA = 1,
+    AAp = 2,
+    AA = 3,
+    AAm = 4,
+    Ap = 5,
+    A = 6,
+    Am = 7,
+    BBBp = 8,
+    BBB = 9,
+    BBBm = 10,
+    BBp = 11,
+    BB = 12,
+    BBm = 13,
+    Bp = 14,
+    B = 15,
+    C = 16,
+    D = 17,
+}
+
+pub enum IssuerType {
+    Undefined = 0,
+    Government = 1,
+    Public = 2,
+    Corporate = 3,
+    Financial = 4,
+    Sovereign = 5,
+}

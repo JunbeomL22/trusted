@@ -33,7 +33,6 @@ pub struct ZeroCurve {
     discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
     time_calculator: NullCalendar,
-    data: Rc<RefCell<VectorData>>,
     code: ZeroCurveCode,
     name: String,
 }
@@ -54,9 +53,6 @@ impl ZeroCurve {
     /// 
     /// This setup is chosen for afety and clean code but it is not the most efficient way. 
     /// I leave the optimization for later.
-    pub fn get_data_clone(&self) -> Rc<RefCell<VectorData>> {
-        self.data.clone()
-    }
     
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>, 
@@ -141,7 +137,6 @@ impl ZeroCurve {
             discount_factors,
             discount_interpolator,
             time_calculator,
-            data,
             code,
             name,
         };

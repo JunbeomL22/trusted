@@ -1,9 +1,10 @@
 use crate::instruments::instrument_info::InstrumentInfo;
+use crate::pricing_engines::pricer::Pricer;
 use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::assets::stock::Stock;
-use crate::instruments::stock_futures::StockFutures;
+use crate::instruments::stock_futures::{self, StockFutures};
 use crate::definitions::Real;
 use crate::pricing_engines::engine::Engine;
 use crate::pricing_engines::calculation_result::CalculationResult;
@@ -18,85 +19,28 @@ use crate::definitions::{DELTA_PNL_UNIT, RHO_PNL_UNIT};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub struct StockFuturesEngine {
+pub struct StockFuturesPricer {
     stock: Rc<RefCell<Stock>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    instruments: Vec<StockFutures>,
     results: HashMap<String, CalculationResult>, // Code -> CalculationResult
-    configuration: CalculationConfiguration,
 }
 
-impl StockFuturesEngine {
+impl StockFuturesPricer {
     pub fn initialize(
         stock: Rc<RefCell<Stock>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        ) -> StockFuturesEngine {
-        StockFuturesEngine {
+        ) -> StockFuturesPricer {
+        StockFuturesPricer {
             stock,
             collateral_curve,
             borrowing_curve,
             evaluation_date,
-            instruments: vec![],
             results: HashMap::new(),
-            configuration: CalculationConfiguration::default(),
         }
-    }
-
-    pub fn set_instruments(&mut self, instruments: &Vec<StockFutures>) {
-        // clone the instruments to self.instruments and initialize the results
-        self.instruments = instruments.clone();
-        // sanity check: the stock futures must have the same stock as its underlying
-        for instrument in instruments {
-            assert_eq!(
-                &instrument.get_underlying_asset()[0], 
-                self.stock.borrow().get_name(),
-                "(StockFuturesEngine::set_instruments) the underlying asset of the stock futures is not the same as the stocks"
-            );
-        }
-        
-        for instrument in instruments {
-            let code = instrument.get_code().clone();
-            let result = CalculationResult::default();
-            self.results.insert(code, result);
-        }
-    }
-
-    pub fn with_instruments(mut self, instruments: &Vec<StockFutures>) -> StockFuturesEngine {
-        self.set_instruments(instruments);
-        // initialize the results with the 
-        for instrument in instruments {
-            let code = instrument.get_code().clone();
-            
-            let base_info = InstrumentInfo::new(
-                instrument.get_name().clone(),
-                code.clone(),
-                instrument.get_currency().clone(),
-                instrument.type_name().to_string(),
-                instrument.get_unit_notional(),
-                Some(instrument.get_maturity().clone()),
-            );
-
-            let result = CalculationResult::new(
-                base_info, 
-                self.evaluation_date.borrow().get_date_clone()
-            );
-
-            self.results.insert(code, result);
-        }
-        self
-    }
-
-    pub fn with_configuration(mut self, configuration: CalculationConfiguration) -> StockFuturesEngine {
-        self.set_configuration(configuration);
-        self
-    }
-
-    pub fn set_configuration(&mut self, configuration: CalculationConfiguration) {
-        self.configuration = configuration;
     }
 
     pub fn fair_forward(
@@ -112,12 +56,10 @@ impl StockFuturesEngine {
         fwd
     }
 
-    pub fn get_configuration(&self) -> &CalculationConfiguration {
-        &self.configuration
-    }
 }
 
-impl Engine for StockFuturesEngine {
+impl Pricer for StockFuturesPricer {
+    /*
     fn calculate(&mut self) {
         self.set_npv();
         self.set_value();
@@ -137,24 +79,29 @@ impl Engine for StockFuturesEngine {
         }
 
     }
-    fn npv(&self) -> HashMap<String, Real> {
+    */
+
+    fn npv(&self, instruments: &Vec<Instrument>) -> HashMap<String, Real> {
         let mut npv: HashMap<String, Real> = HashMap::new();
-        for instrument in &self.instruments {
-            let code = instrument.get_code();
-            let maturity = instrument.get_maturity();
-            let fwd = self.fair_forward(maturity);
-            npv.insert(code.clone(), fwd);
+        for instrument in instruments {
+            if let Instrument::StockFutures(stock_futures) = instrument {
+                let code = stock_futures.get_code();
+                let maturity = stock_futures.get_maturity().unwrap();
+                let fwd = self.fair_forward(&maturity);
+                npv.insert(code.clone(), fwd);
+            }
         }
         npv
     }
 
+    /* 
     fn set_npv(&mut self) {
         let npv = self.npv();
         for (code, value) in npv {
             self.results.get_mut(&code).unwrap().set_npv(value);
         }
     }
-
+     
     fn set_value(&mut self) {
         for instrument in &self.instruments {
             let code = instrument.get_code();
@@ -326,6 +273,7 @@ impl Engine for StockFuturesEngine {
     fn get_calculation_result(&self) -> &HashMap<String, CalculationResult> {
         &self.results
     }
+    */
 }
 
 #[cfg(test)]

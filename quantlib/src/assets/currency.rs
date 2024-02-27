@@ -50,6 +50,59 @@ pub enum Currency {
     ZMW
 }
 
+impl Currency {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Currency::NIL => "NIL",
+            Currency::KRW => "KRW",
+            Currency::USD => "USD",
+            Currency::EUR => "EUR",
+            Currency::JPY => "JPY",
+            Currency::CNY => "CNY",
+            Currency::GBP => "GBP",
+            Currency::AUD => "AUD",
+            Currency::CAD => "CAD",
+            Currency::CHF => "CHF",
+            Currency::NZD => "NZD",
+            Currency::SEK => "SEK",
+            Currency::NOK => "NOK",
+            Currency::MXN => "MXN",
+            Currency::ZAR => "ZAR",
+            Currency::BRL => "BRL",
+            Currency::INR => "INR",
+            Currency::RUB => "RUB",
+            Currency::TRY => "TRY",
+            Currency::HKD => "HKD",
+            Currency::SGD => "SGD",
+            Currency::TWD => "TWD",
+            Currency::THB => "THB",
+            Currency::IDR => "IDR",
+            Currency::MYR => "MYR",
+            Currency::PHP => "PHP",
+            Currency::VND => "VND",
+            Currency::PKR => "PKR",
+            Currency::LKR => "LKR",
+            Currency::BDT => "BDT",
+            Currency::NPR => "NPR",
+            Currency::KZT => "KZT",
+            Currency::UZS => "UZS",
+            Currency::KGS => "KGS",
+            Currency::TJS => "TJS",
+            Currency::MNT => "MNT",
+            Currency::AED => "AED",
+            Currency::SAR => "SAR",
+            Currency::QAR => "QAR",
+            Currency::OMR => "OMR",
+            Currency::KWD => "KWD",
+            Currency::BHD => "BHD",
+            Currency::JOD => "JOD",
+            Currency::ILS => "ILS",
+            Currency::EGP => "EGP",
+            Currency::ZMW => "ZMW"
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +127,13 @@ mod tests {
         let deserialized: Currency = serde_json::from_value(json).unwrap();
         
         assert_eq!(deserialized, currency);
+    }
+
+    #[test] // test for as_str
+    fn test_currency_as_str() {
+        let currency = Currency::KRW;
+        let as_str = currency.as_str();
+        
+        assert_eq!(as_str, "KRW");
     }
 }

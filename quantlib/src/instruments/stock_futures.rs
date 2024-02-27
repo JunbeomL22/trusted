@@ -2,7 +2,7 @@ use crate::definitions::Real;
 use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
 use crate::assets::currency::Currency;
-use crate::instrument::Instrument;
+use crate::util::type_name;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
@@ -62,6 +62,18 @@ impl StockFutures {
         }
     }
 
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_code(&self) -> &String {
+        &self.code
+    }
+
+    pub fn get_currency(&self) -> &Currency {
+        &self.currency
+    }
+
     pub fn get_maturity(&self) -> &OffsetDateTime {
         &self.maturity
     }
@@ -70,44 +82,20 @@ impl StockFutures {
         self.unit_notional
     }
 
-    pub fn get_underlying_asset(&self) -> &Vec<String> {
+    pub fn get_underlying_names(&self) -> &Vec<String> {
         &self.underlying_names
     }
 
     pub fn get_average_trade_price(&self) -> Real {
         self.average_trade_price
     }
+
+    pub fn get_type_name(&self) -> &'static str {
+        type_name(&self)
+    }
+
 }
 
-impl Instrument for StockFutures {
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
-    }
-    
-    fn get_maturity(&self) -> &OffsetDateTime {
-        &self.maturity
-    }
-
-    fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    fn get_currency(&self) -> &Currency {
-        &self.currency
-    }
-
-    fn clone_box(&self) -> Box<dyn Instrument> {
-        Box::new(self.clone())
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
 // make a test for serialization
 #[cfg(test)]
 mod tests {
