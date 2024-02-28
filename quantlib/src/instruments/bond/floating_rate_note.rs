@@ -3,16 +3,18 @@ use crate::definitions::Real;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use crate::instruments::schedule::Schedule;
+use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct FixedCouponBond {
+pub struct FloatingRateNote {
     currency: Currency,
     issuer_type: IssuerType,
     credit_rating: CreditRating,
     rank: RankType,
     schedule: Schedule,
-    coupon_rate: Real,
+    spread: Real,
+    rate_index: RateIndex,
     unit_notional: Real,
     issue_date: OffsetDateTime,
     maturity: OffsetDateTime,
@@ -21,7 +23,7 @@ pub struct FixedCouponBond {
     code: String,
 }
 
-impl FixedCouponBond {
+impl FloatingRateNote {
     pub fn get_name(&self) -> &String {
         &self.name
     }
@@ -56,6 +58,10 @@ impl FixedCouponBond {
 
     pub fn get_issuer_name(&self) -> Option<&String> {
         Some(&self.issuer_name)
+    }
+
+    pub fn get_spread(&self) -> Real {
+        self.spread
     }
 
 }

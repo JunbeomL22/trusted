@@ -122,6 +122,12 @@ impl Engine {
         }
     }
 
+    pub fn set_delta(&mut self) {
+        let delta: HashMap<String, HashMap<String, Real>> = self.pricer.as_ref().unwrap().delta(&self.instruments);
+        for (code, value) in delta.iter() {
+            self.calculation_result.get_mut(code).unwrap().set_delta(value.clone());
+        }
+    }
 
     pub fn calculate(&mut self) {
         self.set_npv();

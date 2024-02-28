@@ -34,8 +34,13 @@ impl InstrumentInfo {
         currency: Currency,
         instrument_type: String,
         unit_notional: Real,
-        maturity: Option<OffsetDateTime>,
+        maturity: Option<&OffsetDateTime>,
     ) -> InstrumentInfo {
+        let maturity = match maturity {
+            Some(maturity) => Some(maturity.clone()),
+            None => None,
+        };
+
         InstrumentInfo {
             name,
             code,

@@ -1,5 +1,8 @@
 #![allow(dead_code)]
+use serde::{Deserialize, Serialize};
 // all takend from https://github.com/avhz/RustQuant/blob/main/src/time/conventions.rs
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum BusinessDayConvention {
     Unadjusted,
     Following,
@@ -7,6 +10,8 @@ pub enum BusinessDayConvention {
     Preceding,
     ModifiedPreceding,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum DayCountConvention {
     Actual365Fixed,
     Actual360,
@@ -16,7 +21,7 @@ pub enum DayCountConvention {
 }
 
 /// Interest payment frequency/year enumeration.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PaymentFrequency {
     Daily = 252,
     Weekly = 52,

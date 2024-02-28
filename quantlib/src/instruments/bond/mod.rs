@@ -1,2 +1,2 @@
 pub mod fixed_coupon_bond;
-pub mod schedule;
+pub mod floating_rate_note;

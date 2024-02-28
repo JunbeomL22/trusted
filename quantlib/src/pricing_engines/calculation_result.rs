@@ -201,13 +201,16 @@ mod tests {
             "KOSPI200".to_string(),
         );
 
+        let name = stock_futures.get_name().clone();
+        let maturity = stock_futures.get_maturity();
+        
         let instrument = InstrumentInfo::new(
-            stock_futures.get_name().clone(),
+            name,
             stock_futures.get_code().clone(),
             stock_futures.get_currency().clone(),
             stock_futures.get_type_name().to_string(),
             stock_futures.get_unit_notional(),
-            Some(stock_futures.get_maturity().clone()),
+            maturity,   
         );
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);

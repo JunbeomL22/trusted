@@ -1,5 +1,5 @@
 use time::{OffsetDateTime, macros::datetime};
-use crate::parameters::enums::{ZeroCurveCode, Compounding};
+use crate::enums::{ZeroCurveCode, Compounding};
 use crate::evaluation_date::EvaluationDate;
 use crate::data::{vector_data::VectorData, observable::Observable};
 use crate::definitions::{Real, Time};

@@ -11,6 +11,7 @@ pub mod data;
 pub mod evaluation_date;
 pub mod pricing_engines;
 pub mod assets;
+pub mod enums;
 
 pub use definitions::{Real, Time};
 pub use utils::find_index::{vectorized_search_index_for_sorted_vector, binary_search_index};

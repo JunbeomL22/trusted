@@ -74,16 +74,16 @@ impl StockFutures {
         &self.currency
     }
 
-    pub fn get_maturity(&self) -> &OffsetDateTime {
-        &self.maturity
+    pub fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
     }
 
     pub fn get_unit_notional(&self) -> Real {
         self.unit_notional
     }
 
-    pub fn get_underlying_names(&self) -> &Vec<String> {
-        &self.underlying_names
+    pub fn get_underlying_names(&self) -> Option<&Vec<String>> {
+        Some(&self.underlying_names)
     }
 
     pub fn get_average_trade_price(&self) -> Real {
