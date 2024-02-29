@@ -11,6 +11,7 @@ use std::cell::RefCell;
 use crate::time::calendar::{NullCalendar, Calendar};
 use crate::parameter::Parameter;
 use ndarray::Array1;
+use crate::util::to_yyyymmdd_int;
 
 #[derive(Clone, Debug)]
 enum DividendInterpolator {
@@ -25,7 +26,7 @@ pub struct DiscreteRatioDividend {
     marking_offsetdatetime: OffsetDateTime,
     time_calculator: NullCalendar,
     ex_dividend_times: Array1<Time>,
-    date_serial_numbers: Vec<Integer>,
+    date_integers: Vec<Integer>,
     dividend_yields: Array1<Real>,
     deduction_interpolator: DividendInterpolator,
     spot: Real,
@@ -62,7 +63,7 @@ impl DiscreteRatioDividend {
         let dividend_amount: Array1<Real> = data.get_value_clone();
         let dividend_yields: Array1<Real> = dividend_amount / spot;
 
-        let mut date_serial_numbers: Vec<Integer> = vec![0; ex_dividend_dates.len()];
+        let mut date_integers: Vec<Integer> = vec![0; ex_dividend_dates.len()];
         let mut ex_dividend_times: Array1<Time> = Array1::zeros(ex_dividend_dates.len());
         let marking_offsetdatetime = OffsetDateTime::new_in_offset(
             MARKING_DATE, // 1970-01-01
@@ -71,9 +72,7 @@ impl DiscreteRatioDividend {
         );
 
         for (i, date) in ex_dividend_dates.iter().enumerate() {
-            let result = *date - marking_offsetdatetime;
-            let days = result.whole_days() as Integer;
-            date_serial_numbers[i] = days;
+            date_integers[i] = to_yyyymmdd_int(date);
             let time = time_calculator.get_time_difference(&marking_offsetdatetime, date);
             ex_dividend_times[i] = time;
         };
@@ -81,7 +80,7 @@ impl DiscreteRatioDividend {
         let eval_dt = evaluation_date.to_owned().borrow().get_date_clone(); 
         let mut ex_dividend_dates_for_interpolator = ex_dividend_dates.clone();
         let mut div_yields_vec = dividend_yields.to_vec();
-        let mut date_serial_numbers_for_interpolator = date_serial_numbers.clone();
+        let mut date_integers_for_interpolator = date_integers.clone();
 
         let mut i = 0;
         let mut checker = 0;
@@ -89,7 +88,7 @@ impl DiscreteRatioDividend {
             if ex_dividend_dates[checker] < eval_dt {
                 ex_dividend_dates_for_interpolator.remove(i);
                 div_yields_vec.remove(i);
-                date_serial_numbers_for_interpolator.remove(i);
+                date_integers_for_interpolator.remove(i);
                 checker += 1;
             } else {
                 i += 1;
@@ -110,7 +109,7 @@ impl DiscreteRatioDividend {
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
             let _interp = StepwiseInterpolator1D::new(
-                Array1::from_vec(date_serial_numbers_for_interpolator),
+                Array1::from_vec(date_integers_for_interpolator),
                 incremental_deduction_ratio,
                 true,
                 Some(1.0),
@@ -125,7 +124,7 @@ impl DiscreteRatioDividend {
             marking_offsetdatetime,
             time_calculator: time_calculator,
             ex_dividend_times,
-            date_serial_numbers,
+            date_integers,
             dividend_yields,
             deduction_interpolator,
             spot,
@@ -134,10 +133,10 @@ impl DiscreteRatioDividend {
     }
 
     pub fn get_deduction_ratio(&self, date: &OffsetDateTime) -> Real {
-        let serial_number = (*date - self.marking_offsetdatetime).whole_days() as Integer;
+        let date_int = to_yyyymmdd_int(date);
         let ratio = match self.deduction_interpolator {
-            DividendInterpolator::Constant(ref interp) => interp.interpolate(serial_number),
-            DividendInterpolator::Stepwise(ref interp) => interp.interpolate(serial_number),
+            DividendInterpolator::Constant(ref interp) => interp.interpolate(date_int),
+            DividendInterpolator::Stepwise(ref interp) => interp.interpolate(date_int),
         };
         ratio
     }
@@ -175,13 +174,13 @@ impl Parameter for DiscreteRatioDividend {
         let dividend_amount: Array1<Real> = data.get_value_clone();
         self.dividend_yields = dividend_amount / self.spot;
 
-        self.date_serial_numbers = vec![0; self.ex_dividend_dates.len()];
+        self.date_integers = vec![0; self.ex_dividend_dates.len()];
         self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
 
         for (i, date) in self.ex_dividend_dates.iter().enumerate() {
             let result = *date - self.marking_offsetdatetime;
             let days = result.whole_days() as Integer;
-            self.date_serial_numbers[i] = days;
+            self.date_integers[i] = days;
             let time = self.time_calculator.get_time_difference(&self.marking_offsetdatetime, date);
             self.ex_dividend_times[i] = time;
         };
@@ -190,7 +189,7 @@ impl Parameter for DiscreteRatioDividend {
         let eval_dt = self.evaluation_date.to_owned().borrow().get_date_clone(); 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
         let mut div_yields_vec = self.dividend_yields.to_vec();
-        let mut date_serial_numbers_for_interpolator = self.date_serial_numbers.clone();
+        let mut date_integers_for_interpolator = self.date_integers.clone();
 
         let mut i = 0;
         let mut checker = 0;
@@ -198,7 +197,7 @@ impl Parameter for DiscreteRatioDividend {
             if self.ex_dividend_dates[checker] < eval_dt {
                 ex_dividend_dates_for_interpolator.remove(i);
                 div_yields_vec.remove(i);
-                date_serial_numbers_for_interpolator.remove(i);
+                date_integers_for_interpolator.remove(i);
                 checker += 1;
             } else {
                 i += 1;
@@ -218,7 +217,7 @@ impl Parameter for DiscreteRatioDividend {
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
             let deduction_interpolator = StepwiseInterpolator1D::new(
-                Array1::from_vec(date_serial_numbers_for_interpolator),
+                Array1::from_vec(date_integers_for_interpolator),
                 incremental_deduction_ratio,
                 true,
                 Some(1.0),
@@ -236,7 +235,7 @@ impl Parameter for DiscreteRatioDividend {
 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
         let mut div_yields_vec = self.dividend_yields.to_vec();
-        let mut date_serial_numbers_for_interpolator = self.date_serial_numbers.clone();
+        let mut date_integers_for_interpolator = self.date_integers.clone();
 
         let mut i = 0;
         let mut checker = 0;
@@ -244,7 +243,7 @@ impl Parameter for DiscreteRatioDividend {
             if self.ex_dividend_dates[checker] < eval_dt {
                 ex_dividend_dates_for_interpolator.remove(i);
                 div_yields_vec.remove(i);
-                date_serial_numbers_for_interpolator.remove(i);
+                date_integers_for_interpolator.remove(i);
                 checker += 1;
             } else {
                 i += 1;
@@ -264,7 +263,7 @@ impl Parameter for DiscreteRatioDividend {
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
             let deduction_interpolator = StepwiseInterpolator1D::new(
-                Array1::from_vec(date_serial_numbers_for_interpolator),
+                Array1::from_vec(date_integers_for_interpolator),
                 incremental_deduction_ratio,
                 true,
                 Some(1.0),

@@ -11,7 +11,7 @@ mod tests {
     use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
     //use quantlib::parameter::Parameter;
     use quantlib::data::vector_data::VectorData;
-    use quantlib::parameters::enums::ZeroCurveCode;
+    use quantlib::parameters::zero_curve_code::ZeroCurveCode;
     //use quantlib::utils::string_arithmetic::{add_period, sub_period};
     use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
 
@@ -44,17 +44,18 @@ mod tests {
         let times = None;
         let market_datetime = evaluation_offsetdatetime.clone();
         let name = "zero curve data".to_string();
-        let mut zero_curve_data = VectorData::new(value, Some(dates), times, market_datetime, name);
+        let _zero_curve_data = VectorData::new(value, Some(dates), times, market_datetime, name);
+        let zero_curve_data = Rc::new(RefCell::new(_zero_curve_data));
 
         let _zero_curve = ZeroCurve::new(
             evaluation_date.clone(),
-            &zero_curve_data,
+            zero_curve_data.clone(),
             ZeroCurveCode::KRWGOV,
             "zero curve".to_string(),
         );
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
-        zero_curve_data.add_observer(zero_curve.clone());
+        zero_curve_data.borrow_mut().add_observer(zero_curve.clone());
         evaluation_date.borrow_mut().add_observer(zero_curve.clone());
 
         // For constructing DiscreteRatioDividend, make a vector data object which has two data points after the evaluation_date

@@ -19,28 +19,28 @@ use crate::pricing_engines::pricer::Pricer;
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
-pub struct Engine {
-    calculation_result: HashMap<String, CalculationResult>,
+pub struct Engine<'a> {
+    calculation_result: HashMap<&'a str, CalculationResult>,
     calculation_configuration: CalculationConfiguration,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FX, Rc<RefCell<Real>>>,
-    stocks: HashMap<String, Rc<RefCell<Stock>>>,
-    curve_data: HashMap<String, Rc<RefCell<VectorData>>>,
-    dividend_data: HashMap<String, Rc<RefCell<VectorData>>>,
+    stocks: HashMap<&'a str, Rc<RefCell<Stock>>>,
+    curve_data: HashMap<&'a str, Rc<RefCell<VectorData>>>,
+    dividend_data: HashMap<&'a str, Rc<RefCell<VectorData>>>,
     instruments: Vec<Instrument>,
     instruments_in_action: Vec<Instrument>,
     pricer: Option<Box<dyn Pricer>>,
 }
 
-impl Engine {
+impl<'a> Engine<'a> {
     pub fn initialize(
         calculation_configuration: CalculationConfiguration,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         fxs: HashMap<FX, Rc<RefCell<Real>>>,
-        stocks: HashMap<String, Rc<RefCell<Stock>>>,
-        curve_data: HashMap<String, Rc<RefCell<VectorData>>>,
-        dividend_data: HashMap<String, Rc<RefCell<VectorData>>>,
-    ) -> Engine {
+        stocks: HashMap<&'a str, Rc<RefCell<Stock>>>,
+        curve_data: HashMap<&'a str, Rc<RefCell<VectorData>>>,
+        dividend_data: HashMap<&'a str, Rc<RefCell<VectorData>>>,
+    ) -> Engine<'a> {
         Engine {
             calculation_result: HashMap::new(),
             calculation_configuration: calculation_configuration.clone(),
@@ -78,8 +78,8 @@ impl Engine {
         for instrument in self.instruments.iter() {
             let inst = instrument.as_trait();
             let instrument_information = InstrumentInfo::new(
-                inst.get_name().clone(),
-                inst.get_code().clone(),
+                inst.get_name(),
+                inst.get_code(),
                 inst.get_currency().clone(),
                 inst.get_type_name().to_string(),
                 inst.get_unit_notional(),
@@ -92,7 +92,7 @@ impl Engine {
             );
 
             self.calculation_result.insert(
-                inst.get_code().clone(),
+                inst.get_code(),
                 init_res
             );
         }

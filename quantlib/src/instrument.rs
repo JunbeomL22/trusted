@@ -5,22 +5,35 @@ use std::ops::Index;
 use std::collections::HashSet;
 use crate::enums::{IssuerType, CreditRating, RankType};
 
-pub trait InstrumentTriat {
-    fn get_name(&self) -> &String;
-    fn get_code(&self) -> &String;
+pub trait InstrumentTriat<'a> {
+    // The following methods are mandatory for all instruments
+    fn get_name(&self) -> &'a str;
+    fn get_code(&self) -> &'a str;
     fn get_currency(&self) -> &Currency;
     fn get_unit_notional(&self) -> Real;
-    fn get_type_name(&self) -> &'static str;
-    //
-    fn get_maturity(&self) -> Option<&OffsetDateTime>;
-    fn get_underlying_names(&self) -> Option<&Vec<String>> { None}
+    fn get_type_name(&self) -> &'a str;
+
+    // There may be an instrument that does not need discount curve, e.g., Futures
+    fn get_discount_curve_name(&self) -> &'static str { "Dummy" }
+
+    // There is an instrument that does not have maturity date, so it is optional
+    fn get_maturity(&self) -> Option<&OffsetDateTime> { None }
+
+    // There is an instrument that does not have underlying names, 
+    // so the default action is to return an empty vector
+    fn get_underlying_names(&self) -> Vec<&'a str> { vec![] }
+
+    // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Option<&CreditRating> { None }
+    // only for bonds, so None must be allowed
     fn get_issuer_type(&self) -> Option<&IssuerType> { None }
+    // only for bonds, so None must be allowed
     fn get_rank_type(&self) -> Option<&RankType> { None }
-    fn get_issuer_name(&self) -> Option<&String> { None }
-    //
-    fn get_discount_curve_name(&self) -> &'static str { "" }
-    fn get_rate_forward_curve_name(&self) -> &'static str { "" }
+    // only for bonds, so None must be allowed
+    fn get_issuer_name(&self) -> Option<&'static str> { None }
+    // only for instruments for floating coupon,
+    // e.g., frn, irs, etc, so None must be allowed
+    fn get_rate_forward_curve_name(&self) -> Option<&'static str> { None }
 }
 
 pub enum Instrument {
@@ -113,8 +126,10 @@ impl<'a> Instruments<'a> {
                     }
                 }
                 if let Some(underlying_names) = underlying_names {
-                    let lhs = instrument.as_trait().get_underlying_names().unwrap().sort();
-                    let rhs = underlying_names.sort();
+                    let mut lhs = instrument.as_trait().get_underlying_names().unwrap().clone();
+                    lhs.sort();
+                    let mut rhs = underlying_names.clone();
+                    rhs.sort();
                     if lhs != rhs {
                         continue;
                     }
@@ -135,7 +150,7 @@ impl<'a> Instruments<'a> {
                             }
                         }
                         if let Some(issuer_name) = issuer_name {
-                            if instrument.get_issue_name().unwrap() != issuer_name {
+                            if instrument.get_issuer_name().unwrap() != issuer_name {
                                 continue;
                             }
                         }

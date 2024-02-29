@@ -1,11 +1,11 @@
-use crate::assets::currency::Currency;
 //
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum RateIndexCode {
-    None = 0,
+    Dummy= 0,
     HIBOR = 1,
     SOFR = 2,
     CD = 3,
@@ -13,11 +13,12 @@ pub enum RateIndexCode {
     ESTR = 5,
     TONAR = 6,
     HONIA = 7,
+    Undefined = 8,
 }
 impl RateIndexCode {
-    pub fn forward_curve_name(&self) -> &'static str {
+    pub fn get_forward_curve_name(&self) -> &'static str {
         match self {
-            RateIndexCode::None => "None",
+            RateIndexCode::Dummy => "Dummy",
             RateIndexCode::HIBOR => "HKDIRS",
             RateIndexCode::SOFR => "USDOIS",
             RateIndexCode::CD => "KRWIRS",
@@ -25,32 +26,33 @@ impl RateIndexCode {
             RateIndexCode::ESTR => "EUROIS",
             RateIndexCode::TONAR => "JPYOIS",
             RateIndexCode::HONIA => "HKDOIS",
+            RateIndexCode::Undefined => "Undefined",
         }
     }
 }
 impl fmt::Display for RateIndexCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            RateIndexCode::None => write!(f, "None"),
-            RateIndexCode::LIBOR => write!(f, "LIBOR"),
+            RateIndexCode::Dummy => write!(f, "Dummy"),
+            RateIndexCode::HIBOR => write!(f, "HIBOR"),
             RateIndexCode::SOFR => write!(f, "SOFR"),
             RateIndexCode::CD => write!(f, "CD"),
             RateIndexCode::KOFR => write!(f, "KOFR"),
             RateIndexCode::ESTR => write!(f, "ESTR"),
             RateIndexCode::TONAR => write!(f, "TONAR"),
             RateIndexCode::HONIA => write!(f, "HONIA"),
+            RateIndexCode::Undefined => write!(f, "Undefined"),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum Compounding {
     Simple = 0,
     Continuous = 1,
 }
 
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum CreditRating {
     None = 0,
     AAA = 1,
@@ -73,7 +75,7 @@ pub enum CreditRating {
     Undefined = 18,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum IssuerType {
     None = 0,
     Government = 1,
@@ -84,7 +86,7 @@ pub enum IssuerType {
     Undefined = 6,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum RankType {
     None = 0,
     Senior = 1,

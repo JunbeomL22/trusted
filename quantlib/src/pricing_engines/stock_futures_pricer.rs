@@ -288,7 +288,7 @@ mod tests {
     use crate::{assets::currency::Currency, instruments::stock_futures::StockFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
     use time::{macros::datetime, UtcOffset};
     use crate::definitions::SEOUL_OFFSET;
-    use crate::parameters::enums::ZeroCurveCode;
+    use crate::parameters::zero_curve_code::ZeroCurveCode;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
     use crate::pricing_engines::engine::Engine;

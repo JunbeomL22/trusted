@@ -5,37 +5,37 @@ use time::OffsetDateTime;
 use crate::definitions::Real;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct InstrumentInfo {
-    name: String,
-    code: String,
+pub struct InstrumentInfo<'a> {
+    name: &'a str,
+    code: &'a str,
+    instrument_type: &'a str,
     currency: Currency,
-    instrument_type: String,
     unit_notional: Real,
     maturity: Option<OffsetDateTime>,
 }
 
-impl Default for InstrumentInfo {
-    fn default() -> InstrumentInfo {
+impl<'a> Default for InstrumentInfo<'a> {
+    fn default() -> InstrumentInfo<'a> {
         InstrumentInfo {
-            name: "".to_string(),
-            code: "".to_string(),
+            name: "",
+            code: "",
+            instrument_type: "",
             currency: Currency::NIL,
-            instrument_type: "".to_string(),
             unit_notional: 1.0,
             maturity: None,
         }
     }
 }
 
-impl InstrumentInfo {
+impl<'a> InstrumentInfo<'a> {
     pub fn new(
-        name: String,
-        code: String,
+        name: &'a str,
+        code: &'a str,
+        instrument_type: &'a str,
         currency: Currency,
-        instrument_type: String,
         unit_notional: Real,
         maturity: Option<&OffsetDateTime>,
-    ) -> InstrumentInfo {
+    ) -> InstrumentInfo<'a> {
         let maturity = match maturity {
             Some(maturity) => Some(maturity.clone()),
             None => None,
@@ -44,35 +44,35 @@ impl InstrumentInfo {
         InstrumentInfo {
             name,
             code,
-            currency,
             instrument_type,
+            currency,
             unit_notional,
             maturity,
         }
     }
     
     pub fn type_name(&self) -> &str {
-        &self.instrument_type
+        self.instrument_type
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    pub fn get_name(&self) -> &str {
+        self.name
     }
 
-    pub fn get_code(&self) -> &String {
-        &self.code
+    pub fn get_code(&self) -> &str {
+        self.code
     }
 
-    pub fn get_currency(&self) -> &Currency {
-        &self.currency
+    pub fn get_currency(&self) -> Currency {
+        self.currency
     }
 
     pub fn get_unit_notional(&self) -> Real {
         self.unit_notional
     }
 
-    pub fn get_maturity(&self) -> &Option<OffsetDateTime> {
-        &self.maturity
+    pub fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        self.maturity.as_ref()
     }
 }
 
@@ -86,10 +86,10 @@ mod tests {
     #[test]
     fn test_instrument_info_serialization() {
         let instrument_info = InstrumentInfo::new(
-            "AAPL".to_string(),
-            "CodeAAPL".to_string(),
+            "AAPL",
+            "CodeAAPL",
+            "StockFutures",
             Currency::USD,
-            "StockFutures".to_string(),
             100.0,
             None,
         );

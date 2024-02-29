@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum ZeroCurveCode {
     Credit = 0,
@@ -27,6 +29,7 @@ pub enum ZeroCurveCode {
     HKDCRS = 24, 
     KDB = 25,
     MSB = 26,
+    Undefined = 27,
 }
 
 macro_rules! zero_curve_code_from_str {
@@ -86,6 +89,7 @@ zero_curve_code_from_str! {
     HKDCRS,
     KDB,
     MSB,
+    Undefined,
 }
 
 zero_curve_code_to_str! {
@@ -116,4 +120,5 @@ zero_curve_code_to_str! {
     HKDCRS,
     KDB,
     MSB,
+    Undefined,
 }

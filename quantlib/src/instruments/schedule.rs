@@ -169,7 +169,7 @@ mod tests {
         let expected_schedule = Schedule {
             data: vec![
                 BaseSchedule {
-                    fixing_date: datetime!(2023-08-02 16:00:00.0 +09:10:00),
+                    fixing_date: datetime!(2023-08-02 16:00:00.0 +09:00:00),
                     calc_start_date: datetime!(2023-08-03 16:00:00.0 +09:00:00),
                     calc_end_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
                     payment_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),

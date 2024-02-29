@@ -19,10 +19,10 @@ pub const COUPON_PAYMENT_TIME: time::Time = time::macros::time!(16:00:00);
 pub const OPENING_TIME: time::Time = time::macros::time!(09:00:00);
 pub const MARKING_DATE: time::Date = time::macros::date!(1970-01-01); // to make an offsetdatetime to be an integer
 
-// hours, minutes, seconds
+/// hours, minutes, seconds
 pub const SEOUL_OFFSET: (i8, i8, i8) = (9, 0, 0);
 
-// pnl units
+/// pnl units
 pub const DELTA_PNL_UNIT: Real = 0.01;
 pub const GAMMA_PNL_UNIT: Real = 0.01;
 pub const VEGA_PNL_UNIT: Real = 0.01;
