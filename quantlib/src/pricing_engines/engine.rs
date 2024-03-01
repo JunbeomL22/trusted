@@ -23,10 +23,10 @@ use time::OffsetDateTime;
 pub struct Engine<'a> {
     calculation_result: HashMap<&'a str, CalculationResult<'a>>,
     calculation_configuration: CalculationConfiguration,
-    evaluation_date: EvaluationDate,
     curve_data: HashMap<&'a str, VectorData>,
     dividend_data: HashMap<&'a str, VectorData>,
     //
+    evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FX, Rc<RefCell<Real>>>,
     stocks: HashMap<&'a str, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<&'a str, Rc<RefCell<ZeroCurve>>>,
