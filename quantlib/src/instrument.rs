@@ -3,8 +3,7 @@ use crate::assets::currency::Currency;
 use time::OffsetDateTime;
 use std::ops::Index;
 use std::collections::HashSet;
-use crate::enums::{IssuerType, CreditRating, RankType};
-
+use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 pub trait InstrumentTriat<'a> {
     // The following methods are mandatory for all instruments
     fn get_name(&self) -> &'a str;
@@ -12,17 +11,13 @@ pub trait InstrumentTriat<'a> {
     fn get_currency(&self) -> &Currency;
     fn get_unit_notional(&self) -> Real;
     fn get_type_name(&self) -> &'a str;
-
     // There may be an instrument that does not need discount curve, e.g., Futures
-    fn get_discount_curve_name(&self) -> &'static str { "Dummy" }
-
+    fn get_discount_curve_name(&self) -> &'a str { "Dummy" }
     // There is an instrument that does not have maturity date, so it is optional
     fn get_maturity(&self) -> Option<&OffsetDateTime> { None }
-
     // There is an instrument that does not have underlying names, 
     // so the default action is to return an empty vector
     fn get_underlying_names(&self) -> Vec<&'a str> { vec![] }
-
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Option<&CreditRating> { None }
     // only for bonds, so None must be allowed
@@ -30,22 +25,26 @@ pub trait InstrumentTriat<'a> {
     // only for bonds, so None must be allowed
     fn get_rank_type(&self) -> Option<&RankType> { None }
     // only for bonds, so None must be allowed
-    fn get_issuer_name(&self) -> Option<&'static str> { None }
+    fn get_issuer_name(&self) -> Option<&'a str> { None }
     // only for instruments for floating coupon,
     // e.g., frn, irs, etc, so None must be allowed
-    fn get_rate_forward_curve_name(&self) -> Option<&'static str> { None }
+    fn get_rate_forward_curve_name(&self) -> Option<&'a str> { None }
+    // 
+    fn get_average_trade_price(&self) -> Real { 0.0 }
+    //
+    fn get_accountring_level(&self) -> AccountingLevel { AccountingLevel::Level1 }
 }
 
-pub enum Instrument {
-    StockFutures(Box<dyn InstrumentTriat>),
-    FixedCouponBond(Box<dyn InstrumentTriat>),
-    FloatingRateNote(Box<dyn InstrumentTriat>),
-    BondFutures(Box<dyn InstrumentTriat>),
-    IRS(Box<dyn InstrumentTriat>),
-    KTBF(Box<dyn InstrumentTriat>),
+pub enum Instrument<'a> {
+    StockFutures(Box<dyn InstrumentTriat<'a>>),
+    FixedCouponBond(Box<dyn InstrumentTriat<'a>>),
+    FloatingRateNote(Box<dyn InstrumentTriat<'a>>),
+    BondFutures(Box<dyn InstrumentTriat<'a>>),
+    IRS(Box<dyn InstrumentTriat<'a>>),
+    KTBF(Box<dyn InstrumentTriat<'a>>),
 }
 
-impl Instrument {
+impl<'a> Instrument<'a> {
     pub fn as_trait(&self) -> &(dyn InstrumentTriat) {
         match self {
             Instrument::StockFutures(instrument) => &**instrument,
@@ -65,11 +64,11 @@ impl Instrument {
 /// GROUP2: Vec<&'static str> = vec!["FixedCouponBond", "BondFutures", "KTBF"]; 
 /// GROUP3: Vec<&'static str> = vec!["StructuredProduct"]; 
 pub struct Instruments<'a> {
-    instruments: Vec<&'a Instrument>,
+    instruments: Vec<&'a Instrument<'a>>,
 }
 
 impl<'a> Index<usize> for Instruments<'a> {
-    type Output = Instrument;
+    type Output = Instrument<'a>;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.instruments[index]
@@ -95,24 +94,22 @@ impl<'a> Instruments<'a> {
         &self.instruments
     }
 
-    pub fn get_underlying_names(&self) -> Vec<String> {
-        let mut underlying_names = HashSet::<String>::new();
+    pub fn get_underlying_names(&self) -> Vec<&str> {
+        let mut underlying_names = HashSet::<&str>::new();
         for instrument in self.instruments.iter() {
-            if let Some(names) = instrument.as_trait().get_underlying_names() {
-                for name in names.iter() {
-                    underlying_names.insert(name.clone());
-                }
+            let names = instrument.as_trait().get_underlying_names();
+            for name in names.iter() {
+                underlying_names.insert(name);
             }
         }
-
         underlying_names.into_iter().collect()
     }
-
+    
     pub fn select_instruments(
         &self, 
         types: &str,
         currency: Option<&Currency>,
-        underlying_names: Option<&Vec<String>>,
+        underlying_names: Option<&Vec<&str>>,
         credit_rating: Option<&CreditRating>, // only used for bonds so None must be allowed
         issuer_type: Option<&IssuerType>, // only used for bonds so None must be allowed
         issuer_name: Option<&String>, // only used for bonds so None must be allowed
@@ -126,7 +123,7 @@ impl<'a> Instruments<'a> {
                     }
                 }
                 if let Some(underlying_names) = underlying_names {
-                    let mut lhs = instrument.as_trait().get_underlying_names().unwrap().clone();
+                    let mut lhs = instrument.as_trait().get_underlying_names();
                     lhs.sort();
                     let mut rhs = underlying_names.clone();
                     rhs.sort();

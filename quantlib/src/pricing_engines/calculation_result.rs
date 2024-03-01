@@ -28,25 +28,25 @@ use time::{Duration, OffsetDateTime};
 /// cashflow in (evaluation_date, evaluation_date + theta)
 ///
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CalculationResult {
-    instrument: InstrumentInfo,
+pub struct CalculationResult<'a> {
+    instrument: InstrumentInfo<'a>,
     evaluation_date: OffsetDateTime,
     npv: Option<Real>, 
     value: Option<Real>,
     fx_exposure: Option<Real>,
-    delta: Option<HashMap<String, Real>>,
-    gamma: Option<HashMap<String, Real>>,
-    vega: Option<HashMap<String, Real>>,
-    vega_strucure: Option<HashMap<String, HashMap<Duration, Real>>>, // underlying code -> duration -> vega
+    delta: Option<HashMap<&'a str, Real>>,
+    gamma: Option<HashMap<&'a str, Real>>,
+    vega: Option<HashMap<&'a str, Real>>,
+    vega_strucure: Option<HashMap<&'a str, HashMap<Duration, Real>>>, // underlying code -> duration -> vega
     theta: Option<Real>,
-    rho: Option<HashMap<String, Real>>, // Curve Code -> rho
-    rho_structure: Option<HashMap<String, HashMap<Duration, Real>>>, // curve code -> duration -> rho
+    rho: Option<HashMap<&'a str, Real>>, // Curve Code -> rho
+    rho_structure: Option<HashMap<&'a str, HashMap<Duration, Real>>>, // curve code -> duration -> rho
     theta_day: Option<Integer>,
     cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>,
 }
 
-impl Default for CalculationResult {
-    fn default() -> CalculationResult {
+impl<'a> Default for CalculationResult<'a> {
+    fn default() -> CalculationResult<'a> {
         CalculationResult {
             instrument: InstrumentInfo::default(),
             evaluation_date: OffsetDateTime::now_utc(),
@@ -67,7 +67,7 @@ impl Default for CalculationResult {
 }
 
 
-impl CalculationResult {
+impl<'a> CalculationResult<'a> {
     pub fn new(instrument: InstrumentInfo, evaluation_date: OffsetDateTime) -> CalculationResult {
         CalculationResult {
             instrument,
@@ -107,11 +107,11 @@ impl CalculationResult {
         self.fx_exposure = Some(fx_exposure);
     }
 
-    pub fn set_delta(&mut self, delta: HashMap<String, Real>) {
-        self.delta = Some(delta);
+    pub fn set_delta(&mut self, delta: HashMap<&str, Real>) {
+        self.gamma = Some(delta);
     }
 
-    pub fn set_gamma(&mut self, gamma: HashMap<String, Real>) {
+    pub fn set_gamma(&mut self, gamma: HashMap<&str, Real>) {
         self.gamma = Some(gamma);
     }
 
@@ -119,11 +119,11 @@ impl CalculationResult {
         self.theta_day = Some(theta_day);
     }
 
-    pub fn set_vega(&mut self, vega: HashMap<String, Real>) {
+    pub fn set_vega(&mut self, vega: HashMap<&str, Real>) {
         self.vega = Some(vega);
     }
 
-    pub fn set_vega_structure(&mut self, vega_structure: HashMap<String, HashMap<Duration, Real>>) {
+    pub fn set_vega_structure(&mut self, vega_structure: HashMap<&str, HashMap<Duration, Real>>) {
         self.vega_strucure = Some(vega_structure);
     }
 
@@ -131,11 +131,11 @@ impl CalculationResult {
         self.theta = Some(theta);
     }
 
-    pub fn set_rho(&mut self, rho: HashMap<String, Real>) {
+    pub fn set_rho(&mut self, rho: HashMap<&'a str, Real>) {
         self.rho = Some(rho);
     }
 
-    pub fn set_rho_structure(&mut self, rho_structure: HashMap<String, HashMap<Duration, Real>>) {
+    pub fn set_rho_structure(&mut self, rho_structure: HashMap<&'a str, HashMap<Duration, Real>>) {
         self.rho_structure = Some(rho_structure);
     }
 
@@ -151,15 +151,15 @@ impl CalculationResult {
         self.fx_exposure
     }
 
-    pub fn get_delta(&self) -> &Option<HashMap<String, Real>> {
+    pub fn get_delta(&self) -> &Option<HashMap<&str, Real>> {
         &self.delta
     }
 
-    pub fn get_gamma(&self) -> &Option<HashMap<String, Real>> {
+    pub fn get_gamma(&self) -> &Option<HashMap<&'a str, Real>> {
         &self.gamma
     }
 
-    pub fn get_vega_structure(&self) -> &Option<HashMap<String, HashMap<Duration, Real>>> {
+    pub fn get_vega_structure(&self) -> &Option<HashMap<&'a str, HashMap<Duration, Real>>> {
         &self.vega_strucure
     }
 
@@ -196,21 +196,23 @@ mod tests {
             datetime!(2022-01-01 15:40:00 +09:00),
             250_000.0,
             Currency::KRW,
-            "KOSPI200".to_string(),
-            "KOSPI200".to_string(),
-            "KOSPI200".to_string(),
+            "KOSPI200",
+            "KOSPI200",
+            "KOSPI200",
         );
 
-        let name = stock_futures.get_name().clone();
+        let name = stock_futures.get_name();
+        let code = stock_futures.get_code();
+        let type_name = stock_futures.get_type_name();
         let maturity = stock_futures.get_maturity();
         
         let instrument = InstrumentInfo::new(
             name,
-            stock_futures.get_code().clone(),
-            stock_futures.get_currency().clone(),
-            stock_futures.get_type_name().to_string(),
+            code,
+            type_name,
+            *stock_futures.get_currency(),
             stock_futures.get_unit_notional(),
-            maturity,   
+            maturity,
         );
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
@@ -218,7 +220,7 @@ mod tests {
         result.set_npv(100.0);
 
         let mut delta = HashMap::new();
-        delta.insert("KOSPI200".to_string(), 0.1);
+        delta.insert("KOSPI200", 0.1);
         result.set_delta(delta);
 
         let serialized = serde_json::to_string_pretty(&result).unwrap();

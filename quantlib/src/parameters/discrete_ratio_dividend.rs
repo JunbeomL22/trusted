@@ -23,9 +23,8 @@ enum DividendInterpolator {
 pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,
-    marking_offsetdatetime: OffsetDateTime,
     time_calculator: NullCalendar,
-    ex_dividend_times: Array1<Time>,
+    //ex_dividend_times: Array1<Time>,
     date_integers: Vec<Integer>,
     dividend_yields: Array1<Real>,
     deduction_interpolator: DividendInterpolator,
@@ -52,7 +51,6 @@ impl DiscreteRatioDividend {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         data: &VectorData, // dividend amount
-        marking_offset: UtcOffset,
         spot: Real,
         name: String,
     ) -> DiscreteRatioDividend {
@@ -64,17 +62,12 @@ impl DiscreteRatioDividend {
         let dividend_yields: Array1<Real> = dividend_amount / spot;
 
         let mut date_integers: Vec<Integer> = vec![0; ex_dividend_dates.len()];
-        let mut ex_dividend_times: Array1<Time> = Array1::zeros(ex_dividend_dates.len());
-        let marking_offsetdatetime = OffsetDateTime::new_in_offset(
-            MARKING_DATE, // 1970-01-01
-            EX_DIVIDEND_TIME,
-            marking_offset,
-        );
+        //let mut ex_dividend_times: Array1<Time> = Array1::zeros(ex_dividend_dates.len());
 
         for (i, date) in ex_dividend_dates.iter().enumerate() {
             date_integers[i] = to_yyyymmdd_int(date);
-            let time = time_calculator.get_time_difference(&marking_offsetdatetime, date);
-            ex_dividend_times[i] = time;
+            //let time = time_calculator.get_time_difference(&marking_offsetdatetime, date);
+            //ex_dividend_times[i] = time;
         };
         // drop data of ex-dividend date and dividend amount before the evaluation-date
         let eval_dt = evaluation_date.to_owned().borrow().get_date_clone(); 
@@ -121,9 +114,8 @@ impl DiscreteRatioDividend {
         DiscreteRatioDividend {
             evaluation_date: evaluation_date.clone(),
             ex_dividend_dates,
-            marking_offsetdatetime,
-            time_calculator: time_calculator,
-            ex_dividend_times,
+            time_calculator,
+            //ex_dividend_times,
             date_integers,
             dividend_yields,
             deduction_interpolator,
@@ -175,7 +167,7 @@ impl Parameter for DiscreteRatioDividend {
         self.dividend_yields = dividend_amount / self.spot;
 
         self.date_integers = vec![0; self.ex_dividend_dates.len()];
-        self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
+        //self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
 
         for (i, date) in self.ex_dividend_dates.iter().enumerate() {
             let result = *date - self.marking_offsetdatetime;
@@ -321,7 +313,7 @@ mod tests {
         let discrete_ratio_dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &data,
-            marking_offset,
+            //marking_offset,
             spot,
             name,
         );

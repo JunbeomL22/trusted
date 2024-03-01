@@ -96,3 +96,10 @@ pub enum RankType {
     Equity = 5,
     Undefined = 6,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+pub enum AccountingLevel {
+    Level1 = 1,
+    Level2 = 2,
+    Level3 = 3,
+}

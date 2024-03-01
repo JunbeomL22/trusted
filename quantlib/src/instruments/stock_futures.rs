@@ -5,7 +5,7 @@ use crate::assets::currency::Currency;
 use crate::util::type_name;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct StockFutures {
+pub struct StockFutures<'a> {
     average_trade_price: Real,
     first_trade_date: OffsetDateTime,
     last_trade_date: OffsetDateTime,
@@ -13,13 +13,13 @@ pub struct StockFutures {
     settlement_date: OffsetDateTime,
     unit_notional: Real,
     currency: Currency,
-    underlying_names: Vec<String>,
-    name: String,
-    code: String,
+    underlying_names: Vec<&'a str>,
+    name: &'a str,
+    code: &'a str,
 }
 
-impl Default for StockFutures {
-    fn default() -> StockFutures {
+impl<'a> Default for StockFutures<'a> {
+    fn default() -> StockFutures<'a> {
         StockFutures {
             average_trade_price: 0.0,
             first_trade_date: OffsetDateTime::now_utc(),
@@ -29,13 +29,13 @@ impl Default for StockFutures {
             unit_notional: 0.0,
             currency: Currency::KRW,
             underlying_names: vec![],
-            name: "".to_string(),
-            code: "".to_string(),
+            name: "",
+            code: "",
         }
     }
 }
 
-impl StockFutures {
+impl<'a> StockFutures<'a> {
     pub fn new(
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,
@@ -44,10 +44,10 @@ impl StockFutures {
         settlement_date: OffsetDateTime,
         unit_notional: Real,
         currency: Currency,
-        underlying_name: String,
-        name: String,
-        code: String,
-    ) -> StockFutures {
+        underlying_name: &'a str,
+        name: &'a str,
+        code: &'a str,
+    ) -> StockFutures<'a> {
         StockFutures {
             average_trade_price,
             first_trade_date,
@@ -62,12 +62,12 @@ impl StockFutures {
         }
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    pub fn get_name(&self) -> &str {
+        self.name
     }
 
-    pub fn get_code(&self) -> &String {
-        &self.code
+    pub fn get_code(&self) -> &str {
+        self.code
     }
 
     pub fn get_currency(&self) -> &Currency {
@@ -82,7 +82,7 @@ impl StockFutures {
         self.unit_notional
     }
 
-    pub fn get_underlying_names(&self) -> Option<&Vec<String>> {
+    pub fn get_underlying_names(&self) -> Option<&Vec<&str>> {
         Some(&self.underlying_names)
     }
 
@@ -111,9 +111,9 @@ mod tests {
             datetime!(2022-01-01 15:40:00 +09:00),
             100.0,
             Currency::KRW,
-            "KOSPI200".to_string(),
-            "KOSPI2 Fut Mar24".to_string(),
-            "165AAA".to_string(),
+            "KOSPI200",
+            "KOSPI2 Fut Mar24",
+            "165AAA",
         );
 
         let serialized = serde_json::to_string(&stock_futures).unwrap();

@@ -57,12 +57,12 @@ impl ZeroCurve {
     
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>, 
-        data: Rc<RefCell<VectorData>>,
+        data: &VectorData,
         code: ZeroCurveCode, 
         name: String
     ) -> ZeroCurve {
-        let rate_times = data.borrow().get_times_clone();
-        let zero_rates = data.borrow().get_value_clone();
+        let rate_times = data.get_times_clone();
+        let zero_rates = data.get_value_clone();
         let time_calculator =  NullCalendar {};
 
         assert!(

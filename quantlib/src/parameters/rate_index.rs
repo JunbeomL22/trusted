@@ -50,8 +50,8 @@ impl RateIndex {
         &self.code
     }
 
-    pub fn get_rate_forward_curve_name(&self) -> &'static str {
-        self.code.forward_curve_name()
+    pub fn get_rate_forward_curve_name(&self) -> &str {
+        self.code.get_forward_curve_name()
     }
 
 }

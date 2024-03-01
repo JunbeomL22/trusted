@@ -12,7 +12,7 @@ use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use std::collections::HashMap;
 use std::vec;
 use crate::data::vector_data::VectorData;
-use crate::instrument::Instrument;
+use crate::instrument::{Instrument, InstrumentTriat};
 use crate::definitions::Time;
 use crate::definitions::{DELTA_PNL_UNIT, RHO_PNL_UNIT};
 //
@@ -59,46 +59,35 @@ impl StockFuturesPricer {
 }
 
 impl Pricer for StockFuturesPricer {
-    /*
-    fn calculate(&mut self) {
-        self.set_npv();
-        self.set_value();
-        self.set_fx_exposure();
-        if self.configuration.get_delta_calculation() {
-            self.set_delta();
-        }
-        if self.configuration.get_theta_calculation() {
-            self.set_theta();
-        }
-        if self.configuration.get_rho_calculation() {
-            self.set_rho();
-        }
-
-        if self.configuration.get_theta_calculation() {
-            self.set_theta();
-        }
-
-    }
-    */
-
-    fn npv(&self, instruments: &Vec<Instrument>) -> HashMap<String, Real> {
-        let mut npv: HashMap<String, Real> = HashMap::new();
-        for instrument in instruments {
-            if let Instrument::StockFutures(stock_futures) = instrument {
-                let code = stock_futures.get_code();
+    fn npv(&self, instruments: &Instrument) -> Real {
+        let res = match instruments {
+            Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
-                let fwd = self.fair_forward(&maturity);
-                npv.insert(code.clone(), fwd);
+                self.fair_forward(&maturity)
             }
-        }
-        npv
+            _ => panic!(
+                "StockFuturesPricer::npv: not supported instrument type: {}",
+                instruments.as_trait().get_type_name().to_string(),
+            )
+        };
+        res
     }
 
-    fn delta(&self, _instruments: &Vec<Instrument>) -> HashMap<String, HashMap<String, Real>> {
-        let mut delta: HashMap<String, HashMap<String, Real>> = HashMap::new();
-        delta
+    fn fx_exposure(&self, instruments: &Instrument) -> Real {
+        let res = match instruments {
+            Instrument::StockFutures(stock_futures) => {
+                let npv = self.npv(instruments);
+                let average_trade_price = stock_futures.get_average_trade_price();
+                let unit_notional = stock_futures.get_unit_notional();
+                (npv - average_trade_price) * unit_notional
+            }
+            _ => panic!(
+                "StockFuturesPricer::fx_exposure: not supported instrument type: {}",
+                instruments.as_trait().get_type_name().to_string(),
+            )
+        };
+        res
     }
-
     /* 
     fn set_npv(&mut self) {
         let npv = self.npv();
@@ -291,7 +280,6 @@ mod tests {
     use crate::parameters::zero_curve_code::ZeroCurveCode;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
-    use crate::pricing_engines::engine::Engine;
 
     #[test]
     fn test_stock_futures_engine() {
@@ -379,9 +367,9 @@ mod tests {
             futures_maturity.clone(),
             250_000.0,
             Currency::KRW,
-            "KOSPI2".to_string(),
-            "KOSPI2 Fut Mar24".to_string(),
-            "165XXXX".to_string(),
+            "KOSPI2",
+            "KOSPI2 Fut Mar24",
+            "165XXXX",
         );
 
         // make a stock futures engine
