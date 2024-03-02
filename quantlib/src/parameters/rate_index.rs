@@ -1,31 +1,36 @@
 use crate::time::conventions::{PaymentFrequency, BusinessDayConvention};
+use crate::parameters::zero_curve::ZeroCurve;
+use std::rc::Rc;
+use std::cell::RefCell;
 use crate::enums::RateIndexCode;
 use crate::assets::currency::Currency;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct RateIndex {
+pub struct RateIndex<'a> {
     frequency: PaymentFrequency,
     business_day_convention: BusinessDayConvention,
     currency: Currency,
     code: RateIndexCode,
-    name: String,
-    
+    forward_curve: Rc<RefCell<ZeroCurve>>,
+    name: &'a str, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
 }
 
-impl RateIndex {
+impl<'a> RateIndex<'a> {
     pub fn new(
         frequency: PaymentFrequency,
         business_day_convention: BusinessDayConvention,
         currency: Currency,
         code: RateIndexCode,
-        name: String,
+        forward_curve: Rc<RefCell<ZeroCurve>>,
+        name: &'a str,
     ) -> RateIndex {
         RateIndex {
             frequency,
             business_day_convention,
             currency,
             code,
+            forward_curve, 
             name,
         }
     }
@@ -42,8 +47,8 @@ impl RateIndex {
         &self.code
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    pub fn get_name(&self) -> &str {
+        self.name
     }
 
     pub fn get_rate_index_code(&self) -> &RateIndexCode {

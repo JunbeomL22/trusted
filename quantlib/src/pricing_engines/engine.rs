@@ -1,9 +1,9 @@
 use crate::data::observable::Observable;
 use crate::instruments::instrument_info::InstrumentInfo;
-use crate::parameters::enums::ZeroCurveCode;
+use crate::instruments::stock_futures::StockFutures;
+use crate::parameters::zero_curve_code::ZeroCurveCode;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::parameters::zero_curve::{self, ZeroCurve};
-use crate::parameters::zero_curve_code::ZeroCurveCode;
 use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments};
@@ -11,6 +11,9 @@ use crate::pricing_engines::calculation_result::CalculationResult;
 use crate::definitions::{Real, FX};
 use crate::assets::stock::Stock;
 use crate::data::vector_data::VectorData;
+use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
+use crate::pricing_engines::match_parameter::MatchPrameter;
+use core::borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -32,22 +35,32 @@ pub struct Engine<'a> {
     zero_curves: HashMap<&'a str, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<&'a str, Rc<RefCell<VectorData>>>,
     // instruments
-    instruments: Instruments<'a>, // all instruments
+    instruments: Option<Instruments<'a>>, // all instruments
     pricers: HashMap<&'a str, Pricer>, // pricers for each instrument
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
     instruments_in_action: Vec<&'a Instrument<'a>>, 
+    //
+    match_parameter: MatchPrameter<'a>,
 }
 
 impl<'a> Engine<'a> {
     pub fn initialize(
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
-        fx_value: HashMap<FX, (OffsetDateTime, Real)>,
-        stock_value: HashMap<&'a str, (OffsetDateTime, Real)>,
+        //
+        fx_input: HashMap<FX, (OffsetDateTime, Real)>,
+        stock_input: HashMap<&'a str, (OffsetDateTime, Real)>,
         curve_data: HashMap<&'a str, VectorData>,
         dividend_data: HashMap<&'a str, VectorData>,
+        //
+        instruments: Instruments<'a>,
+        match_parameter: MatchPrameter<'a>,
     ) -> Engine<'a> {
+        let evaluation_date = Rc::new(RefCell::new(
+            evaluation_date
+        ));
+
         let zero_curves = HashMap::new();
         for (key, data) in curve_data.iter() {
             let zero_curve = Rc::new(RefCell::new(
@@ -88,14 +101,12 @@ impl<'a> Engine<'a> {
                     *value,
                     evaluation_date.clone(),
                     dividends.get(key).unwrap().clone(),
-
                     key.to_string(),
 
                 )));
             stocks.insert(key, rc);
         }
         
-
         Engine {
             calculation_result: HashMap::new(),
             calculation_configuration: calculation_configuration.clone(),
@@ -106,38 +117,24 @@ impl<'a> Engine<'a> {
             zero_curves: zero_curves,
             dividend_data: dividend_data.clone(),
             dividends: dividends,
-            instruments: vec![],
+            instruments: None,
             instruments_in_action: vec![],
-            pricer: None,
+            pricers: HashMap::new(),
+            match_parameter: match_parameter,
         }
     }
         
-    pub fn set_instuments(&mut self, instruments: Vec<&'a Instrument<'a>>) {
-        self.instruments = instruments;
-        // check if all instruments are of the same type
-        let mut instrument_type = String::new();
-        for instrument in self.instruments.iter() {
-            if instrument_type.is_empty() {
-                instrument_type = instrument.as_trait().get_type_name().to_string();
-            } else {
-                if instrument_type != instrument.as_trait().get_type_name() {
-                    assert_eq!(
-                        instrument_type,
-                        instrument.as_trait().get_type_name(),
-                        "All instruments must be of the same type: {} and {} are different types",
-                        instrument_type,
-                        instrument.as_trait().get_type_name()
-                    );
-                }
-            }
-        }
-
+    pub fn set_instuments(&mut self, instruments: Instruments<'a>) {
+        self.instruments = Some(instruments);
+    
         for instrument in self.instruments.iter() {
             let inst = instrument.as_trait();
+            let code = inst.get_code();
+            let inst_type = inst.get_type_name();
             let instrument_information = InstrumentInfo::new(
                 inst.get_name(),
-                inst.get_code(),
-                inst.get_type_name(),
+                code,
+                inst_type,
                 inst.get_currency().clone(),
                 inst.get_unit_notional(),
                 inst.get_maturity().clone(),
@@ -157,22 +154,56 @@ impl<'a> Engine<'a> {
 
     pub fn with_instruments(mut self, instruments: Vec<&'a Instrument<'a>>) -> Engine<'a> {
         self.set_instuments(instruments);
+        self.instruments_in_action = self.instruments.unwrap().get_instruments();
         self
     }
 
-    pub fn with_pricer(mut self, pricer: Box<dyn Pricer>) -> Engine<'a> {
-        self.pricer = Some(pricer);
-        self
+    pub fn initialize_pricers(mut self) {
+        let inst_vec = self.instruments.as_ref().unwrap().get_instruments();
+        for inst in inst_vec.iter() {
+            let inst_type = inst.as_trait().get_type_name();
+            let inst_name = inst.as_trait().get_name();
+            let inst_code = inst.as_trait().get_code();
+            let inst_curr = inst.as_trait().get_currency();
+            let undertlying_names = inst.as_trait().get_underlying_names();
+
+            let pricer = match inst {
+                Instrument::StockFutures(instrument) => {
+                    let stock = self.stocks.get(undertlying_names[0]).unwrap().clone();
+                    let collatral_curve_name = self.match_parameter.get_collateral_curve_name(inst);
+                    let borrowing_curve_name = self.match_parameter.get_borrowing_curve_name(inst);
+                    StockFuturesPricer::new(
+                        stock,
+                        self.zero_curves.get(collatral_curve_name).unwrap().clone(),
+                        self.zero_curves.get(borrowing_curve_name).unwrap().clone(),
+                        self.evaluation_date.clone(),
+                    )
+                },
+                _ => {
+                    panic!(
+                        "Not implemented yet (type = {}, name =  {})", 
+                        inst_type,
+                        inst_name
+                    );
+                }
+            };
+            self.pricers.insert(inst_code, pricer);
+        }
     }
 
-    pub fn calculate_npv(&mut self) {
-        self.set_npv();
-        self.set_value();
+    pub fn get_npv(&self) -> HashMap<&str, Real> {
+        let mut npv = HashMap::new();
+        for inst in self.instruments_in_action {
+            let pricer = self.pricers.get(inst.get_code()).unwrap();
+            let npv = pricer.npv(inst);
+            npv.insert(inst.get_code(), npv);
+        }
+        npv
     }
     pub fn set_npv(&mut self) {
-        let npv: HashMap<&str, Real> = self.pricer.as_ref().unwrap().npv(&self.instruments);
-        for (code, value) in npv.iter() {
-            self.calculation_result.get_mut(code).unwrap().set_npv(*value);
+        let npv = self.get_npv();
+        for (code, result) in self.calculation_result.iter_mut() {
+            result.set_npv(npv.get(code).unwrap());
         }
     }
 
@@ -184,10 +215,11 @@ impl<'a> Engine<'a> {
     }
 
     pub fn set_delta(&mut self) {
-        let delta: HashMap<&str, HashMap<&str, Real>> = self.pricer.as_ref().unwrap().delta(&self.instruments);
-        for (code, value) in delta.iter() {
-            self.calculation_result.get_mut(code).unwrap().set_delta(value.clone());
-        }
+        let all_underlying_codes = self.instruments.get_underlying_codes();
+        let delta_bump_ratio = self.calculation_configuration.get_delta_bump();
+        for und_code in all_underlying_codes.iter() {
+            self.instruments_in_action = self.instruments.instruments_underlying_includes(und_code);
+            let npv = self.get_npv();
     }
 
     pub fn calculate(&mut self) {

@@ -1,3 +1,5 @@
+use std::future;
+
 use crate::definitions::Real;
 use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
@@ -13,6 +15,7 @@ pub struct StockFutures<'a> {
     settlement_date: OffsetDateTime,
     unit_notional: Real,
     currency: Currency,
+    futures_currency: Currency, //may have a difference currency with the underlying
     underlying_names: Vec<&'a str>,
     name: &'a str,
     code: &'a str,
@@ -28,6 +31,7 @@ impl<'a> Default for StockFutures<'a> {
             settlement_date: OffsetDateTime::now_utc(),
             unit_notional: 0.0,
             currency: Currency::KRW,
+            futures_currency: Currency::KRW,
             underlying_names: vec![],
             name: "",
             code: "",
@@ -44,6 +48,7 @@ impl<'a> StockFutures<'a> {
         settlement_date: OffsetDateTime,
         unit_notional: Real,
         currency: Currency,
+        futures_currency: Currency,
         underlying_name: &'a str,
         name: &'a str,
         code: &'a str,
@@ -56,6 +61,7 @@ impl<'a> StockFutures<'a> {
             settlement_date,
             unit_notional,
             currency,
+            futures_currency,
             underlying_names: vec![underlying_name],
             name,
             code,
@@ -74,6 +80,10 @@ impl<'a> StockFutures<'a> {
         &self.currency
     }
 
+    pub fn get_futures_currency(&self) -> &Currency {
+        &self.futures_currency
+    }
+
     pub fn get_maturity(&self) -> Option<&OffsetDateTime> {
         Some(&self.maturity)
     }
@@ -82,7 +92,7 @@ impl<'a> StockFutures<'a> {
         self.unit_notional
     }
 
-    pub fn get_underlying_names(&self) -> Option<&Vec<&str>> {
+    pub fn get_underlying_codes(&self) -> Option<&Vec<&str>> {
         Some(&self.underlying_names)
     }
 

@@ -28,7 +28,7 @@ pub struct StockFuturesPricer {
 }
 
 impl StockFuturesPricer {
-    pub fn initialize(
+    pub fn new(
         stock: Rc<RefCell<Stock>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,

@@ -17,7 +17,7 @@ pub trait InstrumentTriat<'a> {
     fn get_maturity(&self) -> Option<&OffsetDateTime> { None }
     // There is an instrument that does not have underlying names, 
     // so the default action is to return an empty vector
-    fn get_underlying_names(&self) -> Vec<&'a str> { vec![] }
+    fn get_underlying_codes(&self) -> Vec<&'a str> { vec![] }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Option<&CreditRating> { None }
     // only for bonds, so None must be allowed
@@ -94,7 +94,7 @@ impl<'a> Instruments<'a> {
         &self.instruments
     }
 
-    pub fn get_underlying_names(&self) -> Vec<&str> {
+    pub fn get_underlying_codes(&self) -> Vec<&str> {
         let mut underlying_names = HashSet::<&str>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_names();
@@ -105,59 +105,14 @@ impl<'a> Instruments<'a> {
         underlying_names.into_iter().collect()
     }
     
-    pub fn select_instruments(
-        &self, 
-        types: &str,
-        currency: Option<&Currency>,
-        underlying_names: Option<&Vec<&str>>,
-        credit_rating: Option<&CreditRating>, // only used for bonds so None must be allowed
-        issuer_type: Option<&IssuerType>, // only used for bonds so None must be allowed
-        issuer_name: Option<&String>, // only used for bonds so None must be allowed
-    ) -> Instruments {
-        let mut selected_instruments = Vec::<&Instrument>::new();
+    pub fn instruments_underlying_includes(&self, und_code: &str) -> Vec<&Instrument> {
+        let mut instruments = vec![];
         for instrument in self.instruments.iter() {
-            if instrument.as_trait().get_type_name() == types {
-                if let Some(currency) = currency {
-                    if instrument.as_trait().get_currency() != currency {
-                        continue;
-                    }
-                }
-                if let Some(underlying_names) = underlying_names {
-                    let mut lhs = instrument.as_trait().get_underlying_names();
-                    lhs.sort();
-                    let mut rhs = underlying_names.clone();
-                    rhs.sort();
-                    if lhs != rhs {
-                        continue;
-                    }
-                }
-                
-                match instrument {
-                    Instrument::FixedCouponBond(instrument) | 
-                    Instrument::FloatingRateNote(instrument) => 
-                    {
-                        if let Some(credit_rating) = credit_rating {
-                            if instrument.get_credit_rating().unwrap() != credit_rating {
-                                continue;
-                            }
-                        }
-                        if let Some(issuer_type) = issuer_type {
-                            if instrument.get_issuer_type().unwrap() != issuer_type {
-                                continue;
-                            }
-                        }
-                        if let Some(issuer_name) = issuer_name {
-                            if instrument.get_issuer_name().unwrap() != issuer_name {
-                                continue;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-
-                selected_instruments.push(*instrument);
+            let names = instrument.as_trait().get_underlying_names();
+            if names.contains(&und_code) {
+                instruments.push(*instrument);
             }
         }
-        Instruments::new(selected_instruments)
+        instruments
     }
-}
+}``

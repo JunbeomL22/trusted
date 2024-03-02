@@ -103,7 +103,10 @@ impl<'a> MatchPrameter<'a> {
             Instrument::StockFutures(instrument) |
             Instrument::BondFutures(instrument) |
             Instrument::KTBF(instrument) => {
-                instrument.get_currency().as_str()
+                self.collateral_curve_map.get(&(
+                    instrument.get_type_name(),
+                    *instrument.get_currency(),
+                )).expect("Collateral curve is not found")
             },
             Instrument::FixedCouponBond(_) |
             Instrument::FloatingRateNote(_) |
