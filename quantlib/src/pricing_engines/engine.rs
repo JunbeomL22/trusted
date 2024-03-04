@@ -11,6 +11,7 @@ use crate::pricing_engines::calculation_result::CalculationResult;
 use crate::definitions::{Real, FX};
 use crate::assets::stock::Stock;
 use crate::data::vector_data::VectorData;
+use crate::data::value_data::ValueData;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
 use crate::pricing_engines::match_parameter::MatchPrameter;
 use core::borrow;
@@ -26,6 +27,8 @@ use time::OffsetDateTime;
 pub struct Engine<'a> {
     calculation_result: HashMap<&'a str, CalculationResult<'a>>,
     calculation_configuration: CalculationConfiguration,
+    stock_data: HashMap<&'a str, ValueData>,
+    fx_data: HashMap<&'a str, ValueData>,
     curve_data: HashMap<&'a str, VectorData>,
     dividend_data: HashMap<&'a str, VectorData>,
     //
@@ -49,8 +52,8 @@ impl<'a> Engine<'a> {
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
         //
-        fx_input: HashMap<FX, (OffsetDateTime, Real)>,
-        stock_input: HashMap<&'a str, (OffsetDateTime, Real)>,
+        fx_data: HashMap<FX, (OffsetDateTime, Real)>,
+        stock_data: HashMap<&'a str, (OffsetDateTime, Real)>,
         curve_data: HashMap<&'a str, VectorData>,
         dividend_data: HashMap<&'a str, VectorData>,
         //
@@ -75,7 +78,7 @@ impl<'a> Engine<'a> {
 
         let dividends = HashMap::new();
         for (key, data) in dividend_data.iter() {
-            let spot = stock_input.get(key).unwrap();
+            let spot = stock_data.get(key).unwrap();
             let dividend = Rc::new(RefCell::new(
                 DiscreteRatioDividend::new(
                     evaluation_date.clone(),
@@ -86,16 +89,16 @@ impl<'a> Engine<'a> {
             data.borrow_mut().add_observer(dividend.clone());
         }
         // making fx Rc -> RefCell for pricing
-        let fxs: HashMap<FX, Rc<RefCell<Real>>> = fx_input
+        let fxs: HashMap<FX, Rc<RefCell<Real>>> = fx_data
             .iter()
             .map(|(key, value)| {
                 let rc = Rc::new(RefCell::new(*value));
-                (key.clone(), rc)
+                (key, rc)
             })
             .collect();
         // making stock Rc -> RefCell for pricing
         let stocks = HashMap::new();
-        for (key, value) in stock_input.iter() {
+        for (key, value) in stock_data.iter() {
             let rc = Rc::new(RefCell::new(
                 Stock::new(
                     *value,
@@ -109,13 +112,17 @@ impl<'a> Engine<'a> {
         
         Engine {
             calculation_result: HashMap::new(),
-            calculation_configuration: calculation_configuration.clone(),
+            calculation_configuration,
+            //
+            stock_data,
+            fx_data,
+            zero_curves,
+            dividend_data,
+            //
             evaluation_date: evaluation_date.clone(),
             fxs: fxs.clone(),
             stocks: stocks.clone(),
             curve_data: curve_data.clone(),
-            zero_curves: zero_curves,
-            dividend_data: dividend_data.clone(),
             dividends: dividends,
             instruments: None,
             instruments_in_action: vec![],

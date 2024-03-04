@@ -31,6 +31,10 @@ impl fmt::Debug for VectorData {
             .field("times", &self.times)
             .field("market_datetime", &self.market_datetime)
             .field("name", &self.name)
+            .field("observers", &self.observers.iter().map(|observer| {
+                let observer = observer.borrow();
+                format!("Address: {:p}, Name: {}, TypeName: {}", observer, observer.get_name(), observer.get_typename())
+            }).collect::<Vec<_>>())
             .finish()
     }
 }

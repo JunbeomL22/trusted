@@ -267,6 +267,19 @@ impl ZeroCurve {
 }
 
 impl Parameter for ZeroCurve {
+    fn get_address(&self) -> String {
+        let address = format!("{:p}", &self);
+        address
+    }
+
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_type_name(&self) -> String {
+        "ZeroCurve".to_string()
+    }
+
     fn update(&mut self, data: &dyn Observable) {
         let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
         let rate_times = data.get_times_clone();

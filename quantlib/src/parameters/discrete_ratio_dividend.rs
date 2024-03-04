@@ -159,6 +159,17 @@ impl DiscreteRatioDividend {
 }
 
 impl Parameter for DiscreteRatioDividend {
+    fn get_type_name(&self) -> String {
+        "DiscreteRatioDividend".to_string()
+    }
+    fn get_address(&self) -> String {
+        format!("{:p}", self)
+    }
+
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
     fn update(&mut self, data: &dyn Observable) {
         let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
 

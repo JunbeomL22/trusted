@@ -6,13 +6,32 @@ use crate::data::observable::Observable;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::Any;
+use serde::{Serialize, Deserialize};
+use std::fmt::Debug;
+
 /// value: Real, market_datetime: OffsetDateTime, name: String
 /// The examples are flat volatility, constant continuous dividend yield
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ValueData {
     value: Real,
     market_datetime: OffsetDateTime,
+    #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     name: String,
+}
+
+impl Debug for ValueData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ValueData")
+            .field("value", &self.value)
+            .field("market_datetime", &self.market_datetime)
+            .field("name", &self.name)
+            .field("observers", &self.observers.iter().map(|observer| {
+                let observer = observer.borrow();
+                format!("Address: {:p}, Name: {}, TypeName: {}", observer, observer.get_name(), observer.get_typename())
+            }).collect::<Vec<_>>())
+            .finish()
+    }
 }
 
 impl Observable for ValueData {
