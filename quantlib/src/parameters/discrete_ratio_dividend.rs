@@ -12,6 +12,8 @@ use crate::time::calendar::{NullCalendar, Calendar};
 use crate::parameter::Parameter;
 use ndarray::Array1;
 use crate::util::to_yyyymmdd_int;
+use anyhow::Result;
+use crate::utils::myerror::{MyError, VectorDisplay};
 
 #[derive(Clone, Debug)]
 enum DividendInterpolator {
@@ -53,11 +55,31 @@ impl DiscreteRatioDividend {
         data: &VectorData, // dividend amount
         spot: Real,
         name: String,
-    ) -> DiscreteRatioDividend {
+    ) -> Result<DiscreteRatioDividend, MyError> {
         // Begining of the function
         let time_calculator = NullCalendar {};
 
-        let ex_dividend_dates: Vec<OffsetDateTime> = data.get_dates_clone().unwrap();
+        let ex_dividend_dates: Vec<OffsetDateTime>;
+        if let Some(dates) = data.get_dates_clone() {
+            if dates.len() == 0 {
+                return Err(MyError::EmptyVectorError {
+                    file: file!().to_string(),
+                    line: line!(),
+                    vector: VectorDisplay::DATETIME(dates),
+                    other_info: "DiscreteRatioDividend::new".to_string(),
+                });
+            } else {
+                ex_dividend_dates = dates;
+            }
+
+        } else {
+            return Err(MyError::BaseError {
+                file: file!().to_string(),
+                line: line!(),
+                contents: "DiscreteRatioDividend::new: dates is None".to_string(),
+            });
+        }
+        
         let dividend_amount: Array1<Real> = data.get_value_clone();
         let dividend_yields: Array1<Real> = dividend_amount / spot;
 
@@ -111,7 +133,7 @@ impl DiscreteRatioDividend {
             deduction_interpolator = DividendInterpolator::Stepwise(_interp);
         }
         
-        DiscreteRatioDividend {
+        let res = DiscreteRatioDividend {
             evaluation_date: evaluation_date.clone(),
             ex_dividend_dates,
             time_calculator,
@@ -121,7 +143,8 @@ impl DiscreteRatioDividend {
             deduction_interpolator,
             spot,
             name,
-        }
+        };
+        Ok(res)
     }
 
     pub fn get_deduction_ratio(&self, date: &OffsetDateTime) -> Real {
