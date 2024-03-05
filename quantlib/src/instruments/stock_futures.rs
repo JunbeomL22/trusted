@@ -121,6 +121,7 @@ mod tests {
             datetime!(2022-01-01 15:40:00 +09:00),
             100.0,
             Currency::KRW,
+            Currency::KRW,
             "KOSPI200",
             "KOSPI2 Fut Mar24",
             "165AAA",

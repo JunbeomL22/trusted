@@ -104,11 +104,13 @@ impl<'a> Engine<'a> {
                     *value,
                     evaluation_date.clone(),
                     dividends.get(key).unwrap().clone(),
+                    
                     key.to_string(),
 
-                )));
+                )
+            ));
             stocks.insert(key, rc);
-        }
+            }
         
         Engine {
             calculation_result: HashMap::new(),
@@ -245,4 +247,5 @@ impl<'a> Engine<'a> {
     pub fn get_calculation_result_clone(&self) -> HashMap<&str, CalculationResult> {
         self.calculation_result.clone()
     }
+}
 }

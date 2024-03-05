@@ -23,6 +23,7 @@ pub enum VectorDisplay {
     I128(Vec<i128>),
     U128(Vec<u128>),
     REAL(Vec<Real>),
+    TIME(Vec<Time>),    
     DATETIME(Vec<OffsetDateTime>),
 }
 
@@ -85,7 +86,7 @@ pub enum MyError {
         t1: Time,
         t2: Time,
         other_info: String,
-    }
+    },
 
     // misordered offsetdatetime error
     #[error(
@@ -98,6 +99,18 @@ pub enum MyError {
         line: u32,
         d1: OffsetDateTime,
         d2: OffsetDateTime,
+        other_info: String,
+    },
+
+    // NoneError
+    #[error(
+        "by {file}:{line},\n\
+        the value is None\n\
+        others: {other_info}"
+    )]
+    NoneError {
+        file: String,
+        line: u32,
         other_info: String,
     }
        

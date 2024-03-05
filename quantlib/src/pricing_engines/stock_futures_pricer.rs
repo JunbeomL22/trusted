@@ -1,5 +1,7 @@
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::pricing_engines::pricer::Pricer;
+use crate::utils::myerror::MyError;
+use anyhow::Context;
 use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameters::zero_curve::ZeroCurve;
@@ -58,36 +60,41 @@ impl StockFuturesPricer {
 
 }
 
-impl Pricer for StockFuturesPricer {
-    fn npv(&self, instruments: &Instrument) -> Real {
+impl StockFuturesPricer {
+    fn npv(&self, instruments: &Instrument) -> Result<Real, MyError> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
-                self.fair_forward(&maturity)
+                Ok(self.fair_forward(&maturity))
             }
-            _ => panic!(
-                "StockFuturesPricer::npv: not supported instrument type: {}",
-                instruments.as_trait().get_type_name().to_string(),
-            )
+            _ => Err(MyError::BaseError {
+                 file: file!().to_string(), 
+                 line: line!(), 
+                 contents: format!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string())
+                })
         };
         res
     }
 
-    fn fx_exposure(&self, instruments: &Instrument) -> Real {
-        let res = match instruments {
+    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real, MyError> {
+        match instruments {
             Instrument::StockFutures(stock_futures) => {
-                let npv = self.npv(instruments);
+                let npv = self.npv(instruments)
+                    .with_context(format!("StockFuturesPricer::fx_exposure: failed to get npv for {}", stock_futures.get_code()))?;
                 let average_trade_price = stock_futures.get_average_trade_price();
                 let unit_notional = stock_futures.get_unit_notional();
-                (npv - average_trade_price) * unit_notional
+                Ok((npv - average_trade_price) * unit_notional)
             }
-            _ => panic!(
-                "StockFuturesPricer::fx_exposure: not supported instrument type: {}",
-                instruments.as_trait().get_type_name().to_string(),
-            )
-        };
-        res
+            _ => Err(MyError::BaseError {
+                 file: file!().to_string(), 
+                 line: line!(), 
+                 contents: format!(
+                    "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
+                    instruments.as_trait().get_type_name().to_string())
+                })
+        }
     }
+}
     /* 
     fn set_npv(&mut self) {
         let npv = self.npv();
@@ -268,7 +275,7 @@ impl Pricer for StockFuturesPricer {
         &self.results
     }
     */
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -299,16 +306,16 @@ mod tests {
             Some(vec![datetime!(2024-01-15 00:00:00 +09:00), datetime!(2024-02-15 00:00:00 +09:00)]),
             None,
             market_datetime.clone(),
+            &Currency::KRW,
             "KOSPI2".to_string(),
-        );
+        ).expect("failed to make a vector data for dividend ratio");
 
         let dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
-            &dividend_data,
-            offset,
+            &dividend_data,      
             spot,
             name.to_string(),
-        );
+        ).expect("failed to make a discrete ratio dividend");
 
         // make a stock
         let stock = Rc::new(
@@ -325,32 +332,27 @@ mod tests {
         );
 
         // make a zero curve which represents KSD curve which is equivelantly KRWGOV - 5bp
-        let _ksd_data = VectorData::new(
+        let ksd_data = VectorData::new(
             Array1::from(vec![0.0345, 0.0345]),
             Some(vec![datetime!(2021-01-02 16:00:00 +09:00), datetime!(2022-01-01 00:00:00 +09:00)]),
             None,
             market_datetime.clone(),
+            &Currency::KRW,
             "KSD".to_string(),
-        );
-
-        let ksd_data = Rc::new(
-            RefCell::new(
-                _ksd_data
-            )
-        );
+        ).expect("failed to make a vector data for KSD curve");
 
         let ksd_curve = Rc::new(
             RefCell::new(
                 ZeroCurve::new(
                     evaluation_date.clone(),
-                    ksd_data.clone(),
+                    &ksd_data,
                     ZeroCurveCode::KSD,
                     "KSD".to_string(),
-                )
+                ).expect("failed to make a zero curve for KSD")
             )
         );
 
-        ksd_data.borrow_mut().add_observer(ksd_curve.clone());
+        ksd_data.add_observer(ksd_curve.clone());
 
         let dummy_curve = Rc::new(
             RefCell::new(ZeroCurve::dummy_curve())

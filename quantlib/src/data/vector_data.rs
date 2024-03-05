@@ -1,7 +1,7 @@
+use crate::assets::currency::Currency;
 use crate::definitions::{Real, Time};
 use crate::time::calendar::{Calendar, NullCalendar};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
-use num_traits::Zero;
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
 use crate::data::observable::Observable;
@@ -11,6 +11,8 @@ use std::cell::RefCell;
 use std::any::Any;
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
+use crate::utils::myerror::{MyError, VectorDisplay};
+use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct VectorData {
@@ -20,6 +22,7 @@ pub struct VectorData {
     market_datetime: OffsetDateTime,
     #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
+    currency: Currency,
     name: String,
 }
 
@@ -30,6 +33,7 @@ impl fmt::Debug for VectorData {
             .field("dates", &self.dates)
             .field("times", &self.times)
             .field("market_datetime", &self.market_datetime)
+            .field("currency", &self.currency)
             .field("name", &self.name)
             .field("observers", &self.observers.iter().map(|observer| {
                 let observer = observer.borrow();
@@ -68,58 +72,73 @@ impl VectorData {
         dates: Option<Vec<OffsetDateTime>>, 
         times: Option<Array1<Time>>,
         market_datetime: OffsetDateTime, 
+        currency: &Currency,
         name: String
-    ) -> VectorData {
+    ) -> Result<VectorData, MyError> {
         // sanity check first
         if dates == None && times == None {
-            panic!(
-                "VectorData::new => Both dates and times cannot be None (occured at {})", 
-                name
-            );
+            return Err(MyError::NoneError {
+                file: file!().to_string(),
+                line: line!(),
+                other_info: "dates and times are both None".to_string()
+            });
         }
 
         if let Some(dates) = &dates {
-            assert_eq!(
-                value.len(), 
-                dates.len(),
-                "VectorData::new => The length of value and dates must be the same (occured at {}),\n value: {:?},\n dates: {:?}\n",
-                &name, 
-                &value, 
-                &dates);
+            // change the following assertion to return Err
+            if value.len() != dates.len() {
+                return Err(MyError::MismatchedLengthError { 
+                    file: file!().to_string(),
+                    line: line!(),
+                    left: VectorDisplay::REAL(value.to_vec()),
+                    right: VectorDisplay::OFFSETDATETIME(dates),
+                    other_info: "The length of value and dates must be the same".to_string()
+                });
+            }
             
-
             let times: Array1<Time> = dates
             .iter()
             .map(|date| NullCalendar::default().get_time_difference(&market_datetime, date))
             .collect();
             
-            VectorData {
+            let res = VectorData {
                 value,
                 dates: Some(dates.to_vec()),
                 times: times,
                 market_datetime: market_datetime,
                 observers: Vec::new(),
+                currency: currency,
                 name: name,
-            }
+            };
+            Ok(res)
         } else {
-            let times = times.unwrap();
-            assert_eq!(
-                value.shape()[0],
-                times.shape()[0],
-                "VectorData::new => The length of value and times must be the same (occured at {}),\n value: {:?},\n times: {:?}",
-                name, 
-                value, 
-                times,
-            );
-
-            VectorData {
+            if let Some(times) = &times {
+                if value.len() != times.len() {
+                    return Err(MyError::MismatchedLengthError { 
+                        file: file!().to_string(),
+                        line: line!(),
+                        left: VectorDisplay::REAL(value.to_vec()),
+                        right: VectorDisplay::TIME(times.to_vec()),
+                        other_info: "The length of value and times must be the same".to_string()
+                    });
+                }
+            } else {
+                return Err(MyError::NoneError {
+                    file: file!().to_string(),
+                    line: line!(),
+                    other_info: "dates and times are both None".to_string()
+                });
+            }
+            let res = VectorData {
                 value,
                 dates,
                 times: times,
                 market_datetime,
                 observers: Vec::new(),
+                currency: currency,
                 name,
-            }
+            };
+            Ok(res)
         }
     }
 
@@ -149,7 +168,7 @@ impl VectorData {
         dates: Option<Vec<OffsetDateTime>>,
         times: Option<Array1<Time>>,
         market_datetime: Option<OffsetDateTime>
-    ) {
+    ) -> Result<()> {
         self.value = value;
         if let Some(market_datetime) = market_datetime {
             self.market_datetime = market_datetime;
@@ -164,23 +183,36 @@ impl VectorData {
             .collect();
         }
 
-        assert!(
-            self.value.shape()[0] == self.times.shape()[0], 
-            "The length of value and times must be the same"
-        );
+        if self.value.shape()[0] != self.times.shape()[0] {
+            return Err(MyError::MismatchedLengthError { 
+                file: file!().to_string(),
+                line: line!(),
+                left: VectorDisplay::REAL(self.value.to_vec()),
+                right: VectorDisplay::TIME(self.times.to_vec()),
+                other_info: "The length of value and times must be the same".to_string()
+            });
+        }
 
         self.notify_observers();
+        Ok(())
     }
 
     /// add bimp_value to self.value wehere self.times in [t1, t2)
-    fn bump_time_interval(&mut self, from_t: Time, before_t: Time, bump_value: Real) {
-        assert!(
-            from_t < before_t,
-            "(occured at) add_bump_value(from_t: {}, before_t: {}, bump_value: {})",
-            from_t,
-            before_t,
-            bump_value
-        );
+    fn bump_time_interval(
+        &mut self, 
+        from_t: Time, 
+        before_t: Time, 
+        bump_value: Real
+    ) -> Result<()> {
+        if from_t >= before_t {
+            return Err(MyError::MisorderedTimeError {
+                file: file!().to_string(),
+                line: line!(),
+                t1: from_t,
+                t2: before_t,
+                other_info: "VectorData::bump_time_interval".to_string()
+            });
+        }
 
         let mut i = 0;
         let time_length = self.times.shape()[0];
@@ -193,16 +225,19 @@ impl VectorData {
             i += 1;
         }
         self.notify_observers();
+        Ok(())
     }
 
     fn bump_date_interval(&mut self, from_date: OffsetDateTime, before_date: OffsetDateTime, bump_value: Real) {
-        assert!(
-            from_date < before_date,
-            "(occured at) bump_date_interval(from_date: {}, before_date: {}, bump_value: {})",
-            from_date,
-            before_date,
-            bump_value
-        );
+        if from_date >= before_date {
+            return Err(MyError::MisorderedOffsetDateTimeError {
+                file: file!().to_string(),
+                line: line!(),
+                d1: from_date,
+                d2: before_date,
+                other_info: "VectorData::bump_date_interval".to_string()
+            });
+        }
 
         let mut i = 0;
         let time_length = self.dates.as_ref().unwrap().len();
@@ -215,6 +250,7 @@ impl VectorData {
             i += 1;
         }
         self.notify_observers();
+        Ok(())
     }
 
 
@@ -339,6 +375,7 @@ mod tests {
             None, 
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
             datetime!(2020-01-01 00:00:00 UTC), 
+            &Currency::KRW,
             "test_vector_data_serialization".to_string()
         );
 
