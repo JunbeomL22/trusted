@@ -65,13 +65,11 @@ pub enum MyError {
     #[error(
         "by {file}:{line}.\n\
         the vector is empty:\n\
-        vector = {vector:?}\n\
         others: {other_info}"
     )]
     EmptyVectorError{
         file: String,
         line: u32,
-        vector: VectorDisplay,
         other_info: String,
     },
 
@@ -113,5 +111,15 @@ pub enum MyError {
         line: u32,
         other_info: String,
     }
-       
+}
+
+impl From<anyhow::Error> for MyError {
+    fn from(error: anyhow::Error) -> Self {
+        // Convert the anyhow::Error into a MyError
+        MyError::BaseError {
+            file: file!().to_string(), 
+            line: line!(), 
+            contents: format!("Error: {}", error.to_string())
+        }
+    }
 }

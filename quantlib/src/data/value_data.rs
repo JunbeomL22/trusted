@@ -1,4 +1,4 @@
-use crate::definitions::Real;
+use crate::{assets::currency, definitions::Real};
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::any::Any;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
+use crate::assets::currency::Currency;
 
 /// value: Real, market_datetime: OffsetDateTime, name: String
 /// The examples are flat volatility, constant continuous dividend yield
@@ -17,6 +18,7 @@ pub struct ValueData {
     market_datetime: OffsetDateTime,
     #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
+    currency: Currency,
     name: String,
 }
 
@@ -28,7 +30,7 @@ impl Debug for ValueData {
             .field("name", &self.name)
             .field("observers", &self.observers.iter().map(|observer| {
                 let observer = observer.borrow();
-                format!("Address: {:p}, Name: {}, TypeName: {}", observer, observer.get_name(), observer.get_typename())
+                format!("Address: {}, Name: {}, TypeName: {}", observer.get_address(), observer.get_name(), observer.get_type_name())
             }).collect::<Vec<_>>())
             .finish()
     }
@@ -52,11 +54,17 @@ impl Observable for ValueData {
 }
 
 impl ValueData {
-    pub fn new(value: Real, market_datetime: OffsetDateTime, name: String) -> ValueData {
+    pub fn new(
+        value: Real, 
+        market_datetime: OffsetDateTime, 
+        currency: Currency,
+        name: String
+    ) -> ValueData {
         ValueData {
             value,
             market_datetime,
             observers: vec![],
+            currency,
             name,
         }
     }
@@ -77,6 +85,10 @@ impl ValueData {
 
     pub fn get_name(&self) -> &String {
         &self.name
+    }
+
+    pub fn get_currency(&self) -> &Currency {
+        &self.currency
     }
 }
 

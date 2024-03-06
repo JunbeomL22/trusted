@@ -9,17 +9,20 @@ use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments};
 use crate::pricing_engines::calculation_result::CalculationResult;
 use crate::definitions::{Real, FX};
-use crate::assets::stock::Stock;
+use crate::assets::stock::{self, Stock};
 use crate::data::vector_data::VectorData;
 use crate::data::value_data::ValueData;
+use crate::pricing_engines::pricer::{Pricer, PricerTrait};
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
 use crate::pricing_engines::match_parameter::MatchPrameter;
 use core::borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::pricing_engines::pricer::Pricer;
-use time::OffsetDateTime;
+use serde_json::Value;
+use time::{OffsetDateTime, Duration};
+use anyhow::{Context, Result};
+use crate::utils::myerror::{MyError, VectorDisplay};
 
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
@@ -33,12 +36,12 @@ pub struct Engine<'a> {
     dividend_data: HashMap<&'a str, VectorData>,
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<FX, Rc<RefCell<Real>>>,
+    fxs: HashMap<&'a str, Rc<RefCell<Real>>>,
     stocks: HashMap<&'a str, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<&'a str, Rc<RefCell<ZeroCurve>>>,
-    dividends: HashMap<&'a str, Rc<RefCell<VectorData>>>,
+    dividends: HashMap<&'a str, Rc<RefCell<DiscreteRatioDividend>>>,
     // instruments
-    instruments: Option<Instruments<'a>>, // all instruments
+    instruments: Instruments<'a>, // all instruments
     pricers: HashMap<&'a str, Pricer>, // pricers for each instrument
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
@@ -48,12 +51,12 @@ pub struct Engine<'a> {
 }
 
 impl<'a> Engine<'a> {
-    pub fn initialize(
+    pub fn new (
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
         //
-        fx_data: HashMap<FX, (OffsetDateTime, Real)>,
-        stock_data: HashMap<&'a str, (OffsetDateTime, Real)>,
+        fx_data: HashMap<&'a str, ValueData>,
+        stock_data: HashMap<&'a str, ValueData>,
         curve_data: HashMap<&'a str, VectorData>,
         dividend_data: HashMap<&'a str, VectorData>,
         //
@@ -72,44 +75,57 @@ impl<'a> Engine<'a> {
                     data,
                     ZeroCurveCode::from_str(key).unwrap(),
                     key.to_string(),
-                )));
-            data.borrow_mut().add_observer(zero_curve.clone());
+                ).expect("failed to create zero curve")
+            ));
+            zero_curves.insert(*key, zero_curve.clone());
+            data.add_observer(zero_curve.clone());
         }
 
         let dividends = HashMap::new();
         for (key, data) in dividend_data.iter() {
-            let spot = stock_data.get(key).unwrap();
+            let spot = stock_data.get(key)
+                .expect("Failed to find stock data matching the dividend data")
+                .get_value();
+
             let dividend = Rc::new(RefCell::new(
                 DiscreteRatioDividend::new(
                     evaluation_date.clone(),
                     data,
                     spot,
                     key.to_string(),
-                )));
-            data.borrow_mut().add_observer(dividend.clone());
+                ).expect("failed to create discrete ratio dividend")
+            ));
+            dividends.insert(*key, dividend.clone());
+            data.add_observer(dividend.clone());
         }
         // making fx Rc -> RefCell for pricing
-        let fxs: HashMap<FX, Rc<RefCell<Real>>> = fx_data
+        let fxs: HashMap<&str, Rc<RefCell<Real>>> = HashMap::new();
+        fx_data
             .iter()
-            .map(|(key, value)| {
-                let rc = Rc::new(RefCell::new(*value));
-                (key, rc)
-            })
-            .collect();
+            .map(|(key, data)| {
+                let rc = Rc::new(RefCell::new(data.get_value()));
+                fxs.insert(*key, rc)
+            });
+
         // making stock Rc -> RefCell for pricing
         let stocks = HashMap::new();
-        for (key, value) in stock_data.iter() {
+        for (key, data) in stock_data.iter() {
+            let div = match dividends.get(key) {
+                Some(div) => Some(div.clone()),
+                None => None,
+            };
+
             let rc = Rc::new(RefCell::new(
                 Stock::new(
-                    *value,
-                    evaluation_date.clone(),
-                    dividends.get(key).unwrap().clone(),
-                    
+                    data.get_value(),
+                    data.get_market_datetime().clone(),
+                    div,
+                    data.get_currency().clone(),  
+                    data.get_name().clone(),
                     key.to_string(),
-
                 )
             ));
-            stocks.insert(key, rc);
+            stocks.insert(*key, rc);
             }
         
         Engine {
@@ -118,23 +134,56 @@ impl<'a> Engine<'a> {
             //
             stock_data,
             fx_data,
-            zero_curves,
+            curve_data,
             dividend_data,
             //
-            evaluation_date: evaluation_date.clone(),
-            fxs: fxs.clone(),
-            stocks: stocks.clone(),
-            curve_data: curve_data.clone(),
-            dividends: dividends,
-            instruments: None,
+            evaluation_date,
+            fxs,
+            stocks,
+            zero_curves,
+            dividends,
+            //
+            instruments: instruments,
             instruments_in_action: vec![],
             pricers: HashMap::new(),
             match_parameter: match_parameter,
         }
     }
-        
-    pub fn set_instuments(&mut self, instruments: Instruments<'a>) {
-        self.instruments = Some(instruments);
+    
+    // initialize CalculationResult for each instrument
+    pub fn initialize(&mut self, instrument_vec: Vec<&'a Instrument<'a>>) -> Result<()> {
+        self.initialize_instruments(instrument_vec)
+            .with_context(|| format!(
+                "(Engine::initialize) Failed to initialize instruments\n\
+                occuring at {file}:{line}",
+                file = file!(),
+                line = line!(),
+            ))?;
+
+        self.initialize_pricers()
+            .with_context(|| format!(
+                "(Engine::initialize) Failed to initialize pricers\n\
+                occuring at {file}:{line}",
+                file = file!(),
+                line = line!(),
+            ))?;
+
+        Ok(())
+    }
+
+    pub fn initialize_instruments(mut self, instrument_vec: Vec<&'a Instrument<'a>>) -> Result<(), MyError> {
+        if instrument_vec.is_empty() {
+            return Err(
+                MyError::EmptyVectorError {
+                    file: file!().to_string(),
+                    line: line!(),
+                    other_info: "(Engine::initialize_instruments) instruments are empty".to_string(),
+                }
+            );
+        }
+
+        self.instruments = Instruments::new(instrument_vec);
+        self.instruments_in_action = self.instruments.get_instruments().clone();
     
         for instrument in self.instruments.iter() {
             let inst = instrument.as_trait();
@@ -159,81 +208,154 @@ impl<'a> Engine<'a> {
                 init_res
             );
         }
+        Ok(())
     }
 
-    pub fn with_instruments(mut self, instruments: Vec<&'a Instrument<'a>>) -> Engine<'a> {
-        self.set_instuments(instruments);
-        self.instruments_in_action = self.instruments.unwrap().get_instruments();
-        self
-    }
-
-    pub fn initialize_pricers(mut self) {
-        let inst_vec = self.instruments.as_ref().unwrap().get_instruments();
+    pub fn initialize_pricers(mut self) -> Result<(), MyError> {
+        let inst_vec = self.instruments.get_instruments();
         for inst in inst_vec.iter() {
             let inst_type = inst.as_trait().get_type_name();
             let inst_name = inst.as_trait().get_name();
             let inst_code = inst.as_trait().get_code();
             let inst_curr = inst.as_trait().get_currency();
-            let undertlying_names = inst.as_trait().get_underlying_names();
+            let undertlying_codes = inst.as_trait().get_underlying_codes();
 
             let pricer = match inst {
                 Instrument::StockFutures(instrument) => {
-                    let stock = self.stocks.get(undertlying_names[0]).unwrap().clone();
+                    let stock = self.stocks.get(undertlying_codes[0]).unwrap().clone();
                     let collatral_curve_name = self.match_parameter.get_collateral_curve_name(inst);
                     let borrowing_curve_name = self.match_parameter.get_borrowing_curve_name(inst);
-                    StockFuturesPricer::new(
+                    let core = StockFuturesPricer::new(
                         stock,
                         self.zero_curves.get(collatral_curve_name).unwrap().clone(),
                         self.zero_curves.get(borrowing_curve_name).unwrap().clone(),
                         self.evaluation_date.clone(),
-                    )
+                    );
+                    Pricer::StockFuturesPricer(Box::new(core))
                 },
                 _ => {
-                    panic!(
-                        "Not implemented yet (type = {}, name =  {})", 
-                        inst_type,
-                        inst_name
+                    return Err(
+                        MyError::BaseError {
+                            file: file!().to_string(), 
+                            line: line!(), 
+                            contents: format!(
+                                "Not implemented yet (type = {}, name =  {})", 
+                                inst_type,
+                                inst_name
+                            )
+                        }
                     );
                 }
             };
             self.pricers.insert(inst_code, pricer);
         }
+        Ok(())
     }
 
-    pub fn get_npv(&self) -> HashMap<&str, Real> {
-        let mut npv = HashMap::new();
+    pub fn get_npvs(&self) -> Result<HashMap<&str, Real>> {
+        let mut npvs = HashMap::new();
         for inst in self.instruments_in_action {
-            let pricer = self.pricers.get(inst.get_code()).unwrap();
-            let npv = pricer.npv(inst);
-            npv.insert(inst.get_code(), npv);
+            let pricer = self.pricers.get(inst.as_trait().get_code())
+                .with_context(|| format!(
+                    "(Engine::get_npv) Failed to get pricer for {name}\n\
+                    occuring at {file}:{line}",
+                    name = inst.as_trait().get_name(),
+                    file = file!(),
+                    line = line!(),
+                ))?;
+            let npv = pricer.as_trait().npv(inst)
+                .expect("calculation failed");
+            npvs.insert(inst.as_trait().get_code(), npv);
         }
-        npv
+        Ok(npvs)
     }
-    pub fn set_npv(&mut self) {
-        let npv = self.get_npv();
+
+    pub fn set_npvs(&mut self) -> Result<()> {
+        let npv = self.get_npvs()
+            .with_context(|| format!(
+                "(Engine::set_npv) Failed to get npv\n\
+                occuring at {file}:{line}",
+                file = file!(),
+                line = line!(),
+            ))?;
+        
         for (code, result) in self.calculation_result.iter_mut() {
-            result.set_npv(npv.get(code).unwrap());
+            result.set_npv(
+                npv.get(code)
+                    .expect("npv is not set").clone()
+                );
         }
+        Ok(())
+    }
+
+    pub fn set_fx_exposures(&mut self) -> Result<()> {
+        let mut fx_exposures = HashMap::new();
+        for inst in self.instruments_in_action {
+            let pricer = self.pricers.get(inst.as_trait().get_code())
+                .with_context(|| format!(
+                    "(Engine::set_fx_exposure) Failed to get pricer for {name}\n\
+                    occuring at {file}:{line}",
+                    name = inst.as_trait().get_name(),
+                    file = file!(),
+                    line = line!(),
+                ))?;
+            let fx_exposure = pricer.as_trait().fx_exposure(inst)
+                .expect("calculation failed");
+            fx_exposures.insert(inst.as_trait().get_code(), fx_exposure);
+        }
+        for (code, result) in self.calculation_result.iter_mut() {
+            result.set_fx_exposure(
+                fx_exposures.get(code)
+                    .expect("fx_exposure is not set").clone()
+                );
+        }
+        Ok(())
     }
 
     /// Set the value of the instruments which means npv * unit_notional
-    pub fn set_value(&mut self) {
+    pub fn set_values(&mut self) {
         for (_code, result) in self.calculation_result.iter_mut() {
             result.set_value();
         }
     }
 
-    pub fn set_delta(&mut self) {
+    
+    pub fn set_delta(&mut self) -> Result<()> {
         let all_underlying_codes = self.instruments.get_underlying_codes();
-        let delta_bump_ratio = self.calculation_configuration.get_delta_bump();
+        let delta_bump_ratio = self.calculation_configuration.get_delta_bump_ratio();
+
         for und_code in all_underlying_codes.iter() {
-            self.instruments_in_action = self.instruments.instruments_underlying_includes(und_code);
-            let npv = self.get_npv();
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying(und_code);
+            let stock = self.stocks.get(und_code)
+                .expect("there is no stock")
+                .clone();
+        }
+            
+        Ok(())
+    }
+    
+    pub fn set_coupons(&mut self) {
+        for inst in self.instruments_in_action {
+            let start_date = self.evaluation_date.borrow().get_date_clone();
+            let theta_day = self.calculation_configuration.get_theta_day();
+            let end_date = start_date + Duration::days(theta_day as i64);
+            let coupons = self.pricers.get(inst.as_trait().get_code())
+                .expect("pricer is not set")
+                .as_trait()
+                .coupons(inst, &start_date, &end_date)
+                .expect("calculation failed");
+            self.calculation_result.get_mut(inst.as_trait().get_code())
+                .expect("result is not set")
+                .set_cashflow_inbetween(coupons);
+        }
     }
 
     pub fn calculate(&mut self) {
-        self.set_npv();
-        self.set_value();
+        self.set_npvs();
+        self.set_values();
+        self.set_fx_exposures();
+        self.set_coupons();
         // if delta is true, calculate delta
         if self.calculation_configuration.get_delta_calculation() {
             self.set_delta();
@@ -247,5 +369,4 @@ impl<'a> Engine<'a> {
     pub fn get_calculation_result_clone(&self) -> HashMap<&str, CalculationResult> {
         self.calculation_result.clone()
     }
-}
 }

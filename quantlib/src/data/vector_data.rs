@@ -37,7 +37,7 @@ impl fmt::Debug for VectorData {
             .field("name", &self.name)
             .field("observers", &self.observers.iter().map(|observer| {
                 let observer = observer.borrow();
-                format!("Address: {:p}, Name: {}, TypeName: {}", observer, observer.get_name(), observer.get_typename())
+                format!("Address: {}, Name: {}, TypeName: {}", observer.get_address(), observer.get_name(), observer.get_type_name())
             }).collect::<Vec<_>>())
             .finish()
     }
@@ -72,7 +72,7 @@ impl VectorData {
         dates: Option<Vec<OffsetDateTime>>, 
         times: Option<Array1<Time>>,
         market_datetime: OffsetDateTime, 
-        currency: &Currency,
+        currency: Currency,
         name: String
     ) -> Result<VectorData, MyError> {
         // sanity check first
@@ -91,7 +91,7 @@ impl VectorData {
                     file: file!().to_string(),
                     line: line!(),
                     left: VectorDisplay::REAL(value.to_vec()),
-                    right: VectorDisplay::OFFSETDATETIME(dates),
+                    right: VectorDisplay::DATETIME(dates.clone()),
                     other_info: "The length of value and dates must be the same".to_string()
                 });
             }
@@ -112,7 +112,7 @@ impl VectorData {
             };
             Ok(res)
         } else {
-            if let Some(times) = &times {
+            if let Some(times) = times {
                 if value.len() != times.len() {
                     return Err(MyError::MismatchedLengthError { 
                         file: file!().to_string(),
@@ -121,6 +121,17 @@ impl VectorData {
                         right: VectorDisplay::TIME(times.to_vec()),
                         other_info: "The length of value and times must be the same".to_string()
                     });
+                } else {
+                    let res = VectorData {
+                        value,
+                        dates,
+                        times: times,
+                        market_datetime,
+                        observers: Vec::new(),
+                        currency: currency,
+                        name,
+                    };
+                    Ok(res)
                 }
             } else {
                 return Err(MyError::NoneError {
@@ -129,16 +140,6 @@ impl VectorData {
                     other_info: "dates and times are both None".to_string()
                 });
             }
-            let res = VectorData {
-                value,
-                dates,
-                times: times,
-                market_datetime,
-                observers: Vec::new(),
-                currency: currency,
-                name,
-            };
-            Ok(res)
         }
     }
 
@@ -168,7 +169,7 @@ impl VectorData {
         dates: Option<Vec<OffsetDateTime>>,
         times: Option<Array1<Time>>,
         market_datetime: Option<OffsetDateTime>
-    ) -> Result<()> {
+    ) -> Result<(), MyError> {
         self.value = value;
         if let Some(market_datetime) = market_datetime {
             self.market_datetime = market_datetime;
@@ -203,7 +204,7 @@ impl VectorData {
         from_t: Time, 
         before_t: Time, 
         bump_value: Real
-    ) -> Result<()> {
+    ) -> Result<(), MyError> {
         if from_t >= before_t {
             return Err(MyError::MisorderedTimeError {
                 file: file!().to_string(),
@@ -228,7 +229,7 @@ impl VectorData {
         Ok(())
     }
 
-    fn bump_date_interval(&mut self, from_date: OffsetDateTime, before_date: OffsetDateTime, bump_value: Real) {
+    fn bump_date_interval(&mut self, from_date: OffsetDateTime, before_date: OffsetDateTime, bump_value: Real) -> Result<(), MyError> {
         if from_date >= before_date {
             return Err(MyError::MisorderedOffsetDateTimeError {
                 file: file!().to_string(),

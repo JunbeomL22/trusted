@@ -6,17 +6,10 @@ use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::assets::stock::Stock;
-use crate::instruments::stock_futures::{self, StockFutures};
 use crate::definitions::Real;
-use crate::pricing_engines::engine::Engine;
-use crate::pricing_engines::calculation_result::CalculationResult;
-use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
+use crate::instrument::Instrument;
+use crate::pricing_engines::pricer::PricerTrait;
 use std::collections::HashMap;
-use std::vec;
-use crate::data::vector_data::VectorData;
-use crate::instrument::{Instrument, InstrumentTriat};
-use crate::definitions::Time;
-use crate::definitions::{DELTA_PNL_UNIT, RHO_PNL_UNIT};
 //
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -26,7 +19,6 @@ pub struct StockFuturesPricer {
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    //results: HashMap<String, CalculationResult>, // Code -> CalculationResult
 }
 
 impl StockFuturesPricer {
@@ -41,7 +33,6 @@ impl StockFuturesPricer {
             collateral_curve,
             borrowing_curve,
             evaluation_date,
-            //results: HashMap::new(),
         }
     }
 
@@ -60,7 +51,7 @@ impl StockFuturesPricer {
 
 }
 
-impl StockFuturesPricer {
+impl PricerTrait for StockFuturesPricer {
     fn npv(&self, instruments: &Instrument) -> Result<Real, MyError> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
@@ -80,7 +71,11 @@ impl StockFuturesPricer {
         match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let npv = self.npv(instruments)
-                    .with_context(format!("StockFuturesPricer::fx_exposure: failed to get npv for {}", stock_futures.get_code()))?;
+                    .expect(format!(
+                        "StockFuturesPricer::fx_exposure: failed to calculate npv for {}", 
+                        instruments.as_trait().get_name()).as_str()
+                    );
+                    
                 let average_trade_price = stock_futures.get_average_trade_price();
                 let unit_notional = stock_futures.get_unit_notional();
                 Ok((npv - average_trade_price) * unit_notional)
@@ -94,24 +89,17 @@ impl StockFuturesPricer {
                 })
         }
     }
+
+    fn coupons(
+        &self, 
+        _instruments: &Instrument,
+        _start_date: &OffsetDateTime,
+        _end_date: &OffsetDateTime,
+    ) -> Result<HashMap<OffsetDateTime, Real>, MyError> {
+        Ok(HashMap::new())
+    }
 }
     /* 
-    fn set_npv(&mut self) {
-        let npv = self.npv();
-        for (code, value) in npv {
-            self.results.get_mut(&code).unwrap().set_npv(value);
-        }
-    }
-     
-    fn set_value(&mut self) {
-        for instrument in &self.instruments {
-            let code = instrument.get_code();
-            self.results.get_mut(code)
-            .expect(format!("{} is not in the results", code).as_str())
-            .set_value();
-        }
-    }
-
     /// 1% pnl delta
     fn delta(&self) -> HashMap<String, HashMap<String, Real>> {
         let mut all_deltas: HashMap<String, HashMap<String, Real>> = HashMap::new();

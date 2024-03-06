@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 use std::ops::Index;
 use std::collections::HashSet;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
+
 pub trait InstrumentTriat<'a> {
     // The following methods are mandatory for all instruments
     fn get_name(&self) -> &'a str;
@@ -82,6 +83,10 @@ impl<'a> Default for Instruments<'a> {
 }
 
 impl<'a> Instruments<'a> {
+    pub fn iter(&self) -> std::slice::Iter<'_, &'a Instrument<'a>> {
+        self.instruments.iter()
+    }
+
     pub fn new(instruments: Vec<&'a Instrument>) -> Self {
         Instruments { instruments }
     }
@@ -97,7 +102,7 @@ impl<'a> Instruments<'a> {
     pub fn get_underlying_codes(&self) -> Vec<&str> {
         let mut underlying_names = HashSet::<&str>::new();
         for instrument in self.instruments.iter() {
-            let names = instrument.as_trait().get_underlying_names();
+            let names = instrument.as_trait().get_underlying_codes();
             for name in names.iter() {
                 underlying_names.insert(name);
             }
@@ -105,14 +110,14 @@ impl<'a> Instruments<'a> {
         underlying_names.into_iter().collect()
     }
     
-    pub fn instruments_underlying_includes(&self, und_code: &str) -> Vec<&Instrument> {
+    pub fn instruments_with_underlying(&self, und_code: &str) -> Vec<&Instrument> {
         let mut instruments = vec![];
         for instrument in self.instruments.iter() {
-            let names = instrument.as_trait().get_underlying_names();
+            let names = instrument.as_trait().get_underlying_codes();
             if names.contains(&und_code) {
                 instruments.push(*instrument);
             }
         }
         instruments
     }
-}``
+}

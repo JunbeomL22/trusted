@@ -6,13 +6,12 @@ use crate::enums::RateIndexCode;
 use crate::assets::currency::Currency;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RateIndex<'a> {
     frequency: PaymentFrequency,
     business_day_convention: BusinessDayConvention,
     currency: Currency,
     code: RateIndexCode,
-    forward_curve: Rc<RefCell<ZeroCurve>>,
     name: &'a str, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
 }
 
@@ -22,7 +21,6 @@ impl<'a> RateIndex<'a> {
         business_day_convention: BusinessDayConvention,
         currency: Currency,
         code: RateIndexCode,
-        forward_curve: Rc<RefCell<ZeroCurve>>,
         name: &'a str,
     ) -> RateIndex {
         RateIndex {
@@ -30,7 +28,6 @@ impl<'a> RateIndex<'a> {
             business_day_convention,
             currency,
             code,
-            forward_curve, 
             name,
         }
     }

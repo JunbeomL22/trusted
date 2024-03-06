@@ -5,6 +5,8 @@ use crate::parameter::Parameter;
 use time::OffsetDateTime;
 use crate::definitions::Real;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend
@@ -12,17 +14,25 @@ use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 pub struct Stock {
     last_price: Real,
     market_datetime: OffsetDateTime,
-    dividend: Option<DiscreteRatioDividend>,
+    dividend: Option<Rc<RefCell<DiscreteRatioDividend>>>,
     currency: Currency,
     name: String,
     code: String,
 }
 
 impl Stock {
+    /// new(
+    /// last_price: Real, 
+    /// market_datetime: OffsetDateTime,
+    /// dividend: Option<DiscreteRatioDividend>,
+    /// currency: Currency,
+    /// name: String,
+    /// code: String,
+    /// )
     pub fn new(
         last_price: Real, 
         market_datetime: OffsetDateTime,
-        dividend: Option<DiscreteRatioDividend>,
+        dividend: Option<Rc<RefCell<DiscreteRatioDividend>>>,
         currency: Currency,
         name: String,
         code: String,
@@ -49,7 +59,7 @@ impl Stock {
         &self.market_datetime
     }
 
-    pub fn get_dividend(&self) -> &Option<DiscreteRatioDividend> {
+    pub fn get_dividend(&self) -> &Option<Rc<RefCell<DiscreteRatioDividend>>> {
         &self.dividend
     }
 
@@ -64,7 +74,7 @@ impl Stock {
     /// If the dividend is None, this returns 1.0
     pub fn get_dividend_deduction_ratio(&self, datetime: &OffsetDateTime) -> Real {
         if let Some(dividend) = &self.dividend {
-            dividend.get_deduction_ratio(datetime)
+            dividend.borrow().get_deduction_ratio(datetime)
         } else {
             1.0
         }
@@ -106,14 +116,14 @@ impl Parameter for Stock {
         if let Some(dividend) = &self.dividend {
             let eval_dt = data.get_date_clone();
             if self.market_datetime < eval_dt {   
-                for (date, div) in dividend.get_dividend().iter() {
+                for (date, div) in dividend.borrow().get_dividend().iter() {
                     if (*date > self.market_datetime) && (*date <= eval_dt) {
                         self.last_price -= div;
                     }
                 }
                 self.market_datetime = eval_dt;   
             } else {
-                for (date, div) in dividend.get_dividend().iter() {
+                for (date, div) in dividend.borrow().get_dividend().iter() {
                     if (*date > eval_dt) && (*date <= self.market_datetime) {
                         self.last_price += div;
                     }
@@ -121,6 +131,14 @@ impl Parameter for Stock {
             }
             
         }        
+    }
+
+    fn get_type_name(&self) -> &'static str {
+        "Stock"
+    }
+
+    fn get_name(&self) -> &String {
+        &self.name
     }
 }
 

@@ -139,6 +139,10 @@ impl<'a> CalculationResult<'a> {
         self.rho_structure = Some(rho_structure);
     }
 
+    pub fn set_cashflow_inbetween(&mut self, cashflow_inbetween: HashMap<OffsetDateTime, Real>) {
+        self.cashflow_inbetween = Some(cashflow_inbetween);
+    }
+    
     pub fn get_instrument(&self) -> &InstrumentInfo {
         &self.instrument
     }

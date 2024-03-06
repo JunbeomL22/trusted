@@ -26,7 +26,7 @@ pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,
     time_calculator: NullCalendar,
-    //ex_dividend_times: Array1<Time>,
+
     date_integers: Vec<Integer>,
     dividend_yields: Array1<Real>,
     deduction_interpolator: DividendInterpolator,
@@ -65,7 +65,6 @@ impl DiscreteRatioDividend {
                 return Err(MyError::EmptyVectorError {
                     file: file!().to_string(),
                     line: line!(),
-                    vector: VectorDisplay::DATETIME(dates),
                     other_info: "DiscreteRatioDividend::new".to_string(),
                 });
             } else {
@@ -182,18 +181,15 @@ impl DiscreteRatioDividend {
 }
 
 impl Parameter for DiscreteRatioDividend {
-    fn get_type_name(&self) -> String {
-        "DiscreteRatioDividend".to_string()
-    }
-    fn get_address(&self) -> String {
-        format!("{:p}", self)
+    fn get_type_name(&self) -> &'static str {
+        "DiscreteRatioDividend"
     }
 
     fn get_name(&self) -> &String {
         &self.name
     }
 
-    fn update(&mut self, data: &dyn Observable) {
+    fn update(&mut self, data: &dyn Observable) -> Result<(), MyError> {
         let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
 
         self.ex_dividend_dates = data.get_dates_clone().unwrap();
@@ -203,16 +199,8 @@ impl Parameter for DiscreteRatioDividend {
         self.date_integers = vec![0; self.ex_dividend_dates.len()];
         //self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
 
-        for (i, date) in self.ex_dividend_dates.iter().enumerate() {
-            let result = *date - self.marking_offsetdatetime;
-            let days = result.whole_days() as Integer;
-            self.date_integers[i] = days;
-            let time = self.time_calculator.get_time_difference(&self.marking_offsetdatetime, date);
-            self.ex_dividend_times[i] = time;
-        };
-
         // drop data of ex-dividend date and dividend amount before the evaluation-date
-        let eval_dt = self.evaluation_date.to_owned().borrow().get_date_clone(); 
+        let eval_dt = self.evaluation_date.borrow().get_date_clone(); 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
         let mut div_yields_vec = self.dividend_yields.to_vec();
         let mut date_integers_for_interpolator = self.date_integers.clone();

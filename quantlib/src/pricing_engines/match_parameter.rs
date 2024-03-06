@@ -116,7 +116,7 @@ impl<'a> MatchPrameter<'a> {
         }
     }
 
-    pub fn get_repo_curve_name(&self, instrument: &Instrument) -> &'static str {
+    pub fn get_borrowing_curve_name(&self, instrument: &Instrument) -> &'static str {
         match instrument {
             Instrument::StockFutures(instrument) => {
                 match instrument.get_currency() {

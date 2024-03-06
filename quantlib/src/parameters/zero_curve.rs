@@ -1,4 +1,4 @@
-use num_traits::zero;
+use crate::assets::currency::Currency;
 use time::{OffsetDateTime, macros::datetime};
 use crate::enums::Compounding;
 use crate::parameters::zero_curve_code::ZeroCurveCode;
@@ -72,8 +72,8 @@ impl ZeroCurve {
             let error = MyError::MismatchedLengthError { 
                 file: file!().to_string(),
                 line: line!(),
-                left: VectorDisplay::REAL(rate_times),
-                right: VectorDisplay::REAL(zero_rates),
+                left: VectorDisplay::REAL(rate_times.to_vec()),
+                right: VectorDisplay::REAL(zero_rates.to_vec()),
                 other_info: format!("name = {} data = {:?}", name, data),
             };
             return Err(error)
@@ -83,7 +83,6 @@ impl ZeroCurve {
             let error = MyError::EmptyVectorError {
                 file: file!().to_string(),
                 line: line!(),
-                vector: VectorDisplay::REAL(zero_rates),
                 other_info: format!("name = {} zero_rates = {:?} data = {:?}", name, zero_rates, data),
             };
             return Err(error)
@@ -152,21 +151,21 @@ impl ZeroCurve {
         Ok(res)
     }
 
-    pub fn dummy_curve() -> ZeroCurve {
+    pub fn dummy_curve() -> Result<ZeroCurve, MyError> {
         let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
         let evaluation_date = Rc::new(RefCell::new(dt));
-        let _data = VectorData::new(
+        let data = VectorData::new(
             array![0.0],
             Some(vec![datetime!(2080-01-01 00:00:00 UTC)]), // dummy date
             None, 
             evaluation_date.borrow().get_date_clone(), 
+            Currency::NIL,
             "dummy curve in ZeroCurve::null_curve".to_string()
-        );
+        ).with_context(|| "error in ZeroCurve::dummy_curve")?;
 
-        let data = Rc::new(RefCell::new(_data));
         ZeroCurve::new(
             evaluation_date,
-            data,
+            &data,
             ZeroCurveCode::Undefined,
             "dummy curve in ZeroCurve::null_curve".to_string()
         )
@@ -210,9 +209,15 @@ impl ZeroCurve {
         
                 let disc: Real;
                 if tau.abs() > 1e-6 {
-                    disc = self.get_discount_factor_between_times(t1, t2);
+                    disc = match self.get_discount_factor_between_times(t1, t2) {
+                        Ok(d) => d,
+                        Err(e) => return Err(e)
+                    }
                 } else {
-                    disc = self.get_discount_factor_between_times(t1, t2 + 1e-5);
+                    disc = match self.get_discount_factor_between_times(t1, t2 + 1e-5) {
+                        Ok(d) => d,
+                        Err(e) => return Err(e)
+                    }
                 }
                 
                 match compounding {
@@ -255,18 +260,25 @@ impl ZeroCurve {
         return self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
-    pub fn get_short_rate_from_time(&self, time: Time) -> Real {
-        self.get_forward_rate_between_times(time, time + 0.002737, Compounding::Simple)
+    pub fn get_short_rate_from_time(&self, time: Time) -> Result<Real, MyError> {
+        match self.get_forward_rate_between_times(time, time + 0.002737, Compounding::Simple) {
+            Ok(rate) => Ok(rate),
+            Err(e) => Err(e)
+        }
     }
 
-    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Vec<Real> {
+    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Result<Vec<Real>, MyError> {
         let mut res = vec![0.0; times.len()];
         for i in 0..times.len() {
-            res[i] = self.get_short_rate_from_time(times[i]);
+            res[i] = match self.get_short_rate_from_time(times[i]) {
+                Ok(rate) => rate,
+                Err(e) => return Err(e)
+            
+            }
         }
-        res
+        Ok(res)
     }
-    pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Real {
+    pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Result<Real, MyError> {
         let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date);
         self.get_short_rate_from_time(time)
     }
@@ -294,17 +306,12 @@ impl ZeroCurve {
 }
 
 impl Parameter for ZeroCurve {
-    fn get_address(&self) -> String {
-        let address = format!("{:p}", &self);
-        address
-    }
-
     fn get_name(&self) -> &String {
         &self.name
     }
 
-    fn get_type_name(&self) -> String {
-        "ZeroCurve".to_string()
+    fn get_type_name(&self) -> &'static str {
+        "ZeroCurve"
     }
 
     fn update(&mut self, data: &dyn Observable) -> Result<(), MyError> {
@@ -316,8 +323,8 @@ impl Parameter for ZeroCurve {
             let error = MyError::MismatchedLengthError {
                 file: file!().to_string(),
                 line: line!(),
-                left: VectorDisplay::REAL(rate_times),
-                right: VectorDisplay::REAL(zero_rates),
+                left: VectorDisplay::REAL(rate_times.to_vec()),
+                right: VectorDisplay::REAL(zero_rates.to_vec()),
                 other_info: format!("name = {} data = {:?}", self.name, data),
             };
             return Err(error)
@@ -327,7 +334,6 @@ impl Parameter for ZeroCurve {
             let error = MyError::EmptyVectorError {
                 file: file!().to_string(),
                 line: line!(),
-                vector: VectorDisplay::REAL(zero_rates),
                 other_info: format!("name = {} zero_rates = {:?} data = {:?}", self.name, zero_rates, data),
             };
             return Err(error)
