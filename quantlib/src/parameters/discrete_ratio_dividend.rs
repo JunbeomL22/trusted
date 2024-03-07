@@ -239,12 +239,13 @@ impl Parameter for DiscreteRatioDividend {
             );
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
+        Ok(())
     }
 
     /// this does not change the original data such as
     /// self.evalaution_date, self.ex_dividend_dates, self.dividend_yields
     /// but only change the dividend_deduction interpolator
-    fn update_evaluation_date(&mut self, date: &EvaluationDate) {
+    fn update_evaluation_date(&mut self, date: &EvaluationDate) -> Result<(), MyError> {
         let eval_dt: OffsetDateTime = date.get_date_clone();
 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
@@ -285,6 +286,7 @@ impl Parameter for DiscreteRatioDividend {
             );
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
+        Ok(())
     }
 }
 

@@ -5,21 +5,21 @@ use time::OffsetDateTime;
 use crate::definitions::Real;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct InstrumentInfo<'a> {
-    name: &'a str,
-    code: &'a str,
-    instrument_type: &'a str,
+pub struct InstrumentInfo {
+    name: String,
+    code: String,
+    instrument_type: String,
     currency: Currency,
     unit_notional: Real,
     maturity: Option<OffsetDateTime>,
 }
 
-impl<'a> Default for InstrumentInfo<'a> {
-    fn default() -> InstrumentInfo<'a> {
+impl Default for InstrumentInfo {
+    fn default() -> InstrumentInfo {
         InstrumentInfo {
-            name: "",
-            code: "",
-            instrument_type: "",
+            name: "".to_string(),
+            code: "".to_string(),
+            instrument_type: "".to_string(),
             currency: Currency::NIL,
             unit_notional: 1.0,
             maturity: None,
@@ -27,15 +27,15 @@ impl<'a> Default for InstrumentInfo<'a> {
     }
 }
 
-impl<'a> InstrumentInfo<'a> {
+impl InstrumentInfo {
     pub fn new(
-        name: &'a str,
-        code: &'a str,
-        instrument_type: &'a str,
+        name: String,
+        code: String,
+        instrument_type: String,
         currency: Currency,
         unit_notional: Real,
         maturity: Option<&OffsetDateTime>,
-    ) -> InstrumentInfo<'a> {
+    ) -> InstrumentInfo {
         let maturity = match maturity {
             Some(maturity) => Some(maturity.clone()),
             None => None,
@@ -51,16 +51,16 @@ impl<'a> InstrumentInfo<'a> {
         }
     }
     
-    pub fn type_name(&self) -> &str {
-        self.instrument_type
+    pub fn type_name(&self) -> &String {
+        &self.instrument_type
     }
 
-    pub fn get_name(&self) -> &str {
-        self.name
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
-    pub fn get_code(&self) -> &str {
-        self.code
+    pub fn get_code(&self) -> &String {
+        &self.code
     }
 
     pub fn get_currency(&self) -> Currency {
@@ -86,9 +86,9 @@ mod tests {
     #[test]
     fn test_instrument_info_serialization() {
         let instrument_info = InstrumentInfo::new(
-            "AAPL",
-            "CodeAAPL",
-            "StockFutures",
+            "AAPL".to_string(),
+            "CodeAAPL".to_string(),
+            "StockFutures".to_string(),
             Currency::USD,
             100.0,
             None,

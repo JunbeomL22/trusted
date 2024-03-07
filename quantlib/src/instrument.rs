@@ -46,7 +46,7 @@ pub enum Instrument<'a> {
 }
 
 impl<'a> Instrument<'a> {
-    pub fn as_trait(&self) -> &(dyn InstrumentTriat) {
+    pub fn as_trait(&'a self) -> &'a (dyn InstrumentTriat) {
         match self {
             Instrument::StockFutures(instrument) => &**instrument,
             Instrument::FixedCouponBond(instrument) => &**instrument,
@@ -87,7 +87,7 @@ impl<'a> Instruments<'a> {
         self.instruments.iter()
     }
 
-    pub fn new(instruments: Vec<&'a Instrument>) -> Self {
+    pub fn new(instruments: Vec<&'a Instrument<'a>>) -> Instruments<'a> {
         Instruments { instruments }
     }
 
@@ -95,11 +95,11 @@ impl<'a> Instruments<'a> {
         self.instruments.len()
     }
 
-    pub fn get_instruments(&self) -> &Vec<&'a Instrument> {
+    pub fn get_instruments(&self) -> &Vec<&'a Instrument<'a>> {
         &self.instruments
     }
 
-    pub fn get_underlying_codes(&self) -> Vec<&str> {
+    pub fn get_underlying_codes(&self) -> Vec<&'a str> {
         let mut underlying_names = HashSet::<&str>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_codes();
@@ -110,7 +110,7 @@ impl<'a> Instruments<'a> {
         underlying_names.into_iter().collect()
     }
     
-    pub fn instruments_with_underlying(&self, und_code: &str) -> Vec<&Instrument> {
+    pub fn instruments_with_underlying(&self, und_code: &str) -> Vec<&'a Instrument<'a>> {
         let mut instruments = vec![];
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_codes();

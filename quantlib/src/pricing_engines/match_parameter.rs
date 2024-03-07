@@ -8,7 +8,7 @@ pub struct MatchPrameter<'a> {
     collateral_curve_map: HashMap<(&'a str, Currency), &'a str>,
 
     // underlying_name: &'static str -> &'static str
-    borrowing_curve_map: HashMap<&'a str, &'a str>,
+    borrowing_curve_map: HashMap<(&'a str, Currency), &'a str>,
     
     // (issuer: &'a str, 
     //  issuer_type: IssuerType, 
@@ -29,7 +29,7 @@ impl<'a> Default for MatchPrameter<'a> {
             Currency,
         ), &str> = HashMap::new();
 
-        let borrowing_curve_map: HashMap<&str, &str> = HashMap::new();
+        let borrowing_curve_map: HashMap<(&str, Currency), &str> = HashMap::new();
         
         let bond_discount_curve_map: HashMap<(
             &str, 
@@ -49,16 +49,16 @@ impl<'a> Default for MatchPrameter<'a> {
 impl<'a> MatchPrameter<'a> {
     pub fn new(
         collateral_curve_map: HashMap<(
-            &str,
+            &'a str,
             Currency,
-        ), &str>,
-        borrowing_curve_map: HashMap<&str, &str>,
+        ), &'a str>,
+        borrowing_curve_map: HashMap<(&'a str, Currency), &'a str>,
         bond_discount_curve_map: HashMap<(
-            &str, 
+            &'a str, 
             IssuerType, 
             CreditRating, 
             Currency
-        ), &str>,
+        ), &'a str>,
     ) -> MatchPrameter<'a> {
         MatchPrameter {
             collateral_curve_map,
@@ -67,7 +67,7 @@ impl<'a> MatchPrameter<'a> {
         }
     }
 
-    pub fn get_discount_curve_name(&self, instrument: &Instrument) -> &'a str {
+    pub fn get_discount_curve_name(&self, instrument: &Instrument<'a>) -> &'a str {
         match instrument {
             Instrument::FixedCouponBond(instrument) |
             Instrument::FloatingRateNote(instrument) => {
@@ -94,11 +94,11 @@ impl<'a> MatchPrameter<'a> {
         credit_rating: Option<&CreditRating>,
         issuer_type: Option<&IssuerType>,
         rank_type: Option<&RankType>,
-    ) -> &'static str {
+    ) -> &'a str {
         "not yet implemented"
     }
 
-    pub fn get_collateral_curve_name(&self, instrument: &Instrument) -> &'static str {
+    pub fn get_collateral_curve_name(&self, instrument: &Instrument<'a>) -> &'a str {
         match instrument {
             Instrument::StockFutures(instrument) |
             Instrument::BondFutures(instrument) |
@@ -116,7 +116,7 @@ impl<'a> MatchPrameter<'a> {
         }
     }
 
-    pub fn get_borrowing_curve_name(&self, instrument: &Instrument) -> &'static str {
+    pub fn get_borrowing_curve_name(&self, instrument: &Instrument<'a>) -> &'static str {
         match instrument {
             Instrument::StockFutures(instrument) => {
                 match instrument.get_currency() {

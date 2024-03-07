@@ -40,7 +40,7 @@ impl IRS {
         &self.rate_index
     }
 
-    pub fn get_rate_forward_curve_name(&self) -> Option<&'static str> {
+    pub fn get_rate_forward_curve_name(&self) -> Option<&str> {
         Some(self.rate_index.get_rate_forward_curve_name())
     }
 }

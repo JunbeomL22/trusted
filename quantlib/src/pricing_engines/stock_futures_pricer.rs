@@ -51,8 +51,8 @@ impl StockFuturesPricer {
 
 }
 
-impl PricerTrait for StockFuturesPricer {
-    fn npv(&self, instruments: &Instrument) -> Result<Real, MyError> {
+impl<'a> PricerTrait<'a> for StockFuturesPricer {
+    fn npv(&self, instruments: &'a Instrument<'a>) -> Result<Real, MyError> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
@@ -67,26 +67,24 @@ impl PricerTrait for StockFuturesPricer {
         res
     }
 
-    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real, MyError> {
+    fn fx_exposure(&self, instruments: &'a Instrument<'a>) -> Result<Real, MyError> {
         match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let npv = self.npv(instruments)
-                    .expect(format!(
-                        "StockFuturesPricer::fx_exposure: failed to calculate npv for {}", 
-                        instruments.as_trait().get_name()).as_str()
-                    );
-                    
+                    .expect("StockFuturesPricer::fx_exposure: failed to calculate npv.");
+                        
                 let average_trade_price = stock_futures.get_average_trade_price();
                 let unit_notional = stock_futures.get_unit_notional();
                 Ok((npv - average_trade_price) * unit_notional)
             }
-            _ => Err(MyError::BaseError {
-                 file: file!().to_string(), 
-                 line: line!(), 
-                 contents: format!(
-                    "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
-                    instruments.as_trait().get_type_name().to_string())
-                })
+            _ => Err(
+                MyError::BaseError {
+                    file: file!().to_string(), 
+                    line: line!(), 
+                    contents: format!(
+                        "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
+                        instruments.as_trait().get_type_name().to_string(),
+                    )})
         }
     }
 

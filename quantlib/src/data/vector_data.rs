@@ -47,7 +47,8 @@ impl Observable for VectorData {
     fn notify_observers(&mut self) {
         let observers = self.observers.clone();
         for observer in observers {
-            observer.borrow_mut().update(self);
+            observer.borrow_mut().update(self)
+                .expect("VectorData::notify_observers failed to update observer")
         }
     }
 

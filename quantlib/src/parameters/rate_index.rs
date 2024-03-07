@@ -7,21 +7,21 @@ use crate::assets::currency::Currency;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RateIndex<'a> {
+pub struct RateIndex {
     frequency: PaymentFrequency,
     business_day_convention: BusinessDayConvention,
     currency: Currency,
     code: RateIndexCode,
-    name: &'a str, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
+    name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
 }
 
-impl<'a> RateIndex<'a> {
+impl RateIndex {
     pub fn new(
         frequency: PaymentFrequency,
         business_day_convention: BusinessDayConvention,
         currency: Currency,
         code: RateIndexCode,
-        name: &'a str,
+        name: String,
     ) -> RateIndex {
         RateIndex {
             frequency,
@@ -44,8 +44,8 @@ impl<'a> RateIndex<'a> {
         &self.code
     }
 
-    pub fn get_name(&self) -> &str {
-        self.name
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
     pub fn get_rate_index_code(&self) -> &RateIndexCode {

@@ -1,9 +1,10 @@
 use env_logger;
+use quantlib::data::observable::Observable;
 use quantlib::evaluation_date::EvaluationDate;
-use quantlib::parameters::zero_curve::{self, ZeroCurve};
+use quantlib::parameters::zero_curve::ZeroCurve;
 use quantlib::data::vector_data::VectorData;
-use quantlib::time::calendar::{Calendar, NullCalendar};
-use time::{OffsetDateTime, macros::datetime};
+use time::macros::datetime;
+use quantlib::assets::currency::Currency;
 use quantlib::definitions::{Time, Real};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -12,7 +13,8 @@ use quantlib::enums::Compounding;
 use quantlib::parameters::zero_curve_code::ZeroCurveCode;
 use plotters::prelude::*;
 use ndarray::array;
-use ndarray::Array1;
+use quantlib::utils::myerror::MyError;
+use anyhow::{Result, Context};
 
 fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Define the size of the chart
@@ -45,7 +47,7 @@ fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> 
     Ok(())
 }
 
-fn main() {
+fn main() -> Result<(), MyError> {
     env_logger::init();
     let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
     let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_dt)));
@@ -59,22 +61,25 @@ fn main() {
         add_period(&param_dt, "5Y")
         ];
 
-    let _data = VectorData::new(
+    let mut _data = VectorData::new(
         array![0.02, 0.025, 0.03, 0.035, 0.04],
         Some(dates.clone()), 
         None, 
         param_dt, 
-        "vector data in test_zero_curve".to_string()
-    );
+        Currency::KRW,
+        "vector data in test_zero_curve".to_string(),
+    ).with_context(|| "Failed to create VectorData.")?;
 
-    let data = Rc::new(RefCell::new(_data));
-
+    
     let zero_curve = ZeroCurve::new(
         evaluation_date.clone(), 
-        data.clone(), 
+        &_data, 
         ZeroCurveCode::Undefined, 
         "test".to_string()
-    );
+    ).with_context(|| "Failed to create ZeroCurve.")?;
+
+    _data.add_observer(Rc::new(RefCell::new(zero_curve.clone())));
+    
 
     // make a timestep from 0 to 10 years by 0.1
     let t_values: Vec<Time> = (0..=100).map(|i| i as Time / 10.0).collect::<Vec<Time>>();
@@ -82,7 +87,10 @@ fn main() {
     // let short_rate_values = zero_curve.get_vectorized_short_rate_for_sorted_times(&t_values);
     let mut zero_curve_values = vec![0.0; t_values.len()];
     for i in 1..t_values.len() {
-        zero_curve_values[i] = zero_curve.get_forward_rate_between_times(0.0, t_values[i], Compounding::Continuous);
+        zero_curve_values[i] = zero_curve.get_forward_rate_between_times(0.0, t_values[i], Compounding::Continuous)
+                                    .expect("nil")
     }
     plot_vectors(&t_values, &zero_curve_values, "./graphs/zero_rate_test.png").expect("Failed to plot vectors.");
+
+    Ok(())
 }

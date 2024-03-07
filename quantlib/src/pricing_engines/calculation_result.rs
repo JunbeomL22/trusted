@@ -1,6 +1,8 @@
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::definitions::{Real, Integer};
+use crate::utils::myerror::MyError;
 use std::collections::HashMap;
+use anyhow::Context;
 use serde::{Serialize, Deserialize};
 use time::{Duration, OffsetDateTime};
 /// CalculationResult is a struct that holds the result of the calculation.
@@ -28,28 +30,28 @@ use time::{Duration, OffsetDateTime};
 /// cashflow in (evaluation_date, evaluation_date + theta)
 ///
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CalculationResult<'a> {
-    instrument: InstrumentInfo<'a>,
-    evaluation_date: OffsetDateTime,
+pub struct CalculationResult {
+    instrument_info: Option<InstrumentInfo>,
+    evaluation_date: Option<OffsetDateTime>,
     npv: Option<Real>, 
     value: Option<Real>,
     fx_exposure: Option<Real>,
-    delta: Option<HashMap<&'a str, Real>>,
-    gamma: Option<HashMap<&'a str, Real>>,
-    vega: Option<HashMap<&'a str, Real>>,
-    vega_strucure: Option<HashMap<&'a str, HashMap<Duration, Real>>>, // underlying code -> duration -> vega
+    delta: Option<HashMap<String, Real>>,
+    gamma: Option<HashMap<String, Real>>,
+    vega: Option<HashMap<String, Real>>,
+    vega_strucure: Option<HashMap<String, HashMap<Duration, Real>>>, // underlying code -> duration -> vega
     theta: Option<Real>,
-    rho: Option<HashMap<&'a str, Real>>, // Curve Code -> rho
-    rho_structure: Option<HashMap<&'a str, HashMap<Duration, Real>>>, // curve code -> duration -> rho
+    rho: Option<HashMap<String, Real>>, // Curve Code -> rho
+    rho_structure: Option<HashMap<String, HashMap<Duration, Real>>>, // curve code -> duration -> rho
     theta_day: Option<Integer>,
     cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>,
 }
 
-impl<'a> Default for CalculationResult<'a> {
-    fn default() -> CalculationResult<'a> {
+impl Default for CalculationResult {
+    fn default() -> CalculationResult {
         CalculationResult {
-            instrument: InstrumentInfo::default(),
-            evaluation_date: OffsetDateTime::now_utc(),
+            instrument_info: None,
+            evaluation_date: None,
             npv: None,
             value: None,
             fx_exposure: None,
@@ -67,11 +69,11 @@ impl<'a> Default for CalculationResult<'a> {
 }
 
 
-impl<'a> CalculationResult<'a> {
-    pub fn new(instrument: InstrumentInfo, evaluation_date: OffsetDateTime) -> CalculationResult {
+impl CalculationResult {
+    pub fn new(instrument_info: InstrumentInfo, evaluation_date: OffsetDateTime) -> CalculationResult {
         CalculationResult {
-            instrument,
-            evaluation_date,
+            instrument_info: Some(instrument_info),
+            evaluation_date: Some(evaluation_date),
             npv: None,
             value: None,
             fx_exposure: None,
@@ -95,8 +97,20 @@ impl<'a> CalculationResult<'a> {
         self.npv
     }
 
-    pub fn set_value(&mut self) {
-        self.value = Some(self.npv.expect("npv is not set") * self.instrument.get_unit_notional());
+    pub fn set_value(&mut self) -> Result<(), MyError> {
+        match self.npv {
+            None => Err(MyError::NoneError { 
+                file: file!().to_string(),
+                line: line!(),
+                other_info: "npv is not set".to_string(),
+            }),
+            Some(npv) => {
+                self.value = Some(
+                    npv * self.instrument_info.as_ref().expect("instrument_info is not set").get_unit_notional()
+                );
+                Ok(())
+            },
+        }
     }
 
     pub fn get_value(&self) -> Option<Real> {
@@ -107,11 +121,11 @@ impl<'a> CalculationResult<'a> {
         self.fx_exposure = Some(fx_exposure);
     }
 
-    pub fn set_delta(&mut self, delta: HashMap<&str, Real>) {
+    pub fn set_delta(&mut self, delta: HashMap<String, Real>) {
         self.gamma = Some(delta);
     }
 
-    pub fn set_gamma(&mut self, gamma: HashMap<&str, Real>) {
+    pub fn set_gamma(&mut self, gamma: HashMap<String, Real>) {
         self.gamma = Some(gamma);
     }
 
@@ -119,11 +133,11 @@ impl<'a> CalculationResult<'a> {
         self.theta_day = Some(theta_day);
     }
 
-    pub fn set_vega(&mut self, vega: HashMap<&str, Real>) {
+    pub fn set_vega(&mut self, vega: HashMap<String, Real>) {
         self.vega = Some(vega);
     }
 
-    pub fn set_vega_structure(&mut self, vega_structure: HashMap<&str, HashMap<Duration, Real>>) {
+    pub fn set_vega_structure(&mut self, vega_structure: HashMap<String, HashMap<Duration, Real>>) {
         self.vega_strucure = Some(vega_structure);
     }
 
@@ -131,11 +145,11 @@ impl<'a> CalculationResult<'a> {
         self.theta = Some(theta);
     }
 
-    pub fn set_rho(&mut self, rho: HashMap<&'a str, Real>) {
+    pub fn set_rho(&mut self, rho: HashMap<String, Real>) {
         self.rho = Some(rho);
     }
 
-    pub fn set_rho_structure(&mut self, rho_structure: HashMap<&'a str, HashMap<Duration, Real>>) {
+    pub fn set_rho_structure(&mut self, rho_structure: HashMap<String, HashMap<Duration, Real>>) {
         self.rho_structure = Some(rho_structure);
     }
 
@@ -143,11 +157,11 @@ impl<'a> CalculationResult<'a> {
         self.cashflow_inbetween = Some(cashflow_inbetween);
     }
     
-    pub fn get_instrument(&self) -> &InstrumentInfo {
-        &self.instrument
+    pub fn get_instrument(&self) -> &Option<InstrumentInfo> {
+        &self.instrument_info
     }
 
-    pub fn get_evaluation_date(&self) -> &OffsetDateTime {
+    pub fn get_evaluation_date(&self) -> &Option<OffsetDateTime> {
         &self.evaluation_date
     }
 
@@ -155,15 +169,15 @@ impl<'a> CalculationResult<'a> {
         self.fx_exposure
     }
 
-    pub fn get_delta(&self) -> &Option<HashMap<&str, Real>> {
+    pub fn get_delta(&self) -> &Option<HashMap<String, Real>> {
         &self.delta
     }
 
-    pub fn get_gamma(&self) -> &Option<HashMap<&'a str, Real>> {
+    pub fn get_gamma(&self) -> &Option<HashMap<String, Real>> {
         &self.gamma
     }
 
-    pub fn get_vega_structure(&self) -> &Option<HashMap<&'a str, HashMap<Duration, Real>>> {
+    pub fn get_vega_structure(&self) -> &Option<HashMap<String, HashMap<Duration, Real>>> {
         &self.vega_strucure
     }
 

@@ -7,7 +7,7 @@ use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct FloatingRateNote<'a> {
+pub struct FloatingRateNote {
     currency: Currency,
     issuer_type: IssuerType,
     credit_rating: CreditRating,
@@ -18,18 +18,18 @@ pub struct FloatingRateNote<'a> {
     unit_notional: Real,
     issue_date: OffsetDateTime,
     maturity: OffsetDateTime,
-    issuer_name: &'a str,
-    name: &'a str,
-    code: &'a str,
+    issuer_name: String,
+    name: String,
+    code: String,
 }
 
-impl<'a> FloatingRateNote<'a> {
-    pub fn get_name(&self) -> &str {
-        self.name
+impl FloatingRateNote {
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
-    pub fn get_code(&self) -> &str {
-        self.code
+    pub fn get_code(&self) -> &String {
+        &self.code
     }
 
     pub fn get_currency(&self) -> &Currency {
@@ -56,7 +56,7 @@ impl<'a> FloatingRateNote<'a> {
         Some(&self.rank)
     }
 
-    pub fn get_issuer_name(&self) -> Option<&str> {
+    pub fn get_issuer_name(&self) -> Option<&String> {
         Some(&self.issuer_name)
     }
 
