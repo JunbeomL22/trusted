@@ -214,9 +214,10 @@ mod tests {
             datetime!(2022-01-01 15:40:00 +09:00),
             250_000.0,
             Currency::KRW,
-            "KOSPI200",
-            "KOSPI200",
-            "KOSPI200",
+            Currency::KRW,
+            "KOSPI200".to_string(),
+            "KOSPI200".to_string(),
+            "KOSPI200".to_string(),
         );
 
         let name = stock_futures.get_name();
@@ -238,7 +239,7 @@ mod tests {
         result.set_npv(100.0);
 
         let mut delta = HashMap::new();
-        delta.insert("KOSPI200", 0.1);
+        delta.insert("KOSPI200".to_string(), 0.1);
         result.set_delta(delta);
 
         let serialized = serde_json::to_string_pretty(&result).unwrap();

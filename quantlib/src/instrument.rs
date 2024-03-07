@@ -5,20 +5,20 @@ use std::ops::Index;
 use std::collections::HashSet;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 
-pub trait InstrumentTriat<'a> {
+pub trait InstrumentTriat {
     // The following methods are mandatory for all instruments
-    fn get_name(&self) -> &'a str;
-    fn get_code(&self) -> &'a str;
+    fn get_name(&self) -> &String;
+    fn get_code(&self) -> &String;
     fn get_currency(&self) -> &Currency;
     fn get_unit_notional(&self) -> Real;
-    fn get_type_name(&self) -> &'a str;
+    fn get_type_name(&self) -> &'static str;
     // There may be an instrument that does not need discount curve, e.g., Futures
-    fn get_discount_curve_name(&self) -> &'a str { "Dummy" }
+    fn get_discount_curve_name(&self) -> &String { "Dummy".to_string().as_ref() }
     // There is an instrument that does not have maturity date, so it is optional
     fn get_maturity(&self) -> Option<&OffsetDateTime> { None }
     // There is an instrument that does not have underlying names, 
     // so the default action is to return an empty vector
-    fn get_underlying_codes(&self) -> Vec<&'a str> { vec![] }
+    fn get_underlying_codes(&self) -> &Vec<String> { vec![].as_ref() }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Option<&CreditRating> { None }
     // only for bonds, so None must be allowed
@@ -26,27 +26,27 @@ pub trait InstrumentTriat<'a> {
     // only for bonds, so None must be allowed
     fn get_rank_type(&self) -> Option<&RankType> { None }
     // only for bonds, so None must be allowed
-    fn get_issuer_name(&self) -> Option<&'a str> { None }
+    fn get_issuer_name(&self) -> Option<&String> { None }
     // only for instruments for floating coupon,
     // e.g., frn, irs, etc, so None must be allowed
-    fn get_rate_forward_curve_name(&self) -> Option<&'a str> { None }
+    fn get_rate_forward_curve_name(&self) -> Option<String> { None }
     // 
     fn get_average_trade_price(&self) -> Real { 0.0 }
     //
     fn get_accountring_level(&self) -> AccountingLevel { AccountingLevel::Level1 }
 }
 
-pub enum Instrument<'a> {
-    StockFutures(Box<dyn InstrumentTriat<'a>>),
-    FixedCouponBond(Box<dyn InstrumentTriat<'a>>),
-    FloatingRateNote(Box<dyn InstrumentTriat<'a>>),
-    BondFutures(Box<dyn InstrumentTriat<'a>>),
-    IRS(Box<dyn InstrumentTriat<'a>>),
-    KTBF(Box<dyn InstrumentTriat<'a>>),
+pub enum Instrument {
+    StockFutures(Box<dyn InstrumentTriat>),
+    FixedCouponBond(Box<dyn InstrumentTriat>),
+    FloatingRateNote(Box<dyn InstrumentTriat>),
+    BondFutures(Box<dyn InstrumentTriat>),
+    IRS(Box<dyn InstrumentTriat>),
+    KTBF(Box<dyn InstrumentTriat>),
 }
 
-impl<'a> Instrument<'a> {
-    pub fn as_trait(&'a self) -> &'a (dyn InstrumentTriat) {
+impl Instrument {
+    pub fn as_trait(self) -> (dyn InstrumentTriat) {
         match self {
             Instrument::StockFutures(instrument) => &**instrument,
             Instrument::FixedCouponBond(instrument) => &**instrument,
@@ -64,30 +64,30 @@ impl<'a> Instrument<'a> {
 /// GROUP1: Vec<&'static str> = vec!["StockFutures"]; 
 /// GROUP2: Vec<&'static str> = vec!["FixedCouponBond", "BondFutures", "KTBF"]; 
 /// GROUP3: Vec<&'static str> = vec!["StructuredProduct"]; 
-pub struct Instruments<'a> {
-    instruments: Vec<&'a Instrument<'a>>,
+pub struct Instruments {
+    instruments: Vec<Instrument>,
 }
 
-impl<'a> Index<usize> for Instruments<'a> {
-    type Output = Instrument<'a>;
+impl Index<usize> for Instruments {
+    type Output = Instrument;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.instruments[index]
     }
 }
 
-impl<'a> Default for Instruments<'a> {
+impl Default for Instruments {
     fn default() -> Self {
         Instruments { instruments: vec![] }
     }
 }
 
-impl<'a> Instruments<'a> {
-    pub fn iter(&self) -> std::slice::Iter<'_, &'a Instrument<'a>> {
+impl Instruments {
+    pub fn iter(&self) -> std::slice::Iter<'_, &Instrument> {
         self.instruments.iter()
     }
 
-    pub fn new(instruments: Vec<&'a Instrument<'a>>) -> Instruments<'a> {
+    pub fn new(instruments: Vec<&Instrument>) -> Instruments {
         Instruments { instruments }
     }
 
@@ -95,11 +95,11 @@ impl<'a> Instruments<'a> {
         self.instruments.len()
     }
 
-    pub fn get_instruments(&self) -> &Vec<&'a Instrument<'a>> {
+    pub fn get_instruments(&self) -> &Vec<Instrument> {
         &self.instruments
     }
 
-    pub fn get_underlying_codes(&self) -> Vec<&'a str> {
+    pub fn get_underlying_codes(&self) -> &Vec<String> {
         let mut underlying_names = HashSet::<&str>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_codes();
@@ -110,7 +110,7 @@ impl<'a> Instruments<'a> {
         underlying_names.into_iter().collect()
     }
     
-    pub fn instruments_with_underlying(&self, und_code: &str) -> Vec<&'a Instrument<'a>> {
+    pub fn instruments_with_underlying(&self, und_code: &str) -> &Vec<Instrument> {
         let mut instruments = vec![];
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_codes();
@@ -118,6 +118,6 @@ impl<'a> Instruments<'a> {
                 instruments.push(*instrument);
             }
         }
-        instruments
+        &instruments
     }
 }

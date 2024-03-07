@@ -157,9 +157,10 @@ mod tests {
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
     use crate::data::observable::Observable;
+    use crate::assets::currency::Currency;
 
     #[test]
-    fn test_stock_update_evaluation_date() {
+    fn test_stock_update_evaluation_date() -> Result<(), MyError> {
         let (h, m, s) = SEOUL_OFFSET;
         let offset = time::UtcOffset::from_hms(h, m, s).unwrap();
         let eval_dt = OffsetDateTime::new_in_offset(
@@ -187,16 +188,16 @@ mod tests {
             Some(div_dates.clone()),
             None,
             eval_dt.clone(),
+            Currency::Undefined,
             "dividend vecto data".to_string(),
-        );
+        )?;
 
         let dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &data,
-            offset,
             spot,
             "MockStock".to_string(),
-        );
+        )?;
 
         let stock = Rc::new(RefCell::new(
             Stock::new(

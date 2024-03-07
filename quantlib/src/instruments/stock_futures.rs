@@ -7,7 +7,7 @@ use crate::assets::currency::Currency;
 use crate::util::type_name;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct StockFutures<'a> {
+pub struct StockFutures {
     average_trade_price: Real,
     first_trade_date: OffsetDateTime,
     last_trade_date: OffsetDateTime,
@@ -16,9 +16,9 @@ pub struct StockFutures<'a> {
     unit_notional: Real,
     currency: Currency,
     futures_currency: Currency, //may have a difference currency with the underlying
-    underlying_names: Vec<&'a str>,
-    name: &'a str,
-    code: &'a str,
+    underlying_names: Vec<String>,
+    name: String,
+    code: String,
 }
 
 impl<'a> Default for StockFutures<'a> {
@@ -39,7 +39,7 @@ impl<'a> Default for StockFutures<'a> {
     }
 }
 
-impl<'a> StockFutures<'a> {
+impl StockFutures {
     pub fn new(
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,
@@ -49,10 +49,10 @@ impl<'a> StockFutures<'a> {
         unit_notional: Real,
         currency: Currency,
         futures_currency: Currency,
-        underlying_name: &'a str,
-        name: &'a str,
-        code: &'a str,
-    ) -> StockFutures<'a> {
+        underlying_name: String,
+        name: String,
+        code: String,
+    ) -> StockFutures {
         StockFutures {
             average_trade_price,
             first_trade_date,
@@ -68,12 +68,12 @@ impl<'a> StockFutures<'a> {
         }
     }
 
-    pub fn get_name(&self) -> &str {
-        self.name
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
-    pub fn get_code(&self) -> &str {
-        self.code
+    pub fn get_code(&self) -> &String {
+        &self.code
     }
 
     pub fn get_currency(&self) -> &Currency {
@@ -92,8 +92,8 @@ impl<'a> StockFutures<'a> {
         self.unit_notional
     }
 
-    pub fn get_underlying_codes(&self) -> Option<&Vec<&str>> {
-        Some(&self.underlying_names)
+    pub fn get_underlying_codes(&self) -> &Vec<String> {
+        &self.underlying_names
     }
 
     pub fn get_average_trade_price(&self) -> Real {

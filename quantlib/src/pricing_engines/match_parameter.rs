@@ -5,29 +5,29 @@ use crate::enums::{CreditRating, IssuerType, RankType};
 
 pub struct MatchPrameter<'a> {
     // (type_name: &'static str, currency: Currency) -> &'static str
-    collateral_curve_map: HashMap<(&'a str, Currency), &'a str>,
+    collateral_curve_map: HashMap<(&'static str, Currency), String>,
 
     // underlying_name: &'static str -> &'static str
-    borrowing_curve_map: HashMap<(&'a str, Currency), &'a str>,
+    borrowing_curve_map: HashMap<(String, Currency), String>,
     
-    // (issuer: &'a str, 
+    // (issuer: String, 
     //  issuer_type: IssuerType, 
     //  credit_rating: CreditRating, 
-    //  currency: Currency) -> &'a str
+    //  currency: Currency) -> String
     bond_discount_curve_map: HashMap<(
-        &'a str, 
+        String, 
         IssuerType, 
         CreditRating, 
         Currency
-    ), &'a str>,
+    ), String>,
 }
 
-impl<'a> Default for MatchPrameter<'a> {
-    fn default() -> MatchPrameter<'a> {
+impl Default for MatchPrameter {
+    fn default() -> MatchPrameter {
         let collateral_curve_map: HashMap<(
-            &str,
+            &'static str,
             Currency,
-        ), &str> = HashMap::new();
+        ), String> = HashMap::new();
 
         let borrowing_curve_map: HashMap<(&str, Currency), &str> = HashMap::new();
         
@@ -46,20 +46,20 @@ impl<'a> Default for MatchPrameter<'a> {
     }
 }
 
-impl<'a> MatchPrameter<'a> {
+impl MatchPrameter {
     pub fn new(
         collateral_curve_map: HashMap<(
-            &'a str,
+            String,
             Currency,
-        ), &'a str>,
-        borrowing_curve_map: HashMap<(&'a str, Currency), &'a str>,
+        ), String>,
+        borrowing_curve_map: HashMap<(String, Currency), String>,
         bond_discount_curve_map: HashMap<(
-            &'a str, 
+            String, 
             IssuerType, 
             CreditRating, 
             Currency
-        ), &'a str>,
-    ) -> MatchPrameter<'a> {
+        ), String>,
+    ) -> MatchPrameter {
         MatchPrameter {
             collateral_curve_map,
             borrowing_curve_map,
@@ -67,7 +67,7 @@ impl<'a> MatchPrameter<'a> {
         }
     }
 
-    pub fn get_discount_curve_name(&self, instrument: &Instrument<'a>) -> &'a str {
+    pub fn get_discount_curve_name(&self, instrument: &Instrument) -> &String {
         match instrument {
             Instrument::FixedCouponBond(instrument) |
             Instrument::FloatingRateNote(instrument) => {
@@ -76,15 +76,15 @@ impl<'a> MatchPrameter<'a> {
                     *instrument.get_issuer_type().unwrap(),
                     *instrument.get_credit_rating().unwrap(),
                     *instrument.get_currency(),
-                )).expect("Bond has no discount curve")
+                )).expect("Bond has no discount curve").as_ref()
             },
             Instrument::IRS(instrument) => {
                 instrument.get_rate_forward_curve_name()
-                .expect("IRS has no rate forward curve")
+                .expect("IRS has no rate forward curve").as_ref()
             },
             Instrument::StockFutures(_) |
             Instrument::BondFutures(_) |
-            Instrument::KTBF(_) => "Dummy", // no discount
+            Instrument::KTBF(_) => "Dummy".to_String().as_ref(), // no discount
         }
     }
 
@@ -94,11 +94,11 @@ impl<'a> MatchPrameter<'a> {
         credit_rating: Option<&CreditRating>,
         issuer_type: Option<&IssuerType>,
         rank_type: Option<&RankType>,
-    ) -> &'a str {
-        "not yet implemented"
+    ) -> &String {
+        "not yet implemented".to_string().as_ref()
     }
 
-    pub fn get_collateral_curve_name(&self, instrument: &Instrument<'a>) -> &'a str {
+    pub fn get_collateral_curve_name(&self, instrument: &Instrument) -> &String {
         match instrument {
             Instrument::StockFutures(instrument) |
             Instrument::BondFutures(instrument) |
@@ -116,7 +116,7 @@ impl<'a> MatchPrameter<'a> {
         }
     }
 
-    pub fn get_borrowing_curve_name(&self, instrument: &Instrument<'a>) -> &'static str {
+    pub fn get_borrowing_curve_name(&self, instrument: &Instrument) -> &'static str {
         match instrument {
             Instrument::StockFutures(instrument) => {
                 match instrument.get_currency() {
