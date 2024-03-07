@@ -3,12 +3,12 @@ use crate::assets::currency::Currency;
 use std::collections::HashMap;
 use crate::enums::{CreditRating, IssuerType, RankType};
 
-pub struct MatchPrameter<'a> {
-    // (type_name: &'static str, currency: Currency) -> &'static str
-    collateral_curve_map: HashMap<(&'static str, Currency), String>,
+pub struct MatchPrameter {
+    // Underlying asset code: String -> curve_name: String
+    collateral_curve_map: HashMap<String, String>,
 
-    // underlying_name: &'static str -> &'static str
-    borrowing_curve_map: HashMap<(String, Currency), String>,
+    // Underlying asset code: String -> curve_name: String
+    borrowing_curve_map: HashMap<String, String>,
     
     // (issuer: String, 
     //  issuer_type: IssuerType, 
@@ -24,19 +24,16 @@ pub struct MatchPrameter<'a> {
 
 impl Default for MatchPrameter {
     fn default() -> MatchPrameter {
-        let collateral_curve_map: HashMap<(
-            &'static str,
-            Currency,
-        ), String> = HashMap::new();
+        let collateral_curve_map: HashMap<String, String> = HashMap::new();
 
-        let borrowing_curve_map: HashMap<(&str, Currency), &str> = HashMap::new();
+        let borrowing_curve_map: HashMap<String, String> = HashMap::new();
         
         let bond_discount_curve_map: HashMap<(
-            &str, 
+            String,
             IssuerType, 
             CreditRating, 
             Currency
-        ), &str> = HashMap::new();
+        ), String> = HashMap::new();
         
         MatchPrameter {
             collateral_curve_map,
@@ -71,20 +68,23 @@ impl MatchPrameter {
         match instrument {
             Instrument::FixedCouponBond(instrument) |
             Instrument::FloatingRateNote(instrument) => {
-                self.bond_discount_curve_map.get(&(
-                    instrument.get_issuer_name().unwrap(),
-                    *instrument.get_issuer_type().unwrap(),
-                    *instrument.get_credit_rating().unwrap(),
-                    *instrument.get_currency(),
-                )).expect("Bond has no discount curve").as_ref()
+                match self.bond_discount_curve_map.get(&(
+                    &instrument.get_issuer_name(),
+                    &instrument.get_issuer_type(),
+                    &instrument.get_credit_rating(),
+                    &instrument.get_currency(),
+                )) {
+                    Some(curve_name) => curve_name,
+                    None => &"Dummy".to_string(), 
+                }
             },
             Instrument::IRS(instrument) => {
                 instrument.get_rate_forward_curve_name()
-                .expect("IRS has no rate forward curve").as_ref()
+                .expect("IRS has no rate forward curve")
             },
             Instrument::StockFutures(_) |
             Instrument::BondFutures(_) |
-            Instrument::KTBF(_) => "Dummy".to_String().as_ref(), // no discount
+            Instrument::KTBF(_) => &"Dummy".to_string(), // no discount
         }
     }
 
@@ -95,7 +95,7 @@ impl MatchPrameter {
         issuer_type: Option<&IssuerType>,
         rank_type: Option<&RankType>,
     ) -> &String {
-        "not yet implemented".to_string().as_ref()
+        &"not yet implemented".to_string()
     }
 
     pub fn get_collateral_curve_name(&self, instrument: &Instrument) -> &String {
@@ -103,15 +103,13 @@ impl MatchPrameter {
             Instrument::StockFutures(instrument) |
             Instrument::BondFutures(instrument) |
             Instrument::KTBF(instrument) => {
-                self.collateral_curve_map.get(&(
-                    instrument.get_type_name(),
-                    *instrument.get_currency(),
-                )).expect("Collateral curve is not found")
+                self.collateral_curve_map.get(instrument.get_code())
+                .expect("Collateral curve is not found")
             },
             Instrument::FixedCouponBond(_) |
             Instrument::FloatingRateNote(_) |
             Instrument::IRS(_)=> {
-                "collateral curve is not needed for IRS and Bonds"
+                &"collateral curve is not needed for IRS and Bonds".to_string()
             },
         }
     }

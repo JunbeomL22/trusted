@@ -51,8 +51,8 @@ impl StockFuturesPricer {
 
 }
 
-impl<'a> PricerTrait<'a> for StockFuturesPricer {
-    fn npv(&self, instruments: &'a Instrument<'a>) -> Result<Real, MyError> {
+impl PricerTrait for StockFuturesPricer {
+    fn npv(&self, instruments: &Instrument) -> Result<Real, MyError> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
@@ -67,7 +67,7 @@ impl<'a> PricerTrait<'a> for StockFuturesPricer {
         res
     }
 
-    fn fx_exposure(&self, instruments: &'a Instrument<'a>) -> Result<Real, MyError> {
+    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real, MyError> {
         match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let npv = self.npv(instruments)

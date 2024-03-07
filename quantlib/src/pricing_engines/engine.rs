@@ -25,42 +25,42 @@ use crate::utils::myerror::MyError;
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
-pub struct Engine<'a> {
-    calculation_result: HashMap<&'a str, RefCell<CalculationResult>>,
+pub struct Engine {
+    calculation_result: HashMap<String, RefCell<CalculationResult>>,
     calculation_configuration: CalculationConfiguration,
-    stock_data: HashMap<&'a str, ValueData>,
-    fx_data: HashMap<&'a str, ValueData>,
-    curve_data: HashMap<&'a str, RefCell<VectorData>>,
-    dividend_data: HashMap<&'a str, RefCell<VectorData>>,
+    stock_data: HashMap<String, ValueData>,
+    fx_data: HashMap<String, ValueData>,
+    curve_data: HashMap<String, RefCell<VectorData>>,
+    dividend_data: HashMap<String, RefCell<VectorData>>,
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<&'a str, Rc<RefCell<Real>>>,
-    stocks: HashMap<&'a str, Rc<RefCell<Stock>>>,
-    zero_curves: HashMap<&'a str, Rc<RefCell<ZeroCurve>>>,
-    dividends: HashMap<&'a str, Rc<RefCell<DiscreteRatioDividend>>>,
+    fxs: HashMap<String, Rc<RefCell<Real>>>,
+    stocks: HashMap<String, Rc<RefCell<Stock>>>,
+    zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
+    dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     // instruments
-    instruments: Instruments<'a>, // all instruments
-    pricers: HashMap<&'a str, Pricer<'a>>, // pricers for each instrument
+    instruments: Instruments, // all instruments
+    pricers: HashMap<String, Pricer>, // pricers for each instrument
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
-    instruments_in_action: Vec<&'a Instrument<'a>>, 
+    instruments_in_action: Vec<Instrument>, 
     //
-    match_parameter: MatchPrameter<'a>,
+    match_parameter: MatchPrameter,
 }
 
-impl<'a> Engine<'a> {
+impl Engine {
     pub fn new (
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
         //
-        fx_data: HashMap<&'a str, ValueData>,
-        stock_data: HashMap<&'a str, ValueData>,
-        curve_data: HashMap<&'a str, VectorData>,
-        dividend_data: HashMap<&'a str, VectorData>,
+        fx_data: HashMap<String, ValueData>,
+        stock_data: HashMap<String, ValueData>,
+        curve_data: HashMap<String, VectorData>,
+        dividend_data: HashMap<String, VectorData>,
         //
-        instruments: Instruments<'a>,
-        match_parameter: MatchPrameter<'a>,
-    ) -> Engine<'a> {
+        instruments: Instruments,
+        match_parameter: MatchPrameter,
+    ) -> Engine {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
         ));
@@ -156,7 +156,7 @@ impl<'a> Engine<'a> {
     }
 
     // initialize CalculationResult for each instrument
-    pub fn initialize(&mut self, instrument_vec: Vec<&'a Instrument<'a>>) -> Result<()> {
+    pub fn initialize(&mut self, instrument_vec: Vec<&Instrument>) -> Result<()> {
         self.initialize_instruments(instrument_vec)
             .with_context(|| format!(
                 "(Engine::initialize) Failed to initialize instruments\n\
@@ -176,7 +176,7 @@ impl<'a> Engine<'a> {
         Ok(())
     }
 
-    pub fn initialize_instruments(&mut self, instrument_vec: Vec<&'a Instrument<'a>>) -> Result<(), MyError> {
+    pub fn initialize_instruments(&mut self, instrument_vec: Vec<&Instrument>) -> Result<(), MyError> {
         if instrument_vec.is_empty() {
             return Err(
                 MyError::EmptyVectorError {

@@ -21,8 +21,8 @@ pub struct StockFutures {
     code: String,
 }
 
-impl<'a> Default for StockFutures<'a> {
-    fn default() -> StockFutures<'a> {
+impl Default for StockFutures {
+    fn default() -> StockFutures {
         StockFutures {
             average_trade_price: 0.0,
             first_trade_date: OffsetDateTime::now_utc(),
@@ -122,9 +122,9 @@ mod tests {
             100.0,
             Currency::KRW,
             Currency::KRW,
-            "KOSPI200",
-            "KOSPI2 Fut Mar24",
-            "165AAA",
+            "KOSPI200".to_string(),
+            "KOSPI2 Fut Mar24".to_string(),
+            "165AAA".to_string(),
         );
 
         let serialized = serde_json::to_string(&stock_futures).unwrap();

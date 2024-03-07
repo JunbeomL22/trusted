@@ -4,24 +4,24 @@ use crate::utils::myerror::MyError;
 use time::OffsetDateTime;
 use std::collections::HashMap;
 
-pub trait PricerTrait<'a> {
+pub trait PricerTrait {
     // Code -> NPV
-    fn npv(&self, instrument: &'a Instrument<'a>) -> Result<Real, MyError>;
-    fn fx_exposure(&self, instrument: &'a Instrument<'a>) -> Result<Real, MyError>;
+    fn npv(&self, instrument: &Instrument) -> Result<Real, MyError>;
+    fn fx_exposure(&self, instrument: &Instrument) -> Result<Real, MyError>;
     fn coupons(
         &self, 
-        instrument: &'a Instrument<'a>,
+        instrument: &Instrument,
         start_date: &OffsetDateTime,
         end_date: &OffsetDateTime,
     ) -> Result<HashMap<OffsetDateTime, Real>, MyError>;
 }
 
-pub enum Pricer<'a> {
-    StockFuturesPricer(Box<dyn PricerTrait<'a>>),
+pub enum Pricer {
+    StockFuturesPricer(Box<dyn PricerTrait>),
 }
 
-impl<'a> Pricer<'a> {
-    pub fn as_trait(&self) -> &(dyn PricerTrait<'a>) {
+impl Pricer {
+    pub fn as_trait(&self) -> &(dyn PricerTrait) {
         match self {
             Pricer::StockFuturesPricer(pricer) => &**pricer,
         }

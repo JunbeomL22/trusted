@@ -34,6 +34,8 @@ pub trait InstrumentTriat {
     fn get_average_trade_price(&self) -> Real { 0.0 }
     //
     fn get_accountring_level(&self) -> AccountingLevel { AccountingLevel::Level1 }
+
+    fn clone(&self) -> Box<dyn InstrumentTriat>;
 }
 
 pub enum Instrument {
