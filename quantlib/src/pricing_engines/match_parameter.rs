@@ -5,9 +5,11 @@ use crate::enums::{CreditRating, IssuerType, RankType};
 
 pub struct MatchPrameter {
     // Underlying asset code: String -> curve_name: String
+    // Underlying code examples are stock, bond, commodity, etc.
     collateral_curve_map: HashMap<String, String>,
 
     // Underlying asset code: String -> curve_name: String
+    // Underlying code examples are stock, bond, commodity, etc.
     borrowing_curve_map: HashMap<String, String>,
     
     // (issuer: String, 
@@ -45,11 +47,8 @@ impl Default for MatchPrameter {
 
 impl MatchPrameter {
     pub fn new(
-        collateral_curve_map: HashMap<(
-            String,
-            Currency,
-        ), String>,
-        borrowing_curve_map: HashMap<(String, Currency), String>,
+        collateral_curve_map: HashMap<String, String>,
+        borrowing_curve_map: HashMap<String, String>, 
         bond_discount_curve_map: HashMap<(
             String, 
             IssuerType, 
@@ -69,17 +68,17 @@ impl MatchPrameter {
             Instrument::FixedCouponBond(instrument) |
             Instrument::FloatingRateNote(instrument) => {
                 match self.bond_discount_curve_map.get(&(
-                    &instrument.get_issuer_name(),
-                    &instrument.get_issuer_type(),
-                    &instrument.get_credit_rating(),
-                    &instrument.get_currency(),
+                    *instrument.get_issuer_name().expect("Issuer name is not found"),
+                    *instrument.get_issuer_type().expect("Issuer type is not found"),
+                    *instrument.get_credit_rating().expect("Credit rating is not found"),
+                    *instrument.get_currency(),
                 )) {
                     Some(curve_name) => curve_name,
                     None => &"Dummy".to_string(), 
                 }
             },
             Instrument::IRS(instrument) => {
-                instrument.get_rate_forward_curve_name()
+                &instrument.get_rate_forward_curve_name()
                 .expect("IRS has no rate forward curve")
             },
             Instrument::StockFutures(_) |

@@ -363,14 +363,14 @@ impl Engine {
     }
 
     
-    pub fn get_calculation_result(&self) -> &HashMap<&str, RefCell<CalculationResult>> {
+    pub fn get_calculation_result(&self) -> &HashMap<&String, RefCell<CalculationResult>> {
         &self.calculation_result
     }
 
-    pub fn get_calculation_result_clone(&self) -> HashMap<&str, CalculationResult> {
+    pub fn get_calculation_result_clone(&self) -> HashMap<&String, CalculationResult> {
         let mut result = HashMap::new();
         for (key, value) in self.calculation_result.iter() {
-            result.insert(*key, value.borrow().clone());
+            result.insert(key, value.borrow().clone());
         }
         result
     }
