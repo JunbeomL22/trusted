@@ -64,4 +64,8 @@ impl FloatingRateNote {
         self.spread
     }
 
+    pub fn get_rate_index(&self) -> Option<&RateIndex> {
+        Some(&self.rate_index)
+    }
+
 }

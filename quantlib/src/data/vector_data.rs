@@ -1,6 +1,6 @@
 use crate::assets::currency::Currency;
 use crate::definitions::{Real, Time};
-use crate::time::calendar::{Calendar, NullCalendar};
+use crate::time::calendar::{CalendarTrait, NullCalendar};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -97,9 +97,10 @@ impl VectorData {
                 });
             }
             
+            let time_calculator = NullCalendar {};
             let times: Array1<Time> = dates
             .iter()
-            .map(|date| NullCalendar::default().get_time_difference(&market_datetime, date))
+            .map(|date| time_calculator.get_time_difference(&market_datetime, date))
             .collect();
             
             let res = VectorData {
@@ -179,9 +180,10 @@ impl VectorData {
         if let Some(times) = times {
             self.times = times;
         } else if let Some(dates) = dates {
+            let time_calculator = NullCalendar {};
             self.times = (&dates)
             .iter()
-            .map(|date| NullCalendar::default().get_time_difference(&self.market_datetime, &date))
+            .map(|date| time_calculator.get_time_difference(&self.market_datetime, &date))
             .collect();
         }
 

@@ -15,19 +15,19 @@ use crate::pricing_engines::pricer::Pricer;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
 use crate::pricing_engines::match_parameter::MatchPrameter;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::rc::Rc;
 use std::cell::RefCell;
 use time::Duration;
 use anyhow::{Context, Result};
 use crate::utils::myerror::MyError;
 
-
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
 pub struct Engine {
     calculation_result: HashMap<String, RefCell<CalculationResult>>,
-    calculation_configuration: CalculationConfiguration,
+    calculation_configuration: Arc<CalculationConfiguration>,
     stock_data: HashMap<String, ValueData>,
     fx_data: HashMap<String, ValueData>,
     curve_data: HashMap<String, RefCell<VectorData>>,
@@ -43,14 +43,13 @@ pub struct Engine {
     pricers: HashMap<String, Pricer>, // pricers for each instrument
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
-    instruments_in_action: Vec<Instrument>, 
-    //
-    match_parameter: MatchPrameter,
+    instruments_in_action: Vec<Arc<Instrument>>, 
+    match_parameter: Arc<MatchPrameter>,
 }
 
 impl Engine {
     pub fn new (
-        calculation_configuration: CalculationConfiguration,
+        calculation_configuration: Arc<CalculationConfiguration>,
         evaluation_date: EvaluationDate,
         //
         fx_data: HashMap<String, ValueData>,
@@ -59,7 +58,7 @@ impl Engine {
         dividend_data: HashMap<String, VectorData>,
         //
         instruments: Instruments,
-        match_parameter: MatchPrameter,
+        match_parameter: Arc<MatchPrameter>,
     ) -> Engine {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
@@ -72,7 +71,7 @@ impl Engine {
                 ZeroCurve::new(
                     evaluation_date.clone(),
                     &data,
-                    ZeroCurveCode::from_str(key).unwrap(),
+                    ZeroCurveCode::from_str(&key).unwrap(),
                     key.to_string(),
                 ).expect("failed to create zero curve")
             ));
@@ -86,7 +85,7 @@ impl Engine {
         let mut dividends = HashMap::new();
         let mut dividend_data_refcell = HashMap::new();
         for (key, data) in dividend_data.into_iter() {
-            let spot = stock_data.get(key)
+            let spot = stock_data.get(&key)
                 .expect("Failed to find stock data matching the dividend data")
                 .get_value();
 
@@ -104,7 +103,7 @@ impl Engine {
             dividend_data_refcell.insert(key, ref_cell);
         }
         // making fx Rc -> RefCell for pricing
-        let mut fxs: HashMap<&str, Rc<RefCell<Real>>> = HashMap::new();
+        let mut fxs: HashMap<String, Rc<RefCell<Real>>> = HashMap::new();
         fx_data
             .iter()
             .map(|(key, data)| {
@@ -156,8 +155,12 @@ impl Engine {
     }
 
     // initialize CalculationResult for each instrument
-    pub fn initialize(&mut self, instrument_vec: Vec<&Instrument>) -> Result<()> {
-        self.initialize_instruments(instrument_vec)
+    pub fn initialize(
+        &mut self, 
+        instrument_vec: Vec<Arc<Instrument>>,
+        match_parameter: Arc<MatchPrameter>,
+    ) -> Result<(), MyError> {
+        self.initialize_instruments(instrument_vec, match_parameter)
             .with_context(|| format!(
                 "(Engine::initialize) Failed to initialize instruments\n\
                 occuring at {file}:{line}",
@@ -176,7 +179,11 @@ impl Engine {
         Ok(())
     }
 
-    pub fn initialize_instruments(&mut self, instrument_vec: Vec<&Instrument>) -> Result<(), MyError> {
+    pub fn initialize_instruments(
+        &mut self, 
+        instrument_vec: Vec<Arc<Instrument>>,
+        match_parameter: Arc<MatchPrameter>,
+    ) -> Result<(), MyError> {
         if instrument_vec.is_empty() {
             return Err(
                 MyError::EmptyVectorError {
@@ -187,8 +194,9 @@ impl Engine {
             );
         }
 
-        self.instruments = Instruments::new(instrument_vec);
-        self.instruments_in_action = self.instruments.get_instruments().clone();
+        self.instruments = Instruments::new(instrument_vec, match_parameter);
+        self.instruments_in_action = self.instruments
+            .get_instruments_clone();
     
         for instrument in self.instruments.iter() {
             let inst = instrument.as_trait();
@@ -209,7 +217,7 @@ impl Engine {
             );
 
             self.calculation_result.insert(
-                inst.get_code(),
+                inst.get_code().clone(),
                 RefCell::new(init_res),
             );
         }
@@ -217,7 +225,7 @@ impl Engine {
     }
 
     pub fn initialize_pricers(&mut self) -> Result<(), MyError> {
-        let inst_vec = self.instruments.get_instruments();
+        let inst_vec = self.instruments.get_instruments_clone();
         for inst in inst_vec.iter() {
             let inst_type = inst.as_trait().get_type_name();
             let inst_name = inst.as_trait().get_name();
@@ -225,11 +233,11 @@ impl Engine {
             let inst_curr = inst.as_trait().get_currency();
             let undertlying_codes = inst.as_trait().get_underlying_codes();
 
-            let pricer = match inst {
+            let pricer = match Arc::as_ref(inst) {
                 Instrument::StockFutures(instrument) => {
-                    let stock = self.stocks.get(undertlying_codes[0]).unwrap().clone();
-                    let collatral_curve_name = self.match_parameter.get_collateral_curve_name(inst);
-                    let borrowing_curve_name = self.match_parameter.get_borrowing_curve_name(inst);
+                    let stock = self.stocks.get(&undertlying_codes[0]).unwrap().clone();
+                    let collatral_curve_name = self.match_parameter.get_collateral_curve_names(inst)[0];
+                    let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(inst)[0];
                     let core = StockFuturesPricer::new(
                         stock,
                         self.zero_curves.get(collatral_curve_name).unwrap().clone(),
@@ -252,12 +260,12 @@ impl Engine {
                     );
                 }
             };
-            self.pricers.insert(inst_code, pricer);
+            self.pricers.insert(*inst_code, pricer);
         }
         Ok(())
     }
 
-    pub fn get_npvs(&self) -> Result<HashMap<&str, Real>> {
+    pub fn get_npvs(&self) -> Result<HashMap<&String, Real>> {
         let mut npvs = HashMap::new();
         for inst in &self.instruments_in_action {
             let pricer = self.pricers.get(inst.as_trait().get_code())
@@ -318,8 +326,8 @@ impl Engine {
     }
 
     
-    pub fn set_delta(&mut self) -> Result<()> {
-        let all_underlying_codes = self.instruments.get_underlying_codes();
+    pub fn set_delta(&mut self) -> Result<(), MyError> {
+        let all_underlying_codes = self.instruments.get_all_underlying_codes();
         let delta_bump_ratio = self.calculation_configuration.get_delta_bump_ratio();
 
         for und_code in all_underlying_codes.iter() {
@@ -363,14 +371,14 @@ impl Engine {
     }
 
     
-    pub fn get_calculation_result(&self) -> &HashMap<&String, RefCell<CalculationResult>> {
+    pub fn get_calculation_result(&self) -> &HashMap<String, RefCell<CalculationResult>> {
         &self.calculation_result
     }
 
-    pub fn get_calculation_result_clone(&self) -> HashMap<&String, CalculationResult> {
+    pub fn get_calculation_result_clone(&self) -> HashMap<String, CalculationResult> {
         let mut result = HashMap::new();
         for (key, value) in self.calculation_result.iter() {
-            result.insert(key, value.borrow().clone());
+            result.insert(*key, value.borrow().clone());
         }
         result
     }

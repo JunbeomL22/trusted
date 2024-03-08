@@ -16,7 +16,7 @@ pub struct StockFutures {
     unit_notional: Real,
     currency: Currency,
     futures_currency: Currency, //may have a difference currency with the underlying
-    underlying_names: Vec<String>,
+    underlying_codes: Vec<String>,
     name: String,
     code: String,
 }
@@ -32,9 +32,9 @@ impl Default for StockFutures {
             unit_notional: 0.0,
             currency: Currency::KRW,
             futures_currency: Currency::KRW,
-            underlying_names: vec![],
-            name: "",
-            code: "",
+            underlying_codes: vec![],
+            name: String::from(""),
+            code: String::from(""),
         }
     }
 }
@@ -49,7 +49,7 @@ impl StockFutures {
         unit_notional: Real,
         currency: Currency,
         futures_currency: Currency,
-        underlying_name: String,
+        underlying_code: String,
         name: String,
         code: String,
     ) -> StockFutures {
@@ -62,7 +62,7 @@ impl StockFutures {
             unit_notional,
             currency,
             futures_currency,
-            underlying_names: vec![underlying_name],
+            underlying_codes: vec![underlying_code],
             name,
             code,
         }
@@ -93,7 +93,7 @@ impl StockFutures {
     }
 
     pub fn get_underlying_codes(&self) -> &Vec<String> {
-        &self.underlying_names
+        &self.underlying_codes
     }
 
     pub fn get_average_trade_price(&self) -> Real {

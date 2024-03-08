@@ -35,11 +35,9 @@ pub enum ZeroCurveCode {
 macro_rules! zero_curve_code_from_str {
     ($($variant:ident),* $(,)?) => {
         impl ZeroCurveCode {
-            pub fn from_str(code: &str) -> Option<Self> {
-                match code {
-                    $(
-                        stringify!($variant) => Some(Self::$variant),
-                    )*
+            pub fn from_str(code: &String) -> Option<Self> {
+                match &**code {
+                    $(stringify!($variant) => Some(Self::$variant),)*
                     _ => None,
                 }
             }

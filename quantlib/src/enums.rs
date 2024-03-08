@@ -15,21 +15,7 @@ pub enum RateIndexCode {
     HONIA = 7,
     Undefined = 8,
 }
-impl RateIndexCode {
-    pub fn get_forward_curve_name(&self) -> &'static str {
-        match self {
-            RateIndexCode::Dummy => "Dummy",
-            RateIndexCode::HIBOR => "HKDIRS",
-            RateIndexCode::SOFR => "USDOIS",
-            RateIndexCode::CD => "KRWIRS",
-            RateIndexCode::KOFR => "KRWOIS",
-            RateIndexCode::ESTR => "EUROIS",
-            RateIndexCode::TONAR => "JPYOIS",
-            RateIndexCode::HONIA => "HKDOIS",
-            RateIndexCode::Undefined => "Undefined",
-        }
-    }
-}
+
 impl fmt::Display for RateIndexCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {

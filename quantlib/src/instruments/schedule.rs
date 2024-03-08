@@ -1,4 +1,5 @@
-use chrono::Offset;
+use crate::utils::myerror::MyError;
+use anyhow::Result;
 use time::{OffsetDateTime, Duration};
 use serde::{Deserialize, Serialize};
 use crate::time::calendar::Calendar;
@@ -8,7 +9,7 @@ use std::ops::Index;
 use crate::definitions::COUPON_PAYMENT_TIME;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BaseSchedule {
+pub struct BaseSchedule {   
     fixing_date: OffsetDateTime,
     calc_start_date: OffsetDateTime,
     calc_end_date: OffsetDateTime,
@@ -73,14 +74,28 @@ pub fn build_schedule(
     effective_date: OffsetDateTime, 
     first_coupon_date: Option<OffsetDateTime>, 
     maturity: OffsetDateTime, 
-    calendar: &dyn Calendar,
+    calendar: Calendar,
     conv: BusinessDayConvention,
     freq: PaymentFrequency, 
     fixing_days: i64, 
     payment_days: i64
-) -> Schedule {
+) -> Result<Schedule, MyError> {
     if payment_days < 0 || fixing_days < 0 {
-        panic!("fixing_days and payment_days both must be non-negative");
+        // display all inputs. file and line are automatically filled by MyError
+        let msg = String::from("payment_days and fixing_days should be non-negative\n");
+        msg.push_str(&format!("effective_date: {:?}\n", effective_date));
+        msg.push_str(&format!("first_coupon_date: {:?}\n", first_coupon_date));
+        msg.push_str(&format!("maturity: {:?}\n", maturity));
+        msg.push_str(&format!("calendar: {:?}\n", calendar.as_trait().calendar_name()));
+        msg.push_str(&format!("conv: {:?}\n", conv));
+        msg.push_str(&format!("freq: {:?}\n", freq));
+        msg.push_str(&format!("fixing_days: {:?}\n", fixing_days));
+        msg.push_str(&format!("payment_days: {:?}\n", payment_days));
+        return Err(MyError::BaseError { 
+            file: file!().to_string(),
+            line: line!(),
+            contents: msg,
+        });
     }
 
     let mut data = Vec::new();
@@ -115,7 +130,7 @@ pub fn build_schedule(
         raw_end = add_period(&calc_end_date, &freq.to_string());
 
         if raw_end < maturity - eps { 
-            calc_end_date = calendar.adjust(&raw_end, &conv);
+            calc_end_date = calendar.as_trait().adjust(&raw_end, &conv);
         } else { 
             calc_end_date = maturity 
         };
@@ -134,7 +149,7 @@ pub fn build_schedule(
         data.push(base_schedule);
     }
 
-    Schedule { data }
+    Ok(Schedule { data })
 }
 
 #[cfg(test)] 

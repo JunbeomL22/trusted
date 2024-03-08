@@ -51,11 +51,6 @@ impl RateIndex {
     pub fn get_rate_index_code(&self) -> &RateIndexCode {
         &self.code
     }
-
-    pub fn get_rate_forward_curve_name(&self) -> &str {
-        self.code.get_forward_curve_name()
-    }
-
 }
 
 

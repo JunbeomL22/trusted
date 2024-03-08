@@ -110,6 +110,18 @@ pub enum MyError {
         file: String,
         line: u32,
         other_info: String,
+    },
+
+    // block for calling
+    #[error(
+        "by {file}:{line},\n\
+        failed to call the function\n\
+        contents: {contents}"
+    )]
+    CallError {
+        file: String,
+        line: u32,
+        other_info: String,
     }
 }
 

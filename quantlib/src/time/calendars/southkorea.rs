@@ -1,9 +1,11 @@
-use crate::time::calendar::{Calendar, Holidays};
+use crate::time::calendar::CalendarTrait;
+use crate::time::holiday::Holidays;
 use crate::time::constants::{KOREAN_LUNAR_NEWYEARS, FIRST_LUNAR_NEWYEAR, LAST_LUNAR_NEWYEAR};
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset};
 use log::warn;
-
-#[derive(Debug, Clone, Copy)]
+use serde::{Serialize, Deserialize};
+use crate::utils::myerror::MyError;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum SouthKoreaType {
     Krx,
     Settlement,
@@ -699,7 +701,7 @@ impl Holidays for SouthKoreaType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SouthKorea {
     name: String,
     utc_offset: UtcOffset,
@@ -725,16 +727,16 @@ impl SouthKorea {
     }
 }
 
-impl Calendar for SouthKorea {
-    fn calendar_name(&self) -> &str {
+impl CalendarTrait for SouthKorea {
+    fn calendar_name(&self) -> &String {
         &self.name
     }   
     
-    fn add_holidays(&mut self, date: &Date) {
+    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError>{
         self.holiday_adder.push(*date);
     }
 
-    fn remove_holidays(&mut self, date: &Date) {
+    fn remove_holidays(&mut self, date: &Date) -> Result<(), MyError> {
         self.holiday_remover.push(*date);
     }
 
