@@ -14,6 +14,7 @@ mod tests {
     use quantlib::parameters::zero_curve_code::ZeroCurveCode;
     //use quantlib::utils::string_arithmetic::{add_period, sub_period};
     use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
+    use quantlib::assets::currency::Currency;
 
     #[test]
     fn test_shared_evaluation_date() {
@@ -44,18 +45,25 @@ mod tests {
         let times = None;
         let market_datetime = evaluation_offsetdatetime.clone();
         let name = "zero curve data".to_string();
-        let _zero_curve_data = VectorData::new(value, Some(dates), times, market_datetime, name);
-        let zero_curve_data = Rc::new(RefCell::new(_zero_curve_data));
+        let mut zero_curve_data = VectorData::new(
+            value, 
+            Some(dates), 
+            times, 
+            market_datetime, 
+            Currency::KRW,
+            name
+        ).expect("Failed to create VectorData for zero curve");
+
 
         let _zero_curve = ZeroCurve::new(
             evaluation_date.clone(),
-            zero_curve_data.clone(),
+            &zero_curve_data,
             ZeroCurveCode::KRWGOV,
             "zero curve".to_string(),
-        );
+        ).expect("Failed to create ZeroCurve");
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
-        zero_curve_data.borrow_mut().add_observer(zero_curve.clone());
+        zero_curve_data.add_observer(zero_curve.clone());
         evaluation_date.borrow_mut().add_observer(zero_curve.clone());
 
         // For constructing DiscreteRatioDividend, make a vector data object which has two data points after the evaluation_date
@@ -67,15 +75,21 @@ mod tests {
         let times = None;
         let market_datetime = evaluation_offsetdatetime.clone();
         let name = "dividend amount data".to_string();
-        let mut dividend_data = VectorData::new(value, Some(dates.clone()), times, market_datetime, name);
+        let mut dividend_data = VectorData::new(
+            value, 
+            Some(dates.clone()), 
+            times, 
+            market_datetime, 
+            Currency::KRW,
+            name
+        ).expect("Failed to create VectorData for dividend amount");
 
         let _dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &dividend_data,
-            evaluation_offset,
             spot,    
             "dividend".to_string(),
-        );
+        ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(_dividend));
         dividend_data.add_observer(dividend.clone());
@@ -158,7 +172,5 @@ mod tests {
                 third_dividend_deductions,
             );
         }
-
-
     }
 }

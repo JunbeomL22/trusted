@@ -2,9 +2,8 @@ use crate::instruments::instrument_info::InstrumentInfo;
 use crate::definitions::{Real, Integer};
 use crate::utils::myerror::MyError;
 use std::collections::HashMap;
-use anyhow::Context;
 use serde::{Serialize, Deserialize};
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
 /// instrument: InstrumentInfo
@@ -39,10 +38,10 @@ pub struct CalculationResult {
     delta: Option<HashMap<String, Real>>,
     gamma: Option<HashMap<String, Real>>,
     vega: Option<HashMap<String, Real>>,
-    vega_strucure: Option<HashMap<String, HashMap<Duration, Real>>>, // underlying code -> duration -> vega
+    vega_strucure: Option<HashMap<String, HashMap<String, Real>>>, // underlying code -> duration -> vega
     theta: Option<Real>,
     rho: Option<HashMap<String, Real>>, // Curve Code -> rho
-    rho_structure: Option<HashMap<String, HashMap<Duration, Real>>>, // curve code -> duration -> rho
+    rho_structure: Option<HashMap<String, HashMap<String, Real>>>, // curve code -> duration -> rho
     theta_day: Option<Integer>,
     cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>,
 }
@@ -105,9 +104,10 @@ impl CalculationResult {
                 other_info: "npv is not set".to_string(),
             }),
             Some(npv) => {
-                self.value = Some(
-                    npv * self.instrument_info.as_ref().expect("instrument_info is not set").get_unit_notional()
-                );
+                let unit = self.instrument_info.as_ref()
+                        .ok_or_else(|| anyhow::anyhow!("instrument info is not set"))?
+                        .get_unit_notional();
+                self.value = Some(npv * unit);
                 Ok(())
             },
         }
@@ -121,43 +121,107 @@ impl CalculationResult {
         self.fx_exposure = Some(fx_exposure);
     }
 
-    pub fn set_delta(&mut self, delta: HashMap<String, Real>) {
-        self.gamma = Some(delta);
+    /// insert delta to self.delta as und_code as its key
+    /// if the key is already in the map, it will be updated
+    pub fn set_single_delta(&mut self, und_code: &String, v: Real) {
+        match &mut self.delta {
+            None => {
+                let mut delta = HashMap::new();
+                delta.insert(und_code.clone(), v);
+                self.delta = Some(delta);
+            },
+            Some(delta) => {
+                delta.insert(und_code.clone(), v);
+            },
+        }
     }
 
-    pub fn set_gamma(&mut self, gamma: HashMap<String, Real>) {
-        self.gamma = Some(gamma);
+    pub fn set_single_gamma(&mut self, und_code: &String, v: Real) {
+        match &mut self.gamma {
+            None => {
+                let mut gamma = HashMap::new();
+                gamma.insert(und_code.clone(), v);
+                self.gamma = Some(gamma);
+            },
+            Some(gamma) => {
+                gamma.insert(und_code.clone(), v);
+            },
+        }
+    }
+
+    pub fn set_single_rho(&mut self, curve_code: &String, v: Real) {
+        match &mut self.rho {
+            None => {
+                let mut rho = HashMap::new();
+                rho.insert(curve_code.clone(), v);
+                self.rho = Some(rho);
+            },
+            Some(rho) => {
+                rho.insert(curve_code.clone(), v);
+            },
+        }
+    }
+
+    pub fn set_single_rho_structure(
+        &mut self, 
+        curve_code: &String, 
+        rho_structure: HashMap<String, Real>,
+    ) {
+        match &mut self.rho_structure {
+            None => {
+                let mut rho_structure_map = HashMap::new();
+                rho_structure_map.insert(curve_code.clone(), rho_structure);
+                self.rho_structure = Some(rho_structure_map);
+            },
+            Some(rho_structure_map) => {
+                rho_structure_map.insert(curve_code.clone(), rho_structure);
+            },
+        }
+    }
+
+    pub fn set_single_div_delta(&mut self, und_code: &String, v: Real) {
+        match &mut self.rho {
+            None => {
+                let mut rho = HashMap::new();
+                rho.insert(und_code.clone(), v);
+                self.rho = Some(rho);
+            },
+            Some(rho) => {
+                rho.insert(und_code.clone(), v);
+            },
+        }
+    }
+
+    pub fn set_single_div_structure(
+        &mut self, 
+        und_code: &String, 
+        div_structure: HashMap<String, Real>,
+    ) {
+        match &mut self.rho_structure {
+            None => {
+                let mut rho_structure_map = HashMap::new();
+                rho_structure_map.insert(und_code.clone(), div_structure);
+                self.rho_structure = Some(rho_structure_map);
+            },
+            Some(rho_structure_map) => {
+                rho_structure_map.insert(und_code.clone(), div_structure);
+            },
+        }
     }
 
     pub fn set_theta_day(&mut self, theta_day: Integer) {
         self.theta_day = Some(theta_day);
     }
 
-    pub fn set_vega(&mut self, vega: HashMap<String, Real>) {
-        self.vega = Some(vega);
-    }
-
-    pub fn set_vega_structure(&mut self, vega_structure: HashMap<String, HashMap<Duration, Real>>) {
-        self.vega_strucure = Some(vega_structure);
-    }
-
     pub fn set_theta(&mut self, theta: Real) {
         self.theta = Some(theta);
-    }
-
-    pub fn set_rho(&mut self, rho: HashMap<String, Real>) {
-        self.rho = Some(rho);
-    }
-
-    pub fn set_rho_structure(&mut self, rho_structure: HashMap<String, HashMap<Duration, Real>>) {
-        self.rho_structure = Some(rho_structure);
     }
 
     pub fn set_cashflow_inbetween(&mut self, cashflow_inbetween: HashMap<OffsetDateTime, Real>) {
         self.cashflow_inbetween = Some(cashflow_inbetween);
     }
     
-    pub fn get_instrument(&self) -> &Option<InstrumentInfo> {
+    pub fn get_instrument_info(&self) -> &Option<InstrumentInfo> {
         &self.instrument_info
     }
 
@@ -177,21 +241,40 @@ impl CalculationResult {
         &self.gamma
     }
 
-    pub fn get_vega_structure(&self) -> &Option<HashMap<String, HashMap<Duration, Real>>> {
+    pub fn get_vega_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
         &self.vega_strucure
     }
 
     pub fn get_theta(&self) -> Option<Real> {
         self.theta
     }
+
+    pub fn get_rho(&self) -> &Option<HashMap<String, Real>> {
+        &self.rho
+    }
+
+    pub fn get_rho_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
+        &self.rho_structure
+    }
+
+    pub fn get_cashflow_inbetween(&self) -> &Option<HashMap<OffsetDateTime, Real>> {
+        &self.cashflow_inbetween
+    }
+
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assets::currency::Currency, instrument::Instrument, instruments::{instrument_info::InstrumentInfo, stock_futures::StockFutures}};
+    use crate::{
+        assets::currency::Currency, 
+        instrument::Instrument,
+        instruments::{
+            instrument_info::InstrumentInfo, 
+            stock_futures::StockFutures
+        },
+    };
     use time::macros::datetime;
-    use std::collections::HashMap;
 
     #[test]
     fn test_calculation_result() {
@@ -220,27 +303,29 @@ mod tests {
             "KOSPI200".to_string(),
         );
 
-        let name = stock_futures.get_name();
-        let code = stock_futures.get_code();
-        let type_name = stock_futures.get_type_name();
-        let maturity = stock_futures.get_maturity();
+        let inst = Instrument::StockFutures(Box::new(stock_futures));
+
+        let fut_trait = inst.as_trait();
+        let name = fut_trait.get_name();
+        let code = fut_trait.get_code();
+        let type_name = fut_trait.get_type_name();
+        let maturity = fut_trait.get_maturity();
         
         let instrument = InstrumentInfo::new(
-            name,
-            code,
+            name.clone(),
+            code.clone(),
             type_name,
-            *stock_futures.get_currency(),
-            stock_futures.get_unit_notional(),
+            *fut_trait.get_currency(),
+            fut_trait.get_unit_notional(),
             maturity,
         );
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
         result.set_npv(100.0);
+        
+        result.set_single_delta(&"KOSPI200".to_string(), 0.1);
 
-        let mut delta = HashMap::new();
-        delta.insert("KOSPI200".to_string(), 0.1);
-        result.set_delta(delta);
 
         let serialized = serde_json::to_string_pretty(&result).unwrap();
         println!("serialized = {}", serialized);

@@ -1,6 +1,7 @@
-use crate::time::calendar::CalendarTrait;
+use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
 use crate::time::constants::{KOREAN_LUNAR_NEWYEARS, FIRST_LUNAR_NEWYEAR, LAST_LUNAR_NEWYEAR};
+use anyhow::Result;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset};
 use log::warn;
 use serde::{Serialize, Deserialize};
@@ -732,12 +733,14 @@ impl CalendarTrait for SouthKorea {
         &self.name
     }   
     
-    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError>{
+    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError> {
         self.holiday_adder.push(*date);
+        Ok(())
     }
 
     fn remove_holidays(&mut self, date: &Date) -> Result<(), MyError> {
         self.holiday_remover.push(*date);
+        Ok(())
     }
 
     fn is_removed_holiday(&self, date: &OffsetDateTime) -> bool {

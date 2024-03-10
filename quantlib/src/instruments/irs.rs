@@ -5,7 +5,8 @@ use time::OffsetDateTime;
 use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-use crate::time::calendar::Calendar;
+use crate::time::jointcalendar::JointCalendar;
+use crate::instrument::InstrumentTriat;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct IRS {
@@ -22,13 +23,13 @@ pub struct IRS {
     fixed_daycounter: DayCountConvention,
     floating_daycounter: DayCountConvention,
     //
-    fixed_busi_convenction: BusinessDayConvention,
-    floating_busi_convenction: BusinessDayConvention,
+    fixed_busi_convention: BusinessDayConvention,
+    floating_busi_convention: BusinessDayConvention,
     //
     fixed_frequency: PaymentFrequency,
     floating_frequency: PaymentFrequency,
     //
-    calendar: Calendar,
+    //calendar: Calendar,
     name: String,
     code: String,
 }
@@ -49,7 +50,7 @@ impl IRS {
         floating_busi_convention: BusinessDayConvention,
         fixed_frequency: PaymentFrequency,
         floating_frequency: PaymentFrequency,
-        calendar: Calendar,
+        //calendar: Calendar,
         name: String,
         code: String,
     ) -> IRS {
@@ -68,7 +69,7 @@ impl IRS {
             floating_busi_convention,
             fixed_frequency,
             floating_frequency,
-            calendar,
+            //calendar,
             name,
             code,
         }
@@ -84,17 +85,18 @@ impl IRS {
         fixed_rate: Real,
         rate_index: RateIndex,
         fixed_daycounter: DayCountConvention,
-        floating_daycounter: DayCountConvention,
         fixed_busi_convention: BusinessDayConvention,
-        floating_busi_convention: BusinessDayConvention,
         fixed_frequency: PaymentFrequency,
-        floating_frequency: PaymentFrequency,
         fixing_days: i64,
         payment_days: i64,
-        calendar: Calendar,
+        calendar: JointCalendar,
         name: String,
         code: String,
     ) -> IRS {
+        let floating_daycounter = rate_index.get_daycounter().clone();
+        let floating_busi_convention = rate_index.get_business_day_convention().clone();
+        let floating_frequency = rate_index.get_frequency().clone();
+
         let fixed_legs = schedule::build_schedule(
             &issue_date,
             None,
@@ -109,9 +111,9 @@ impl IRS {
         let floating_legs = schedule::build_schedule(
             &issue_date,
             None,
-            &floating_frequency,
+            &maturity,      
             &calendar,
-            &floating_busi_convenction,
+            &floating_busi_convention,
             &floating_frequency,
             fixing_days,
             payment_days,
@@ -128,37 +130,109 @@ impl IRS {
             rate_index,
             fixed_daycounter,
             floating_daycounter,
-            fixed_busi_convenction,
-            floating_busi_convenction,
+            fixed_busi_convention,
+            floating_busi_convention,
             fixed_frequency,
             floating_frequency,
-            calendar,
+            //calendar,
             name,
             code,
         }
     }
+}
 
-    pub fn get_name(&self) -> &String {
+impl InstrumentTriat for IRS {
+    fn get_name(&self) -> &String {
         &self.name
     }
 
-    pub fn get_code(&self) -> &String {
+    fn get_code(&self) -> &String {
         &self.code
     }
 
-    pub fn get_currency(&self) -> &Currency {
+    fn get_currency(&self) -> &Currency {
         &self.currency
     }
 
-    pub fn get_unit_notional(&self) -> Real {
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
+    }
+
+    fn get_unit_notional(&self) -> Real {
         self.unit_notional
     }
 
-    pub fn get_maturity(&self) -> &OffsetDateTime {
-        &self.maturity
-    }
-
-    pub fn get_rate_index(&self) -> Option<&RateIndex> {
+    fn get_rate_index(&self) -> Option<&RateIndex> {
         Some(&self.rate_index)
     }
+
+    fn get_type_name(&self) -> &'static str {
+        "IRS"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        assets::currency::Currency,
+        time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
+        time::calendars::southkorea::{SouthKorea, SouthKoreaType},
+        time::calendar::{SouthKoreaWrapper, Calendar},
+        time::jointcalendar::JointCalendar,
+        parameters::rate_index::RateIndex,
+        enums::RateIndexCode,
+    };
+    use time::{Duration, macros::datetime};
+
+    #[test]
+    fn test_new_from_convention() {
+        let currency = Currency::KRW;
+        let unit_notional = 100.0;
+        let issue_date = datetime!(2021-01-01 00:00:00 +09:00);
+        let maturity = datetime!(2021-12-31 00:00:00 +09:00);
+        let fixed_rate = 0.01;
+        let rate_index = RateIndex::new(
+            PaymentFrequency::Quarterly,
+            BusinessDayConvention::ModifiedFollowing,
+            DayCountConvention::Actual365Fixed,
+            Duration::days(91),
+            Currency::KRW,
+            RateIndexCode::CD,
+            "CD91".to_string(),
+        );
+
+        let fixing_days = 2;
+        let payment_days = 0;
+
+        let sk = JointCalendar::new(
+            vec![Calendar::SouthKorea(
+                SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)}
+                )]
+            );
+        
+        let irs = IRS::new_from_conventions(
+            currency,
+            unit_notional,
+            issue_date,
+            maturity,
+            fixed_rate,
+            rate_index.clone(),
+            DayCountConvention::Actual365Fixed,
+            BusinessDayConvention::ModifiedFollowing,
+            PaymentFrequency::Quarterly,
+            fixing_days,
+            payment_days,
+            sk,
+            "IRS".to_string(),
+            "IRS".to_string(),
+        );
+
+        println!("{:?}", irs);
+        assert_eq!(currency, *irs.get_currency());
+        assert_eq!(unit_notional, irs.get_unit_notional());
+        assert_eq!(maturity, irs.get_maturity().unwrap().clone());
+        assert_eq!(Some(&rate_index), irs.get_rate_index());
+    }
+
 }

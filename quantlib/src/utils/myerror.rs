@@ -1,8 +1,6 @@
 // Include the anyhow crate
-use anyhow::{Result, Context};
 use crate::definitions::{Real, Time};
 use thiserror::Error;
-use std::{fs, vec};
 use std::fmt::Debug;
 use time::OffsetDateTime;
 
@@ -47,6 +45,20 @@ pub enum MyError {
         other_info: String,
     },
 
+    // outofrangeerror
+    #[error(
+        "by {file}:{line}.\n\
+        the value ({value}) is out of range ({range:?})\n\
+        others: {contents}"
+    )]
+    OutOfRangeError {
+        file: String,
+        line: u32,
+        value: Real,
+        range: (Real, Real),
+        contents: String,
+    },
+    
     #[error(
         "by {file}:{line}.\n\
         two vectors have different lengths:\n\
@@ -121,7 +133,7 @@ pub enum MyError {
     CallError {
         file: String,
         line: u32,
-        other_info: String,
+        contents: String,
     }
 }
 

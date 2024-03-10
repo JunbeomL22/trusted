@@ -1,7 +1,8 @@
-use crate::time::calendar::CalendarTrait;
+use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
 use serde::{Serialize, Deserialize};
 use time::{Date, Month, Weekday, UtcOffset, OffsetDateTime};
+use crate::utils::myerror::MyError;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum UnitedStatesType {
@@ -204,7 +205,7 @@ impl Holidays for UnitedStatesType {
     }
 }
 
-#[allow(unused)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnitedStates {
     name: String,
     summer_time: bool,
@@ -237,18 +238,19 @@ impl UnitedStates {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 impl CalendarTrait for UnitedStates {
     fn calendar_name(&self) -> &String {
         &self.name
     }   
     
-    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError> {
+    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError>{
         self.holiday_adder.push(*date);
+        Ok(())
     }
 
     fn remove_holidays(&mut self, date: &Date) -> Result<(), MyError> {
         self.holiday_remover.push(*date);
+        Ok(())
     }
 
     fn is_removed_holiday(&self, date: &OffsetDateTime) -> bool {

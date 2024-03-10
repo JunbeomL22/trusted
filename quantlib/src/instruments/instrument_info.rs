@@ -31,7 +31,7 @@ impl InstrumentInfo {
     pub fn new(
         name: String,
         code: String,
-        instrument_type: String,
+        instrument_type: &'static str,
         currency: Currency,
         unit_notional: Real,
         maturity: Option<&OffsetDateTime>,
@@ -44,7 +44,7 @@ impl InstrumentInfo {
         InstrumentInfo {
             name,
             code,
-            instrument_type,
+            instrument_type: instrument_type.to_string(),
             currency,
             unit_notional,
             maturity,
@@ -88,7 +88,7 @@ mod tests {
         let instrument_info = InstrumentInfo::new(
             "AAPL".to_string(),
             "CodeAAPL".to_string(),
-            "StockFutures".to_string(),
+            "StockFutures",
             Currency::USD,
             100.0,
             None,

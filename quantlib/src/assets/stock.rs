@@ -160,7 +160,7 @@ mod tests {
     use crate::assets::currency::Currency;
 
     #[test]
-    fn test_stock_update_evaluation_date() -> Result<(), MyError> {
+    fn test_stock_update_evaluation_date() {
         let (h, m, s) = SEOUL_OFFSET;
         let offset = time::UtcOffset::from_hms(h, m, s).unwrap();
         let eval_dt = OffsetDateTime::new_in_offset(
@@ -188,22 +188,22 @@ mod tests {
             Some(div_dates.clone()),
             None,
             eval_dt.clone(),
-            Currency::Undefined,
+            Currency::NIL,
             "dividend vecto data".to_string(),
-        )?;
+        ).expect("failed to create VectorData");
 
         let dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &data,
             spot,
             "MockStock".to_string(),
-        )?;
+        ).expect("failed to create DiscreteRatioDividend");
 
         let stock = Rc::new(RefCell::new(
             Stock::new(
                 spot,
                 eval_dt.clone(),
-                Some(dividend),
+                Some(Rc::new(RefCell::new(dividend))),
                 Currency::KRW,
                 "MockStock".to_string(),
                 "MockCode".to_string(),
@@ -229,7 +229,7 @@ mod tests {
             (stock.borrow().get_last_price() - spot).abs() < 1.0e-10,
             "stock: {}",
             stock.borrow().get_last_price()
-        );     
+        );    
     }
 }
 

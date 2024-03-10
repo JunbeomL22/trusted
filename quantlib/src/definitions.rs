@@ -27,3 +27,5 @@ pub const DELTA_PNL_UNIT: Real = 0.01;
 pub const GAMMA_PNL_UNIT: Real = 0.01;
 pub const VEGA_PNL_UNIT: Real = 0.01;
 pub const RHO_PNL_UNIT: Real = 0.0001;
+pub const DIV_PNL_UNIT: Real = 0.0001;
+

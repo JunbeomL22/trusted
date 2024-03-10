@@ -1,11 +1,10 @@
-use std::future;
-
 use crate::definitions::Real;
 use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
 use crate::assets::currency::Currency;
-use crate::util::type_name;
 //
+use crate::instrument::InstrumentTriat;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
     average_trade_price: Real,
@@ -68,42 +67,45 @@ impl StockFutures {
         }
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    pub fn get_currency(&self) -> &Currency {
-        &self.currency
-    }
-
     pub fn get_futures_currency(&self) -> &Currency {
         &self.futures_currency
     }
 
-    pub fn get_maturity(&self) -> Option<&OffsetDateTime> {
+}
+
+impl InstrumentTriat for StockFutures {
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_code(&self) -> &String {
+        &self.code
+    }
+
+    fn get_currency(&self) -> &Currency {
+        &self.currency
+    }
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
         Some(&self.maturity)
     }
 
-    pub fn get_unit_notional(&self) -> Real {
+    fn get_unit_notional(&self) -> Real {
         self.unit_notional
     }
 
-    pub fn get_underlying_codes(&self) -> &Vec<String> {
-        &self.underlying_codes
+    fn get_type_name(&self) -> &'static str {
+        "StockFutures"
     }
 
-    pub fn get_average_trade_price(&self) -> Real {
+    fn get_underlying_codes(&self) -> Vec<&String> {
+        let underlying_codes_ref: Vec<&String> = self.underlying_codes.iter().collect();
+        underlying_codes_ref
+    }
+
+    fn get_average_trade_price(&self) -> Real {
         self.average_trade_price
     }
-
-    pub fn get_type_name(&self) -> &'static str {
-        type_name(&self)
-    }
-
 }
 
 // make a test for serialization

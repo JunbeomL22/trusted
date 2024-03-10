@@ -1,5 +1,5 @@
 use time::OffsetDateTime;
-use std::ops::{AddAssign, SubAssign};
+use std::ops::{AddAssign, SubAssign, Add, Sub};
 use crate::utils::string_arithmetic::{add_period, sub_period};
 use crate::data::observable::Observable;
 use crate::parameter::Parameter;
@@ -67,6 +67,22 @@ impl SubAssign<&str> for EvaluationDate {
     }
 }
 
+impl Add<&str> for EvaluationDate {
+    type Output = OffsetDateTime;
+
+    fn add(self, rhs: &str) -> OffsetDateTime {
+        add_period(&self.date, rhs)
+    }
+}
+
+impl Sub<&str> for EvaluationDate {
+    type Output = OffsetDateTime;
+
+    fn sub(self, rhs: &str) -> OffsetDateTime {
+        sub_period(&self.date, rhs)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,14 +90,25 @@ mod tests {
     use time::macros::datetime;
     use std::rc::Rc;
     use std::cell::RefCell;
+    use crate::utils::myerror::MyError;
 
     struct TestParameter {
         pub value: i32,
+        name: String,
     }
 
     impl Parameter for TestParameter {
-        fn update_evaluation_date(&mut self, data: &EvaluationDate) {
+        fn update_evaluation_date(&mut self, _data: &EvaluationDate) -> Result<(), MyError> {
             self.value += 1;
+            Ok(())
+        }
+
+        fn get_name(&self) -> &String {
+            &self.name
+        }
+
+        fn get_type_name(&self) -> &'static str {
+            "TestParameter"
         }
     }
 
@@ -90,7 +117,7 @@ mod tests {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
         
-        let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
+        let test_param = Rc::new(RefCell::new(TestParameter { value: 0, name: "TestParameter".to_string()}));
         eval_date.add_observer(test_param.clone());
 
         eval_date += "1D";
@@ -102,7 +129,7 @@ mod tests {
     fn test_sub_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
-        let test_param = Rc::new(RefCell::new(TestParameter { value: 0 }));
+        let test_param = Rc::new(RefCell::new(TestParameter { value: 0, name: "TestParameter".to_string()}));
         eval_date.add_observer(test_param.clone());
         eval_date -= "1D";
         assert_eq!(eval_date.get_date_clone(), datetime!(2019-12-31 00:00:00 UTC));

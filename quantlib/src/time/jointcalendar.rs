@@ -1,10 +1,11 @@
-use crate::time::calendar::{CalendarTrait, Calendar};
+use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar::Calendar;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use crate::utils::myerror::MyError;
 use anyhow::Result;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JointCalendar {
     name: String,
     calendars: Vec<Calendar>,
@@ -12,15 +13,15 @@ pub struct JointCalendar {
 
 impl JointCalendar {
     pub fn new(calendars: Vec<Calendar>) -> JointCalendar {
-        let name = String::from("JoinCalendar : ");
+        let mut name = String::from("JoinCalendar : ");
         for (i, cal) in calendars.iter().enumerate() {
             if i == 0 {
-                name.push_str(cal.as_triat().calendar_name());
+                name.push_str(cal.as_trait().calendar_name());
             } else {
             name.push_str(
                 format!(
                     "{} & ",
-                    cal.as_triat().calendar_name()
+                    cal.as_trait().calendar_name()
                 ).as_str())
             }
         }
@@ -79,7 +80,7 @@ impl CalendarTrait for JointCalendar {
         Err(MyError::CallError {
             file: file!().to_string(), 
             line: line!(), 
-            other_info: "It is not allowed to add holidays to JointCalendar".to_string(),
+            contents: "It is not allowed to add holidays to JointCalendar".to_string(),
         })
     }
 
@@ -87,7 +88,7 @@ impl CalendarTrait for JointCalendar {
         Err(MyError::CallError {
             file: file!().to_string(), 
             line: line!(), 
-            other_info: "It is not allowed to remove holidays from JointCalendar".to_string(),
+            contents: "It is not allowed to remove holidays from JointCalendar".to_string(),
         })
     }
 
@@ -102,14 +103,22 @@ mod tests {
     use super::*;
     use crate::time::calendars::unitedstates::{UnitedStates, UnitedStatesType};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
+    use crate::time::calendar::{
+        Calendar,
+        SouthKoreaWrapper,
+        UnitedStatesWrapper,
+    };
     use time::macros::datetime;
     
     #[test]
     fn test_joint_calendar() {
         let summer_time = false;
         let us = UnitedStates::new(UnitedStatesType::Settlement, summer_time);
+        let us_cal = Calendar::UnitedStates(UnitedStatesWrapper{c: us});
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let joint_calendar = JointCalendar::new(vec![Box::new(us), Box::new(sk)]);
+        let sk_cal = Calendar::SouthKorea(SouthKoreaWrapper{c: sk});
+
+        let joint_calendar = JointCalendar::new(vec![us_cal, sk_cal]);
 
         let date = datetime!(2021-05-05 00:00:00 +09:00);
         assert_eq!(joint_calendar.is_holiday(&date), true);

@@ -11,14 +11,14 @@ use crate::math::interpolator::InterpolatorReal1D;
 use crate::math::interpolator::Interpolator1D;
 use crate::math::interpolators::stepwise_interpolatior::ConstantInterpolator1D;
 use crate::math::interpolator::ExtraPolationType;
-use crate::time::calendar::{NullCalendar, CalendarTrait};
-use crate::utils::string_arithmetic::add_period;
+use crate::time::calendars::{nullcalendar::NullCalendar, calendar_trait::CalendarTrait};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use ndarray::{Array1, array};
 use crate::utils::myerror::{MyError, VectorDisplay};
 use anyhow::{Result, Context};
+use crate::utils::string_arithmetic::add_period;
 
 #[derive(Clone, Debug)]
 enum ZeroCurveInterpolator {
@@ -66,7 +66,7 @@ impl ZeroCurve {
     ) -> Result<ZeroCurve, MyError> {
         let rate_times = data.get_times_clone();
         let zero_rates = data.get_value_clone();
-        let time_calculator =  NullCalendar {};
+        let time_calculator =  NullCalendar::default();
         
         if rate_times.len() != zero_rates.len() {
             let error = MyError::MismatchedLengthError { 
@@ -306,6 +306,10 @@ impl ZeroCurve {
 }
 
 impl Parameter for ZeroCurve {
+    fn get_address(&self) -> String {
+        format!("{:p}", self)
+    }
+
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -373,8 +377,9 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use std::rc::Rc;
-    use crate::time::calendar::{Calendar, NullCalendar};
+    use crate::time::calendars::nullcalendar::NullCalendar;
     use ndarray::array;
+    use crate::utils::string_arithmetic::add_period;
 
     #[test]
     fn test_zero_curve() {
@@ -391,29 +396,27 @@ mod tests {
             add_period(&param_dt, "5Y")
             ];
 
-        let _data = VectorData::new(
+        let mut data = VectorData::new(
             array![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
             Some(dates.clone()), 
             None, 
             param_dt, 
+            Currency::NIL,
             "vector data in test_zero_curve".to_string()
-        );
-
-        let data = Rc::new(RefCell::new(_data));
-
+        ).expect("error in test_zero_curve");
 
         let _zero_curve = ZeroCurve::new(
             evaluation_date,
-            data.clone(),
+            &data,
             ZeroCurveCode::Undefined,
             "test".to_string()
-        );
+        ).expect("error in test_zero_curve");
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
         
-        data.borrow_mut().add_observer(zero_curve.clone());
+        data.add_observer(zero_curve.clone());
 
-        let cal = NullCalendar {};
+        let cal = NullCalendar::default();
         let times: Vec<Time> = dates
                                 .iter()
                                 .map(|&date| cal.get_time_difference(&param_dt, &date))

@@ -1,5 +1,5 @@
-use crate::definitions::{Integer, Real, Time, EX_DIVIDEND_TIME, MARKING_DATE};
-use time::{OffsetDateTime, UtcOffset};
+use crate::definitions::{Integer, Real, EX_DIVIDEND_TIME, MARKING_DATE};
+use time::OffsetDateTime;
 use time;
 use crate::data::observable::Observable;
 use crate::data::vector_data::VectorData;
@@ -8,12 +8,12 @@ use crate::math::interpolators::stepwise_interpolatior::{StepwiseInterpolator1D,
 use crate::math::interpolator::Interpolator1D;
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::time::calendar::{NullCalendar, Calendar};
+use crate::time::calendars::nullcalendar::NullCalendar;
 use crate::parameter::Parameter;
 use ndarray::Array1;
 use crate::util::to_yyyymmdd_int;
 use anyhow::Result;
-use crate::utils::myerror::{MyError, VectorDisplay};
+use crate::utils::myerror::MyError;
 
 #[derive(Clone, Debug)]
 enum DividendInterpolator {
@@ -57,7 +57,7 @@ impl DiscreteRatioDividend {
         name: String,
     ) -> Result<DiscreteRatioDividend, MyError> {
         // Begining of the function
-        let time_calculator = NullCalendar {};
+        let time_calculator = NullCalendar::default();
 
         let ex_dividend_dates: Vec<OffsetDateTime>;
         if let Some(dates) = data.get_dates_clone() {
@@ -299,6 +299,7 @@ mod tests {
     use time::macros::{date, datetime};
     use time::UtcOffset;
     use ndarray::array;
+    use crate::assets::currency::Currency;
 
     #[test]
     fn test_deduction_ratio() {
@@ -328,8 +329,9 @@ mod tests {
             Some(dates), 
             times, 
             datetime!(2021-01-01 17:30:00 +09:00),
+            Currency::KRW,
             "test".to_string()
-        );
+        ).expect("Failed to create VectorData");
 
         let marking_offset = UtcOffset::from_hms(9, 0, 0).unwrap();
         let spot = 1.0;
@@ -340,7 +342,7 @@ mod tests {
             //marking_offset,
             spot,
             name,
-        );
+        ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(discrete_ratio_dividend));
         data.add_observer(dividend.clone());

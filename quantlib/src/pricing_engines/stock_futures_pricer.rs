@@ -1,15 +1,12 @@
-use crate::instruments::instrument_info::InstrumentInfo;
-use crate::pricing_engines::pricer::Pricer;
 use crate::utils::myerror::MyError;
-use anyhow::Context;
 use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
-use crate::parameters::zero_curve::ZeroCurve;
 use crate::assets::stock::Stock;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
 use std::collections::HashMap;
+use crate::parameters::zero_curve::ZeroCurve;
 //
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -76,7 +73,7 @@ impl PricerTrait for StockFuturesPricer {
                 let average_trade_price = stock_futures.get_average_trade_price();
                 let unit_notional = stock_futures.get_unit_notional();
                 Ok((npv - average_trade_price) * unit_notional)
-            }
+            },
             _ => Err(
                 MyError::BaseError {
                     file: file!().to_string(), 
@@ -84,7 +81,9 @@ impl PricerTrait for StockFuturesPricer {
                     contents: format!(
                         "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
                         instruments.as_trait().get_type_name().to_string(),
-                    )})
+                    )
+                }
+            )
         }
     }
 
@@ -267,12 +266,13 @@ impl PricerTrait for StockFuturesPricer {
 mod tests {
     use super::*;
     use crate::data::observable::Observable;
+    use crate::instrument::InstrumentTriat;
     use crate::{assets::currency::Currency, instruments::stock_futures::StockFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
-    use time::{macros::datetime, UtcOffset};
-    use crate::definitions::SEOUL_OFFSET;
+    use time::macros::datetime;
     use crate::parameters::zero_curve_code::ZeroCurveCode;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
+    use time::Duration;
 
     #[test]
     fn test_stock_futures_engine() {
@@ -280,8 +280,6 @@ mod tests {
         let evaluation_date = Rc::new(
             RefCell::new(EvaluationDate::new(market_datetime.clone()))
         );
-        let (h, m, s) = SEOUL_OFFSET;
-        let offset = UtcOffset::from_hms(h, m, s).unwrap();
 
         let spot: Real = 350.0;
         let name = "KOSPI2";
@@ -292,7 +290,7 @@ mod tests {
             Some(vec![datetime!(2024-01-15 00:00:00 +09:00), datetime!(2024-02-15 00:00:00 +09:00)]),
             None,
             market_datetime.clone(),
-            &Currency::KRW,
+            Currency::KRW,
             "KOSPI2".to_string(),
         ).expect("failed to make a vector data for dividend ratio");
 
@@ -309,7 +307,7 @@ mod tests {
                 Stock::new(
                     spot,
                     market_datetime.clone(),
-                    Some(dividend),
+                    Some(Rc::new(RefCell::new(dividend))),
                     Currency::KRW,
                     name.to_string(),
                     name.to_string(),
@@ -318,12 +316,12 @@ mod tests {
         );
 
         // make a zero curve which represents KSD curve which is equivelantly KRWGOV - 5bp
-        let ksd_data = VectorData::new(
+        let mut ksd_data = VectorData::new(
             Array1::from(vec![0.0345, 0.0345]),
             Some(vec![datetime!(2021-01-02 16:00:00 +09:00), datetime!(2022-01-01 00:00:00 +09:00)]),
             None,
             market_datetime.clone(),
-            &Currency::KRW,
+            Currency::KRW,
             "KSD".to_string(),
         ).expect("failed to make a vector data for KSD curve");
 
@@ -340,9 +338,9 @@ mod tests {
 
         ksd_data.add_observer(ksd_curve.clone());
 
-        let dummy_curve = Rc::new(
-            RefCell::new(ZeroCurve::dummy_curve())
-        );
+        let dummy_curve = Rc::new(RefCell::new(
+            ZeroCurve::dummy_curve().expect("failed to make a dummy curve")
+        ));
 
         // make a stock futures with maturity 2024-03-14
         let average_trade_price = 320.0;
@@ -350,71 +348,74 @@ mod tests {
         let futures = StockFutures::new(
             average_trade_price,
             datetime!(2023-01-15 09:00:00 +09:00),
-            market_datetime.clone(),
+            futures_maturity.clone(),
             futures_maturity.clone(),
             futures_maturity.clone(),
             250_000.0,
             Currency::KRW,
-            "KOSPI2",
-            "KOSPI2 Fut Mar24",
-            "165XXXX",
+            Currency::KRW,
+            "KOSPI2".to_string(),
+            "KOSPI2 Fut Mar24".to_string(),
+            "165XXXX".to_string(),
         );
 
-        // make a stock futures engine
-        let configuration = CalculationConfiguration::default()
-        .with_delta_calculation(true)
-        .with_delta_bump_ratio(0.01) // 1% bump for delta calculation
-        .with_theta_calculation(true)
-        .with_theta_day(20) // 1 day for theta calculation
-        .with_rho_calculation(true)
-        .with_rho_bump_value(0.0001); // 0.01% bump for rho calculation
-
-        let mut pricer = StockFuturesPricer::initialize(
+        let pricer = StockFuturesPricer::new(
             stock.clone(),
             ksd_curve.clone(),
             dummy_curve.clone(),
             evaluation_date.clone(),
         );
 
-        /*    
-        // make engine for stock futures
-        let mut engine = Engine::new(
-            configuration,
-            evaluation_date.clone(),
-            stock.clone(),
-            vec![Box::new(Instrument::StockFutures(futures))],
-            pricer
-        );
-        
-        // test calculate
-        pricer.calculate();
-        println!("stock futures calculation example:\n");
-        println!("  *configuration = {:?}\n", engine.configuration);
-        println!("  *stock = {:?}\n", engine.stock.borrow());
-        println!("  *instruments = {:?}\n", engine.instruments);
-        println!("  *results = {:?}\n", engine.results);
-        
-        assert!(engine.results.len() > 0);
+        let instrument = Instrument::StockFutures(Box::new(futures.clone()));
+        let res = pricer.npv(&instrument).expect("failed to calculate npv");
+        let fx_exposure = pricer.fx_exposure(&instrument)
+            .expect("failed to calculate fx exposure")
+            /futures.get_unit_notional();
+
+        let coupons = pricer.coupons(
+            &instrument, 
+            &evaluation_date.borrow().get_date_clone(),
+            &(evaluation_date.borrow().get_date_clone() + Duration::days(1)))
+            .expect("failed to calculate coupons");
+
+
+        /*
+        println!();
+        println!("stock futures: \n{}", serde_json::to_string(&futures).unwrap());
+        println!("spot: {}", spot);
+        println!("ksd compound: {:?}", spot*(1.0/ksd_curve.borrow().get_discount_factor_at_date(futures.get_maturity().unwrap())-1.0));
+        println!("dividend deduction: {:?}", spot*(1.0-(stock.borrow().get_dividend_deduction_ratio(futures.get_maturity().unwrap()))));
+        println!("npv: {}", res);
+        println!("average trade price: {}", average_trade_price);
+        println!("fx exposure: {}", fx_exposure);
+        println!("coupons: {:?}", coupons);
+        */
+
+        // Replace these with the expected values
+        let expected_npv = 346.38675;
+        let expected_fx_exposure = 26.38675;
+        let expected_coupons = HashMap::new(); // Assuming coupons is a HashMap
+
         assert!(
-            (engine.stock.borrow().get_last_price() - 350.0).abs() < 1.0e-6,
-            "stock price: {}, expected: 350.0. Have you changed any logic in stock and StockFuturesEngine::theta?",
-            engine.stock.borrow().get_last_price()
+            (res - expected_npv).abs() < 1.0e-6, 
+            "Unexpected npv (expected: {}, actual: {})",
+            expected_npv,
+            res
         );
 
-        //check delta is approximately 865,966.75
         assert!(
-            (engine.results.get("165XXXX").as_ref().unwrap().get_delta().as_ref().unwrap().get("KOSPI2").unwrap() - 865_966.75).abs() < 1.0e-6,
-            "delta is not approximately 865,966.75. delta: {}, expected: 865,966.75",
-            engine.results.get("165XXXX").as_ref().unwrap().get_delta().as_ref().unwrap().get("KOSPI2").unwrap()
+            (fx_exposure - expected_fx_exposure).abs() < 1.0e-6, 
+            "Unexpected fx exposure (expected: {}, actual: {})",
+            expected_fx_exposure,
+            fx_exposure
         );
 
-        //check theta is approximately -8,153.9155
         assert!(
-            (engine.results.get("165XXXX").as_ref().unwrap().get_theta().unwrap() + 8_153.9155).abs() < 1.0e-6,
-            "theta is not approximately -8,153.9155. theta: {}, expected: -8,153.9155",
-            engine.results.get("165XXXX").as_ref().unwrap().get_theta().unwrap()
+            coupons == expected_coupons,
+            "Unexpected coupons (expected: {:?}, actual: {:?})",
+            expected_coupons,
+            coupons
         );
-        */ 
     }
 }
 

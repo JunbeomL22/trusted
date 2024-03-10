@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 // all takend from https://github.com/avhz/RustQuant/blob/main/src/time/conventions.rs
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum BusinessDayConvention {
     Unadjusted,
     Following,
@@ -11,7 +11,7 @@ pub enum BusinessDayConvention {
     ModifiedPreceding,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum DayCountConvention {
     Actual365Fixed,
     Actual360,

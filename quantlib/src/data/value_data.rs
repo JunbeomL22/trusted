@@ -141,9 +141,11 @@ mod tests {
     use crate::definitions::Real;
     use std::rc::Rc;
     use std::cell::RefCell; 
-    
+    use crate::assets::currency::Currency;
+    use crate::utils::myerror::MyError;
     struct MockParameter {
         value: Real,
+        name: String,
     }
 
     impl MockParameter {
@@ -152,15 +154,28 @@ mod tests {
         }
     }
     impl Parameter for MockParameter {
-        fn update(&mut self, data: &dyn Observable) {
+        fn update(&mut self, data: &dyn Observable) -> Result<(), MyError> {
             self.value += 1.0;
+            Ok(())
+        }
+
+        fn get_type_name(&self) -> &'static str {
+            "MockParameter"
+        }
+
+        fn get_name(&self) -> &String {
+            &self.name
         }
     }
 
     #[test]
     fn test_add() {
-        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(),"test".to_string());
-        let mock_parameter = MockParameter { value: 1.0 };
+        let mut value_data = ValueData::new(
+            1.0, 
+            OffsetDateTime::now_utc(),
+            Currency::NIL,
+            "test".to_string());
+        let mock_parameter = MockParameter { value: 1.0, name: "test".to_string() };
         let mock_parameter_rc = Rc::new(RefCell::new(mock_parameter));
 
         value_data.add_observer(mock_parameter_rc.clone());
@@ -171,8 +186,14 @@ mod tests {
 
     #[test]
     fn test_reset_data() {
-        let mut value_data = ValueData::new(1.0, OffsetDateTime::now_utc(),"test".to_string());
-        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0 }));
+        let mut value_data = ValueData::new(
+            1.0, 
+            OffsetDateTime::now_utc(),
+            Currency::NIL,
+            "test".to_string()
+        );
+        
+        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0, name: "test".to_string()}));
         value_data.add_observer(mock_parameter.clone());
         value_data.reset_data(2.0, OffsetDateTime::now_utc());
         assert_eq!(value_data.value, 2.0);

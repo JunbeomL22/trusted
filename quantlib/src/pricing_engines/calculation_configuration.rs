@@ -29,6 +29,8 @@ pub struct CalculationConfiguration {
     theta: bool,
     rho: bool,
     rho_structure: bool,
+    div_delta: bool,
+    div_structure: bool,
     fx_exposure: bool,
     //
     stickyness_type: StickynessType,
@@ -37,11 +39,55 @@ pub struct CalculationConfiguration {
     gamma_bump_ratio: Real,
     vega_bump_value: Real,
     rho_bump_value: Real,
+    div_bump_value: Real,
     theta_day: Integer,
+    // 
+    rho_structure_tenors: Vec<String>,
+    vega_structure_tenors: Vec<String>,
+    div_structure_tenors: Vec<String>,
+
 }
 
 impl Default for CalculationConfiguration {
     fn default() -> CalculationConfiguration {
+        let rho_tenors = vec![
+            "1M".to_string(), 
+            "2M".to_string(),
+            "3M".to_string(), 
+            "6M".to_string(), 
+            "9M".to_string(),
+            "1Y".to_string(),
+            "18M".to_string(),
+            "2Y".to_string(),
+            "3Y".to_string(),
+            "5Y".to_string(),
+            "7Y".to_string(),
+            "10Y".to_string(),
+            "15Y".to_string(),
+            "20Y".to_string(),
+            "30Y".to_string(),];
+        let div_tenors = vec![
+            "1M".to_string(), 
+            "2M".to_string(),
+            "3M".to_string(), 
+            "6M".to_string(), 
+            "9M".to_string(),
+            "1Y".to_string(),
+            "18M".to_string(),
+            "2Y".to_string(),
+            "3Y".to_string(),
+            ];
+        let vega_tenors = vec![
+            "1M".to_string(), 
+            "2M".to_string(),
+            "3M".to_string(), 
+            "6M".to_string(), 
+            "9M".to_string(),
+            "1Y".to_string(),
+            "18M".to_string(),
+            "2Y".to_string(),
+            "3Y".to_string(),
+            ];
         CalculationConfiguration {
             npv: true,
             delta: false,
@@ -51,13 +97,19 @@ impl Default for CalculationConfiguration {
             theta: false,
             rho: false,
             rho_structure: false,
+            div_delta: false,
+            div_structure: false,
             fx_exposure: true,
             stickyness_type: StickynessType::StickyToMoneyness,
             delta_bump_ratio: 0.01,
             gamma_bump_ratio: 0.01,
             vega_bump_value: 0.01,
-            rho_bump_value: 0.01,
+            rho_bump_value: 0.0001,
+            div_bump_value: 0.0001,
             theta_day: 1,
+            rho_structure_tenors: rho_tenors,
+            vega_structure_tenors: vega_tenors,
+            div_structure_tenors: div_tenors,
         }
     }
 }
@@ -72,6 +124,8 @@ impl CalculationConfiguration {
         theta: bool,
         rho: bool,
         rho_structure: bool,
+        div_delta: bool,
+        div_structure: bool,
         fx_exposure: bool,
         theta_day: Integer,
         stickyness_type: StickynessType,
@@ -79,6 +133,11 @@ impl CalculationConfiguration {
         gamma_bump_ratio: Real,
         vega_bump_value: Real,
         rho_bump_value: Real,
+        div_bump_value: Real,
+        //
+        rho_structure_tenors: Vec<String>,
+        vega_structure_tenors: Vec<String>,
+        div_structure_tenors: Vec<String>,
     ) -> Result<CalculationConfiguration> {
         if delta != gamma {
             return Err(anyhow!("delta and gamma must be both true or both false"));
@@ -98,6 +157,10 @@ impl CalculationConfiguration {
         if theta_day <= 0 {
             return Err(anyhow!("theta_day must be > 0, got {}", theta_day));
         }
+
+        if div_bump_value <= 0.0 {
+            return Err(anyhow!("div_bump_value must be > 0.0, got {}", div_bump_value));
+        }
         
         Ok(CalculationConfiguration {
             npv,
@@ -107,6 +170,8 @@ impl CalculationConfiguration {
             vega_strucure,
             theta,
             rho,
+            div_delta, 
+            div_structure,
             rho_structure,
             fx_exposure,
             stickyness_type,
@@ -114,7 +179,11 @@ impl CalculationConfiguration {
             gamma_bump_ratio,
             vega_bump_value,
             rho_bump_value,
+            div_bump_value,
             theta_day,
+            rho_structure_tenors,
+            vega_structure_tenors,
+            div_structure_tenors,
         })
     }
 
@@ -183,6 +252,32 @@ impl CalculationConfiguration {
         self
     }
 
+    pub fn with_rho_structure_tenors(mut self, rho_structure_tenors: Vec<String>) -> CalculationConfiguration {
+        self.rho_structure_tenors = rho_structure_tenors;
+        self
+    }
+
+    pub fn with_vega_structure_tenors(mut self, vega_structure_tenors: Vec<String>) -> CalculationConfiguration {
+        self.vega_structure_tenors = vega_structure_tenors;
+        self
+    }
+
+    pub fn with_div_structure_tenors(mut self, div_structure_tenors: Vec<String>) -> CalculationConfiguration {
+        self.div_structure_tenors = div_structure_tenors;
+        self
+    }
+
+    pub fn get_div_structure_tenors(&self) -> &Vec<String> {
+        &self.div_structure_tenors
+    }
+
+    pub fn get_rho_structure_tenors(&self) -> &Vec<String> {
+        &self.rho_structure_tenors
+    }
+
+    pub fn get_vega_structure_tenors(&self) -> &Vec<String> {
+        &self.vega_structure_tenors
+    }
     pub fn get_delta_bump_ratio(&self) -> Real {
         self.delta_bump_ratio
     }   
@@ -197,6 +292,10 @@ impl CalculationConfiguration {
 
     pub fn get_rho_bump_value(&self) -> Real {
         self.rho_bump_value
+    }
+
+    pub fn get_div_bump_value(&self) -> Real {
+        self.div_bump_value
     }
 
     pub fn get_theta_day(&self) -> Integer {
@@ -217,6 +316,14 @@ impl CalculationConfiguration {
 
     pub fn get_gamma_calculation(&self) -> bool {
         self.gamma
+    }
+
+    pub fn get_div_delta_calculation(&self) -> bool {
+        self.div_delta
+    }
+
+    pub fn get_div_structure_calculation(&self) -> bool {
+        self.div_structure
     }
 
     pub fn get_vega_calculation(&self) -> bool {

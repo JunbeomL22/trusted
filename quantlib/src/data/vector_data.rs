@@ -1,6 +1,6 @@
 use crate::assets::currency::Currency;
 use crate::definitions::{Real, Time};
-use crate::time::calendar::{CalendarTrait, NullCalendar};
+use crate::time::calendars::{nullcalendar::NullCalendar, calendar_trait::CalendarTrait};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -97,7 +97,7 @@ impl VectorData {
                 });
             }
             
-            let time_calculator = NullCalendar {};
+            let time_calculator = NullCalendar::default();
             let times: Array1<Time> = dates
             .iter()
             .map(|date| time_calculator.get_time_difference(&market_datetime, date))
@@ -180,7 +180,7 @@ impl VectorData {
         if let Some(times) = times {
             self.times = times;
         } else if let Some(dates) = dates {
-            let time_calculator = NullCalendar {};
+            let time_calculator = NullCalendar::default();
             self.times = (&dates)
             .iter()
             .map(|date| time_calculator.get_time_difference(&self.market_datetime, &date))
@@ -202,28 +202,27 @@ impl VectorData {
     }
 
     /// add bimp_value to self.value wehere self.times in [t1, t2)
-    fn bump_time_interval(
+    pub fn bump_time_interval(
         &mut self, 
         from_t: Time, 
-        before_t: Time, 
+        upto_t: Time, 
         bump_value: Real
     ) -> Result<(), MyError> {
-        if from_t >= before_t {
+        if from_t >= upto_t {
             return Err(MyError::MisorderedTimeError {
                 file: file!().to_string(),
                 line: line!(),
                 t1: from_t,
-                t2: before_t,
+                t2: upto_t,
                 other_info: "VectorData::bump_time_interval".to_string()
             });
         }
 
         let mut i = 0;
         let time_length = self.times.shape()[0];
-        let eps = 1e-8;
-
+        
         while i < time_length {
-            if self.times[i] >= from_t - eps && self.times[i] < before_t - eps {
+            if self.times[i] >= from_t && self.times[i] <= upto_t {
                 self.value[i] += bump_value;
             }
             i += 1;
@@ -232,23 +231,27 @@ impl VectorData {
         Ok(())
     }
 
-    fn bump_date_interval(&mut self, from_date: OffsetDateTime, before_date: OffsetDateTime, bump_value: Real) -> Result<(), MyError> {
-        if from_date >= before_date {
+    pub fn bump_date_interval(
+        &mut self, 
+        from_date: &OffsetDateTime, 
+        upto_date: &OffsetDateTime, 
+        bump_value: Real
+    ) -> Result<(), MyError> {
+        if from_date >= upto_date {
             return Err(MyError::MisorderedOffsetDateTimeError {
                 file: file!().to_string(),
                 line: line!(),
-                d1: from_date,
-                d2: before_date,
+                d1: from_date.clone(),
+                d2: upto_date.clone(),
                 other_info: "VectorData::bump_date_interval".to_string()
             });
         }
 
         let mut i = 0;
         let time_length = self.dates.as_ref().unwrap().len();
-        let eps = time::Duration::seconds(1);
 
         while i < time_length {
-            if self.dates.as_ref().unwrap()[i] >= from_date - eps && self.dates.as_ref().unwrap()[i] <= before_date + eps {
+            if self.dates.as_ref().unwrap()[i] >= *from_date && self.dates.as_ref().unwrap()[i] <= *upto_date {
                 self.value[i] += bump_value;
             }
             i += 1;
@@ -256,9 +259,8 @@ impl VectorData {
         self.notify_observers();
         Ok(())
     }
-
-
 }
+
 impl AddAssign<Real> for VectorData {
     fn add_assign(&mut self, rhs: Real) {
         for value in &mut self.value {
@@ -379,9 +381,9 @@ mod tests {
             None, 
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
             datetime!(2020-01-01 00:00:00 UTC), 
-            &Currency::KRW,
+            Currency::KRW,
             "test_vector_data_serialization".to_string()
-        );
+        ).expect("failed to create VectorData");
 
         let serialized = serde_json::to_string(&vector_data).unwrap();
         println!("VectorData serialized = {}", serialized);
@@ -392,5 +394,25 @@ mod tests {
         assert_eq!(vector_data.get_value_clone(), desrialized.get_value_clone());
         // times check
         assert_eq!(vector_data.get_times_clone(), desrialized.get_times_clone());
+    }
+
+    // test bump value time interval
+    #[test]
+    fn test_bump_value_time_interval() {
+        let mut vector_data = VectorData::new(
+            array![0.0, 1.0, 2.0, 3.0, 4.0],
+            None, 
+            Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
+            datetime!(2020-01-01 00:00:00 UTC), 
+            Currency::KRW,
+            "test_bump_value_time_interval".to_string()
+        ).expect("failed to create VectorData");
+
+        vector_data.bump_time_interval(-0.0, 0.5, 1.0).expect("failed to bump time interval");
+        assert_eq!(vector_data.get_value_clone(), array![1.0, 1.0, 2.0, 3.0, 4.0]);
+        vector_data.bump_time_interval(-0.0, 2.0, 1.0).expect("failed to bump time interval");
+        assert_eq!(vector_data.get_value_clone(), array![2.0, 2.0, 3.0, 3.0, 4.0]);
+        vector_data.bump_time_interval(-0.0, 4.0, 1.0).expect("failed to bump time interval");
+        assert_eq!(vector_data.get_value_clone(), array![3.0, 3.0, 4.0, 4.0, 5.0]);
     }
 } 
