@@ -1,8 +1,8 @@
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
-use time::OffsetDateTime;
+use time::{OffsetDateTime, Duration};
 use std::ops::Index;
-use crate::pricing_engines::match_parameter::MatchPrameter;
+use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 use std::rc::Rc;
@@ -145,12 +145,16 @@ impl Instruments {
         currencies
     }
     
-    pub fn instruments_with_underlying(&self, und_code: &String) -> Vec<Rc<Instrument>> {
+    pub fn instruments_with_underlying(
+        &self, 
+        und_code: &String,
+        maturity_bound: Option<OffsetDateTime>,
+    ) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.as_trait().get_underlying_codes();
             if names.contains(&und_code) {
-                res.push(instrument.clone());
+                self.push_instrument_within_maturity(&mut res, instrument.clone(), maturity_bound)
             }
         }
         res
@@ -176,10 +180,28 @@ impl Instruments {
         res
     }
 
+    pub fn push_instrument_within_maturity(
+        &self,
+        res: &mut Vec<Rc<Instrument>>,
+        instrument: Rc<Instrument>,
+        maturity_bound: Option<OffsetDateTime>,
+    ) {
+        if let Some(maturity_bound) = maturity_bound {
+            if let Some(m) = instrument.as_trait().get_maturity() {
+                if m <= &maturity_bound {
+                    res.push(instrument.clone());
+                }
+            }
+        } else {
+            res.push(instrument.clone());
+        }
+    }
+
     pub fn instruments_using_curve(
         &self, 
         curve_name: &String,
-        match_parameter: &MatchPrameter,
+        match_parameter: &MatchParameter,
+        maturity_bound: Option<OffsetDateTime>,
     ) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         // 1) discount curve
@@ -189,22 +211,22 @@ impl Instruments {
         for instrument in self.instruments.iter() {
             // 1)
             if match_parameter.get_discount_curve_name(instrument) == curve_name {
-                res.push(instrument.clone());
+                self.push_instrument_within_maturity(&mut res, instrument.clone(), maturity_bound);
             }
             // 2)
             if match_parameter.get_collateral_curve_names(instrument).contains(&curve_name) {
-                res.push(instrument.clone());
+                self.push_instrument_within_maturity(&mut res, instrument.clone(), maturity_bound)
             }
             // 3) forward curve
             if match_parameter.get_rate_index_curve_name(instrument) == curve_name {
-                res.push(instrument.clone());
+                self.push_instrument_within_maturity(&mut res, instrument.clone(), maturity_bound)
             }
         }
         res
     }
 
     // all curve names including discount, collateral, and rate index forward curves
-    pub fn get_all_curve_names<'a>(&'a self, match_parameter: &'a MatchPrameter) -> Vec<&String> {
+    pub fn get_all_curve_names<'a>(&'a self, match_parameter: &'a MatchParameter) -> Vec<&String> {
         let mut res = Vec::<&String>::new();
         for instrument in self.instruments.iter() {
             let discount_curve_name = match_parameter.get_discount_curve_name(instrument);
@@ -342,7 +364,7 @@ mod tests {
         collateral_curve_map.insert("SPX".to_string(), "USGOV".to_string());
         rate_index_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
 
-        let match_parameter = MatchPrameter::new(
+        let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_curve_map,
@@ -354,7 +376,8 @@ mod tests {
         assert_eq!(underlying_codes, vec![&"KOSPI2".to_string(), &"SPX".to_string()]);
         // test instruments_with_underlying
         let instruments_with_kospi2 = instruments.instruments_with_underlying(
-            &"KOSPI2".to_string()
+            &"KOSPI2".to_string(),
+            None,
         );
 
         assert_eq!(fut1.get_code(), instruments_with_kospi2[0].as_trait().get_code());
@@ -368,6 +391,7 @@ mod tests {
         let instruments_using_krw_gov = instruments.instruments_using_curve(
             &"KRWGOV".to_string(),
             &match_parameter,
+            None,
         );
 
         assert_eq!(fut1.get_code(), instruments_using_krw_gov[0].as_trait().get_code());
@@ -377,6 +401,7 @@ mod tests {
         let instruments_using_krw_irs = instruments.instruments_using_curve(
             &"KRWIRS".to_string(),
             &match_parameter,
+            None,
         );
 
         assert_eq!(irs.get_code(), instruments_using_krw_irs[0].as_trait().get_code());

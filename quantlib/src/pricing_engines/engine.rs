@@ -1,6 +1,5 @@
 use crate::data::observable::Observable;
 use crate::instruments::instrument_info::InstrumentInfo;
-use crate::parameters::zero_curve_code::ZeroCurveCode;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -13,16 +12,15 @@ use crate::data::vector_data::VectorData;
 use crate::data::value_data::ValueData;
 use crate::pricing_engines::pricer::Pricer;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
-use crate::pricing_engines::match_parameter::MatchPrameter;
+use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use time::Duration;
-use anyhow::{Context, Result};
+use anyhow::{Result, Context};
 use crate::utils::myerror::MyError;
-use std::thread;
+use crate::pricing_engines::npv_result::NpvResult;
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
@@ -48,7 +46,7 @@ pub struct Engine {
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
     instruments_in_action: Vec<Rc<Instrument>>, 
-    match_parameter: MatchPrameter, // this must be cloned 
+    match_parameter: MatchParameter, // this must be cloned 
 }
 
 impl Engine {
@@ -62,8 +60,7 @@ impl Engine {
         curve_data: HashMap<String, VectorData>,
         dividend_data: HashMap<String, VectorData>,
         //
-        instruments: Instruments,
-        match_parameter: MatchPrameter,
+        match_parameter: MatchParameter,
     ) -> Result<Engine, MyError> {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
@@ -76,8 +73,8 @@ impl Engine {
                 ZeroCurve::new(
                     evaluation_date.clone(),
                     &data,
-                    ZeroCurveCode::from_str(&key).unwrap(),
-                    key.to_string(),
+                    String::from(&key),
+                    String::from(&key),
                 ).context("failed to create zero curve")?
             ));
             zero_curves.insert(key.to_string(), zero_curve.clone());
@@ -156,7 +153,7 @@ impl Engine {
             zero_curves,
             dividends,
             //
-            instruments: instruments,
+            instruments: Instruments::default(),
             instruments_in_action: vec![],
             pricers: HashMap::new(),
             match_parameter: match_parameter,
@@ -170,21 +167,18 @@ impl Engine {
     ) -> Result<(), MyError> {
         self.initialize_instruments(instrument_vec)
             .with_context(|| format!(
-                "(thread: {:?} | Engine::initialize) Failed to initialize instruments\n\
+                "(Engine::initialize) Failed to initialize instruments\n\
                 occuring at {file}:{line}",
-                thread::current().id(),
                 file = file!(),
                 line = line!(),
             ))?;
 
-        self.initialize_pricers()
-            .with_context(|| format!(
-                "(thread: {:?} Engine::initialize) Failed to initialize pricers\n\
-                occuring at {file}:{line}",
-                thread::current().id(),
-                file = file!(),
-                line = line!(),
-            ))?;
+        self.initialize_pricers()?;
+            //.with_context(|| anyhow::anyhow!(
+            //    "(Engine::initialize) Failed to initialize pricers\n\
+            //    tag:\n{}",
+            //    self.err_tag,
+            //))?;
 
         Ok(())
     }
@@ -262,8 +256,18 @@ impl Engine {
                     let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(inst)[0];
                     let core = StockFuturesPricer::new(
                         stock,
-                        self.zero_curves.get(collatral_curve_name).unwrap().clone(),
-                        self.zero_curves.get(borrowing_curve_name).unwrap().clone(),
+                        self.zero_curves.get(collatral_curve_name)
+                        .ok_or_else(|| anyhow::anyhow!(
+                            "failed to get collateral curve of {}.\nself.zero_curves does not have {}",
+                            inst_code,
+                            collatral_curve_name,
+                        ))?.clone(),
+                        self.zero_curves.get(borrowing_curve_name)
+                        .ok_or_else(|| anyhow::anyhow!(
+                            "failed to get borrowing curve of {}.\nself.zero_curves does not have {}",
+                            inst_code,
+                            borrowing_curve_name,
+                        ))?.clone(),
                         self.evaluation_date.clone(),
                     );
                     Pricer::StockFuturesPricer(Box::new(core))
@@ -300,12 +304,12 @@ impl Engine {
         for inst in &self.instruments_in_action {
             let pricer = self.pricers.get(inst.as_trait().get_code())
                 .with_context(|| format!(
-                    "(Engine::get_npv) Failed to get pricer for {name}\n\
-                    occuring at {file}:{line}",
-                    name = inst.as_trait().get_name(),
-                    file = file!(),
-                    line = line!(),
+                    "(Engine::get_npv) failed to get pricer for {}\n\
+                    error tag:\n{}",
+                    inst.as_trait().get_code(),
+                    self.err_tag,
                 ))?;
+
             let npv = pricer.as_trait().npv(inst)
                 .context("calculation failed")?;
             npvs.insert(inst.as_trait().get_code().clone(), npv);
@@ -313,8 +317,26 @@ impl Engine {
         Ok(npvs)
     }
 
-    pub fn set_npvs(&mut self) -> Result<(), MyError> {
-        let npvs = self.get_npvs()?;
+    pub fn get_npv_results(&self) -> Result<HashMap<String, NpvResult>, MyError> {
+        let mut npvs = HashMap::new();
+        for inst in &self.instruments_in_action {
+            let pricer = self.pricers.get(inst.as_trait().get_code())
+                .with_context(|| format!(
+                    "(Engine::get_npv_results) failed to get pricer for {}\n\
+                    error tag:\n{}",
+                    inst.as_trait().get_code(),
+                    self.err_tag,
+                ))?;
+
+            let npv = pricer.as_trait().npv_result(inst)
+                .context("calculation failed")?;
+            npvs.insert(inst.as_trait().get_code().clone(), npv);
+        }
+        Ok(npvs)
+    }
+
+    pub fn set_npv_results(&mut self) -> Result<(), MyError> {
+        let npvs = self.get_npv_results()?;
         
         for (code, result) in self.calculation_results.iter() {
             result.borrow_mut().set_npv(npvs.get(code)
@@ -368,9 +390,10 @@ impl Engine {
         for und_code in all_underlying_codes.iter() {
             // set instruments that needs to be calculated
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying(und_code);
+                .instruments_with_underlying(und_code, None);
 
-            let stock = self.stocks.get(*und_code)
+            let stock = self.stocks
+                .get(*und_code)
                 .context("there is no stock")?
                 .clone();
 
@@ -381,41 +404,50 @@ impl Engine {
             delta_down_map = self.get_npvs().context("failed to get npvs")?;
             
             for inst in &self.instruments_in_action {
-                delta_up = delta_up_map.get(inst.as_trait().get_code())
+                delta_up = delta_up_map
+                    .get(inst.as_trait().get_code())
                     .context("delta_up is not set")?
                     .clone();
-                delta_down = delta_down_map.get(inst.as_trait().get_code())
+                delta_down = delta_down_map
+                    .get(inst.as_trait().get_code())
                     .context("delta_down is not set")?
                     .clone();
 
                 delta = (delta_up - delta_down) / (2.0 * delta_bump_ratio) * DELTA_PNL_UNIT;
 
-                self.calculation_results.get_mut(inst.as_trait().get_code())
+                self.calculation_results
+                    .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
                     .set_single_delta(&und_code, delta);
 
-                mid = self.calculation_results.get(inst.as_trait().get_code())
+                mid = self.calculation_results
+                    .get(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow()
-                    .get_npv()
-                    .context("npv is not set")?;
+                    .get_npv_result()
+                    .context("npv is not set")?
+                    .get_npv();
 
-                gamma = (delta_up + delta_down - 2.0 * mid) 
-                    / (2.0 * delta_bump_ratio * delta_bump_ratio) * DELTA_PNL_UNIT * DELTA_PNL_UNIT;
+                gamma = delta_up + delta_down - mid * 2.0;
+                gamma /= delta_bump_ratio * delta_bump_ratio;
+                gamma *= 0.5 * DELTA_PNL_UNIT * DELTA_PNL_UNIT;
 
-                self.calculation_results.get_mut(inst.as_trait().get_code())
+                self.calculation_results
+                    .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
                     .set_single_gamma(&und_code, gamma);
             }
+
             *stock.borrow_mut() *= 1.0 / (1.0 - delta_bump_ratio);
         }
         Ok(())
     }
     
+    /*
     pub fn set_coupons(&mut self) -> Result<(), MyError> {
         for inst in &self.instruments_in_action {
             let start_date = self.evaluation_date.borrow().get_date_clone();
@@ -440,6 +472,7 @@ impl Engine {
         }
         Ok(())
     }
+    */
 
     pub fn set_rho(&mut self) -> Result<(), MyError> {
         let mut npvs_up: HashMap::<String, Real>;
@@ -455,7 +488,7 @@ impl Engine {
             ))?.borrow_mut();
 
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_name, &self.match_parameter);
+                .instruments_using_curve(curve_name, &self.match_parameter, None);
 
             *curve_data += bump_val;
 
@@ -465,14 +498,17 @@ impl Engine {
             for inst in &self.instruments_in_action {
                 let npv_up = npvs_up.get(inst.as_trait().get_code())
                     .context("npv_up is not set")?;
-                let npv = self.calculation_results.get(inst.as_trait().get_code())
+                let npv = self.calculation_results
+                    .get(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow()
-                    .get_npv()
-                    .context("npv is not set")?;
+                    .get_npv_result()
+                    .context("npv is not set")?
+                    .get_npv();
 
-                let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT;
-                self.calculation_results.get_mut(inst.as_trait().get_code())
+                let rho = (npv_up.clone() - npv) / bump_val * RHO_PNL_UNIT;
+                self.calculation_results
+                    .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
@@ -488,14 +524,16 @@ impl Engine {
         let mut npvs_up: HashMap::<String, Real>;
         let all_dividend_codes = self.instruments.get_all_underlying_codes();
         let bump_val = self.calculation_configuration.get_div_bump_value();
+        let mut npv: Real;
 
         for div_code in all_dividend_codes {
-            let mut div_data = self.dividend_data.get(div_code)
-                .ok_or_else(|| anyhow::anyhow!("dividend data is not set"))?
+            let mut div_data = self.dividend_data
+                .get(div_code)
+                .context("dividend data is not set")?
                 .borrow_mut();
 
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying(div_code);
+                .instruments_with_underlying(div_code, None);
 
             *div_data += bump_val;
 
@@ -505,14 +543,17 @@ impl Engine {
             for inst in &self.instruments_in_action {
                 let npv_up = npvs_up.get(inst.as_trait().get_code())
                     .context("npv_up is not set")?;
-                let npv = self.calculation_results.get(inst.as_trait().get_code())
+                npv = self.calculation_results
+                    .get(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow()
-                    .get_npv()
-                    .context("npv is not set")?;
+                    .get_npv_result()
+                    .context("npv is not set")?
+                    .get_npv();
 
-                let div_delta = (npv_up - npv) / bump_val * DELTA_PNL_UNIT;
-                self.calculation_results.get_mut(inst.as_trait().get_code())
+                let div_delta = (npv_up.clone() - npv) / bump_val * DELTA_PNL_UNIT;
+                self.calculation_results
+                    .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
@@ -529,25 +570,32 @@ impl Engine {
         let bump_val = self.calculation_configuration.get_rho_bump_value();
         let calc_tenors = self.calculation_configuration.get_rho_structure_tenors();
         let time_calculator = NullCalendar::default(); 
+
         // rho_structure_up = instrument code (String) -> curve code (String) -> tenor (String) -> rho (Real)
         let mut accumulative_rho_structure_up = HashMap::<String, HashMap::<String, HashMap::<String, Real>>>::new();
+
         // instrument code (String) -> npv (Real)
         let mut npvs_up: HashMap::<String, Real>;
 
         for curve_name in all_curve_names {
             let mut curve_data = self.curve_data.get(curve_name)
                 .with_context(|| format!(
-                    "curve_data is not set\ntag:\n{}", self.err_tag
+                    "curve_data {} is not set\ntag:\n{}", curve_name, self.err_tag
                 ))?.borrow_mut();
                 
-
-            self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_name, &self.match_parameter);
-
             for tenor in calc_tenors {
+                let end_date = self.evaluation_date.borrow().clone() + tenor.as_str();
+
+                self.instruments_in_action = self.instruments
+                    .instruments_using_curve(curve_name, &self.match_parameter, Some(end_date.clone()));
+
+                if self.instruments_in_action.is_empty() {
+                    continue;
+                }
+
                 let tenor_time: Time = time_calculator.get_time_difference(
                     &self.evaluation_date.borrow().get_date_clone(),
-                    &(self.evaluation_date.borrow().clone() + tenor.as_str()),
+                    &end_date,
                 );
 
                 curve_data.bump_time_interval(-0.0, tenor_time, bump_val)
@@ -559,11 +607,13 @@ impl Engine {
                 for inst in &self.instruments_in_action {
                     let npv_up = npvs_up.get(inst.as_trait().get_code())
                         .context("npv_up is not set")?;
-                    let npv = self.calculation_results.get(inst.as_trait().get_code())
+                    let npv = self.calculation_results
+                        .get(inst.as_trait().get_code())
                         .context("result is not set")?
                         .borrow()
-                        .get_npv()
-                        .context("npv is not set")?;
+                        .get_npv_result()
+                        .context("npv is not set")?
+                        .get_npv();
 
                     let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT;
                     accumulative_rho_structure_up
@@ -628,7 +678,7 @@ impl Engine {
                 .values()
                 .sum();
 
-            let theta = (npv_theta - npv - cash_sum) / (theta_day as Real);
+            let theta = (npv_theta.clone() - npv - cash_sum) / (theta_day as Real);
             result.borrow_mut().set_theta(theta);
         }
 
@@ -646,35 +696,52 @@ impl Engine {
         // instrument code (String) -> npv (Real)
         let mut npvs_up: HashMap::<String, Real>;
 
-        for div_code in all_dividend_codes {
-            let mut div_data = self.dividend_data.get(div_code)
-                .ok_or_else(|| anyhow::anyhow!("dividend data is not set"))?
-                .borrow_mut();
+        let mut npv_up: &Real;
+        let mut npv: &Real;
 
-            self.instruments_in_action = self.instruments
-                .instruments_with_underlying(div_code);
+        for div_code in all_dividend_codes {
+            let mut div_data = self.dividend_data
+                .get(div_code)
+                .ok_or_else(|| anyhow::anyhow!(
+                    "dividend data {} is not set\ntag:\n{}", div_code, self.err_tag
+                ))?.borrow_mut();
 
             for tenor in calc_tenors {
+                let end_date = self.evaluation_date.borrow().clone() + tenor.as_str();
+
+                self.instruments_in_action = self.instruments
+                    .instruments_with_underlying(div_code, Some(end_date.clone()));
+
+                if self.instruments_in_action.is_empty() {
+                    continue;
+                }
+
                 let tenor_time: Time = time_calculator.get_time_difference(
                     &self.evaluation_date.borrow().get_date_clone(),
-                    &(self.evaluation_date.borrow().clone() + tenor.as_str()),
+                    &end_date,
                 );
 
-                div_data.bump_time_interval(-0.0, tenor_time, bump_val)
-                    .context("failed to bump time interval")?;
+                div_data.bump_time_interval(
+                    -0.0, 
+                    tenor_time, 
+                    bump_val
+                ).context("failed to bump time interval")?;
 
-                npvs_up = self.get_npvs()
-                    .context("failed to get npvs")?;
+                npvs_up = self.get_npvs().context("failed to get npvs")?;
                 
                 for inst in &self.instruments_in_action {
-                    let npv_up = npvs_up.get(inst.as_trait().get_code())
-                        .context("npv_up is not set")?;
-                    let npv = self.calculation_results.get(inst.as_trait().get_code())
-                        .context("result is not set")?
-                        .borrow()
-                        .get_npv()
-                        .context("npv is not set")?;
-
+                    let inst_code = inst.as_trait().get_code();
+                    npv_up = npvs_up.get(inst_code)
+                        .ok_or_else(|| anyhow::anyhow!("npv_up is not set for {}", inst_code))?;
+                    
+                    let npv = self.calculation_results
+                            .get(inst_code)
+                            .context("result is not set")?
+                            .borrow()
+                            .get_npv_result()
+                            .context("npv is not set")?
+                            .get_npv();
+                        
                     let div = (npv_up - npv) / bump_val * DELTA_PNL_UNIT;
                     accumulative_div_structure_up
                         .entry(inst.as_trait().get_code().clone())
@@ -711,10 +778,22 @@ impl Engine {
     }
 
     pub fn calculate(&mut self) -> Result<(), MyError>{
+        if self.instruments_in_action.len() < 1 {
+            return Err(
+                MyError::BaseError { 
+                    file: file!().to_string(), 
+                    line: line!(), 
+                    contents: format!(
+                        "instruments_in_action is empty\n\
+                        error tag of engine:\n{}", 
+                        self.err_tag,
+                    )
+                });
+        }
         if self.calculation_configuration.get_npv_calculation() {
-            self.set_npvs().with_context(|| format!("failed to set npvs.\ntag:\n{}", self.err_tag))?;
+            self.set_npv_results().with_context(|| format!("failed to set npvs.\ntag:\n{}", self.err_tag))?;
             self.set_values().with_context(|| format!("failed to set values.\ntag:\n{}", self.err_tag))?;
-            self.set_coupons().with_context(|| format!("failed to set coupons.\ntag:\n{}", self.err_tag))?;
+            //self.set_coupons().with_context(|| format!("failed to set coupons.\ntag:\n{}", self.err_tag))?;
         }
         
         if self.calculation_configuration.get_fx_exposure_calculation() {

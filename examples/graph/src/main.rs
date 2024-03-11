@@ -74,8 +74,8 @@ fn main() -> Result<(), MyError> {
     let zero_curve = ZeroCurve::new(
         evaluation_date.clone(), 
         &_data, 
-        ZeroCurveCode::Undefined, 
-        "test".to_string()
+        String::from("test"),
+        String::from("test"),
     ).with_context(|| "Failed to create ZeroCurve.")?;
 
     _data.add_observer(Rc::new(RefCell::new(zero_curve.clone())));

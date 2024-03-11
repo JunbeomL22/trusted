@@ -37,8 +37,8 @@ pub struct ZeroCurve {
     discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
     time_calculator: NullCalendar,
-    code: ZeroCurveCode,
     name: String,
+    code: String,
 }
 
 impl ZeroCurve {
@@ -61,8 +61,8 @@ impl ZeroCurve {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>, 
         data: &VectorData,
-        code: ZeroCurveCode, 
-        name: String
+        name: String,
+        code: String,
     ) -> Result<ZeroCurve, MyError> {
         let rate_times = data.get_times_clone();
         let zero_rates = data.get_value_clone();
@@ -145,8 +145,8 @@ impl ZeroCurve {
             discount_factors,
             discount_interpolator,
             time_calculator,
-            code,
             name,
+            code,
         };
         Ok(res)
     }
@@ -166,8 +166,8 @@ impl ZeroCurve {
         ZeroCurve::new(
             evaluation_date,
             &data,
-            ZeroCurveCode::Undefined,
-            "dummy curve in ZeroCurve::null_curve".to_string()
+            String::from("Dummy"),
+            String::from("Dummy"),
         )
     }
     pub fn get_discount_factor(&self, time: Time) -> Real {
@@ -291,8 +291,8 @@ impl ZeroCurve {
         self.discount_times.clone()
     }
 
-    pub fn get_code(&self) -> ZeroCurveCode {
-        self.code
+    pub fn get_code(&self) -> &String {
+        &self.code
     }
 
     pub fn get_name_clone(&self) -> String {
@@ -408,7 +408,7 @@ mod tests {
         let _zero_curve = ZeroCurve::new(
             evaluation_date,
             &data,
-            ZeroCurveCode::Undefined,
+            String::from("test"),
             "test".to_string()
         ).expect("error in test_zero_curve");
 

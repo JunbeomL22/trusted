@@ -58,7 +58,7 @@ mod tests {
         let _zero_curve = ZeroCurve::new(
             evaluation_date.clone(),
             &zero_curve_data,
-            ZeroCurveCode::KRWGOV,
+            String::from("KRWGOV"),
             "zero curve".to_string(),
         ).expect("Failed to create ZeroCurve");
 

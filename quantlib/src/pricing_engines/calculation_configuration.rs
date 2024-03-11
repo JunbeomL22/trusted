@@ -232,6 +232,16 @@ impl CalculationConfiguration {
         self
     }
 
+    pub fn with_div_delta_calculation(mut self, div_delta: bool) -> CalculationConfiguration {
+        self.div_delta = div_delta;
+        self
+    }
+
+    pub fn with_div_structure_calculation(mut self, div_structure: bool) -> CalculationConfiguration {
+        self.div_structure = div_structure;
+        self
+    }
+    
     pub fn with_delta_bump_ratio(mut self, delta_bump_ratio: Real) -> CalculationConfiguration {
         self.delta_bump_ratio = delta_bump_ratio;
         self

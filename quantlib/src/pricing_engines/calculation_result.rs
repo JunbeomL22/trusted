@@ -4,6 +4,7 @@ use crate::utils::myerror::MyError;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+use crate::pricing_engines::npv_result::NpvResult;
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
 /// instrument: InstrumentInfo
@@ -32,7 +33,7 @@ use time::OffsetDateTime;
 pub struct CalculationResult {
     instrument_info: Option<InstrumentInfo>,
     evaluation_date: Option<OffsetDateTime>,
-    npv: Option<Real>, 
+    npv_result: Option<NpvResult>, 
     value: Option<Real>,
     fx_exposure: Option<Real>,
     delta: Option<HashMap<String, Real>>,
@@ -51,7 +52,7 @@ impl Default for CalculationResult {
         CalculationResult {
             instrument_info: None,
             evaluation_date: None,
-            npv: None,
+            npv_result: None,
             value: None,
             fx_exposure: None,
             delta: None,
@@ -73,7 +74,7 @@ impl CalculationResult {
         CalculationResult {
             instrument_info: Some(instrument_info),
             evaluation_date: Some(evaluation_date),
-            npv: None,
+            npv_result: None,
             value: None,
             fx_exposure: None,
             delta: None,
@@ -88,16 +89,16 @@ impl CalculationResult {
         }
     }
 
-    pub fn set_npv(&mut self, npv: Real) {
-        self.npv = Some(npv);
+    pub fn set_npv(&mut self, npv_result: NpvResult) {
+        self.npv_result = Some(npv_result);
     }
 
-    pub fn get_npv(&self) -> Option<Real> {
-        self.npv
+    pub fn get_npv_result(&self) -> Option<&NpvResult> {
+        self.npv_result.as_ref()
     }
 
     pub fn set_value(&mut self) -> Result<(), MyError> {
-        match self.npv {
+        match self.npv_result.as_ref() {
             None => Err(MyError::NoneError { 
                 file: file!().to_string(),
                 line: line!(),
@@ -107,7 +108,7 @@ impl CalculationResult {
                 let unit = self.instrument_info.as_ref()
                         .ok_or_else(|| anyhow::anyhow!("instrument info is not set"))?
                         .get_unit_notional();
-                self.value = Some(npv * unit);
+                self.value = Some(npv.get_npv() * unit);
                 Ok(())
             },
         }
@@ -281,9 +282,9 @@ mod tests {
         let instrument = InstrumentInfo::default();
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
-        result.set_npv(100.0);
+        result.set_npv(NpvResult::new(100.0));
 
-        assert_eq!(result.get_npv(), Some(100.0));
+        assert_eq!(result.get_npv_result().unwrap().get_npv(), 100.0);
         
     }
 
@@ -322,7 +323,7 @@ mod tests {
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
-        result.set_npv(100.0);
+        result.set_npv(NpvResult::new(100.0));
         
         result.set_single_delta(&"KOSPI200".to_string(), 0.1);
 

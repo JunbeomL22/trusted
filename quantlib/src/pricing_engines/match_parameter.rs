@@ -5,7 +5,7 @@ use crate::enums::{CreditRating, IssuerType};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct MatchPrameter {
+pub struct MatchParameter {
     // Underlying asset code: String -> curve_name: String
     // Underlying code examples are stock, bond, commodity, etc.
     collateral_curve_map: HashMap<String, String>,
@@ -31,8 +31,8 @@ pub struct MatchPrameter {
     dummy_string: String,
 }
 
-impl Default for MatchPrameter {
-    fn default() -> MatchPrameter {
+impl Default for MatchParameter {
+    fn default() -> MatchParameter {
         let collateral_curve_map: HashMap<String, String> = HashMap::new();
 
         let borrowing_curve_map: HashMap<String, String> = HashMap::new();
@@ -45,7 +45,7 @@ impl Default for MatchPrameter {
         ), String> = HashMap::new();
         
         let rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
-        MatchPrameter {
+        MatchParameter {
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
@@ -55,7 +55,7 @@ impl Default for MatchPrameter {
     }
 }
 
-impl MatchPrameter {
+impl MatchParameter {
     pub fn new(
         collateral_curve_map: HashMap<String, String>,
         borrowing_curve_map: HashMap<String, String>, 
@@ -66,8 +66,8 @@ impl MatchPrameter {
             Currency
         ), String>,
         rate_index_forward_curve_map: HashMap<RateIndexCode, String>
-    ) -> MatchPrameter {
-        MatchPrameter {
+    ) -> MatchParameter {
+        MatchParameter {
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
@@ -240,7 +240,7 @@ mod tests {
         collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
         rate_index_forward_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
 
-        let match_parameter = MatchPrameter::new(
+        let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,

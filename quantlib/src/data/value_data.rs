@@ -1,4 +1,5 @@
-use crate::{assets::currency, definitions::Real};
+use crate::definitions::Real;
+use crate::utils::myerror::MyError;
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -60,14 +61,14 @@ impl ValueData {
         market_datetime: OffsetDateTime, 
         currency: Currency,
         name: String
-    ) -> ValueData {
-        ValueData {
+    ) -> Result<ValueData, MyError> {
+        Ok(ValueData {
             value,
             market_datetime,
             observers: vec![],
             currency,
             name,
-        }
+        })
     }
 
     fn reset_data(&mut self, value: Real, market_datetime: OffsetDateTime) {
@@ -174,13 +175,13 @@ mod tests {
             1.0, 
             OffsetDateTime::now_utc(),
             Currency::NIL,
-            "test".to_string());
+            "test".to_string()).expect("Failed to create ValueData");
         let mock_parameter = MockParameter { value: 1.0, name: "test".to_string() };
         let mock_parameter_rc = Rc::new(RefCell::new(mock_parameter));
 
         value_data.add_observer(mock_parameter_rc.clone());
         value_data = value_data + 1.0;
-        assert_eq!(value_data.value, 2.0);
+        assert_eq!(value_data.get_value(), 2.0);
         assert_eq!(mock_parameter_rc.borrow().get_value(), 2.0);
     }
 
@@ -191,12 +192,12 @@ mod tests {
             OffsetDateTime::now_utc(),
             Currency::NIL,
             "test".to_string()
-        );
+        ).expect("Failed to create ValueData");
         
         let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0, name: "test".to_string()}));
         value_data.add_observer(mock_parameter.clone());
         value_data.reset_data(2.0, OffsetDateTime::now_utc());
-        assert_eq!(value_data.value, 2.0);
+        assert_eq!(value_data.get_value(), 2.0);
         assert_eq!(mock_parameter.borrow().get_value(), 2.0);
     }
 }

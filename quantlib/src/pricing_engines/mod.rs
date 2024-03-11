@@ -7,3 +7,4 @@ pub mod montecarlo {
     pub mod rand_generator;
 }
 pub mod match_parameter;
+pub mod npv_result;

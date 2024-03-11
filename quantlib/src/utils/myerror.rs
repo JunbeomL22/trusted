@@ -3,6 +3,8 @@ use crate::definitions::{Real, Time};
 use thiserror::Error;
 use std::fmt::Debug;
 use time::OffsetDateTime;
+use anyhow;
+use std::fmt;
 
 //
 #[derive(Debug)]
@@ -28,7 +30,7 @@ pub enum VectorDisplay {
 #[derive(Error, Debug)]
 pub enum MyError {
     // base error
-    #[error("by {file}:{line}. contents: {contents}")]
+    #[error("by {file}:{line}.\ncontents: {contents}")]
     BaseError {
         file: String,
         line: u32,
@@ -145,5 +147,19 @@ impl From<anyhow::Error> for MyError {
             line: line!(), 
             contents: format!("Error: {}", error.to_string())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_myerror() {
+        use super::*;
+        let e = MyError::BaseError {
+            file: file!().to_string(),
+            line: line!(),
+            contents: "contents".to_string(),
+        };
+        eprintln!("{}", e);
     }
 }
