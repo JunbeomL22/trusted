@@ -21,6 +21,7 @@ use std::cell::RefCell;
 use anyhow::{Result, Context};
 use crate::utils::myerror::MyError;
 use crate::pricing_engines::npv_result::NpvResult;
+use crate::util::format_duration;
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
@@ -345,6 +346,21 @@ impl Engine {
         Ok(())
     }
 
+    pub fn set_cashflow_inbetween(&mut self) -> Result<(), MyError> {
+        for (code, result) in self.calculation_results.iter_mut() {
+            let npv_res = result.borrow().get_npv_result()
+                .ok_or_else(|| anyhow::anyhow!(
+                    "npv_result is not set for {}\nerror tag:\n{}",
+                    code,
+                    self.err_tag,
+                ))?.clone();
+                
+            let cashflow = npv_res.get_expected_coupon_amount()
+                .with_context(|| format!("failed to get expected coupon amount for {}", code))?;
+            result.borrow_mut().set_cashflow_inbetween(cashflow);
+        }
+        Ok(())
+    }
     pub fn set_fx_exposures(&mut self) -> Result<(), MyError> {
         let mut fx_exposures = HashMap::new();
         for inst in &self.instruments_in_action {
@@ -390,7 +406,7 @@ impl Engine {
         for und_code in all_underlying_codes.iter() {
             // set instruments that needs to be calculated
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying(und_code, None);
+                .instruments_with_underlying(und_code);
 
             let stock = self.stocks
                 .get(*und_code)
@@ -404,6 +420,7 @@ impl Engine {
             delta_down_map = self.get_npvs().context("failed to get npvs")?;
             
             for inst in &self.instruments_in_action {
+                let unitamt = inst.as_trait().get_unit_notional();
                 delta_up = delta_up_map
                     .get(inst.as_trait().get_code())
                     .context("delta_up is not set")?
@@ -420,7 +437,7 @@ impl Engine {
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
-                    .set_single_delta(&und_code, delta);
+                    .set_single_delta(&und_code, delta * unitamt);
 
                 mid = self.calculation_results
                     .get(inst.as_trait().get_code())
@@ -439,40 +456,13 @@ impl Engine {
                     .context("result is not set")?
                     .borrow_mut()
                     .to_owned()
-                    .set_single_gamma(&und_code, gamma);
+                    .set_single_gamma(&und_code, gamma * unitamt);
             }
 
             *stock.borrow_mut() *= 1.0 / (1.0 - delta_bump_ratio);
         }
         Ok(())
     }
-    
-    /*
-    pub fn set_coupons(&mut self) -> Result<(), MyError> {
-        for inst in &self.instruments_in_action {
-            let start_date = self.evaluation_date.borrow().get_date_clone();
-            let theta_day = self.calculation_configuration.get_theta_day();
-            let end_date = start_date + Duration::days(theta_day as i64);
-            let coupons = self.pricers
-                    .get(inst.as_trait().get_code())
-                    .context("pricer is not set")?
-                    .as_trait()
-                    .coupons(inst, &start_date, &end_date)
-                    .with_context(||
-                        format!(
-                            "coupon calculation failed for {}\ntag:\n{}", 
-                            inst.as_trait().get_code(),
-                            self.err_tag
-                        ))?;
-
-            self.calculation_results.get_mut(inst.as_trait().get_code())
-                .context("result is not set")?
-                .borrow_mut()
-                .set_cashflow_inbetween(coupons);
-        }
-        Ok(())
-    }
-    */
 
     pub fn set_rho(&mut self) -> Result<(), MyError> {
         let mut npvs_up: HashMap::<String, Real>;
@@ -488,7 +478,7 @@ impl Engine {
             ))?.borrow_mut();
 
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_name, &self.match_parameter, None);
+                .instruments_using_curve(curve_name, &self.match_parameter);
 
             *curve_data += bump_val;
 
@@ -496,6 +486,7 @@ impl Engine {
                 .context("failed to get npvs")?;
 
             for inst in &self.instruments_in_action {
+                let unitamt = inst.as_trait().get_unit_notional();
                 let npv_up = npvs_up.get(inst.as_trait().get_code())
                     .context("npv_up is not set")?;
                 let npv = self.calculation_results
@@ -506,13 +497,12 @@ impl Engine {
                     .context("npv is not set")?
                     .get_npv();
 
-                let rho = (npv_up.clone() - npv) / bump_val * RHO_PNL_UNIT;
+                let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT;
                 self.calculation_results
                     .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
-                    .to_owned()
-                    .set_single_rho(curve_name, rho);
+                    .set_single_rho(curve_name, rho * unitamt);
             }
 
             *curve_data -= bump_val;
@@ -533,7 +523,7 @@ impl Engine {
                 .borrow_mut();
 
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying(div_code, None);
+                .instruments_with_underlying(div_code);
 
             *div_data += bump_val;
 
@@ -541,6 +531,7 @@ impl Engine {
                 .context("failed to get npvs")?; // instrument code (String) -> npv (Real
 
             for inst in &self.instruments_in_action {
+                let unitamt = inst.as_trait().get_unit_notional();
                 let npv_up = npvs_up.get(inst.as_trait().get_code())
                     .context("npv_up is not set")?;
                 npv = self.calculation_results
@@ -551,13 +542,13 @@ impl Engine {
                     .context("npv is not set")?
                     .get_npv();
 
+
                 let div_delta = (npv_up.clone() - npv) / bump_val * DELTA_PNL_UNIT;
                 self.calculation_results
                     .get_mut(inst.as_trait().get_code())
                     .context("result is not set")?
                     .borrow_mut()
-                    .to_owned()
-                    .set_single_div_delta(div_code, div_delta);
+                    .set_single_div_delta(div_code, div_delta * unitamt);
             }
 
             *div_data -= bump_val;
@@ -566,6 +557,7 @@ impl Engine {
     }
 
     pub fn set_rho_structure(&mut self) -> Result<(), MyError> {
+        self.reset_instruments_in_action();
         let all_curve_names = self.instruments.get_all_curve_names(&self.match_parameter);
         let bump_val = self.calculation_configuration.get_rho_bump_value();
         let calc_tenors = self.calculation_configuration.get_rho_structure_tenors();
@@ -587,11 +579,10 @@ impl Engine {
                 let end_date = self.evaluation_date.borrow().clone() + tenor.as_str();
 
                 self.instruments_in_action = self.instruments
-                    .instruments_using_curve(curve_name, &self.match_parameter, Some(end_date.clone()));
-
-                if self.instruments_in_action.is_empty() {
-                    continue;
-                }
+                    .instruments_using_curve(
+                        curve_name, 
+                        &self.match_parameter, 
+                    );
 
                 let tenor_time: Time = time_calculator.get_time_difference(
                     &self.evaluation_date.borrow().get_date_clone(),
@@ -605,7 +596,9 @@ impl Engine {
                     .context("failed to get npvs")?;
                 
                 for inst in &self.instruments_in_action {
-                    let npv_up = npvs_up.get(inst.as_trait().get_code())
+                    let inst_code = inst.as_trait().get_code();
+                    let unitamt = inst.as_trait().get_unit_notional();
+                    let npv_up = npvs_up.get(inst_code)
                         .context("npv_up is not set")?;
                     let npv = self.calculation_results
                         .get(inst.as_trait().get_code())
@@ -615,16 +608,28 @@ impl Engine {
                         .context("npv is not set")?
                         .get_npv();
 
-                    let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT;
-                    accumulative_rho_structure_up
-                        .entry(inst.as_trait().get_code().clone())
-                        .or_insert(HashMap::new())
-                        .entry(curve_name.clone())
-                        .or_insert(HashMap::new())
-                        .insert(tenor.clone(), rho);
+                    let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT * unitamt;
+                    let curve_map = accumulative_rho_structure_up.entry(inst_code.clone()).or_insert_with(HashMap::new);
+                    let tenor_map = curve_map.entry(curve_name.clone()).or_insert_with(HashMap::new);
+                    tenor_map.insert(tenor.clone(), rho);
+                }
+
+                curve_data.bump_time_interval(-0.0, tenor_time, -bump_val)
+                    .context("failed to bump time interval")?;
+
+                let longest_maturity = self.instruments.get_longest_maturity(&self.instruments_in_action);
+                if let Some(longest_maturity) = longest_maturity {
+                    if longest_maturity < end_date {
+                        break;
+                    }
                 }
             }
         }
+
+        // from accumulative_rho_structure_up, we can calculate rho_structure
+        // first we need to sort the tenors in the accumulative_rho_structure_up
+        // to do so, we make a list of all tenors
+        println!("{}:{} accumulative_rho_structure_up: {:?}\n", file!(), line!(), accumulative_rho_structure_up);
         // now using accumulative_rho_structure_up, we can calculate rho_structure
         // For the first element, it becomes rho_structure[0] = accumulative_rho_structure_up[0]
         // For others, it becomes rho_structure[i] = accumulative_rho_structure_up[i] - accumulative_rho_structure_up[i-1]
@@ -634,17 +639,18 @@ impl Engine {
                     .get(inst_code)
                     .context("accumulative_rho_structure_up is not set")?;
             // curve code (String) -> tenor (String) -> rho in the tener interval (Real)
-            for (curve_code, accum_up) in single_inst_accum_up.iter() {
+            for (curve_code, single_curve_accum_up) in single_inst_accum_up.iter() {
                 let mut prev = 0.0;
-                let mut single_rho_structure = HashMap::<String, Real>::new();
-                for (tenor, rho) in accum_up.iter() {
-                    single_rho_structure.insert(
+                let mut single_curve_rho_structure = HashMap::<String, Real>::new();
+                for tenor in self.calculation_configuration.get_rho_structure_tenors() {
+                    let val = single_curve_accum_up.get(tenor).unwrap_or(&prev);
+                    single_curve_rho_structure.insert(
                         tenor.clone(),
-                        *rho - prev,
+                        val - prev,
                     );
-                    prev = *rho;
+                    prev = *val;
                 }
-                result.borrow_mut().set_single_rho_structure(curve_code, single_rho_structure)
+                result.borrow_mut().set_single_rho_structure(curve_code, single_curve_rho_structure)
             }          
         }
         Ok(())
@@ -662,6 +668,8 @@ impl Engine {
 
         *self.evaluation_date.borrow_mut() += period_str;
 
+        let up_day = self.evaluation_date.borrow().get_date_clone();
+
         let npvs_theta = self.get_npvs()
             .context("failed to get npvs")?;
 
@@ -675,8 +683,11 @@ impl Engine {
             // deduct the cashflow inbetween
             cash_sum = result.borrow().get_cashflow_inbetween().as_ref()
                 .context("cashflow_inbetween is not set")?
-                .values()
+                .iter()
+                .filter(|(date, _)| date <= &&up_day)
+                .map(|(_, cash)| cash)
                 .sum();
+                
 
             let theta = (npv_theta.clone() - npv - cash_sum) / (theta_day as Real);
             result.borrow_mut().set_theta(theta);
@@ -697,7 +708,6 @@ impl Engine {
         let mut npvs_up: HashMap::<String, Real>;
 
         let mut npv_up: &Real;
-        let mut npv: &Real;
 
         for div_code in all_dividend_codes {
             let mut div_data = self.dividend_data
@@ -710,7 +720,7 @@ impl Engine {
                 let end_date = self.evaluation_date.borrow().clone() + tenor.as_str();
 
                 self.instruments_in_action = self.instruments
-                    .instruments_with_underlying(div_code, Some(end_date.clone()));
+                    .instruments_with_underlying(div_code);
 
                 if self.instruments_in_action.is_empty() {
                     continue;
@@ -750,6 +760,19 @@ impl Engine {
                         .or_insert(HashMap::new())
                         .insert(tenor.clone(), div);
                 }
+
+                div_data.bump_time_interval(
+                    -0.0, 
+                    tenor_time, 
+                    -bump_val
+                ).context("failed to bump time interval")?;
+
+                let longest_mat = self.instruments.get_longest_maturity(&self.instruments_in_action);
+                if let Some(longest_mat) = longest_mat {
+                    if longest_mat < end_date {
+                        break;
+                    }
+                }
             }
         }
         // now using accumulative_div_structure_up, we can calculate div_structure
@@ -778,6 +801,9 @@ impl Engine {
     }
 
     pub fn calculate(&mut self) -> Result<(), MyError>{
+        let mut timer = std::time::Instant::now();
+        let start_time = std::time::Instant::now();
+
         if self.instruments_in_action.len() < 1 {
             return Err(
                 MyError::BaseError { 
@@ -790,30 +816,84 @@ impl Engine {
                     )
                 });
         }
+
         if self.calculation_configuration.get_npv_calculation() {
-            self.set_npv_results().with_context(|| format!("failed to set npvs.\ntag:\n{}", self.err_tag))?;
-            self.set_values().with_context(|| format!("failed to set values.\ntag:\n{}", self.err_tag))?;
-            //self.set_coupons().with_context(|| format!("failed to set coupons.\ntag:\n{}", self.err_tag))?;
+            self.set_npv_results()?;
+            self.set_values()?;
+            self.set_cashflow_inbetween()?;
+
+            println!(
+                "npv calculation is done (engine id: {}, time = {} whole time elapsed: {})"
+                , self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64()),
+            );
         }
         
         if self.calculation_configuration.get_fx_exposure_calculation() {
-            self.set_fx_exposures().with_context(|| format!("failed to set fx exposures.\ntag:\n{}", self.err_tag))?;
+            timer = std::time::Instant::now();
+            self.set_fx_exposures()?;
+            println!(
+                "fx exposure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64()),
+            );
         }
         
         if self.calculation_configuration.get_delta_calculation() { 
-            self.set_delta_gamma().with_context(|| format!("failed to set delta_gamma.\ntag:\n{}", self.err_tag))?;
+            timer = std::time::Instant::now();
+            self.set_delta_gamma()?;
+            println!(
+                "delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64()),
+            );
         }
 
         if self.calculation_configuration.get_theta_calculation() {
-            self.set_theta().with_context(|| format!("failed to set theta.\ntag:\n{}", self.err_tag))?;
+            timer = std::time::Instant::now();
+            self.set_theta()?;
+            println!(
+                "theta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64()),
+            );
         }
 
         if self.calculation_configuration.get_rho_calculation() {
-            self.set_rho().with_context(|| format!("failed to set rho.\ntag:\n{}", self.err_tag))?;
+            timer = std::time::Instant::now();
+            self.set_rho()?;
+            println!(
+                "rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
+            );
+        }
+
+        if self.calculation_configuration.get_rho_structure_calculation() {
+            timer = std::time::Instant::now();
+            self.set_rho_structure()?;
+            println!(
+                "rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
+            );
         }
 
         if self.calculation_configuration.get_div_delta_calculation() {
-            self.set_div_delta().with_context(|| format!("failed to set div_delta.\ntag:\n{}", self.err_tag))?;
+            timer = std::time::Instant::now();
+            self.set_div_delta()?;
+            println!(
+                "div_delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64()),
+            );
         }
 
         Ok(())

@@ -64,6 +64,7 @@ mod tests {
 
         let mut zero_curve_map = HashMap::new();
         zero_curve_map.insert(name, zero_curve_data);
+        zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
         
         // make a vector data for dividend ratio
         let mut dividend_data = VectorData::new(

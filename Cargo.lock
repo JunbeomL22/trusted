@@ -483,6 +483,7 @@ dependencies = [
  "criterion",
  "env_logger",
  "korean-lunar-calendar",
+ "ndarray",
  "plotters",
  "quantlib",
  "time",

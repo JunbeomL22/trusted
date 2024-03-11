@@ -131,7 +131,7 @@ impl DiscreteRatioDividend {
             );
             deduction_interpolator = DividendInterpolator::Stepwise(_interp);
         }
-        
+    
         let res = DiscreteRatioDividend {
             evaluation_date: evaluation_date.clone(),
             ex_dividend_dates,
@@ -197,8 +197,10 @@ impl Parameter for DiscreteRatioDividend {
         self.dividend_yields = dividend_amount / self.spot;
 
         self.date_integers = vec![0; self.ex_dividend_dates.len()];
+        for (i, date) in self.ex_dividend_dates.iter().enumerate() {
+            self.date_integers[i] = to_yyyymmdd_int(date);
+        };
         //self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
-
         // drop data of ex-dividend date and dividend amount before the evaluation-date
         let eval_dt = self.evaluation_date.borrow().get_date_clone(); 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
@@ -239,6 +241,7 @@ impl Parameter for DiscreteRatioDividend {
             );
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
+        
         Ok(())
     }
 

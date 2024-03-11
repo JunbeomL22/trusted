@@ -41,10 +41,12 @@ pub struct CalculationResult {
     vega: Option<HashMap<String, Real>>,
     vega_strucure: Option<HashMap<String, HashMap<String, Real>>>, // underlying code -> duration -> vega
     theta: Option<Real>,
+    div_delta: Option<HashMap<String, Real>>,
+    div_structure: Option<HashMap<String, HashMap<String, Real>>>, // underlying code -> duration -> div
     rho: Option<HashMap<String, Real>>, // Curve Code -> rho
     rho_structure: Option<HashMap<String, HashMap<String, Real>>>, // curve code -> duration -> rho
     theta_day: Option<Integer>,
-    cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>,
+    cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
 }
 
 impl Default for CalculationResult {
@@ -60,6 +62,8 @@ impl Default for CalculationResult {
             vega: None,
             vega_strucure: None,
             theta: None,
+            div_delta: None,
+            div_structure: None,
             rho: None,
             rho_structure: None,
             theta_day: None,
@@ -82,6 +86,8 @@ impl CalculationResult {
             vega: None,
             vega_strucure: None,
             theta: None,
+            div_delta: None,
+            div_structure: None,
             rho: None,
             rho_structure: None,
             theta_day: None,
@@ -181,14 +187,14 @@ impl CalculationResult {
     }
 
     pub fn set_single_div_delta(&mut self, und_code: &String, v: Real) {
-        match &mut self.rho {
+        match &mut self.div_delta {
             None => {
-                let mut rho = HashMap::new();
-                rho.insert(und_code.clone(), v);
-                self.rho = Some(rho);
+                let mut div_delta = HashMap::new();
+                div_delta.insert(und_code.clone(), v);
+                self.div_delta = Some(div_delta);
             },
-            Some(rho) => {
-                rho.insert(und_code.clone(), v);
+            Some(div_delta) => {
+                div_delta.insert(und_code.clone(), v);
             },
         }
     }
@@ -198,14 +204,14 @@ impl CalculationResult {
         und_code: &String, 
         div_structure: HashMap<String, Real>,
     ) {
-        match &mut self.rho_structure {
+        match &mut self.div_structure {
             None => {
-                let mut rho_structure_map = HashMap::new();
-                rho_structure_map.insert(und_code.clone(), div_structure);
-                self.rho_structure = Some(rho_structure_map);
+                let mut div_structure_map = HashMap::new();
+                div_structure_map.insert(und_code.clone(), div_structure);
+                self.div_structure = Some(div_structure_map);
             },
-            Some(rho_structure_map) => {
-                rho_structure_map.insert(und_code.clone(), div_structure);
+            Some(div_structure_map) => {
+                div_structure_map.insert(und_code.clone(), div_structure);
             },
         }
     }
@@ -260,6 +266,14 @@ impl CalculationResult {
 
     pub fn get_cashflow_inbetween(&self) -> &Option<HashMap<OffsetDateTime, Real>> {
         &self.cashflow_inbetween
+    }
+
+    pub fn get_div_delta(&self) -> &Option<HashMap<String, Real>> {
+        &self.div_delta
+    }
+
+    pub fn get_div_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
+        &self.div_structure
     }
 
 }

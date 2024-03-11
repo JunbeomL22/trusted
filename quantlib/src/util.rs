@@ -39,6 +39,17 @@ pub fn to_yyyymmdd_int(dt: &OffsetDateTime) -> Integer {
     year * 10000 + month * 100 + day
 }
 
+pub fn format_duration(secs: f64) -> String {
+    let minutes = (secs / 60.0).floor();
+    let seconds = secs % 60.0;
+
+    if minutes > 0.0 {
+        format!("{:.0}m {:.2}s", minutes, seconds)
+    } else {
+        format!("{:.2}s", seconds)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

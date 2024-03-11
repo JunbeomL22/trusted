@@ -57,7 +57,7 @@ impl Default for CalculationConfiguration {
             "6M".to_string(), 
             "9M".to_string(),
             "1Y".to_string(),
-            "18M".to_string(),
+            "1Y6M".to_string(),
             "2Y".to_string(),
             "3Y".to_string(),
             "5Y".to_string(),
@@ -73,7 +73,7 @@ impl Default for CalculationConfiguration {
             "6M".to_string(), 
             "9M".to_string(),
             "1Y".to_string(),
-            "18M".to_string(),
+            "1Y6M".to_string(),
             "2Y".to_string(),
             "3Y".to_string(),
             ];
@@ -84,7 +84,7 @@ impl Default for CalculationConfiguration {
             "6M".to_string(), 
             "9M".to_string(),
             "1Y".to_string(),
-            "18M".to_string(),
+            "1Y6M".to_string(),
             "2Y".to_string(),
             "3Y".to_string(),
             ];
