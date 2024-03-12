@@ -486,6 +486,8 @@ dependencies = [
  "ndarray",
  "plotters",
  "quantlib",
+ "serde",
+ "serde_json",
  "time",
  "trading-engine",
 ]

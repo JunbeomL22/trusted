@@ -1,6 +1,6 @@
 use quantlib::assets::currency::Currency;
 use quantlib::instruments::stock_futures::StockFutures;
-use quantlib::instrument::{Instrument, InstrumentTriat, Instruments};
+use quantlib::instrument::{Instrument, Instruments};
 use quantlib::definitions::Real;
 use time::macros::datetime;
 use ndarray::array;
@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
+use serde_json;
 
 fn main() {
     let spot: Real = 350.0;
@@ -159,6 +160,7 @@ fn main() {
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
 
     // display div-delta of RefCell<CalculationResult>
+    /*
     println!("result1 delta: {:?}", result1.borrow().get_delta());
     println!("result1 theta: {:?}", result1.borrow().get_theta());
     println!("result1 rho: {:?}", result1.borrow().get_rho());
@@ -168,4 +170,7 @@ fn main() {
     println!("result2 rho: {:?}", result2.borrow().get_rho());
     println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
     println!("\n\n{:?}", result1);
+    */
+    println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
+    println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
 }

@@ -370,6 +370,7 @@ impl Engine {
 
     
     pub fn set_delta_gamma(&mut self) -> Result<()> {
+        println!("{:?}", self.stocks);
         self.reset_instruments_in_action();
 
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
@@ -458,6 +459,7 @@ impl Engine {
                 *stock *= 1.0 / (1.0 - delta_bump_ratio);
             }
         }
+        println!("{:?}", self.stocks);
         Ok(())
     }
 
