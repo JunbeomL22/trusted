@@ -2,6 +2,7 @@ use crate::definitions::Real;
 use std::fmt::Display;
 use ndarray::Array1;
 use num_traits::Num;
+use anyhow::Result;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum ExtraPolationType

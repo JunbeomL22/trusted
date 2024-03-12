@@ -228,16 +228,112 @@ impl Instruments {
         res
     }
 
-    pub fn instruments_with_maturity_upto(&self, maturity: &OffsetDateTime) -> Vec<Rc<Instrument>> {
-        let mut res = Vec::<Rc<Instrument>>::new();
-        for instrument in self.instruments.iter() {
-            if let Some(m) = instrument.as_trait().get_maturity() {
-                if m <= maturity {
-                    res.push(instrument.clone());
+    pub fn instruments_with_maturity_upto(
+        &self, 
+        instruments: Option<&Vec<Rc<Instrument>>>,
+        maturity: &OffsetDateTime
+    ) -> Vec<Rc<Instrument>> {
+        match instruments {
+            Some(instruments) => {
+                let mut res = Vec::<Rc<Instrument>>::new();
+                for instrument in instruments.iter() {
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if m <= maturity {
+                            res.push(instrument.clone());
+                        }
+                    }
                 }
+                res
+            },
+            None => {
+                let mut res = Vec::<Rc<Instrument>>::new();
+                for instrument in self.instruments.iter() {
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if m <= maturity {
+                            res.push(instrument.clone());
+                        }
+                    }
+                }
+                res
             }
         }
-        res
+    }
+
+    pub fn instruments_with_maturity_over(
+        &self, 
+        instruments: Option<&Vec<Rc<Instrument>>>,
+        maturity: &OffsetDateTime
+    ) -> Vec<Rc<Instrument>> {
+        match instruments {
+            Some(instruments) => {
+                let mut res = Vec::<Rc<Instrument>>::new();
+                for instrument in instruments.iter() {
+                    if instrument.as_trait().get_maturity() == None {
+                        res.push(instrument.clone());
+                    }
+                    
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if m > maturity {
+                            res.push(instrument.clone());
+                        }
+                    }
+                }
+                res
+            },
+            None => {
+                let mut res = Vec::<Rc<Instrument>>::new();
+                for instrument in self.instruments.iter() {
+                    if instrument.as_trait().get_maturity() == None {
+                        res.push(instrument.clone());
+                    }
+                    
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if m > maturity {
+                            res.push(instrument.clone());
+                        }
+                    }
+                }
+                res
+            }
+        }
+    }
+
+    pub fn get_shortest_maturity(
+        &self,
+        instruments: Option<&Vec<Rc<Instrument>>>,
+    ) -> Option<OffsetDateTime> {
+        match instruments {
+            Some(instruments) => {
+                let mut shortest_maturity: Option<OffsetDateTime> = None;
+                for instrument in instruments.iter() {
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if let Some(sm) = shortest_maturity {
+                            if *m < sm {
+                                shortest_maturity = Some(*m);
+                            }
+                        } else {
+                            shortest_maturity = Some(*m);
+                        }
+                    }
+                }
+                shortest_maturity
+            },
+            None => {
+                let mut shortest_maturity: Option<OffsetDateTime> = None;
+                for instrument in self.instruments.iter() {
+                    if let Some(m) = instrument.as_trait().get_maturity() {
+                        if let Some(sm) = shortest_maturity {
+                            if *m < sm {
+                                shortest_maturity = Some(*m);
+                            }
+                        } else {
+                            shortest_maturity = Some(*m);
+                        }
+                    }
+                }
+                shortest_maturity
+            }
+        }
     }
 
     pub fn get_longest_maturity(

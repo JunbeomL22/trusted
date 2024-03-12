@@ -47,6 +47,10 @@ impl Stock {
         }
     }
 
+    pub fn set_price(&mut self, price: Real) {
+        self.last_price = price;
+    }
+
     pub fn get_code(&self) -> &String {
         &self.code
     }

@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use anyhow::{Result, Context, anyhow};
+use time::{OffsetDateTime, Duration};
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::util::format_duration;
 use crate::utils::string_arithmetic::add_period;
@@ -281,6 +282,39 @@ impl Engine {
     }
 
     pub fn get_npvs(&self) -> Result<HashMap<String, Real>> {
+        let dt = self.evaluation_date.borrow().get_date_clone();
+        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(
+                Some(&self.instruments_in_action), &dt);
+
+        if !insts_over_maturity.is_empty() {
+            let mut inst_codes = Vec::<String>::new();
+            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
+            for inst in insts_over_maturity {
+                inst_codes.push(inst.as_trait().get_code().clone());
+                let mat = inst.as_trait().get_maturity();
+                match mat {
+                    Some(m) => inst_mat.push(Some(m.clone())),
+                    None => inst_mat.push(None),
+                }
+            }
+
+            let display = inst_codes.iter().zip(inst_mat.iter())
+                .map(|(code, mat)| {
+                    match mat {
+                        Some(m) => format!("{}: {:}", code, m),
+                        None => format!("{}: None", code),
+                    }
+                }).collect::<Vec<String>>().join("\n");
+            return Err(
+                anyhow!(
+                    "there are instruments with maturity over the evaluation date\n\
+                    evaluation date: {:?}\n\
+                    {}\n",
+                    dt, display
+                )
+            );
+        }
+
         let mut npvs = HashMap::new();
         for inst in &self.instruments_in_action {
             let inst_code = inst.as_trait().get_code();
@@ -340,6 +374,7 @@ impl Engine {
         }
         Ok(())
     }
+
     pub fn set_fx_exposures(&mut self) -> Result<()> {
         let mut fx_exposures = HashMap::new();
         for inst in &self.instruments_in_action {
@@ -370,7 +405,6 @@ impl Engine {
 
     
     pub fn set_delta_gamma(&mut self) -> Result<()> {
-        println!("{:?}", self.stocks);
         self.reset_instruments_in_action();
 
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
@@ -384,8 +418,18 @@ impl Engine {
         let mut delta: Real;
         let mut gamma: Real;
         let mut mid: Real;
+        let mut original_price: Real;
 
+        let up_bump = 1.0 + delta_bump_ratio;
+        let down_bump = 1.0 - delta_bump_ratio;
+        
         for und_code in all_underlying_codes.iter() {
+            original_price = self.stocks
+                .get(*und_code)
+                .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
+                .borrow()
+                .get_last_price();
+
             // set instruments that needs to be calculated
             self.instruments_in_action = self.instruments
                 .instruments_with_underlying(und_code);
@@ -395,7 +439,7 @@ impl Engine {
                     .get(*und_code)
                     .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
                     .borrow_mut();
-                *stock *= 1.0 + delta_bump_ratio;
+                *stock *= up_bump;
             }
 
             delta_up_map = self.get_npvs().context("failed to get npvs")?;
@@ -405,8 +449,8 @@ impl Engine {
                     .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
                     .borrow_mut();
 
-                *stock *= 1.0 / (1.0 + delta_bump_ratio);
-                *stock *= 1.0 - delta_bump_ratio;
+                stock.set_price(original_price);
+                *stock *= down_bump;
             }
             
             delta_down_map = self.get_npvs().context("failed to get npvs")?;
@@ -440,8 +484,8 @@ impl Engine {
                     .get_npv();
 
                 gamma = delta_up + delta_down - mid * 2.0;
-                gamma /= delta_bump_ratio * delta_bump_ratio;
-                gamma *= 0.5 * DELTA_PNL_UNIT * DELTA_PNL_UNIT;
+                gamma *= DELTA_PNL_UNIT / delta_bump_ratio;
+                gamma *= 0.5 * (DELTA_PNL_UNIT / delta_bump_ratio);
 
                 self.calculation_results
                     .get_mut(inst.as_trait().get_code())
@@ -456,10 +500,9 @@ impl Engine {
                     .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
                     .borrow_mut();
 
-                *stock *= 1.0 / (1.0 - delta_bump_ratio);
+                stock.set_price(original_price);
             }
         }
-        println!("{:?}", self.stocks);
         Ok(())
     }
 
@@ -573,8 +616,9 @@ impl Engine {
 
     pub fn set_theta(&mut self) -> Result<()> {
         self.reset_instruments_in_action();
-
         let theta_day = self.calculation_configuration.get_theta_day();
+        let up_day = self.evaluation_date.borrow().get_date_clone() + Duration::days(theta_day as i64);
+
         let mut cash_sum: Real;
         let npvs = self.get_npvs()
             .context("failed to get npvs")?;
@@ -584,8 +628,6 @@ impl Engine {
 
         // limit the scope that the attribute is mutably borrowed
         { *self.evaluation_date.borrow_mut() += period_str; }
-
-        let up_day = self.evaluation_date.borrow().get_date_clone();
 
         let npvs_theta = self.get_npvs()
             .context("failed to get npvs")?;

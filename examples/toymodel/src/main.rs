@@ -1,6 +1,6 @@
 use quantlib::assets::currency::Currency;
 use quantlib::instruments::stock_futures::StockFutures;
-use quantlib::instrument::{Instrument, Instruments};
+use quantlib::instrument::Instrument;
 use quantlib::definitions::Real;
 use time::macros::datetime;
 use ndarray::array;
@@ -114,13 +114,14 @@ fn main() {
 
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
-    .with_delta_calculation(true)
-    .with_gamma_calculation(true)
-    .with_rho_calculation(true)
-    .with_div_delta_calculation(true)
-    .with_rho_structure_calculation(true)
+    //.with_delta_calculation(true)
+    //.with_gamma_calculation(true)
+    //.with_rho_calculation(true)
+    //.with_div_delta_calculation(true)
+    //.with_rho_structure_calculation(true)
     .with_theta_calculation(true)
-    .with_div_structure_calculation(true);
+    //.with_div_structure_calculation(true)
+    .with_theta_day(70);
     
     // make a match parameter
     let mut collateral_curve_map = HashMap::new();
@@ -160,17 +161,19 @@ fn main() {
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
 
     // display div-delta of RefCell<CalculationResult>
-    /*
+    
     println!("result1 delta: {:?}", result1.borrow().get_delta());
+    println!("result1 gamma: {:?}", result1.borrow().get_gamma());
     println!("result1 theta: {:?}", result1.borrow().get_theta());
     println!("result1 rho: {:?}", result1.borrow().get_rho());
     println!("result1 rho-structure: {:?}", result1.borrow().get_rho_structure());
     println!("result2 delta: {:?}", result2.borrow().get_delta());
+    println!("result2 gamma: {:?}", result2.borrow().get_gamma());
     println!("result2 theta: {:?}", result2.borrow().get_theta());
     println!("result2 rho: {:?}", result2.borrow().get_rho());
     println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
     println!("\n\n{:?}", result1);
-    */
-    println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
-    println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
+    
+    // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
+    // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
 }

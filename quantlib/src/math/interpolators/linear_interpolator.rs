@@ -3,6 +3,7 @@ use crate::utils::find_index_ndarray::{binary_search_index_ndarray, vectorized_s
 use crate::math::interpolator::{InterpolatorReal1D, ExtraPolationType};
 use ndarray::Array1;
 use crate::util::is_ndarray_sorted;
+use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone)]
 pub struct LinearInterpolator1D
@@ -67,7 +68,12 @@ impl InterpolatorReal1D for LinearInterpolator1D
                     panic!("{}: extrapolation has not been implemented yet", self.extrapolation_type)
                 }
             } else {
-                panic!("x is out of range");
+                panic!(
+                    "x ({}) is out of range\n\
+                    domain: Array1<Real> = {:?}", 
+                    x,
+                    self.domain
+                );
             }
         }
         if x > self.domain[n-1] {
