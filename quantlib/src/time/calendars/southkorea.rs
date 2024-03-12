@@ -5,7 +5,6 @@ use anyhow::Result;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset};
 use log::warn;
 use serde::{Serialize, Deserialize};
-use crate::utils::myerror::MyError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum SouthKoreaType {
     Krx,
@@ -733,12 +732,12 @@ impl CalendarTrait for SouthKorea {
         &self.name
     }   
     
-    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError> {
+    fn add_holidays(&mut self, date: &Date) -> Result<()> {
         self.holiday_adder.push(*date);
         Ok(())
     }
 
-    fn remove_holidays(&mut self, date: &Date) -> Result<(), MyError> {
+    fn remove_holidays(&mut self, date: &Date) -> Result<()> {
         self.holiday_remover.push(*date);
         Ok(())
     }

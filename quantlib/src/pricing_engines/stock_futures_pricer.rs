@@ -1,11 +1,10 @@
-use crate::utils::myerror::MyError;
 use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
 use crate::assets::stock::Stock;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
-use std::collections::HashMap;
+use anyhow::{Result, anyhow};
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
 //
@@ -50,39 +49,31 @@ impl StockFuturesPricer {
 }
 
 impl PricerTrait for StockFuturesPricer {
-    fn npv_result(&self, instruments: &Instrument) -> Result<NpvResult, MyError> {
+    fn npv_result(&self, instruments: &Instrument) -> Result<NpvResult> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
                 let res = NpvResult::new(self.fair_forward(&maturity));
                 Ok(res)
             }
-            _ => Err(MyError::BaseError {
-                 file: file!().to_string(), 
-                 line: line!(), 
-                 contents: format!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string())
-                })
+            _ => Err(anyhow!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string()))
         };
         res
     }
 
-    fn npv(&self, instruments: &Instrument) -> Result<Real, MyError> {
+    fn npv(&self, instruments: &Instrument) -> Result<Real> {
         let res = match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
                 let res = self.fair_forward(&maturity);
                 Ok(res)
             }
-            _ => Err(MyError::BaseError {
-                 file: file!().to_string(), 
-                 line: line!(), 
-                 contents: format!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string())
-                })
+            _ => Err(anyhow!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string()))
         };
         res
     }
 
-    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real, MyError> {
+    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real> {
         match instruments {
             Instrument::StockFutures(stock_futures) => {
                 let npv = self.npv(instruments)
@@ -92,16 +83,10 @@ impl PricerTrait for StockFuturesPricer {
                 let unit_notional = stock_futures.get_unit_notional();
                 Ok((npv - average_trade_price) * unit_notional)
             },
-            _ => Err(
-                MyError::BaseError {
-                    file: file!().to_string(), 
-                    line: line!(), 
-                    contents: format!(
-                        "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
-                        instruments.as_trait().get_type_name().to_string(),
-                    )
-                }
-            )
+            _ => Err(anyhow!(
+                "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
+                instruments.as_trait().get_type_name().to_string()
+            ))
         }
     }
 }

@@ -7,8 +7,7 @@ use crate::definitions::Real;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::utils::myerror::MyError;
-
+use anyhow::Result;
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend
 #[derive(Debug, Clone)]
@@ -113,7 +112,7 @@ impl Parameter for Stock {
     /// the stock price must be deducted by the dividend
     /// the amount is the sum of the dividend amount 
     /// between the market_datetime and the EvaluationDate
-    fn update_evaluation_date(&mut self, data: &EvaluationDate) -> Result<(), MyError> {
+    fn update_evaluation_date(&mut self, data: &EvaluationDate) -> Result<()> {
         if let Some(dividend) = &self.dividend {
             let eval_dt = data.get_date_clone();
             if self.market_datetime < eval_dt {   

@@ -1,8 +1,7 @@
 use crate::definitions::Real;
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap};
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
-use crate::utils::myerror::MyError;
 use anyhow::Result;
 use std::ops::{Add, Sub, Mul, Div};
 
@@ -30,7 +29,7 @@ impl NpvResult {
         self.npv
     }
 
-    pub fn get_expected_coupon_amount(&self) -> Result<HashMap<OffsetDateTime, Real>, MyError> {
+    pub fn get_expected_coupon_amount(&self) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         for (id, (datetime, amount)) in self.coupon_amounts.iter() {
             let prob = self.coupon_paymeent_probability.get(id)

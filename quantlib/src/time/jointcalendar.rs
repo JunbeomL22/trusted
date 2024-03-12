@@ -2,9 +2,7 @@ use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendar::Calendar;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use crate::utils::myerror::MyError;
-use anyhow::Result;
-
+use anyhow::{Result, anyhow};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JointCalendar {
     name: String,
@@ -76,20 +74,12 @@ impl CalendarTrait for JointCalendar {
         self.calendars.iter().any(|c| c.as_trait().is_base_holiday(date))
     }
 
-    fn add_holidays(&mut self, date: &time::Date) -> Result<(), MyError> {
-        Err(MyError::CallError {
-            file: file!().to_string(), 
-            line: line!(), 
-            contents: "It is not allowed to add holidays to JointCalendar".to_string(),
-        })
+    fn add_holidays(&mut self, date: &time::Date) -> Result<()> {
+        Err(anyhow!("It is not allowed to add holidays to JointCalendar"))
     }
 
-    fn remove_holidays(&mut self, date: &time::Date) -> Result<(), MyError> {
-        Err(MyError::CallError {
-            file: file!().to_string(), 
-            line: line!(), 
-            contents: "It is not allowed to remove holidays from JointCalendar".to_string(),
-        })
+    fn remove_holidays(&mut self, date: &time::Date) -> Result<()> {
+        Err(anyhow!("It is not allowed to remove holidays from JointCalendar"))
     }
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {

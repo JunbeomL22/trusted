@@ -2,7 +2,6 @@ use serde::{Serialize, Deserialize};
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use time::{Date, OffsetDateTime};
 use anyhow::Result;
-use crate::utils::myerror::MyError; 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NullCalendar {
@@ -48,9 +47,9 @@ impl CalendarTrait for NullCalendar {
         &self.name
     }
 
-    fn add_holidays(&mut self, _date: &Date) -> Result<(), MyError> { Ok(()) }
+    fn add_holidays(&mut self, _date: &Date) -> Result<()> { Ok(()) }
 
-    fn remove_holidays(&mut self, _date: &Date) -> Result<(), MyError> { Ok(()) }
+    fn remove_holidays(&mut self, _date: &Date) -> Result<()> { Ok(()) }
 
     fn display_holidays(
         &self,

@@ -2,8 +2,7 @@ use time::{Date, Month, Weekday, OffsetDateTime};
 use crate::time::conventions::BusinessDayConvention;
 use crate::time::conventions::DayCountConvention;
 use crate::definitions::Time;
-use crate::utils::myerror::MyError;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 pub trait CalendarTrait {
     fn unpack_date(&self, date: &OffsetDateTime) -> (i32, Month, u8, Weekday, u16) {
@@ -49,8 +48,8 @@ pub trait CalendarTrait {
     }
 
     fn calendar_name(&self) -> &String;
-    fn add_holidays(&mut self, date: &Date) -> Result<(), MyError>;
-    fn remove_holidays(&mut self, date: &Date) -> Result<(), MyError>;
+    fn add_holidays(&mut self, date: &Date) -> Result<()>;
+    fn remove_holidays(&mut self, date: &Date) -> Result<()>;
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool;
     fn _is_holiday(&self, date: &OffsetDateTime) -> bool {
@@ -146,16 +145,10 @@ pub trait CalendarTrait {
             &self, 
             start_date: &OffsetDateTime, 
             end_date: &OffsetDateTime, 
-            day_count: &DayCountConvention) -> Result<Time, MyError> {
+            day_count: &DayCountConvention) -> Result<Time> {
         // sanity check
         if start_date > end_date {
-            return Err(MyError::MisorderedOffsetDateTimeError{
-                file: file!().to_string(),
-                line: line!(),
-                d1: *start_date,
-                d2: *end_date,
-                other_info: "start_date should be earlier than end_date".to_string(),
-            });
+            return Err(anyhow!("{} > {}", start_date, end_date));
         }
 
         let res = match day_count {

@@ -1,6 +1,6 @@
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::definitions::{Real, Integer};
-use crate::utils::myerror::MyError;
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
@@ -17,18 +17,6 @@ use crate::pricing_engines::npv_result::NpvResult;
 /// mostly pnl -> value_2 - value_1 +cashflow_inbetween
 /// all greeks are calculated based on value not the npv in other words, considering unit_notional
 /// fx_exposure: Option<Real>:
-/// 
-/// delta: Option<HashMap<String, Real>>: 1% PnL delta
-/// gamma: Option<HashMap<String, Real>>: 1% PnL gamma
-/// vega: Option<HashMap<String, Real>>: 1% PnL vega
-/// vega_strucure: Option<HashMap<String, HashMap<Duration, Real>>>: 1% PnL vegas
-/// theta: Option<HashMap<String, Real>>: 1 day PnL
-/// rho: Option<HashMap<String, Real>>: 1bp PnL rho
-/// rho_structure: Option<HashMap<String, HashMap<Duration, Real>>: 1bp PnL rhos
-/// theta_day: Option<Integer>
-/// cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>
-/// cashflow in (evaluation_date, evaluation_date + theta)
-///
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CalculationResult {
     instrument_info: Option<InstrumentInfo>,
@@ -39,12 +27,12 @@ pub struct CalculationResult {
     delta: Option<HashMap<String, Real>>,
     gamma: Option<HashMap<String, Real>>,
     vega: Option<HashMap<String, Real>>,
-    vega_strucure: Option<HashMap<String, HashMap<String, Real>>>, // underlying code -> duration -> vega
+    vega_strucure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on vega_tenor in CalculationConfiguration
     theta: Option<Real>,
     div_delta: Option<HashMap<String, Real>>,
-    div_structure: Option<HashMap<String, HashMap<String, Real>>>, // underlying code -> duration -> div
+    div_structure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on div_tenor in CalculationConfiguration
     rho: Option<HashMap<String, Real>>, // Curve Code -> rho
-    rho_structure: Option<HashMap<String, HashMap<String, Real>>>, // curve code -> duration -> rho
+    rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
     cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
 }
@@ -103,16 +91,12 @@ impl CalculationResult {
         self.npv_result.as_ref()
     }
 
-    pub fn set_value(&mut self) -> Result<(), MyError> {
+    pub fn set_value(&mut self) -> Result<()> {
         match self.npv_result.as_ref() {
-            None => Err(MyError::NoneError { 
-                file: file!().to_string(),
-                line: line!(),
-                other_info: "npv is not set".to_string(),
-            }),
+            None => Err(anyhow!("npv result is not set")),
             Some(npv) => {
                 let unit = self.instrument_info.as_ref()
-                        .ok_or_else(|| anyhow::anyhow!("instrument info is not set"))?
+                        .ok_or_else(|| anyhow!("instrument info is not set"))?
                         .get_unit_notional();
                 self.value = Some(npv.get_npv() * unit);
                 Ok(())
@@ -172,7 +156,7 @@ impl CalculationResult {
     pub fn set_single_rho_structure(
         &mut self, 
         curve_code: &String, 
-        rho_structure: HashMap<String, Real>,
+        rho_structure: Vec<Real>,
     ) {
         match &mut self.rho_structure {
             None => {
@@ -202,7 +186,7 @@ impl CalculationResult {
     pub fn set_single_div_structure(
         &mut self, 
         und_code: &String, 
-        div_structure: HashMap<String, Real>,
+        div_structure: Vec<Real>,
     ) {
         match &mut self.div_structure {
             None => {
@@ -228,54 +212,53 @@ impl CalculationResult {
         self.cashflow_inbetween = Some(cashflow_inbetween);
     }
     
-    pub fn get_instrument_info(&self) -> &Option<InstrumentInfo> {
-        &self.instrument_info
+    pub fn get_instrument_info(&self) -> Option<&InstrumentInfo> {
+        self.instrument_info.as_ref()
     }
 
-    pub fn get_evaluation_date(&self) -> &Option<OffsetDateTime> {
-        &self.evaluation_date
+    pub fn get_evaluation_date(&self) -> Option<&OffsetDateTime> {
+        self.evaluation_date.as_ref()
     }
 
     pub fn get_fx_exposure(&self) -> Option<Real> {
         self.fx_exposure
     }
 
-    pub fn get_delta(&self) -> &Option<HashMap<String, Real>> {
-        &self.delta
+    pub fn get_delta(&self) -> Option<&HashMap<String, Real>> {
+        self.delta.as_ref()
     }
 
-    pub fn get_gamma(&self) -> &Option<HashMap<String, Real>> {
-        &self.gamma
+    pub fn get_gamma(&self) -> Option<&HashMap<String, Real>> {
+        self.gamma.as_ref()
     }
 
-    pub fn get_vega_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
-        &self.vega_strucure
+    pub fn get_vega_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+        self.vega_strucure.as_ref()
     }
 
     pub fn get_theta(&self) -> Option<Real> {
         self.theta
     }
 
-    pub fn get_rho(&self) -> &Option<HashMap<String, Real>> {
-        &self.rho
+    pub fn get_rho(&self) -> Option<&HashMap<String, Real>> {
+        self.rho.as_ref()
     }
 
-    pub fn get_rho_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
-        &self.rho_structure
+    pub fn get_rho_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+        self.rho_structure.as_ref()
     }
 
-    pub fn get_cashflow_inbetween(&self) -> &Option<HashMap<OffsetDateTime, Real>> {
-        &self.cashflow_inbetween
+    pub fn get_cashflow_inbetween(&self) -> Option<&HashMap<OffsetDateTime, Real>> {
+        self.cashflow_inbetween.as_ref()
     }
 
-    pub fn get_div_delta(&self) -> &Option<HashMap<String, Real>> {
-        &self.div_delta
+    pub fn get_div_delta(&self) -> Option<&HashMap<String, Real>> {
+        self.div_delta.as_ref()
     }
 
-    pub fn get_div_structure(&self) -> &Option<HashMap<String, HashMap<String, Real>>> {
-        &self.div_structure
+    pub fn get_div_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+        self.div_structure.as_ref()
     }
-
 }
 
 #[cfg(test)]

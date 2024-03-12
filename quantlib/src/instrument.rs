@@ -1,6 +1,6 @@
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
-use time::{OffsetDateTime, Duration};
+use time::OffsetDateTime;
 use std::ops::Index;
 use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::rate_index::RateIndex;
@@ -257,6 +257,28 @@ impl Instruments {
             }
         }
         longest_maturity
+    }
+
+    pub fn get_all_inst_code_clone(
+        &self,
+        instruments: Option<&Vec<Rc<Instrument>>>,
+    ) -> Vec<String> {
+        match instruments {
+            Some(instruments) => {
+                let mut res = Vec::<String>::new();
+                for instrument in instruments.iter() {
+                    res.push(instrument.as_trait().get_code().clone());
+                }
+                res
+            },
+            None => {
+                let mut res = Vec::<String>::new();
+                for instrument in self.instruments.iter() {
+                    res.push(instrument.as_trait().get_code().clone());
+                }
+                res
+            }
+        }
     }
 }
 

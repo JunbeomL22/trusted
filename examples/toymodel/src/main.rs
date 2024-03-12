@@ -1,26 +1,18 @@
-use quantlib::pricing_engines::stock_futures_pricer::StockFuturesPricer;
+use quantlib::assets::currency::Currency;
 use quantlib::instruments::stock_futures::StockFutures;
 use quantlib::instrument::{Instrument, InstrumentTriat, Instruments};
 use quantlib::definitions::Real;
-use quantlib::parameters::zero_curve::ZeroCurve;
-use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
-use quantlib::parameters::zero_curve_code::ZeroCurveCode;
-use quantlib::data::observable::Observable;
-use quantlib::data::vector_data::VectorData;
-use quantlib::data::value_data::ValueData;
-use quantlib::assets::currency::Currency;
 use time::macros::datetime;
 use ndarray::array;
 use ndarray::Array1;
 use std::rc::Rc;
-use std::cell::RefCell;
 use quantlib::evaluation_date::EvaluationDate;
-use quantlib::assets::stock::Stock;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
-use quantlib::pricing_engines::calculation_result::CalculationResult;
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
+use quantlib::data::value_data::ValueData;
+use quantlib::data::vector_data::VectorData;
 
 fn main() {
     let spot: Real = 350.0;
@@ -62,7 +54,7 @@ fn main() {
     zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
     
     // make a vector data for dividend ratio
-    let mut dividend_data = VectorData::new(
+    let dividend_data = VectorData::new(
         Array1::from(vec![3.0, 3.0]),
         Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-06-01 00:00:00 +09:00)]),
         None,
@@ -125,9 +117,9 @@ fn main() {
     .with_gamma_calculation(true)
     .with_rho_calculation(true)
     .with_div_delta_calculation(true)
-    .with_rho_structure_calculation(true);
-    //.with_theta_calculation(true)
-    //.with_div_structure_calculation(true);
+    .with_rho_structure_calculation(true)
+    .with_theta_calculation(true)
+    .with_div_structure_calculation(true);
     
     // make a match parameter
     let mut collateral_curve_map = HashMap::new();
@@ -167,6 +159,13 @@ fn main() {
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
 
     // display div-delta of RefCell<CalculationResult>
+    println!("result1 delta: {:?}", result1.borrow().get_delta());
+    println!("result1 theta: {:?}", result1.borrow().get_theta());
+    println!("result1 rho: {:?}", result1.borrow().get_rho());
     println!("result1 rho-structure: {:?}", result1.borrow().get_rho_structure());
+    println!("result2 delta: {:?}", result2.borrow().get_delta());
+    println!("result2 theta: {:?}", result2.borrow().get_theta());
+    println!("result2 rho: {:?}", result2.borrow().get_rho());
     println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
+    println!("\n\n{:?}", result1);
 }

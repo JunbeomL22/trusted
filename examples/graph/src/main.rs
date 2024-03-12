@@ -10,10 +10,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use quantlib::utils::string_arithmetic::add_period;
 use quantlib::enums::Compounding;
-use quantlib::parameters::zero_curve_code::ZeroCurveCode;
 use plotters::prelude::*;
 use ndarray::array;
-use quantlib::utils::myerror::MyError;
 use anyhow::{Result, Context};
 
 fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -47,7 +45,7 @@ fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> 
     Ok(())
 }
 
-fn main() -> Result<(), MyError> {
+fn main() -> Result<()> {
     env_logger::init();
     let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
     let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_dt)));

@@ -11,8 +11,7 @@ use std::cell::RefCell;
 use std::any::Any;
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
-use crate::utils::myerror::{MyError, VectorDisplay};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct VectorData {
@@ -75,26 +74,23 @@ impl VectorData {
         market_datetime: OffsetDateTime, 
         currency: Currency,
         name: String
-    ) -> Result<VectorData, MyError> {
+    ) -> Result<VectorData> {
         // sanity check first
         if dates == None && times == None {
-            return Err(MyError::NoneError {
-                file: file!().to_string(),
-                line: line!(),
-                other_info: "dates and times are both None".to_string()
-            });
+            return Err(anyhow!(
+                "dates and times are both None"
+            ));
         }
 
         if let Some(dates) = &dates {
             // change the following assertion to return Err
             if value.len() != dates.len() {
-                return Err(MyError::MismatchedLengthError { 
-                    file: file!().to_string(),
-                    line: line!(),
-                    left: VectorDisplay::REAL(value.to_vec()),
-                    right: VectorDisplay::DATETIME(dates.clone()),
-                    other_info: "The length of value and dates must be the same".to_string()
-                });
+                return Err(anyhow!(
+                    "The length of value and dates must be the same\n\
+                    value: {:?}, dates: {:?}",
+                    value,
+                    dates,
+                ));
             }
             
             let time_calculator = NullCalendar::default();
@@ -112,17 +108,17 @@ impl VectorData {
                 currency: currency,
                 name: name,
             };
+            
             Ok(res)
         } else {
             if let Some(times) = times {
                 if value.len() != times.len() {
-                    return Err(MyError::MismatchedLengthError { 
-                        file: file!().to_string(),
-                        line: line!(),
-                        left: VectorDisplay::REAL(value.to_vec()),
-                        right: VectorDisplay::TIME(times.to_vec()),
-                        other_info: "The length of value and times must be the same".to_string()
-                    });
+                    return Err(anyhow!(
+                        "The length of value and times must be the same\n\
+                        value: {:?}, times: {:?}",
+                        value,
+                        times,
+                    ));
                 } else {
                     let res = VectorData {
                         value,
@@ -136,11 +132,7 @@ impl VectorData {
                     Ok(res)
                 }
             } else {
-                return Err(MyError::NoneError {
-                    file: file!().to_string(),
-                    line: line!(),
-                    other_info: "dates and times are both None".to_string()
-                });
+                return Err(anyhow!("dates and times are both None"));
             }
         }
     }
@@ -171,7 +163,7 @@ impl VectorData {
         dates: Option<Vec<OffsetDateTime>>,
         times: Option<Array1<Time>>,
         market_datetime: Option<OffsetDateTime>
-    ) -> Result<(), MyError> {
+    ) -> Result<()> {
         self.value = value;
         if let Some(market_datetime) = market_datetime {
             self.market_datetime = market_datetime;
@@ -188,13 +180,12 @@ impl VectorData {
         }
 
         if self.value.shape()[0] != self.times.shape()[0] {
-            return Err(MyError::MismatchedLengthError { 
-                file: file!().to_string(),
-                line: line!(),
-                left: VectorDisplay::REAL(self.value.to_vec()),
-                right: VectorDisplay::TIME(self.times.to_vec()),
-                other_info: "The length of value and times must be the same".to_string()
-            });
+            return Err(anyhow!(
+                "VectorData::reset_data value and times have different length\n\
+                value: {:?}, times: {:?}",
+                self.value,
+                self.times
+            ));
         }
 
         self.notify_observers();
@@ -207,16 +198,14 @@ impl VectorData {
         from_t: Time, 
         upto_t: Time, 
         bump_value: Real
-    ) -> Result<(), MyError> {
+    ) -> Result<()> {
         if from_t >= upto_t {
-            return Err(MyError::MisorderedTimeError {
-                file: file!().to_string(),
-                line: line!(),
-                t1: from_t,
-                t2: upto_t,
-                other_info: "VectorData::bump_time_interval".to_string()
-            });
+            return Err(anyhow!(
+                "VectorData::bump_time_interval t1 = {}, t2 = {}", 
+                from_t, upto_t
+            ));
         }
+            
 
         let mut i = 0;
         let time_length = self.times.shape()[0];
@@ -236,15 +225,12 @@ impl VectorData {
         from_date: &OffsetDateTime, 
         upto_date: &OffsetDateTime, 
         bump_value: Real
-    ) -> Result<(), MyError> {
+    ) -> Result<()> {
         if from_date >= upto_date {
-            return Err(MyError::MisorderedOffsetDateTimeError {
-                file: file!().to_string(),
-                line: line!(),
-                d1: from_date.clone(),
-                d2: upto_date.clone(),
-                other_info: "VectorData::bump_date_interval".to_string()
-            });
+            return Err(anyhow!(
+                "VectorData::bump_date_interval from_date = {}, upto_date = {}", 
+                from_date, upto_date,
+            ));
         }
 
         let mut i = 0;

@@ -1,5 +1,4 @@
-use crate::utils::myerror::MyError;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use time::{OffsetDateTime, Duration};
 use serde::{Serialize, Deserialize};
 use crate::time::jointcalendar::JointCalendar;
@@ -80,7 +79,7 @@ pub fn build_schedule(
     freq: &PaymentFrequency, 
     fixing_days: i64, 
     payment_days: i64
-) -> Result<Schedule, MyError> {
+) -> Result<Schedule> {
     if payment_days < 0 || fixing_days < 0 {
         // display all inputs. file and line are automatically filled by MyError
         let mut msg = String::from("payment_days and fixing_days should be non-negative\n");
@@ -92,11 +91,7 @@ pub fn build_schedule(
         msg.push_str(&format!("freq: {:?}\n", freq));
         msg.push_str(&format!("fixing_days: {:?}\n", fixing_days));
         msg.push_str(&format!("payment_days: {:?}\n", payment_days));
-        return Err(MyError::BaseError { 
-            file: file!().to_string(),
-            line: line!(),
-            contents: msg,
-        });
+        return Err(anyhow!(msg));
     }
 
     let mut data = Vec::new();

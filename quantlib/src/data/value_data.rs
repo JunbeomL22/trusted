@@ -1,5 +1,4 @@
 use crate::definitions::Real;
-use crate::utils::myerror::MyError;
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
@@ -10,6 +9,7 @@ use std::any::Any;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
 use crate::assets::currency::Currency;
+use anyhow::Result;
 
 /// value: Real, market_datetime: OffsetDateTime, name: String
 /// The examples are flat volatility, constant continuous dividend yield
@@ -61,7 +61,7 @@ impl ValueData {
         market_datetime: OffsetDateTime, 
         currency: Currency,
         name: String
-    ) -> Result<ValueData, MyError> {
+    ) -> Result<ValueData> {
         Ok(ValueData {
             value,
             market_datetime,

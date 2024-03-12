@@ -1,7 +1,6 @@
 use crate::assets::currency::Currency;
 use time::{OffsetDateTime, macros::datetime};
 use crate::enums::Compounding;
-use crate::parameters::zero_curve_code::ZeroCurveCode;
 use crate::evaluation_date::EvaluationDate;
 use crate::data::{vector_data::VectorData, observable::Observable};
 use crate::definitions::{Real, Time};
@@ -16,8 +15,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use ndarray::{Array1, array};
-use crate::utils::myerror::{MyError, VectorDisplay};
-use anyhow::{Result, Context};
+use anyhow::{Result, Context, anyhow};
 use crate::utils::string_arithmetic::add_period;
 
 #[derive(Clone, Debug)]
@@ -33,6 +31,7 @@ enum ZeroCurveInterpolator {
 pub struct ZeroCurve {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     rate_interpolator: ZeroCurveInterpolator,
+    interpolated_rates: Array1<Real>,
     discount_times: Array1<Time>,
     discount_factors: Array1<Real>,
     discount_interpolator: LinearInterpolator1D,
@@ -63,28 +62,24 @@ impl ZeroCurve {
         data: &VectorData,
         name: String,
         code: String,
-    ) -> Result<ZeroCurve, MyError> {
+    ) -> Result<ZeroCurve> {
         let rate_times = data.get_times_clone();
         let zero_rates = data.get_value_clone();
         let time_calculator =  NullCalendar::default();
         
         if rate_times.len() != zero_rates.len() {
-            let error = MyError::MismatchedLengthError { 
-                file: file!().to_string(),
-                line: line!(),
-                left: VectorDisplay::REAL(rate_times.to_vec()),
-                right: VectorDisplay::REAL(zero_rates.to_vec()),
-                other_info: format!("name = {} data = {:?}", name, data),
-            };
+            let error = anyhow!(
+                "input data length mismatch\n\
+                name = {}\n\
+                data = {:?}\n\
+                zero_rates = {:?}\n\
+                rate_times = {:?}", 
+                name, data, zero_rates, rate_times);
             return Err(error)
         }
         
         if zero_rates.len() < 1 {
-            let error = MyError::EmptyVectorError {
-                file: file!().to_string(),
-                line: line!(),
-                other_info: format!("name = {} zero_rates = {:?} data = {:?}", name, zero_rates, data),
-            };
+            let error = anyhow!("name = {} zero_rates = {:?} data = {:?}", name, zero_rates, data);
             return Err(error)
         }
 
@@ -141,6 +136,7 @@ impl ZeroCurve {
         let res = ZeroCurve {
             evaluation_date: evaluation_date.clone(),
             rate_interpolator,
+            interpolated_rates,
             discount_times,
             discount_factors,
             discount_interpolator,
@@ -151,7 +147,94 @@ impl ZeroCurve {
         Ok(res)
     }
 
-    pub fn dummy_curve() -> Result<ZeroCurve, MyError> {
+    /// For self.interpolated_rates in the time_interval (date1 < date <= date2)
+    /// bump self.interpolated_rates by bump_val
+    /// then reset 
+    /// self.rate_interpolator, self.discount_factors, and self.discount_interpolator
+    pub fn bump_date_interval(
+        &mut self, 
+        date1: Option<&OffsetDateTime>, 
+        date2: Option<&OffsetDateTime>,
+        bump_val: Real
+    ) -> Result<()> {
+        let dt = &self.evaluation_date.borrow().get_date_clone();
+
+        let t1 = match date1 {
+            Some(d) => self.time_calculator.get_time_difference(dt, d),
+            None => -99999999.0
+        };
+
+        let t2 = match date2 {
+            Some(d) => self.time_calculator.get_time_difference(dt, d),
+            None => 99999999.0
+        };
+
+        self.bump_time_interval(Some(t1), Some(t2), bump_val)
+    }
+
+    /// For self.interpolated_rates in the time_interval (t1 < t <= t2)
+    /// bump self.interpolated_rates by bump_val
+    /// then reset 
+    /// self.rate_interpolator, self.discount_factors, and self.discount_interpolator
+    pub fn bump_time_interval(
+        &mut self, 
+        time1: Option<Time>, 
+        time2: Option<Time>,
+        bump_val: Real
+    ) -> Result<()> {
+        let t1 = match time1 {
+            Some(t) => t,
+            None => -99999999.0
+        };
+        let t2 = match time2 {
+            Some(t) => t,
+            None => 99999999.0
+        };
+        //sanity check
+        if self.interpolated_rates.len() != self.discount_times.len() {
+            return Err(anyhow!(
+                "self.interpolated_rates = {:?} but\nself.discount_times = {:?}",
+                self.interpolated_rates, self.discount_times
+            ));
+        }
+
+        if t1 > t2 {
+            return Err(anyhow!("t1 = {} > t2 = {} in ZeroCurve::bump_time_interval", t1, t2));
+        }
+        // sanity check is done
+
+        // bump rates
+        let mask = self.discount_times.mapv(
+            |x| if (x > t1) & (x <= t2) {1.0} else {0.0});
+
+        self.interpolated_rates = &self.interpolated_rates + mask * bump_val;
+        // reset self.rate_interpolator
+        if self.interpolated_rates.len() == 1 {
+            self.rate_interpolator = ZeroCurveInterpolator::Constant(
+                ConstantInterpolator1D::new(self.interpolated_rates[0])
+            );
+        } else {
+            self.rate_interpolator = ZeroCurveInterpolator::Linear(
+                LinearInterpolator1D::new(
+                    self.discount_times.clone(),
+                    self.interpolated_rates.clone(), 
+                    ExtraPolationType::Flat, 
+                    true)
+            );
+        }
+        // reset self.discount_factors
+        self.discount_factors = (&self.interpolated_rates * &self.discount_times).mapv(|x| (-x).exp());
+        // reset self.discount_interpolator
+        self.discount_interpolator = LinearInterpolator1D::new(
+            self.discount_times.clone(), 
+            self.discount_factors.clone(), 
+            ExtraPolationType::None, 
+            false
+        );
+        Ok(())
+    }
+
+    pub fn dummy_curve() -> Result<ZeroCurve> {
         let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
         let evaluation_date = Rc::new(RefCell::new(dt));
         let data = VectorData::new(
@@ -186,23 +269,20 @@ impl ZeroCurve {
         dates.iter().map(|date| self.get_discount_factor_at_date(date)).collect()
     }
 
-    pub fn get_discount_factor_between_times(&self, t1: Time, t2: Time) -> Result<Real, MyError> {
+    pub fn get_discount_factor_between_times(&self, t1: Time, t2: Time) -> Result<Real> {
         match t1 <= t2 {
             true => Ok(self.get_discount_factor(t2) / self.get_discount_factor(t1)),
             false => {
-                let error = MyError::MisorderedTimeError {
-                    file: file!().to_string(),
-                    line: line!(),
-                    t1,
-                    t2,
-                    other_info: format!("name = {}", self.name),
-                };
+                let error = anyhow!(
+                    "{} > {} in ZeroCurve::get_discount_factor_between_times. name = {}", 
+                    t1, t2, self.name
+                );
                 Err(error)
             }
         }
     }
 
-    pub fn get_forward_rate_between_times(&self, t1: Time, t2: Time, compounding: Compounding) -> Result<Real, MyError> {
+    pub fn get_forward_rate_between_times(&self, t1: Time, t2: Time, compounding: Compounding) -> Result<Real> {
         match t1 <= t2 {
             true => {
                 let tau = t2 - t1;
@@ -226,13 +306,7 @@ impl ZeroCurve {
                 }
             }
             false => {
-                let error = MyError::MisorderedTimeError {
-                    file: file!().to_string(),
-                    line: line!(),
-                    t1,
-                    t2,
-                    other_info: format!("name = {}", self.name),
-                };
+                let error = anyhow!("{} > {} in ZeroCurve::get_forward_rate_between_times", t1, t2);
                 Err(error)
             }
         }
@@ -243,15 +317,9 @@ impl ZeroCurve {
         date1: &OffsetDateTime, 
         date2: &OffsetDateTime, 
         compounding: Compounding
-    ) -> Result<Real, MyError> {
+    ) -> Result<Real> {
         if date1 > date2 {
-            let error = MyError::MisorderedTimeError {
-                file: file!().to_string(),
-                line: line!(),
-                t1: self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date1),
-                t2: self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date2),
-                other_info: format!("name = {}", self.name),
-            };
+            let error = anyhow!("{:?} > {:?} in ZeroCurve::get_forward_rate_between_dates", date1, date2);
             return Err(error)
         }
 
@@ -260,14 +328,14 @@ impl ZeroCurve {
         return self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
-    pub fn get_short_rate_from_time(&self, time: Time) -> Result<Real, MyError> {
+    pub fn get_short_rate_from_time(&self, time: Time) -> Result<Real> {
         match self.get_forward_rate_between_times(time, time + 0.002737, Compounding::Simple) {
             Ok(rate) => Ok(rate),
             Err(e) => Err(e)
         }
     }
 
-    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Result<Vec<Real>, MyError> {
+    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Result<Vec<Real>> {
         let mut res = vec![0.0; times.len()];
         for i in 0..times.len() {
             res[i] = match self.get_short_rate_from_time(times[i]) {
@@ -278,7 +346,7 @@ impl ZeroCurve {
         }
         Ok(res)
     }
-    pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Result<Real, MyError> {
+    pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Result<Real> {
         let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date);
         self.get_short_rate_from_time(time)
     }
@@ -318,28 +386,25 @@ impl Parameter for ZeroCurve {
         "ZeroCurve"
     }
 
-    fn update(&mut self, data: &dyn Observable) -> Result<(), MyError> {
+    fn update(&mut self, data: &dyn Observable) -> Result<()> {
         let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
         let rate_times = data.get_times_clone();
         let zero_rates = data.get_value_clone();
 
         if zero_rates.len() != rate_times.len() {
-            let error = MyError::MismatchedLengthError {
-                file: file!().to_string(),
-                line: line!(),
-                left: VectorDisplay::REAL(rate_times.to_vec()),
-                right: VectorDisplay::REAL(zero_rates.to_vec()),
-                other_info: format!("name = {} data = {:?}", self.name, data),
-            };
+            let error = anyhow!(
+                "update filed by input data length mismatch\n\
+                name = {}\n\
+                data = {:?}\n\
+                zero_rates = {:?}\n\
+                rate_times = {:?}", 
+                self.name, data, zero_rates, rate_times);
+            
             return Err(error)
         }
 
         if zero_rates.len() < 1 {
-            let error = MyError::EmptyVectorError {
-                file: file!().to_string(),
-                line: line!(),
-                other_info: format!("name = {} zero_rates = {:?} data = {:?}", self.name, zero_rates, data),
-            };
+            let error = anyhow!("name = {} zero_rates = {:?} data = {:?}", self.name, zero_rates, data);
             return Err(error)
         }
 
