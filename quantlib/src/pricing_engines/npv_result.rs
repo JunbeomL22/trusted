@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
@@ -13,15 +13,27 @@ use std::ops::{Add, Sub, Mul, Div};
 pub struct NpvResult {
     npv: Real,
     coupon_amounts: HashMap<u32, (OffsetDateTime, Real)>,
-    coupon_paymeent_probability: HashMap<u32, (OffsetDateTime, Real)>,
+    coupon_payment_probability: HashMap<u32, (OffsetDateTime, Real)>,
 }
 
 impl NpvResult {
-    pub fn new(npv: Real) -> NpvResult {
+    pub fn new_from_npv(npv: Real) -> NpvResult {
         NpvResult {
             npv,
             coupon_amounts: HashMap::new(),
-            coupon_paymeent_probability: HashMap::new(),
+            coupon_payment_probability: HashMap::new(),
+        }
+    }
+
+    pub fn new(
+        npv: Real,
+        coupon_amounts: HashMap<u32, (OffsetDateTime, Real)>,
+        coupon_payment_probability: HashMap<u32, (OffsetDateTime, Real)>,
+    ) -> NpvResult {
+        NpvResult {
+            npv,
+            coupon_amounts,
+            coupon_payment_probability,
         }
     }
 
@@ -48,7 +60,7 @@ impl Default for NpvResult {
         NpvResult {
             npv: 0.0,
             coupon_amounts: HashMap::new(),
-            coupon_paymeent_probability: HashMap::new(),
+            coupon_payment_probability: HashMap::new(),
         }
     }
 }

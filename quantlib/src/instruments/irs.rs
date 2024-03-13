@@ -1,5 +1,5 @@
 use crate::assets::currency::Currency;
-use crate::definitions::Real;
+use crate::definitions::{Integer, Real};
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use crate::parameters::rate_index::RateIndex;
@@ -7,18 +7,20 @@ use crate::instruments::schedule::{self, Schedule};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::time::jointcalendar::JointCalendar;
 use crate::instrument::InstrumentTriat;
+use anyhow::{Result, Context, anyhow};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct IRS {
     fixed_legs: Schedule,
     floating_legs: Schedule,
-    //
-    currency: Currency,
-    unit_notional: Real,
-    issue_date: OffsetDateTime,
-    maturity: OffsetDateTime,
     fixed_rate: Real,
     rate_index: RateIndex,
+    currency: Currency,
+    unit_notional: Real,
+    //
+    issue_date: OffsetDateTime,
+    effective_date: OffsetDateTime,
+    maturity: OffsetDateTime,
     //
     fixed_daycounter: DayCountConvention,
     floating_daycounter: DayCountConvention,
@@ -29,7 +31,9 @@ pub struct IRS {
     fixed_frequency: PaymentFrequency,
     floating_frequency: PaymentFrequency,
     //
-    //calendar: Calendar,
+    fixing_days: Integer,
+    payment_days: Integer,
+    //
     name: String,
     code: String,
 }
@@ -38,106 +42,124 @@ impl IRS {
     pub fn new(
         fixed_legs: Schedule,
         floating_legs: Schedule,
-        currency: Currency,
-        unit_notional: Real,
-        issue_date: OffsetDateTime,
-        maturity: OffsetDateTime,
         fixed_rate: Real,
         rate_index: RateIndex,
+        currency: Currency,
+        unit_notional: Real,
+        //
+        issue_date: OffsetDateTime,
+        effective_date: OffsetDateTime,
+        maturity: OffsetDateTime,
+        //
         fixed_daycounter: DayCountConvention,
         floating_daycounter: DayCountConvention,
+        //
         fixed_busi_convention: BusinessDayConvention,
         floating_busi_convention: BusinessDayConvention,
+        //
         fixed_frequency: PaymentFrequency,
         floating_frequency: PaymentFrequency,
-        //calendar: Calendar,
+        //
+        fixing_days: Integer,
+        payment_days: Integer,
+        //
         name: String,
         code: String,
     ) -> IRS {
         IRS {
             fixed_legs,
             floating_legs,
+            fixed_rate,
+            rate_index,
             currency,
             unit_notional,
             issue_date,
+            effective_date,
             maturity,
-            fixed_rate,
-            rate_index,
             fixed_daycounter,
             floating_daycounter,
             fixed_busi_convention,
             floating_busi_convention,
             fixed_frequency,
             floating_frequency,
-            //calendar,
+            fixing_days,
+            payment_days,
             name,
             code,
         }
     }
-
     /// construct IRS using PaymentFrequency, BusinessDayConvention, DayCountConvention
     /// without fixed/floating - legs given directly
     pub fn new_from_conventions(
         currency: Currency,
         unit_notional: Real,
         issue_date: OffsetDateTime,
+        effective_date: OffsetDateTime,
         maturity: OffsetDateTime,
+        //
+        fixed_first_coupon_date: Option<OffsetDateTime>,
         fixed_rate: Real,
         rate_index: RateIndex,
         fixed_daycounter: DayCountConvention,
         fixed_busi_convention: BusinessDayConvention,
         fixed_frequency: PaymentFrequency,
-        fixing_days: i64,
-        payment_days: i64,
+        fixing_days: Integer,
+        payment_days: Integer,
         calendar: JointCalendar,
         name: String,
         code: String,
-    ) -> IRS {
+    ) -> Result<IRS> {
         let floating_daycounter = rate_index.get_daycounter().clone();
         let floating_busi_convention = rate_index.get_business_day_convention().clone();
         let floating_frequency = rate_index.get_frequency().clone();
 
         let fixed_legs = schedule::build_schedule(
-            &issue_date,
+            &effective_date,
             None,
             &maturity,
             &calendar,
             &fixed_busi_convention,
             &fixed_frequency,
-            fixing_days,
-            payment_days,
-        ).expect("Failed to build fixed legs");
+            fixing_days as i64,
+            payment_days as i64,
+        ).with_context(
+            || anyhow!("Failed to build fixed legs in IRS: {}({})", &name, &code)
+        )?;
 
         let floating_legs = schedule::build_schedule(
-            &issue_date,
-            None,
+            &effective_date,
+            fixed_first_coupon_date.as_ref(),
             &maturity,      
             &calendar,
             &floating_busi_convention,
             &floating_frequency,
-            fixing_days,
-            payment_days,
-        ).expect("Failed to build floating legs");
+            fixing_days as i64,
+            payment_days as i64,
+        ).with_context(
+            || anyhow!("Failed to build floating legs in IRS: {}({})", &name, &code)
+        )?;
 
-        IRS {
+        Ok(IRS {
             fixed_legs,
             floating_legs,
+            fixed_rate,
+            rate_index,
             currency,
             unit_notional,
             issue_date,
+            effective_date,
             maturity,
-            fixed_rate,
-            rate_index,
             fixed_daycounter,
             floating_daycounter,
             fixed_busi_convention,
             floating_busi_convention,
             fixed_frequency,
             floating_frequency,
-            //calendar,
+            fixing_days,
+            payment_days,
             name,
             code,
-        }
+        })
     }
 }
 

@@ -5,7 +5,7 @@ use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments};
 use crate::pricing_engines::calculation_result::CalculationResult;
-use crate::definitions::{Real, DELTA_PNL_UNIT, RHO_PNL_UNIT, DIV_PNL_UNIT};
+use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
 use crate::assets::stock::Stock;
 use crate::data::vector_data::VectorData;
 use crate::data::value_data::ValueData;
@@ -17,7 +17,7 @@ use crate::time::calendars::nullcalendar::NullCalendar;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use anyhow::{Result, Context, anyhow};
+use anyhow::{Result, Context, anyhow, bail};
 use time::{OffsetDateTime, Duration};
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::util::format_duration;
@@ -204,6 +204,66 @@ impl Engine {
             all_und_codes.join(" / "),
         );
 
+        let dt = self.evaluation_date.borrow().get_date_clone();
+        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(None, &dt);
+
+        if !insts_over_maturity.is_empty() {
+            let mut inst_codes = Vec::<String>::new();
+            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
+            for inst in insts_over_maturity {
+                inst_codes.push(inst.as_trait().get_code().clone());
+                let mat = inst.as_trait().get_maturity();
+                match mat {
+                    Some(m) => inst_mat.push(Some(m.clone())),
+                    None => inst_mat.push(None),
+                }
+            }
+
+            let display = inst_codes.iter().zip(inst_mat.iter())
+                .map(|(code, mat)| {
+                    match mat {
+                        Some(m) => format!("{}: {:}", code, m),
+                        None => format!("{}: None", code),
+                    }
+                }).collect::<Vec<String>>().join("\n");
+            bail!(
+                "(Engine::initialize_instruments) There are instruments with maturity within the evaluation date\n\
+                evaluation date: {:?}\n\
+                {}\n",
+                dt, display
+            );
+        }
+
+        let insts_with_very_short_maturity = self.instruments.instruments_with_maturity_upto(None, &(dt + Duration::hours(6)));
+        if !insts_with_very_short_maturity.is_empty() {
+            let mut inst_codes = Vec::<String>::new();
+            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
+            for inst in insts_with_very_short_maturity {
+                inst_codes.push(inst.as_trait().get_code().clone());
+                let mat = inst.as_trait().get_maturity();
+                match mat {
+                    Some(m) => inst_mat.push(Some(m.clone())),
+                    None => inst_mat.push(None),
+                }
+            }
+
+            let display = inst_codes.iter().zip(inst_mat.iter())
+                .map(|(code, mat)| {
+                    match mat {
+                        Some(m) => format!("{}: {:}", code, m),
+                        None => format!("{}: None", code),
+                    }
+                }).collect::<Vec<String>>().join("\n");
+            
+            println!(
+                "\n(Engine::initialize_instruments) There are instruments with a very short maturity (within 6 hours) \n\
+                Note that these products may produce numerical errors.
+                <LIST>\n{}\n{}\n",
+                display,
+                self.err_tag
+            );
+        }
+
         self.instruments_in_action = self.instruments
             .get_instruments_clone();
     
@@ -282,48 +342,16 @@ impl Engine {
     }
 
     pub fn get_npvs(&self) -> Result<HashMap<String, Real>> {
-        let dt = self.evaluation_date.borrow().get_date_clone();
-        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(
-                Some(&self.instruments_in_action), &dt);
-
-        if !insts_over_maturity.is_empty() {
-            let mut inst_codes = Vec::<String>::new();
-            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
-            for inst in insts_over_maturity {
-                inst_codes.push(inst.as_trait().get_code().clone());
-                let mat = inst.as_trait().get_maturity();
-                match mat {
-                    Some(m) => inst_mat.push(Some(m.clone())),
-                    None => inst_mat.push(None),
-                }
-            }
-
-            let display = inst_codes.iter().zip(inst_mat.iter())
-                .map(|(code, mat)| {
-                    match mat {
-                        Some(m) => format!("{}: {:}", code, m),
-                        None => format!("{}: None", code),
-                    }
-                }).collect::<Vec<String>>().join("\n");
-            return Err(
-                anyhow!(
-                    "there are instruments with maturity over the evaluation date\n\
-                    evaluation date: {:?}\n\
-                    {}\n",
-                    dt, display
-                )
-            );
-        }
-
         let mut npvs = HashMap::new();
         for inst in &self.instruments_in_action {
             let inst_code = inst.as_trait().get_code();
             let pricer = self.pricers.get(inst_code)
-                .with_context(|| anyhow!(
-                    "failed to get pricer for {}.\n{}", inst_code, self.err_tag,
-                ))?;
+                .with_context(|| anyhow!("(Egnine::get_npvs) failed to get pricer for {}\n{}", inst_code, self.err_tag))?;
 
-            let npv = pricer.as_trait().npv(inst)?;
+            let npv = pricer
+                .as_trait()
+                .npv(inst)
+                .with_context(|| anyhow!("(Egnine::get_npvs) failed to get npv for {}\n{}", inst_code, self.err_tag))?;
     
             npvs.insert(inst_code.clone(), npv);
         }
@@ -380,10 +408,17 @@ impl Engine {
         for inst in &self.instruments_in_action {
             let inst_code = inst.as_trait().get_code();
             let pricer = self.pricers.get(inst_code)
-                .ok_or_else(|| anyhow!("failed to get pricer for {}", inst_code))?;
-                
-            let fx_exposure = pricer.as_trait().fx_exposure(inst)
+                .ok_or_else(|| anyhow!("failed to get pricer for {} in getting fx-exposure", inst_code))?;
+            
+            let npv = self.calculation_results.get(inst_code)
+                .ok_or_else(|| anyhow!("failed to get npv for {} in getting fx-exposure", inst_code))?
+                .borrow()
+                .get_npv_result()
+                .ok_or_else(|| anyhow!("npv is not set for {} in getting fx-exposure", inst_code))?;
+
+            let fx_exposure = pricer.as_trait().fx_exposure(inst, npv)
                 .context("failed to get fx exposure")?;
+            
             fx_exposures.insert(inst.as_trait().get_code(), fx_exposure);
         }
         for (code, result) in self.calculation_results.iter_mut() {
@@ -483,7 +518,7 @@ impl Engine {
                     .ok_or_else(|| anyhow!("npv is not set"))?
                     .get_npv();
 
-                gamma = delta_up + delta_down - mid * 2.0;
+                gamma = delta_up - mid + delta_down - mid;
                 gamma *= DELTA_PNL_UNIT / delta_bump_ratio;
                 gamma *= 0.5 * (DELTA_PNL_UNIT / delta_bump_ratio);
 
@@ -594,12 +629,12 @@ impl Engine {
                     .get_npv();
 
 
-                let div_delta = (npv_up.clone() - npv) / bump_val * DELTA_PNL_UNIT;
+                let div_delta = (npv_up - npv) / bump_val * DIV_PNL_UNIT * unitamt;
                 self.calculation_results
                     .get_mut(inst.as_trait().get_code())
                     .ok_or_else(|| anyhow!("result is not set"))?
                     .borrow_mut()
-                    .set_single_div_delta(div_code, div_delta * unitamt);
+                    .set_single_div_delta(div_code, div_delta);
             }
             // put back the bump
             {
@@ -614,50 +649,62 @@ impl Engine {
         Ok(())
     }
 
-    pub fn set_theta(&mut self) -> Result<()> {
-        self.reset_instruments_in_action();
-        let theta_day = self.calculation_configuration.get_theta_day();
-        let up_day = self.evaluation_date.borrow().get_date_clone() + Duration::days(theta_day as i64);
+    /// Set theta for the given instruments where the evaluation date is bumped to bumped_date. 
+    /// Note that the theta result is represented per day. 
+    /// Only self.set_theta has the inputs, given_instruments and bumped_dates. 
+    /// This is for handling instruments whose maturity is within the evaluation_date + theta_day.
+    pub fn set_theta_for_given_instruments(
+        &mut self, 
+        given_instruments: Vec<Rc<Instrument>>,
+        bumped_date: OffsetDateTime,
+    ) -> Result<()> {
+        // 
+        self.instruments_in_action = given_instruments;
+        let time_calculator = NullCalendar::default();
+        let original_evaluation_date = self.evaluation_date.borrow().get_date_clone();
+        let time_diff = time_calculator.get_time_difference(&original_evaluation_date, &bumped_date);
 
         let mut cash_sum: Real;
         let npvs = self.get_npvs()
             .context("failed to get npvs")?;
 
-        let theta_day_str = format!("{}D", theta_day);
-        let period_str = theta_day_str.as_str();
-
         // limit the scope that the attribute is mutably borrowed
-        { *self.evaluation_date.borrow_mut() += period_str; }
+        
+        { self.evaluation_date.borrow_mut().set_date(bumped_date.clone()); }
 
         let npvs_theta = self.get_npvs()
             .context("failed to get npvs")?;
 
-        for (code, result) in self.calculation_results.iter_mut() {
+        for inst in self.instruments_in_action.iter() {
+            let inst_code = inst.as_trait().get_code();
+            let result = self.calculation_results
+                .get(inst_code)
+                .context("result is not set")?;
+
             let unitamt = result.borrow().get_instrument_info()
                 .context("instrument_info is not set")?
                 .get_unit_notional();
 
-            let npv = npvs.get(code)
+            let npv = npvs.get(inst_code)
                 .context("npv is not set")?;
 
-            let npv_theta = npvs_theta.get(code)
+            let npv_theta = npvs_theta.get(inst_code)
                 .context("npv_theta is not set")?;
 
             // deduct the cashflow inbetween
-            cash_sum = result.borrow().get_cashflow_inbetween().as_ref()
+            cash_sum = result.borrow().get_cashflow_inbetween()
                 .context("cashflow_inbetween is not set")?
                 .iter()
-                .filter(|(date, _)| date <= &&up_day)
+                .filter(|(date, _)| date <= &&bumped_date)
                 .map(|(_, cash)| cash)
                 .sum();
                 
 
-            let theta = (npv_theta.clone() - npv - cash_sum) / (theta_day as Real) * unitamt;
+            let theta = (npv_theta.clone() - npv - cash_sum) * unitamt / time_diff / 365.0 * THETA_PNL_UNIT;
             result.borrow_mut().set_theta(theta);
         }
-
         // put back
-        { *self.evaluation_date.borrow_mut() -= theta_day_str.as_str(); }
+        { self.evaluation_date.borrow_mut().set_date(original_evaluation_date); }
         Ok(())
     }
 
@@ -668,11 +715,13 @@ impl Engine {
         let calc_tenors = self.calculation_configuration.get_rho_structure_tenors();
         let tenor_length = calc_tenors.len();
         let time_calculator = NullCalendar::default(); 
-        let calc_times = calc_tenors.iter()
-            .map(|tenor| time_calculator.get_time_difference(
-                &eval_dt, 
-                &add_period(&eval_dt, tenor.as_str())
-            )).collect::<Vec<_>>();
+        let calc_dates = calc_tenors.iter()
+            .map(|tenor| add_period(&eval_dt, tenor.as_str()))
+            .collect::<Vec<_>>();
+        let mut calc_times =  Vec::<Time>::new();
+        for date in calc_dates.iter() {
+            calc_times.push(time_calculator.get_time_difference(&eval_dt, date));
+        }
 
         // instrument code (String) -> npv (Real)
         let mut npvs_up: HashMap::<String, Real>;
@@ -727,6 +776,16 @@ impl Engine {
                         .borrow_mut()
                         .bump_time_interval(bump_start, bump_end, -bump_val)?;
                 }
+
+                // if there is no instrument over the calc_tenors, we do not need to calculate the next bump
+                let inst_over_bump_end = self.instruments
+                    .instruments_with_maturity_over(
+                        Some(&self.instruments_in_action), 
+                        &calc_dates[i]);
+                if inst_over_bump_end.is_empty() {
+                    break;
+                }
+
             }
 
             for (inst_code, rho_structure) in single_rho_structure.iter() {
@@ -809,6 +868,15 @@ impl Engine {
                         ))?.borrow_mut()
                         .bump_date_interval(bump_start, bump_end, -bump_val)?;
                 }
+
+                // if there is no instrument over the calc_tenors, we do not need to calculate the next bump
+                let inst_over_bump_end = self.instruments
+                    .instruments_with_maturity_over(
+                        Some(&self.instruments_in_action), 
+                        &calc_dates[i]);
+                if inst_over_bump_end.is_empty() {
+                    break;
+                }
             }
             for (inst_code, div_structure) in single_div_structure.iter() {
                 self.calculation_results.get_mut(inst_code)
@@ -825,7 +893,7 @@ impl Engine {
         let start_time = std::time::Instant::now();
 
         if self.instruments_in_action.len() < 1 {    
-            println!("no instruments to calculate in engine-{}\n", self.engine_id);
+            println!("* no instruments to calculate in engine-{}\n", self.engine_id);
         }
 
         if self.calculation_configuration.get_npv_calculation() {
@@ -834,7 +902,7 @@ impl Engine {
             self.set_cashflow_inbetween()?;
 
             println!(
-                "npv calculation is done (engine id: {}, time = {} whole time elapsed: {})"
+                "* npv calculation is done (engine id: {}, time = {} whole time elapsed: {})"
                 , self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
@@ -845,7 +913,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_fx_exposures()?;
             println!(
-                "fx exposure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* fx exposure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
@@ -856,7 +924,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_delta_gamma()?;
             println!(
-                "delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
@@ -865,9 +933,45 @@ impl Engine {
 
         if self.calculation_configuration.get_theta_calculation() {
             timer = std::time::Instant::now();
-            self.set_theta()?;
+            // we separate instruments by 
+            // 1) instruments whose maturity is within the evaluation_date + theta_day
+            // 2) instruments whose maturity is not within the evaluation_date + theta_day
+            let bumped_day = self.evaluation_date.borrow().get_date_clone() 
+                + Duration::days(self.calculation_configuration.get_theta_day() as i64);
+                
+            let insts_upto_bumped_day = self.instruments
+                .instruments_with_maturity_upto(None, &bumped_day);
+
+            let insts_over_bumped_day = self.instruments
+                .instruments_with_maturity_over(None, &bumped_day);
+
+            if !insts_upto_bumped_day.is_empty() {
+                let shortest_maturity = self.instruments.get_shortest_maturity(Some(&insts_upto_bumped_day)).unwrap();
+                println!(
+                    "{}:{}\n\
+                    (Engine::calculate -> theta calculation)\n\
+                    There are instruments whose maturity is within the evaluation_date + theta_day (= {:?}) \n\
+                    {}",
+                    file!(), line!(), &bumped_day, self.err_tag
+                );
+                // print the instruments' name and maturity
+                for inst in insts_upto_bumped_day.iter() {
+                    println!("{}: {}", inst.as_trait().get_name(), inst.as_trait().get_maturity().unwrap());
+                }
+                println!(
+                    "For the theta calculation for the above instruments, \n\
+                    the evaluation date is bumped to {:?} which is the shortest maturity of the above instruments. \n\
+                    Note that the theta calculation period may be too small to get accurate theta.\n", 
+                    &shortest_maturity
+                );
+                self.set_theta_for_given_instruments(insts_upto_bumped_day, shortest_maturity)?;
+            }
+
+            if !insts_over_bumped_day.is_empty() {
+                self.set_theta_for_given_instruments(insts_over_bumped_day, bumped_day)?;
+            }
             println!(
-                "theta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* theta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
@@ -878,7 +982,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_rho()?;
             println!(
-                "rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64())
@@ -889,7 +993,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_rho_structure()?;
             println!(
-                "rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64())
@@ -900,7 +1004,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_div_delta()?;
             println!(
-                "div_delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* div_delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
@@ -911,7 +1015,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.set_div_structure()?;
             println!(
-                "div_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* div_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),

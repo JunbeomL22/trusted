@@ -111,17 +111,17 @@ impl DiscreteRatioDividend {
 
         let deduction_interpolator;
         if incremental_deduction_ratio.len() == 0 {
-            deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)); 
+            deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)?); 
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
-            let _interp = StepwiseInterpolator1D::new(
+            let interp = StepwiseInterpolator1D::new(
                 Array1::from_vec(date_integers_for_interpolator_vec),
                 incremental_deduction_ratio,
                 true,
                 Some(1.0),
                 right_extrapolation_value,
-            );
-            deduction_interpolator = DividendInterpolator::Stepwise(_interp);
+            )?;
+            deduction_interpolator = DividendInterpolator::Stepwise(interp);
         }
     
         let res = DiscreteRatioDividend {
@@ -138,7 +138,7 @@ impl DiscreteRatioDividend {
         Ok(res)
     }
 
-    pub fn get_deduction_ratio(&self, date: &OffsetDateTime) -> Real {
+    pub fn get_deduction_ratio(&self, date: &OffsetDateTime) -> Result<Real> {
         let date_int = to_yyyymmdd_int(date);
         let ratio = match self.deduction_interpolator {
             DividendInterpolator::Constant(ref interp) => interp.interpolate(date_int),
@@ -147,13 +147,14 @@ impl DiscreteRatioDividend {
         ratio
     }
 
-    pub fn get_vectorized_deduction_ratio_for_sorted_datetime(&self, dates: &Vec<OffsetDateTime>) -> Array1<Real> {
+    pub fn get_vectorized_deduction_ratio_for_sorted_datetime(&self, dates: &Vec<OffsetDateTime>) -> Result<Array1<Real>> {
         let length = dates.len();
         let mut result = Array1::zeros(length);
         for i in 0..length {
-            result[i] = self.get_deduction_ratio(&dates[i]);
+            result[i] = self.get_deduction_ratio(&dates[i])?;
         }
-        result
+        
+        Ok(result)
     }
 
     pub fn get_evaluation_date_clone(&self) -> Rc<RefCell<EvaluationDate>> {
@@ -213,8 +214,8 @@ impl DiscreteRatioDividend {
 
         // update self.deduction_interpolator
 
-        let deduction_interpolator = match incremental_deduction_ratio.len() {
-            0 => DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)),
+        self.deduction_interpolator = match incremental_deduction_ratio.len() {
+            0 => DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)?),
             _ => {
                 let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
                 let interp = StepwiseInterpolator1D::new(
@@ -223,7 +224,7 @@ impl DiscreteRatioDividend {
                     true,
                     Some(1.0),
                     right_extrapolation_value,
-                );
+                )?;
                 DividendInterpolator::Stepwise(interp)
             }
         };
@@ -280,7 +281,7 @@ impl Parameter for DiscreteRatioDividend {
         }
 
         if incremental_deduction_ratio.len() == 0 {
-            self.deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)); 
+            self.deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)?); 
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
             let deduction_interpolator = StepwiseInterpolator1D::new(
@@ -289,7 +290,7 @@ impl Parameter for DiscreteRatioDividend {
                 true,
                 Some(1.0),
                 right_extrapolation_value,
-            );
+            )?;
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
         
@@ -328,7 +329,7 @@ impl Parameter for DiscreteRatioDividend {
         }
 
         if incremental_deduction_ratio.len() == 0 {
-            self.deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)); 
+            self.deduction_interpolator = DividendInterpolator::Constant(ConstantInterpolator1D::new(1.0)?); 
         } else {
             let right_extrapolation_value = Some(incremental_deduction_ratio[incremental_deduction_ratio.len() - 1]);
             let deduction_interpolator = StepwiseInterpolator1D::new(
@@ -337,7 +338,7 @@ impl Parameter for DiscreteRatioDividend {
                 true,
                 Some(1.0),
                 right_extrapolation_value,
-            );
+            )?;
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
         Ok(())

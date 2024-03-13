@@ -7,7 +7,8 @@ use crate::definitions::Real;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use std::rc::Rc;
 use std::cell::RefCell;
-use anyhow::Result;
+use anyhow::{Result, anyhow, Context};
+
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend
 #[derive(Debug, Clone)]
@@ -76,11 +77,11 @@ impl Stock {
     }
 
     /// If the dividend is None, this returns 1.0
-    pub fn get_dividend_deduction_ratio(&self, datetime: &OffsetDateTime) -> Real {
+    pub fn get_dividend_deduction_ratio(&self, datetime: &OffsetDateTime) -> Result<Real> {
         if let Some(dividend) = &self.dividend {
             dividend.borrow().get_deduction_ratio(datetime)
         } else {
-            1.0
+            Ok(1.0)
         }
     }
 }

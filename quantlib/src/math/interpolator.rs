@@ -24,15 +24,15 @@ impl Display for ExtraPolationType
 }
 pub trait InterpolatorReal1D
 {
-    fn interpolate(&self, x: Real) -> Real; 
+    fn interpolate(&self, x: Real) -> Result<Real>; 
     /// Interpolate for a vector of x. This function does not check if x is sorted.
-    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<Real>) -> Array1<Real>;
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<Real>) -> Result<Array1<Real>>;
 }
 
 /// I have chosen the domain to be Integer type to avoid floating point comparison error.]
 pub trait Interpolator1D<T>
-where T: Num + Copy + PartialOrd
+where T: Num + Copy + PartialOrd + Display + std::fmt::Debug
 {
-    fn interpolate(&self, x: T) -> Real;
-    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Array1<Real>;
+    fn interpolate(&self, x: T) -> Result<Real>;
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Result<Array1<Real>>;
 }

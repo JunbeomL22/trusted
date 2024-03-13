@@ -87,7 +87,7 @@ impl ZeroCurve {
 
         if zero_rates.len() == 1 {
             rate_interpolator = ZeroCurveInterpolator::Constant(
-                ConstantInterpolator1D::new(zero_rates[0])
+                ConstantInterpolator1D::new(zero_rates[0])?
             );
         } else {
             rate_interpolator = ZeroCurveInterpolator::Linear(
@@ -95,7 +95,7 @@ impl ZeroCurve {
                     rate_times.clone(),
                     zero_rates.clone(), 
                     ExtraPolationType::Flat, 
-                    true)
+                    true)?
             );
         }
         
@@ -120,8 +120,8 @@ impl ZeroCurve {
         .collect();
 
         let interpolated_rates = match &rate_interpolator {
-            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&discount_times), 
-            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&discount_times),
+            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&discount_times)?, 
+            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&discount_times)?,
         };
         
         let discount_factors: Array1<Real> = (&interpolated_rates * &discount_times).mapv(|x| (-x).exp());
@@ -131,7 +131,7 @@ impl ZeroCurve {
             discount_factors.clone(), 
             ExtraPolationType::None, 
             false
-        );
+        )?;
         
         let res = ZeroCurve {
             evaluation_date: evaluation_date.clone(),
@@ -211,7 +211,7 @@ impl ZeroCurve {
         // reset self.rate_interpolator
         if self.interpolated_rates.len() == 1 {
             self.rate_interpolator = ZeroCurveInterpolator::Constant(
-                ConstantInterpolator1D::new(self.interpolated_rates[0])
+                ConstantInterpolator1D::new(self.interpolated_rates[0])?
             );
         } else {
             self.rate_interpolator = ZeroCurveInterpolator::Linear(
@@ -219,7 +219,7 @@ impl ZeroCurve {
                     self.discount_times.clone(),
                     self.interpolated_rates.clone(), 
                     ExtraPolationType::Flat, 
-                    true)
+                    true)?
             );
         }
         // reset self.discount_factors
@@ -230,7 +230,7 @@ impl ZeroCurve {
             self.discount_factors.clone(), 
             ExtraPolationType::None, 
             false
-        );
+        )?;
         Ok(())
     }
 
@@ -253,25 +253,36 @@ impl ZeroCurve {
             String::from("Dummy"),
         )
     }
-    pub fn get_discount_factor(&self, time: Time) -> Real {
+    pub fn get_discount_factor(&self, time: Time) -> Result<Real> {
         self.discount_interpolator.interpolate(time)
     }
 
-    pub fn get_vectorized_discount_factor_for_sorted_time(&self, times: &Array1<Time>) -> Array1<Real> {
+    pub fn get_vectorized_discount_factor_for_sorted_time(&self, times: &Array1<Time>) -> Result<Array1<Real>> {
         self.discount_interpolator.vectorized_interpolate_for_sorted_ndarray(times)
     }
 
-    pub fn get_discount_factor_at_date(&self, date: &OffsetDateTime) -> Real {
-        self.get_discount_factor(self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date))
+    pub fn get_discount_factor_at_date(&self, date: &OffsetDateTime) -> Result<Real> {
+        let t = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date);
+        if t < 0.0 {
+            Err(anyhow!(
+                "(ZeroCurve::get_discount_factor_at_date)\n\
+                date = {:?} > evaluation date = {:?}.\n\
+                An action on negative time is not defined.\n\
+                If it is intentional, check {}:{}",
+                date, self.evaluation_date.borrow().get_date_clone(),
+                file!(), line!()))
+        } else {
+            self.get_discount_factor(t)
+        }
     }
 
-    pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &Vec<OffsetDateTime>) -> Vec<Real> {
+    pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &Vec<OffsetDateTime>) -> Result<Vec<Real>> {
         dates.iter().map(|date| self.get_discount_factor_at_date(date)).collect()
     }
 
     pub fn get_discount_factor_between_times(&self, t1: Time, t2: Time) -> Result<Real> {
         match t1 <= t2 {
-            true => Ok(self.get_discount_factor(t2) / self.get_discount_factor(t1)),
+            true => Ok(self.get_discount_factor(t2)? / self.get_discount_factor(t1)?),
             false => {
                 let error = anyhow!(
                     "{} > {} in ZeroCurve::get_discount_factor_between_times. name = {}", 
@@ -410,7 +421,7 @@ impl Parameter for ZeroCurve {
 
         if zero_rates.len() == 1 {
             self.rate_interpolator = ZeroCurveInterpolator::Constant(
-                ConstantInterpolator1D::new(zero_rates[0])
+                ConstantInterpolator1D::new(zero_rates[0])?
             );
         } else {
             self.rate_interpolator = ZeroCurveInterpolator::Linear(
@@ -419,18 +430,18 @@ impl Parameter for ZeroCurve {
                     zero_rates.clone(), 
                     ExtraPolationType::Flat, 
                     true
-                )
+                )?
             );
         }
 
         let interpolated_rates = match &self.rate_interpolator {
-            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&self.discount_times), 
-            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&self.discount_times),
+            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&self.discount_times)?, 
+            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&self.discount_times)?,
         };
         
         self.discount_factors = interpolated_rates.iter().zip(&self.discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
         
-        self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone(), ExtraPolationType::None, false);
+        self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone(), ExtraPolationType::None, false)?;
 
         Ok(())
     }

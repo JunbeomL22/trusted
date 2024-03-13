@@ -298,6 +298,10 @@ impl Instruments {
         }
     }
 
+    /// This method return the shortest maturity of the given instruments
+    /// If instruments is None, it gives the shortest maturity of all instruments
+    /// None maturity is taken as an infinite maturity
+    /// Therefore, if there is no maturity, it is considered as the longest maturity
     pub fn get_shortest_maturity(
         &self,
         instruments: Option<&Vec<Rc<Instrument>>>,
@@ -336,23 +340,58 @@ impl Instruments {
         }
     }
 
+    /// This method return the longest maturity of the given instruments
+    /// If instruments is None, it gives the longest maturity of all instruments
+    /// None maturity is taken as an infinite maturity
+    /// Therefore, if there is no maturity, it is considered as the longest maturity
     pub fn get_longest_maturity(
         &self,
-        instruments: &Vec<Rc<Instrument>>,
+        instruments: Option<&Vec<Rc<Instrument>>>,
     ) -> Option<OffsetDateTime> {
-        let mut longest_maturity: Option<OffsetDateTime> = None;
-        for instrument in instruments.iter() {
-            if let Some(m) = instrument.as_trait().get_maturity() {
-                if let Some(lm) = longest_maturity {
-                    if *m > lm {
-                        longest_maturity = Some(*m);
+        match instruments {
+            Some(instruments) => {
+                let mut longest_maturity: Option<OffsetDateTime> = None;
+                for instrument in instruments.iter() {
+                    match instrument.as_trait().get_maturity() {
+                        Some(m) => {
+                            if let Some(sm) = longest_maturity {
+                                if *m > sm {
+                                    longest_maturity = Some(*m);
+                                }
+                            } else {
+                                longest_maturity = Some(*m);
+                            }
+                        },
+                        None => {
+                            longest_maturity = None;
+                            break;
+                        }
                     }
-                } else {
-                    longest_maturity = Some(*m);
                 }
+                longest_maturity
+            },
+            None => {
+                let mut longest_maturity: Option<OffsetDateTime> = None;
+                for instrument in self.instruments.iter() {
+                    match instrument.as_trait().get_maturity() {
+                        Some(m) => {
+                            if let Some(sm) = longest_maturity {
+                                if *m > sm {
+                                    longest_maturity = Some(*m);
+                                }
+                            } else {
+                                longest_maturity = Some(*m);
+                            }
+                        },
+                        None => {
+                            longest_maturity = None;
+                            break;
+                        }
+                    }
+                }
+                longest_maturity
             }
         }
-        longest_maturity
     }
 
     pub fn get_all_inst_code_clone(

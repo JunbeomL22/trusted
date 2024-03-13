@@ -14,8 +14,9 @@ use quantlib::pricing_engines::engine::Engine;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
 use serde_json;
+use anyhow::{Result, Context};
 
-fn main() {
+fn main() -> Result<()> {
     let spot: Real = 350.0;
     // evaluation date = 2021-01-01 00:00:00 +09:00
     let dt = datetime!(2021-01-01 00:00:00 +09:00);
@@ -114,14 +115,14 @@ fn main() {
 
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
-    //.with_delta_calculation(true)
-    //.with_gamma_calculation(true)
-    //.with_rho_calculation(true)
-    //.with_div_delta_calculation(true)
-    //.with_rho_structure_calculation(true)
+    .with_delta_calculation(true)
+    .with_gamma_calculation(true)
+    .with_rho_calculation(true)
+    .with_div_delta_calculation(true)
+    .with_rho_structure_calculation(true)
     .with_theta_calculation(true)
-    //.with_div_structure_calculation(true)
-    .with_theta_day(70);
+    .with_div_structure_calculation(true)
+    .with_theta_day(72);
     
     // make a match parameter
     let mut collateral_curve_map = HashMap::new();
@@ -154,26 +155,32 @@ fn main() {
         match_parameter,
     ).expect("Failed to create an engine");
 
-    engine.initialize(inst_vec).expect("Failed to initialize");
-    engine.calculate().expect("Failed to calculate");
+    engine.initialize(inst_vec)?;
+    engine.calculate().context("Failed to calculate")?;
 
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
 
     // display div-delta of RefCell<CalculationResult>
     
+    println!("");
     println!("result1 delta: {:?}", result1.borrow().get_delta());
     println!("result1 gamma: {:?}", result1.borrow().get_gamma());
     println!("result1 theta: {:?}", result1.borrow().get_theta());
     println!("result1 rho: {:?}", result1.borrow().get_rho());
     println!("result1 rho-structure: {:?}", result1.borrow().get_rho_structure());
+    println!("result1 div-delta: {:?}", result1.borrow().get_div_delta());
+    println!("result1 div-structure: {:?}", result1.borrow().get_div_structure());
+    println!("");
     println!("result2 delta: {:?}", result2.borrow().get_delta());
     println!("result2 gamma: {:?}", result2.borrow().get_gamma());
     println!("result2 theta: {:?}", result2.borrow().get_theta());
     println!("result2 rho: {:?}", result2.borrow().get_rho());
     println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
-    println!("\n\n{:?}", result1);
-    
+    println!("result2 div-delta: {:?}", result2.borrow().get_div_delta());
+    println!("result2 div-structure: {:?}", result2.borrow().get_div_structure());
+    //println!("\n\n{:?}", result1);
     // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
     // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
+    Ok(())
 }

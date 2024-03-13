@@ -51,6 +51,11 @@ impl EvaluationDate {
     pub fn get_date_clone(&self) -> OffsetDateTime {
         self.date.clone()
     }
+
+    pub fn set_date(&mut self, date: OffsetDateTime) {
+        self.date = date;
+        self.notify_observers();
+    }
 }
 
 impl AddAssign<&str> for EvaluationDate {
@@ -90,7 +95,6 @@ mod tests {
     use time::macros::datetime;
     use std::rc::Rc;
     use std::cell::RefCell;
-    use crate::utils::myerror::MyError;
 
     struct TestParameter {
         pub value: i32,

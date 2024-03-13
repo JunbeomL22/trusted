@@ -4,7 +4,7 @@ use crate::assets::stock::Stock;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
 //
@@ -35,48 +35,60 @@ impl StockFuturesPricer {
 
     pub fn fair_forward(
         &self, 
-        datetime: &OffsetDateTime) -> Real 
-    {
+        datetime: &OffsetDateTime
+    ) -> Result<Real> {
         let stock_price = self.stock.borrow().get_last_price();
-        let collateral_discount = self.collateral_curve.borrow().get_discount_factor_at_date(datetime);
-        let borrowing_discount = self.borrowing_curve.borrow().get_discount_factor_at_date(datetime);
-        let dividend_deduction_ratio = self.stock.borrow().get_dividend_deduction_ratio(datetime);
+        let collateral_discount = self.collateral_curve
+            .borrow()
+            .get_discount_factor_at_date(datetime)
+            .context("(StockFuturesPricer::fair_forward) failed to get collateral discount factor at date")?;
+        let borrowing_discount = self.borrowing_curve
+            .borrow()
+            .get_discount_factor_at_date(datetime)
+            .context("(StockFuturesPricer::fair_forward) failed to get borrowing discount factor at date")?;
+        let dividend_deduction_ratio = self.stock
+            .borrow()
+            .get_dividend_deduction_ratio(datetime)
+            .context("(StockFuturesPricer::fair_forward) failed to get dividend deduction ratio at date")?;
 
         let fwd: Real = stock_price * borrowing_discount / collateral_discount * dividend_deduction_ratio;
-        fwd
+        Ok(fwd)
     }
 
 }
 
 impl PricerTrait for StockFuturesPricer {
-    fn npv_result(&self, instruments: &Instrument) -> Result<NpvResult> {
-        let res = match instruments {
+    fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
+        let res = match instrument {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
-                let res = NpvResult::new(self.fair_forward(&maturity));
+                let res = NpvResult::new_from_npv(self.fair_forward(&maturity)?);
                 Ok(res)
             }
-            _ => Err(anyhow!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string()))
+            _ => Err(anyhow!(
+                "StockFuturesPricer::npv: not supported instrument type: {}", 
+                instrument.as_trait().get_type_name().to_string()))
         };
         res
     }
 
-    fn npv(&self, instruments: &Instrument) -> Result<Real> {
-        let res = match instruments {
+    fn npv(&self, instrument: &Instrument) -> Result<Real> {
+        let res = match instrument {
             Instrument::StockFutures(stock_futures) => {
                 let maturity = stock_futures.get_maturity().unwrap();
-                let res = self.fair_forward(&maturity);
-                Ok(res)
+                self.fair_forward(&maturity)
             }
-            _ => Err(anyhow!("StockFuturesPricer::npv: not supported instrument type: {}", instruments.as_trait().get_type_name().to_string()))
+            _ => Err(anyhow!(
+                "StockFuturesPricer::npv: not supported instrument type: {}", 
+                instrument.as_trait().get_type_name().to_string()))
         };
         res
     }
 
-    fn fx_exposure(&self, instruments: &Instrument) -> Result<Real> {
-        match instruments {
+    fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<Real> {
+        match instrument {
             Instrument::StockFutures(stock_futures) => {
-                let npv = self.npv(instruments)
+                let npv = self.npv(instrument)
                     .expect("StockFuturesPricer::fx_exposure: failed to calculate npv.");
                         
                 let average_trade_price = stock_futures.get_average_trade_price();
@@ -85,7 +97,7 @@ impl PricerTrait for StockFuturesPricer {
             },
             _ => Err(anyhow!(
                 "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
-                instruments.as_trait().get_type_name().to_string()
+                instrument.as_trait().get_type_name().to_string()
             ))
         }
     }

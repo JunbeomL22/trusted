@@ -56,6 +56,15 @@ impl Default for Schedule {
     }
 }
 
+impl<'a> IntoIterator for &'a Schedule {
+    type Item = &'a BaseSchedule;
+    type IntoIter = std::slice::Iter<'a, BaseSchedule>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
+    }
+}
+
 impl Schedule {
     pub fn new(data: Vec<BaseSchedule>) -> Self {
         Schedule { data }
