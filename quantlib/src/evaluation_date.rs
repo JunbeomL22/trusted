@@ -95,6 +95,7 @@ mod tests {
     use time::macros::datetime;
     use std::rc::Rc;
     use std::cell::RefCell;
+    use anyhow::Result;
 
     struct TestParameter {
         pub value: i32,
@@ -102,7 +103,7 @@ mod tests {
     }
 
     impl Parameter for TestParameter {
-        fn update_evaluation_date(&mut self, _data: &EvaluationDate) -> Result<(), MyError> {
+        fn update_evaluation_date(&mut self, _data: &EvaluationDate) -> Result<()> {
             self.value += 1;
             Ok(())
         }

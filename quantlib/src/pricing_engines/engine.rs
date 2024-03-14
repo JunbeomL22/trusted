@@ -414,7 +414,8 @@ impl Engine {
                 .ok_or_else(|| anyhow!("failed to get npv for {} in getting fx-exposure", inst_code))?
                 .borrow()
                 .get_npv_result()
-                .ok_or_else(|| anyhow!("npv is not set for {} in getting fx-exposure", inst_code))?;
+                .ok_or_else(|| anyhow!("npv is not set for {} in getting fx-exposure", inst_code))?
+                .get_npv();
 
             let fx_exposure = pricer.as_trait().fx_exposure(inst, npv)
                 .context("failed to get fx exposure")?;
@@ -681,7 +682,9 @@ impl Engine {
                 .get(inst_code)
                 .context("result is not set")?;
 
-            let unitamt = result.borrow().get_instrument_info()
+            let unitamt = result
+                .borrow()
+                .get_instrument_info()
                 .context("instrument_info is not set")?
                 .get_unit_notional();
 
@@ -695,7 +698,7 @@ impl Engine {
             cash_sum = result.borrow().get_cashflow_inbetween()
                 .context("cashflow_inbetween is not set")?
                 .iter()
-                .filter(|(date, _)| date <= &&bumped_date)
+                .filter( |(date, _)| (original_evaluation_date.date() < date.date()) && (date.date() <= bumped_date.date()))
                 .map(|(_, cash)| cash)
                 .sum();
                 

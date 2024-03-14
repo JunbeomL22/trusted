@@ -1,14 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use quantlib::pricing_engines::stock_futures_pricer::StockFuturesPricer;
     use quantlib::instruments::stock_futures::StockFutures;
-    use quantlib::instrument::{Instrument, InstrumentTriat, Instruments};
+    use quantlib::instrument::Instrument;
     use quantlib::definitions::Real;
-    use quantlib::parameters::zero_curve::ZeroCurve;
-    use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
-    use quantlib::parameters::zero_curve_code::ZeroCurveCode;
-    use quantlib::data::observable::Observable;
     use quantlib::data::vector_data::VectorData;
     use quantlib::data::value_data::ValueData;
     use quantlib::assets::currency::Currency;
@@ -16,11 +10,8 @@ mod tests {
     use ndarray::array;
     use ndarray::Array1;
     use std::rc::Rc;
-    use std::cell::RefCell;
     use quantlib::evaluation_date::EvaluationDate;
-    use quantlib::assets::stock::Stock;
     use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
-    use quantlib::pricing_engines::calculation_result::CalculationResult;
     use quantlib::pricing_engines::match_parameter::MatchParameter;
     use std::collections::HashMap;
     use quantlib::pricing_engines::engine::Engine;

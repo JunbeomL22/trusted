@@ -175,9 +175,10 @@ mod tests {
     use crate::time::calendar::{Calendar, SouthKoreaWrapper};
     use crate::parameters::rate_index::RateIndex;
     use time::Duration;
+    use anyhow::Result;
 
     #[test]
-    fn test_match_parameter() {
+    fn test_match_parameter() -> Result<()> {
         let mut collateral_curve_map: HashMap<String, String> = HashMap::new();
         let borrowing_curve_map: HashMap<String, String> = HashMap::new();
         let bond_discount_curve_map: HashMap<(
@@ -224,7 +225,9 @@ mod tests {
             Currency::KRW,
             100.0,
             datetime!(2021-01-01 00:00:00 +00:00),
+            datetime!(2021-01-01 00:00:00 +00:00),
             datetime!(2021-12-31 00:00:00 +00:00),
+            None,
             0.01,
             cd,
             DayCountConvention::Actual365Fixed,
@@ -235,7 +238,7 @@ mod tests {
             joint_calendar,
             "IRS".to_string(),
             "IRS".to_string(),
-        );
+        )?;
         
         collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
         rate_index_forward_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
@@ -289,6 +292,7 @@ mod tests {
             "IRS needs to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_name(&irs_inst)
         );
+        Ok(())
     }
 }
 

@@ -357,7 +357,7 @@ mod tests {
     use crate::assets::currency::Currency;
 
     #[test]
-    fn test_deduction_ratio() {
+    fn test_deduction_ratio() -> Result<()> {
         let evaluation_date = Rc::new(
             RefCell::new(
                 EvaluationDate::new(
@@ -434,7 +434,7 @@ mod tests {
         ];
 
         for (date, val) in test_dates.iter().zip(test_values.iter()) {
-            let ratio = dividend.borrow().get_deduction_ratio(&date);
+            let ratio = dividend.borrow().get_deduction_ratio(&date)?;
             assert!(
                 (ratio - val) < 1.0e-10,
                 "date: {:?}, val: {:?}, ratio: {}, expected: {}",
@@ -463,7 +463,7 @@ mod tests {
         ];
 
         for (date, val) in test_dates.iter().zip(test_values.iter()) {
-            let ratio = dividend.borrow().get_deduction_ratio(&date);
+            let ratio = dividend.borrow().get_deduction_ratio(&date)?;
             assert!(
                 (ratio - val) < 1.0e-10,
                 "(after bumped) date: {:?}, val: {:?}, ratio: {}, expected: {}",
@@ -493,7 +493,7 @@ mod tests {
         ];
 
         for (date, val) in test_dates.iter().zip(test_values.iter()) {
-            let ratio = dividend.borrow().get_deduction_ratio(&date);
+            let ratio = dividend.borrow().get_deduction_ratio(&date)?;
             assert!(
                 (ratio - val) < 1.0e-10,
                 "(after add 2D from evaluation_date) date: {:?}, val: {:?}, ratio: {}, expected: {}",
@@ -523,7 +523,7 @@ mod tests {
         ];
 
         for (date, val) in test_dates.iter().zip(test_values.iter()) {
-            let ratio = dividend.borrow().get_deduction_ratio(&date);
+            let ratio = dividend.borrow().get_deduction_ratio(&date)?;
             assert!(
                 (ratio - val) < 1.0e-10,
                 "(after add 2D and then subtract 2D from evaluation_date) date: {:?}, val: {:?}, ratio: {}, expected: {}",
@@ -534,6 +534,7 @@ mod tests {
             );
         }
             
+        Ok(())
     }
 }
 

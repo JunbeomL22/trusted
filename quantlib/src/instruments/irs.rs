@@ -206,9 +206,10 @@ mod tests {
         enums::RateIndexCode,
     };
     use time::{Duration, macros::datetime};
+    use anyhow::Result;
 
     #[test]
-    fn test_new_from_convention() {
+    fn test_new_from_convention() -> Result<()> {
         let currency = Currency::KRW;
         let unit_notional = 100.0;
         let issue_date = datetime!(2021-01-01 00:00:00 +09:00);
@@ -236,8 +237,10 @@ mod tests {
         let irs = IRS::new_from_conventions(
             currency,
             unit_notional,
-            issue_date,
+            issue_date.clone(),
+            issue_date.clone(),
             maturity,
+            None,
             fixed_rate,
             rate_index.clone(),
             DayCountConvention::Actual365Fixed,
@@ -248,13 +251,15 @@ mod tests {
             sk,
             "IRS".to_string(),
             "IRS".to_string(),
-        );
+        )?;
 
         println!("{:?}", irs);
         assert_eq!(currency, *irs.get_currency());
         assert_eq!(unit_notional, irs.get_unit_notional());
         assert_eq!(maturity, irs.get_maturity().unwrap().clone());
         assert_eq!(Some(&rate_index), irs.get_rate_index());
+
+        Ok(())
     }
 
 }

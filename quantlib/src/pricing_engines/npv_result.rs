@@ -12,8 +12,8 @@ use std::ops::{Add, Sub, Mul, Div};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NpvResult {
     npv: Real,
-    coupon_amounts: HashMap<u32, (OffsetDateTime, Real)>,
-    coupon_payment_probability: HashMap<u32, (OffsetDateTime, Real)>,
+    coupon_amounts: HashMap<usize, (OffsetDateTime, Real)>,
+    coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)>,
 }
 
 impl NpvResult {
@@ -27,8 +27,8 @@ impl NpvResult {
 
     pub fn new(
         npv: Real,
-        coupon_amounts: HashMap<u32, (OffsetDateTime, Real)>,
-        coupon_payment_probability: HashMap<u32, (OffsetDateTime, Real)>,
+        coupon_amounts: HashMap<usize, (OffsetDateTime, Real)>,
+        coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)>,
     ) -> NpvResult {
         NpvResult {
             npv,
@@ -44,7 +44,7 @@ impl NpvResult {
     pub fn get_expected_coupon_amount(&self) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         for (id, (datetime, amount)) in self.coupon_amounts.iter() {
-            let prob = self.coupon_paymeent_probability.get(id)
+            let prob = self.coupon_payment_probability.get(id)
                 .ok_or_else(||
                     anyhow::anyhow!("No probability found for coupon id {}", id)
             )?;

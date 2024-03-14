@@ -1,4 +1,4 @@
-use crate::instruments::schedule::Schedule;
+use crate::instruments::schedule::*;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
 use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
@@ -8,6 +8,8 @@ use crate::definitions::Real;
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
 use crate::instruments::bond::fixed_coupon_bond::FixedCouponBond;
+use time::OffsetDateTime;
+use crate::time::conventions::DayCountConvention;
 //
 use anyhow::{anyhow, Context, Result};
 use std::{rc::Rc, cell::RefCell};
@@ -30,58 +32,122 @@ impl FixedCouponBondPricer {
         }
     }
 
-    pub fn make_cashflow(
+    /// generate coupon-cashflow after evaluation date for bonds
+    /// if include_evaluation_date is true, it will include the evaluation date
+    pub fn get_coupon_cashflow(
         &self, 
-        schedule: Schedule,
-        daycounter: DayCountConvention,
+        schedule: &Schedule,
+        daycounter: &DayCountConvention,
         coupon_rate: Real,
         include_evaluation_date: bool,
-    ) -> HashMap<OffsetDateTime, Real> {
+    ) -> Result<HashMap<OffsetDateTime, Real>> {
+        let mut res = HashMap::new();
+        let eval_dt = self.evaluation_date.borrow().get_date_clone();
+        let mut coupon_amount: Real;
+
+        for base_schedule in schedule.iter() {
+            let start_date = base_schedule.get_calc_start_date();
+            let end_date = base_schedule.get_calc_end_date();
+            let payment_date = base_schedule.get_payment_date();
+            let amount = base_schedule.get_amount();
+
+            if (include_evaluation_date && payment_date.date() >= eval_dt.date()) ||
+                (!include_evaluation_date && payment_date.date() > eval_dt.date()) {
+                match amount {
+                    Some(amount) => {res.insert(payment_date.clone(), amount);},
+                    None => {
+                        coupon_amount = coupon_rate * self.time_calculator.year_fraction(
+                            start_date, 
+                            end_date,
+                            daycounter
+                        )?;
+    
+                        res.insert(payment_date.clone(), coupon_amount);
+                    }
+                }
+            }
+        }
+        Ok(res)
     }
 }
 
 impl PricerTrait for FixedCouponBondPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        match instrument {
-            Instrument::FixedCouponBond(bond) => {
-                let mut npv = 0.0;
-                let discount_curve = self.discount_curve.borrow();
-                let evaluation_date = self.evaluation_date.borrow();
-                let calendar = self.time_calculator.as_trait();
-                let start_date = evaluation_date.get_date();
-                let end_date = bond.get_maturity_date();
-                let coupon_dates = bond.get_coupon_dates();
-                let coupon_amounts = bond.get_coupon_amounts();
-                let face_value = bond.get_face_value();
-                let coupon_rate = bond.get_coupon_rate();
-                let frequency = bond.get_coupon_frequency();
-                let day_count = bond.get_day_count();
-                let coupon_payment_probability = bond.get_coupon_payment_probability();
-                let discount_factor = discount_curve.get_discount_factor(start_date, end_date, calendar)?;
-                for (i, coupon_date) in coupon_dates.iter().enumerate() {
-                    let coupon_amount = coupon_amounts[i];
-                    let coupon_payment_date = coupon_date;
-                    let coupon_payment_probability = coupon_payment_probability[i];
-                    let coupon_discount_factor = discount_curve.get_discount_factor(start_date, *coupon_payment_date, calendar)?;
-                    npv += coupon_amount * coupon_discount_factor * coupon_payment_probability;
-                }
-                npv += face_value * discount_factor;
-                Ok(npv)
-            },
-            _ => {
+        let bond = instrument.as_fixed_coupon_bond()?;
+        let mut res: Real = 0.0;
+        let mut disc_factor: Real;
+        let schedule = bond.get_schedule();
+        let daycounter = bond.get_daycounter();
+        let coupon_rate = bond.get_coupon_rate();
+        let cashflow = self.get_coupon_cashflow(
+            schedule, 
+            daycounter, 
+            coupon_rate, 
+            false
+        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
-                Err(anyhow!(
-                    "Invalid instrument type for FixedCouponBondPricer\n\
-                    name: {}, code = {}",
-                    instrument.as_trait().get_name(),
-                    instrument.as_trait().get_code(),
-                ))
-            },
+        for (payment_date, amount) in cashflow.iter() {
+            disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
+            res += amount * disc_factor;
+        }
+
+        if !bond.is_coupon_strip() {
+            let maturity = instrument.as_trait().get_maturity().unwrap();
+
+            disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
+            res += disc_factor;
+        }
+
+        Ok(res)
+
     }
 
-    fn fx_exposure(&self, instrument: &Instrument, npv: Real) -> Result<Real> {
+    fn fx_exposure(&self, _instrument: &Instrument, npv: Real) -> Result<Real> {
         Ok(npv)
     }
+
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
-        
+        let bond = instrument.as_fixed_coupon_bond()?;
+        let eval_dt = self.evaluation_date.borrow().get_date_clone();
+        let mut npv: Real = 0.0;
+        let mut coupon_amounts: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
+        let mut coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
+
+        let mut disc_factor: Real;
+        let schedule = bond.get_schedule();
+        let daycounter = bond.get_daycounter();
+        let coupon_rate = bond.get_coupon_rate();
+        let cashflow = self.get_coupon_cashflow(
+            schedule, 
+            daycounter, 
+            coupon_rate, 
+            true
+        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
+
+        for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
+            if eval_dt.date() < payment_date.date() {
+                disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
+                npv += amount * disc_factor;    
+            }
+
+            if eval_dt.date() <= payment_date.date() {
+                coupon_amounts.insert(i as usize, (payment_date.clone(), *amount));
+                coupon_payment_probability.insert(i, (payment_date.clone(), 1.0));
+            }
+        }
+
+        if !bond.is_coupon_strip() {
+            let maturity = instrument.as_trait().get_maturity().unwrap();
+            disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
+            npv += disc_factor;
+        }
+
+        let res = NpvResult::new(
+            npv,
+            coupon_amounts,
+            coupon_payment_probability,
+        );
+
+        Ok(res)
+    }       
 }

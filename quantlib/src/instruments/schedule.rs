@@ -7,18 +7,26 @@ use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::utils::string_arithmetic::add_period;
 use std::ops::Index;
 use crate::definitions::COUPON_PAYMENT_TIME;
+use crate::definitions::Real;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct BaseSchedule {   
     fixing_date: OffsetDateTime,
     calc_start_date: OffsetDateTime,
     calc_end_date: OffsetDateTime,
     payment_date: OffsetDateTime,
+    amount: Option<Real>, // if None, pricer calculate the coupon amount
 }
 
 impl BaseSchedule {
-    pub fn new(fixing_date: OffsetDateTime, calc_start_date: OffsetDateTime, calc_end_date: OffsetDateTime, payment_date: OffsetDateTime) -> Self {
-        BaseSchedule { fixing_date, calc_start_date, calc_end_date, payment_date }
+    pub fn new(
+        fixing_date: OffsetDateTime, 
+        calc_start_date: OffsetDateTime, 
+        calc_end_date: OffsetDateTime, 
+        payment_date: OffsetDateTime,
+        amount: Option<Real>
+    ) -> Self {
+        BaseSchedule { fixing_date, calc_start_date, calc_end_date, payment_date, amount }
     }
 
     pub fn get_fixing_date(&self) -> &OffsetDateTime {
@@ -36,9 +44,14 @@ impl BaseSchedule {
     pub fn get_payment_date(&self) -> &OffsetDateTime {
         &self.payment_date
     }
+
+    pub fn get_amount(&self) -> Option<Real> {
+        self.amount
+    }
+
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct Schedule {
     data: Vec<BaseSchedule>,
 }
@@ -50,6 +63,8 @@ impl Index<usize> for Schedule {
         &self.data[index]
     }
 }
+
+
 impl Default for Schedule {
     fn default() -> Self {
         Schedule { data: vec![] }
@@ -72,6 +87,10 @@ impl Schedule {
 
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<BaseSchedule> {
+        self.data.iter()
     }
 }
 
@@ -125,6 +144,7 @@ pub fn build_schedule(
         calc_start_date,
         calc_end_date,
         payment_date,
+        amount: None,
     };
 
     data.push(base_schedule);
@@ -149,6 +169,7 @@ pub fn build_schedule(
             calc_start_date,
             calc_end_date,
             payment_date,
+            amount: None,
         };
 
         data.push(base_schedule);
@@ -197,12 +218,14 @@ mod tests {
                     calc_start_date: datetime!(2023-08-03 16:00:00.0 +09:00:00),
                     calc_end_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
                     payment_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
+                    amount: None,
                 },
                 BaseSchedule {
                     fixing_date: datetime!(2023-11-02 16:00:00.0 +09:00:00),
                     calc_start_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
                     calc_end_date: datetime!(2024-02-05 16:00:00.0 +09:00:00),
                     payment_date: datetime!(2024-02-05 16:00:00.0 +09:00:00),
+                    amount: None,
                 },
             ],
         };

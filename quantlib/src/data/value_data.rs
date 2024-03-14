@@ -143,7 +143,8 @@ mod tests {
     use std::rc::Rc;
     use std::cell::RefCell; 
     use crate::assets::currency::Currency;
-    use crate::utils::myerror::MyError;
+    use anyhow::Result;
+
     struct MockParameter {
         value: Real,
         name: String,
@@ -155,7 +156,7 @@ mod tests {
         }
     }
     impl Parameter for MockParameter {
-        fn update(&mut self, data: &dyn Observable) -> Result<(), MyError> {
+        fn update(&mut self, data: &dyn Observable) -> Result<()> {
             self.value += 1.0;
             Ok(())
         }

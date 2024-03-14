@@ -31,7 +31,7 @@ pub struct FixedCouponBond {
     daycounter: DayCountConvention,
     busi_convention: BusinessDayConvention,
     frequency: PaymentFrequency, 
-    payment_days: Integer,
+    payment_days: i64,
     //
     name: String,
     code: String,
@@ -59,7 +59,7 @@ impl FixedCouponBond {
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
         frequency: PaymentFrequency, 
-        payment_days: Integer,
+        payment_days: i64,
         //
         name: String,
         code: String,
@@ -175,6 +175,10 @@ impl FixedCouponBond {
 }
 
 impl InstrumentTriat for FixedCouponBond {
+    fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> {
+        Ok(self)
+    }
+
     fn get_type_name(&self) -> &'static str {
         "FixedCouponBond"
     }
@@ -209,5 +213,9 @@ impl InstrumentTriat for FixedCouponBond {
 
     fn get_unit_notional(&self) -> Real {
         self.unit_notional
+    }
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
     }
 }

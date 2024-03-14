@@ -15,9 +15,10 @@ mod tests {
     //use quantlib::utils::string_arithmetic::{add_period, sub_period};
     use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
     use quantlib::assets::currency::Currency;
+    use anyhow::Result;
 
     #[test]
-    fn test_shared_evaluation_date() {
+    fn test_shared_evaluation_date() -> Result<()> {
         // Create a shared EvaluationDate
         let (h, m, s) = SEOUL_OFFSET;
 
@@ -106,8 +107,8 @@ mod tests {
         let mut first_dividend_deductions = vec![0.0, 0.0];
         for i in 0..test_dates.len() {
             let date = test_dates[i];
-            first_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date);
-            first_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date);
+            first_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date)?;
+            first_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date)?;
         }
         
         // purturb the evaluation_date by three day 
@@ -123,8 +124,8 @@ mod tests {
 
         for i in 0..test_dates.len() {
             let date = test_dates[i];
-            second_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date);
-            second_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date);
+            second_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date)?;
+            second_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date)?;
         }
 
         for i in 0..test_dates.len() {
@@ -151,8 +152,8 @@ mod tests {
         let mut third_dividend_deductions = vec![0.0, 0.0];
         for i in 0..test_dates.len() {
             let date = test_dates[i];
-            third_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date);
-            third_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date);
+            third_zero_curve_values[i] = zero_curve.borrow().get_discount_factor_at_date(&date)?;
+            third_dividend_deductions[i] = dividend.borrow().get_deduction_ratio(&date)?;
         }
 
         // now the first and third should be the same
@@ -172,5 +173,7 @@ mod tests {
                 third_dividend_deductions,
             );
         }
+
+        Ok(())
     }
 }

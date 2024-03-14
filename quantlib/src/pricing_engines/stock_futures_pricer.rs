@@ -116,9 +116,11 @@ mod tests {
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
     use time::Duration;
+    use std::collections::HashMap;
+    use anyhow::Result;
 
     #[test]
-    fn test_stock_futures_engine() {
+    fn test_stock_futures_engine() -> Result<()> {
         let market_datetime = datetime!(2024-01-02 00:00:00 +09:00);
         let evaluation_date = Rc::new(
             RefCell::new(EvaluationDate::new(market_datetime.clone()))
@@ -211,7 +213,7 @@ mod tests {
 
         let instrument = Instrument::StockFutures(Box::new(futures.clone()));
         let res = pricer.npv(&instrument).expect("failed to calculate npv");
-        let fx_exposure = pricer.fx_exposure(&instrument)
+        let fx_exposure = pricer.fx_exposure(&instrument, res)
             .expect("failed to calculate fx exposure")
             /futures.get_unit_notional();
 
@@ -219,8 +221,8 @@ mod tests {
         println!();
         println!("stock futures: \n{}", serde_json::to_string(&futures).unwrap());
         println!("spot: {}", spot);
-        println!("ksd compound: {:?}", spot*(1.0/ksd_curve.borrow().get_discount_factor_at_date(futures.get_maturity().unwrap())-1.0));
-        println!("dividend deduction: {:?}", spot*(1.0-(stock.borrow().get_dividend_deduction_ratio(futures.get_maturity().unwrap()))));
+        println!("ksd compound: {:?}", spot*(1.0/ksd_curve.borrow().get_discount_factor_at_date(futures.get_maturity().unwrap())?-1.0));
+        println!("dividend deduction: {:?}", spot*(1.0-(stock.borrow().get_dividend_deduction_ratio(futures.get_maturity().unwrap()))?));
         println!("npv: {}", res);
         println!("average trade price: {}", average_trade_price);
         println!("fx exposure: {}", fx_exposure);
@@ -243,7 +245,7 @@ mod tests {
             expected_fx_exposure,
             fx_exposure
         );
-
+        Ok(())
     }
 }
 

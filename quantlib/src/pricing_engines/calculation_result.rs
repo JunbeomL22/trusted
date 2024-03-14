@@ -279,7 +279,7 @@ mod tests {
         let instrument = InstrumentInfo::default();
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
-        result.set_npv(NpvResult::new(100.0));
+        result.set_npv(NpvResult::new_from_npv(100.0));
 
         assert_eq!(result.get_npv_result().unwrap().get_npv(), 100.0);
         
@@ -320,7 +320,7 @@ mod tests {
         
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
-        result.set_npv(NpvResult::new(100.0));
+        result.set_npv(NpvResult::new_from_npv(100.0));
         
         result.set_single_delta(&"KOSPI200".to_string(), 0.1);
 

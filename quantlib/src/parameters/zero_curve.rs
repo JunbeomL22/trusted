@@ -451,6 +451,7 @@ impl Parameter for ZeroCurve {
 mod tests {
     use crate::evaluation_date::EvaluationDate;
     use super::*;
+    use anyhow::Ok;
     use time::macros::datetime;
     use std::rc::Rc;
     use crate::time::calendars::nullcalendar::NullCalendar;
@@ -458,7 +459,7 @@ mod tests {
     use crate::utils::string_arithmetic::add_period;
 
     #[test]
-    fn test_zero_curve() {
+    fn test_zero_curve() -> Result<()> {
         let eval_dt = datetime!(2021-01-01 00:00:00 UTC);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_dt)));
 
@@ -510,12 +511,14 @@ mod tests {
         let allow_error = 1e-6;
         for i in 0..times.len() {
             assert!(
-                (zero_curve.borrow().get_discount_factor(times[i]) - expected_discount_factors[i]) < allow_error,
+                (zero_curve.borrow().get_discount_factor(times[i])? - expected_discount_factors[i]) < allow_error,
                 "i: {}, zero_curve.get_discount_factor(times[i]): {}, expected_discount_factors[i]: {}",
                 i,
-                zero_curve.borrow().get_discount_factor(times[i]),
+                zero_curve.borrow().get_discount_factor(times[i])?,
                 expected_discount_factors[i]
                 );
         }
+
+        Ok(())
     }
 }

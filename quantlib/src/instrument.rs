@@ -6,6 +6,8 @@ use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 use std::rc::Rc;
+use crate::instruments::bond::fixed_coupon_bond::FixedCouponBond;
+use anyhow::{Result, anyhow};
 
 pub trait InstrumentTriat{
     // The following methods are mandatory for all instruments
@@ -37,6 +39,11 @@ pub trait InstrumentTriat{
     //
     fn get_rate_index(&self) -> Option<&RateIndex> { None }
     // 
+    fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> { 
+        Err(anyhow!(
+            "not supported instrument type on as_fixed_coupon_bond" 
+        ))
+    }
 }
 
 pub enum Instrument {
@@ -57,6 +64,23 @@ impl Instrument {
             Instrument::BondFutures(instrument) => &**instrument,
             Instrument::IRS(instrument) => &**instrument,
             Instrument::KTBF(instrument) => &**instrument,
+        }
+    }
+
+    pub fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> {
+        match self {
+            Instrument::FixedCouponBond(instrument) => {
+                instrument.as_fixed_coupon_bond()
+            },
+            _  => {
+                Err(anyhow!(
+                    "Instrument::as_fixed_coupon_bond: not supported instrument type: {}\n\
+                    name: {}, code = {}", 
+                    self.as_trait().get_type_name(),
+                    self.as_trait().get_name(),
+                    self.as_trait().get_code(),
+                ))
+            }
         }
     }
 }
@@ -433,9 +457,10 @@ mod tests {
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
     use crate::time::calendar::{SouthKoreaWrapper, Calendar};
     use crate::time::jointcalendar::JointCalendar;
+    use anyhow::Result;
     
     #[test]
-    fn test_instruments() {
+    fn test_instruments() -> Result<()> {
         let fut1 = StockFutures::new(
             340.0,
             datetime!(2022-01-01 09:00:00 UTC),
@@ -484,6 +509,8 @@ mod tests {
             10_000_000_000.0,
             datetime!(2022-12-01 09:00:00 UTC),
             datetime!(2022-12-01 09:00:00 UTC),
+            datetime!(2022-12-01 09:00:00 UTC),
+            None,
             0.03,
             rate_index,
             DayCountConvention::Actual365Fixed,
@@ -494,7 +521,7 @@ mod tests {
             joint_calendar,
             "KRW IRS".to_string(),
             "KRW IRS code".to_string(),
-        );
+        )?;
 
         // make Instrument using fut1, fut2, irs
         let instruments = Instruments::new(vec![
@@ -575,9 +602,12 @@ mod tests {
 
         // test instruments_with_maturity_upto
         let instruments_with_maturity_upto = instruments.instruments_with_maturity_upto(
+            None,
             &datetime!(2022-12-01 09:00:00 UTC)
         );
         assert_eq!(fut1.get_code(), instruments_with_maturity_upto[0].as_trait().get_code());
         assert_eq!(irs.get_code(), instruments_with_maturity_upto[1].as_trait().get_code());
+
+        Ok(())
     }
 }
