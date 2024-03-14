@@ -6,7 +6,8 @@ use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 use std::rc::Rc;
-use crate::instruments::bond::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::ktbf::KTBF;
 use anyhow::{Result, anyhow};
 
 pub trait InstrumentTriat{
@@ -42,6 +43,12 @@ pub trait InstrumentTriat{
     fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> { 
         Err(anyhow!(
             "not supported instrument type on as_fixed_coupon_bond" 
+        ))
+    }
+
+    fn as_ktbf(&self) -> Result<&KTBF> { 
+        Err(anyhow!(
+            "not supported instrument type on as_ktbf"
         ))
     }
 }

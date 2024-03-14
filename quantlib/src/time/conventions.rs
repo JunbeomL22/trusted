@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use crate::definitions::{Integer, Real};
 use serde::{Deserialize, Serialize};
 // all takend from https://github.com/avhz/RustQuant/blob/main/src/time/conventions.rs
 
@@ -33,6 +34,12 @@ pub enum PaymentFrequency {
     TriAnnually = 3,
     SemiAnnually = 2,
     Annually = 1
+}
+
+impl PaymentFrequency {
+    pub fn as_real(&self) -> Real {
+        *self as Integer as Real
+    }
 }
 
 impl ToString for PaymentFrequency {

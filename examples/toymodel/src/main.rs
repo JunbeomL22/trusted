@@ -24,24 +24,24 @@ use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, Pay
 use anyhow::{Result, Context};
 
 fn main() -> Result<()> {
-    let theta_day = 30;
+    let theta_day = 1;
     let spot: Real = 350.0;
     // evaluation date = 2021-01-01 00:00:00 +09:00
-    let dt = datetime!(2021-01-01 00:00:00 +09:00);
+    let dt = datetime!(2024-03-13 16:30:00 +09:00);
     let evaluation_date = EvaluationDate::new(dt);
 
     // make zero curve named "KSD". First make vector data whose values are 0.03 and 0.04
     // then make it as hash map whose key is "KSD"
-    let value = array![0.03, 0.04];
+    let value = array![0.0333, 0.0333];
     let dates = vec![
-        datetime!(2021-06-01 00:00:00 +09:00),
-        datetime!(2022-01-01 00:00:00 +09:00),
+        datetime!(2025-03-13 00:00:00 +09:00),
+        datetime!(2026-03-13 00:00:00 +09:00),
     ];
     let times = None;
     let market_datetime = datetime!(2021-01-01 00:00:00 +09:00);
     let zero_curve1 = "KSD".to_string();
     let zero_curve_data1 = VectorData::new(
-        value.clone(), 
+        &value - 0.0005, 
         Some(dates.clone()), 
         times.clone(), 
         market_datetime, 
@@ -51,8 +51,8 @@ fn main() -> Result<()> {
 
     let zero_curve2 = "KRWGOV".to_string();
     let zero_curve_data2 = VectorData::new(
-        value + 0.0005, 
-        Some(dates), 
+        value,
+        Some(dates.clone()), 
         times, 
         market_datetime, 
         Currency::KRW,
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
     // the borrowing fee curve which amounts to 0.005
     let borrowing_curve_data = VectorData::new(
         array![0.005, 0.005],
-        Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-12-01 00:00:00 +09:00)]),
+        Some(dates.clone()),
         None,
         market_datetime.clone(),
         Currency::KRW,
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     // make a vector data for dividend ratio
     let dividend_data = VectorData::new(
         Array1::from(vec![3.0, 3.0]),
-        Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-06-01 00:00:00 +09:00)]),
+        Some(vec![datetime!(2024-06-01 00:00:00 +09:00), datetime!(2025-01-01 00:00:00 +09:00)]),
         None,
         market_datetime.clone(),
         Currency::KRW,
@@ -103,9 +103,9 @@ fn main() -> Result<()> {
     let stock_futures1 = StockFutures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
-        datetime!(2021-03-14 00:00:00 +09:00),
-        datetime!(2021-03-14 00:00:00 +09:00),
-        datetime!(2021-03-14 00:00:00 +09:00),
+        datetime!(2021-01-11 00:00:00 +09:00),
+        datetime!(2024-06-14 00:00:00 +09:00),
+        datetime!(2024-06-14 00:00:00 +09:00),
         250_000.0,
         Currency::KRW,
         Currency::KRW,
@@ -117,9 +117,9 @@ fn main() -> Result<()> {
     let stock_futures2 = StockFutures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
-        datetime!(2022-06-14 00:00:00 +09:00),
-        datetime!(2022-06-14 00:00:00 +09:00),
-        datetime!(2022-06-14 00:00:00 +09:00),
+        datetime!(2021-01-01 00:00:00 +09:00),
+        datetime!(2025-06-14 00:00:00 +09:00),
+        datetime!(2025-06-14 00:00:00 +09:00),
         250_000.0,
         Currency::KRW,
         Currency::KRW,
@@ -129,9 +129,9 @@ fn main() -> Result<()> {
     );
 
     let issuedate = datetime!(2020-01-01 16:30:00 +09:00);
-    let maturity = issuedate + Duration::days(365 * 4);
+    let maturity = issuedate + Duration::days(365 * 6);
     let issuer_name = "Korea Gov";
-    let bond_name = "KRW Fixed Coupon Bond";
+    let bond_name = "Virtual KTB";
     let bond_code = "KR1234567890";
     let sk = SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)};
     let calendar = JointCalendar::new(vec![Calendar::SouthKorea(sk)]);
@@ -162,11 +162,51 @@ fn main() -> Result<()> {
         bond_code.to_string(),
     )?;
 
+    let issuedate2 = datetime!(2022-12-10 16:30:00 +09:00);
+    let maturity2 = datetime!(2025-12-10 16:30:00 +09:00);
+    let issuer_name2 = "Korea Gov";
+    let bond_name2 = "국고채권 04250-2512(22-13)";
+    let bond_code2 = "KR103501GCC0";
+    let sk = SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)};
+    let calendar = JointCalendar::new(vec![Calendar::SouthKorea(sk)]);
+
+    let bond_currency2 = Currency::KRW;
+    let issuer_type2 = IssuerType::Government;
+    let credit_rating2 = CreditRating::None;
+
+    let bond2 = FixedCouponBond::new_from_conventions(
+        bond_currency2,
+        issuer_type2,
+        credit_rating2,     
+        RankType::Senior, 
+        false, 
+        0.0425, 
+        10_000.0, 
+        issuedate2.clone(), 
+        issuedate2.clone(),
+        maturity2,
+        None, 
+        DayCountConvention::ActActIsda, 
+        BusinessDayConvention::Unadjusted, 
+        PaymentFrequency::SemiAnnually, 
+        issuer_name2.to_string(), 
+        0, 
+        calendar, 
+        bond_name2.to_string(), 
+        bond_code2.to_string(),
+    )?;
+
     let inst1 = Instrument::StockFutures(Box::new(stock_futures1));
     let inst2 = Instrument::StockFutures(Box::new(stock_futures2));
     let inst3: Instrument = Instrument::FixedCouponBond(Box::new(bond));
+    let inst4: Instrument = Instrument::FixedCouponBond(Box::new(bond2));
 
-    let inst_vec = vec![Rc::new(inst1), Rc::new(inst2), Rc::new(inst3)];
+    let inst_vec = vec![
+        Rc::new(inst1), 
+        Rc::new(inst2), 
+        Rc::new(inst3),
+        Rc::new(inst4),
+        ];
 
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
@@ -220,9 +260,11 @@ fn main() -> Result<()> {
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
     let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
+    let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
     // display div-delta of RefCell<CalculationResult>
     
     println!("\n165XXX1");
+    println!("result1 value: {:?}", result1.borrow().get_value());
     println!("result1 delta: {:?}", result1.borrow().get_delta());
     println!("result1 gamma: {:?}", result1.borrow().get_gamma());
     println!("result1 theta: {:?}", result1.borrow().get_theta());
@@ -230,7 +272,9 @@ fn main() -> Result<()> {
     println!("result1 rho-structure: {:?}", result1.borrow().get_rho_structure());
     println!("result1 div-delta: {:?}", result1.borrow().get_div_delta());
     println!("result1 div-structure: {:?}", result1.borrow().get_div_structure());
+
     println!("\n165XXX2");
+    println!("result2 value: {:?}", result2.borrow().get_value());
     println!("result2 delta: {:?}", result2.borrow().get_delta());
     println!("result2 gamma: {:?}", result2.borrow().get_gamma());
     println!("result2 theta: {:?}", result2.borrow().get_theta());
@@ -238,7 +282,9 @@ fn main() -> Result<()> {
     println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
     println!("result2 div-delta: {:?}", result2.borrow().get_div_delta());
     println!("result2 div-structure: {:?}", result2.borrow().get_div_structure());
+
     println!("\nKR1234567890");
+    println!("result3 value: {:?}", result3.borrow().get_value());
     println!("result3 delta: {:?}", result3.borrow().get_delta());
     println!("result3 gamma: {:?}", result3.borrow().get_gamma());
     println!("result3 theta: {:?}", result3.borrow().get_theta());
@@ -246,6 +292,18 @@ fn main() -> Result<()> {
     println!("result3 rho-structure: {:?}", result3.borrow().get_rho_structure());
     println!("result3 div-delta: {:?}", result3.borrow().get_div_delta());
     println!("result3 div-structure: {:?}", result3.borrow().get_div_structure());
+
+    println!("\nKR103501GCC0");
+    println!("result4 value: {:?}", result4.borrow().get_value());
+    println!("result4 delta: {:?}", result4.borrow().get_delta());
+    println!("result4 gamma: {:?}", result4.borrow().get_gamma());
+    println!("result4 theta: {:?}", result4.borrow().get_theta());
+    println!("result4 rho: {:?}", result4.borrow().get_rho());
+    println!("result4 rho-structure: {:?}", result4.borrow().get_rho_structure());
+    println!("result4 div-delta: {:?}", result4.borrow().get_div_delta());
+    println!("result4 div-structure: {:?}", result4.borrow().get_div_structure());
+
+    println!("result4 cashflow: {:?}", result4.borrow().get_cashflows());
     //println!("\n\n{:?}", result1);
     // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
     // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());

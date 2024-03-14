@@ -7,7 +7,7 @@ use crate::instrument::Instrument;
 use crate::definitions::Real;
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
-use crate::instruments::bond::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
 use time::OffsetDateTime;
 use crate::time::conventions::DayCountConvention;
 //
