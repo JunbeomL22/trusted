@@ -21,7 +21,7 @@ pub struct MatchParameter {
     bond_discount_curve_map: HashMap<(
         String, 
         IssuerType, 
-        CreditRating, 
+        CreditRating,
         Currency
     ), String>,
 

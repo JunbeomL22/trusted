@@ -163,7 +163,6 @@ pub fn build_schedule(
         fixing_date = calc_start_date -  Duration::days(fixing_days);
         let payment_date = calc_end_date + Duration::days(payment_days);
 
-
         let base_schedule = BaseSchedule {
             fixing_date,
             calc_start_date,

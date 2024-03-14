@@ -19,12 +19,14 @@ pub trait PricerTrait {
 
 pub enum Pricer {
     StockFuturesPricer(Box<dyn PricerTrait>),
+    FixedCouponBondPricer(Box<dyn PricerTrait>),
 }
 
 impl Pricer {
     pub fn as_trait(&self) -> &(dyn PricerTrait) {
         match self {
             Pricer::StockFuturesPricer(pricer) => &**pricer,
+            Pricer::FixedCouponBondPricer(pricer) => &**pricer,
         }
     }
 }

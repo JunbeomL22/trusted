@@ -34,7 +34,7 @@ pub struct CalculationResult {
     rho: Option<HashMap<String, Real>>, // Curve Code -> rho
     rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
-    cashflow_inbetween: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
+    cashflows: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
 }
 
 impl Default for CalculationResult {
@@ -55,7 +55,7 @@ impl Default for CalculationResult {
             rho: None,
             rho_structure: None,
             theta_day: None,
-            cashflow_inbetween: None,
+            cashflows: None,
         }
     }
 }
@@ -79,7 +79,7 @@ impl CalculationResult {
             rho: None,
             rho_structure: None,
             theta_day: None,
-            cashflow_inbetween: None,
+            cashflows: None,
         }
     }
 
@@ -208,8 +208,8 @@ impl CalculationResult {
         self.theta = Some(theta);
     }
 
-    pub fn set_cashflow_inbetween(&mut self, cashflow_inbetween: HashMap<OffsetDateTime, Real>) {
-        self.cashflow_inbetween = Some(cashflow_inbetween);
+    pub fn set_cashflows(&mut self, cashflows: HashMap<OffsetDateTime, Real>) {
+        self.cashflows = Some(cashflows);
     }
     
     pub fn get_instrument_info(&self) -> Option<&InstrumentInfo> {
@@ -248,8 +248,8 @@ impl CalculationResult {
         self.rho_structure.as_ref()
     }
 
-    pub fn get_cashflow_inbetween(&self) -> Option<&HashMap<OffsetDateTime, Real>> {
-        self.cashflow_inbetween.as_ref()
+    pub fn get_cashflows(&self) -> Option<&HashMap<OffsetDateTime, Real>> {
+        self.cashflows.as_ref()
     }
 
     pub fn get_div_delta(&self) -> Option<&HashMap<String, Real>> {

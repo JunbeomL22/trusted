@@ -11,6 +11,7 @@ use crate::data::vector_data::VectorData;
 use crate::data::value_data::ValueData;
 use crate::pricing_engines::pricer::Pricer;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
+use crate::pricing_engines::fixed_coupon_bond_pricer::FixedCouponBondPricer;
 use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
@@ -324,10 +325,26 @@ impl Engine {
                     );
                     Pricer::StockFuturesPricer(Box::new(core))
                 },
-                _ => {
-                    return Err(
-                        anyhow!("not implemented pricer for {} {}", inst_type, inst_name)
+
+                Instrument::FixedCouponBond(_) => {
+                    let discount_curve = self.match_parameter.get_discount_curve_name(inst);
+                    let core = FixedCouponBondPricer::new(
+                        self.zero_curves.get(discount_curve)
+                        .ok_or_else(|| anyhow::anyhow!(
+                            "failed to get discount curve of {}.\nself.zero_curves does not have {}",
+                            inst_code,
+                            discount_curve,
+                        ))?.clone(),
+                        self.evaluation_date.clone(),
                     );
+                    Pricer::FixedCouponBondPricer(Box::new(core))
+                },
+
+                _ => {
+                    return Err(anyhow!(
+                        "{}:{}  pricer for {} ({}) is not implemented yet", 
+                        file!(), line!(), inst_code, inst_type
+                    ));
                 }
             };
             self.pricers.insert(inst_code.clone(), pricer);
@@ -398,7 +415,7 @@ impl Engine {
                 .with_context(|| anyhow!(
                     "failed to get expected coupon amount for {}", code
                 ))?;
-            result.borrow_mut().set_cashflow_inbetween(cashflow);
+            result.borrow_mut().set_cashflows(cashflow);
         }
         Ok(())
     }
@@ -661,6 +678,7 @@ impl Engine {
     ) -> Result<()> {
         // 
         self.instruments_in_action = given_instruments;
+        
         let time_calculator = NullCalendar::default();
         let original_evaluation_date = self.evaluation_date.borrow().get_date_clone();
         let time_diff = time_calculator.get_time_difference(&original_evaluation_date, &bumped_date);
@@ -678,6 +696,7 @@ impl Engine {
 
         for inst in self.instruments_in_action.iter() {
             let inst_code = inst.as_trait().get_code();
+            let inst_type = inst.as_trait().get_type_name();
             let result = self.calculation_results
                 .get(inst_code)
                 .context("result is not set")?;
@@ -695,15 +714,32 @@ impl Engine {
                 .context("npv_theta is not set")?;
 
             // deduct the cashflow inbetween
-            cash_sum = result.borrow().get_cashflow_inbetween()
-                .context("cashflow_inbetween is not set")?
-                .iter()
-                .filter( |(date, _)| (original_evaluation_date.date() < date.date()) && (date.date() <= bumped_date.date()))
-                .map(|(_, cash)| cash)
-                .sum();
-                
+            // the scope bound is for borrowing the result
+            {
+                let result_borrow = result.borrow();
+                let cashflows = result_borrow
+                    .get_cashflows()
+                    .ok_or_else(|| anyhow!(
+                        "cashflows is not set for {} ({})", 
+                        inst_code,
+                        inst_type,
+                    ))?;
 
-            let theta = (npv_theta.clone() - npv - cash_sum) * unitamt / time_diff / 365.0 * THETA_PNL_UNIT;
+                cash_sum = 0.0;
+                for (date, cash) in cashflows.iter() {
+                    if (original_evaluation_date.date() < date.date()) && (date.date() <= bumped_date.date()) {
+                        cash_sum += cash;
+                        println!(
+                            "# {} ({}) has a cashflow: {} at {}\n", 
+                            inst_code, 
+                            inst_type,
+                            cash, 
+                            date);
+                    }
+                }
+            }
+            
+            let theta = (npv_theta - npv + cash_sum) * unitamt / time_diff / 365.0 * THETA_PNL_UNIT;
             result.borrow_mut().set_theta(theta);
         }
         // put back

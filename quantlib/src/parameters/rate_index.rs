@@ -11,7 +11,7 @@ pub struct RateIndex {
     daycounter: DayCountConvention,
     tenor: Duration,
     currency: Currency,
-    code: RateIndexCode,
+    code: RateIndexCode, // rate tenor is determined by this code 1M, 2M, etc
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
 }
 
