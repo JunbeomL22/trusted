@@ -273,6 +273,7 @@ mod tests {
         },
     };
     use time::macros::datetime;
+    use crate::instrument::InstrumentTriat;
 
     #[test]
     fn test_calculation_result() {
@@ -301,9 +302,9 @@ mod tests {
             "KOSPI200".to_string(),
         );
 
-        let inst = Instrument::StockFutures(Box::new(stock_futures));
+        let inst = Instrument::StockFutures(stock_futures);
 
-        let fut_trait = inst.as_trait();
+        let fut_trait = inst;
         let name = fut_trait.get_name();
         let code = fut_trait.get_code();
         let type_name = fut_trait.get_type_name();

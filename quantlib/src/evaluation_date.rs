@@ -27,7 +27,7 @@ impl Observable for EvaluationDate {
     fn notify_observers(&mut self) {
         let observers = self.observers.clone();
         for observer in observers {
-            observer.borrow_mut().update_evaluation_date(self);
+            observer.borrow_mut().update_evaluation_date(self).expect("Failed to update evaluation date");
         }
     }
 

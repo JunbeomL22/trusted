@@ -1,15 +1,16 @@
 use crate::assets::currency::Currency;
-use crate::definitions::{Real, Integer};
-use crate::instrument::InstrumentTriat;
+use crate::definitions::Real;
 use crate::time::jointcalendar::JointCalendar;
+use crate::instrument::InstrumentTriat;
+use crate::time::calendars::calendar_trait::CalendarTrait;
 use serde::{Serialize, Deserialize};
-use time::OffsetDateTime;
+use time::{OffsetDateTime, Duration};
 use crate::instruments::schedule::{self, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use anyhow::{Result, Context, anyhow};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixedCouponBond {
     issuer_type: IssuerType,
     credit_rating: CreditRating,
@@ -31,7 +32,9 @@ pub struct FixedCouponBond {
     daycounter: DayCountConvention,
     busi_convention: BusinessDayConvention,
     frequency: PaymentFrequency, 
-    payment_days: i64,
+    coupon_payment_days: i64,
+    settlement_days: i64,
+    calendar: JointCalendar,
     //
     name: String,
     code: String,
@@ -59,7 +62,9 @@ impl FixedCouponBond {
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
         frequency: PaymentFrequency, 
-        payment_days: i64,
+        coupon_payment_days: i64,
+        settlement_days: i64,
+        calendar: JointCalendar,
         //
         name: String,
         code: String,
@@ -85,10 +90,12 @@ impl FixedCouponBond {
             daycounter,
             busi_convention,
             frequency,
-            payment_days,
+            coupon_payment_days,
+            settlement_days,
+            calendar,
             //
             name,
-            code,
+            code,            
         }
     }
 
@@ -110,7 +117,8 @@ impl FixedCouponBond {
         busi_convention: BusinessDayConvention,
         frequency: PaymentFrequency,
         issuer_name: String,
-        payment_days: i64,
+        coupon_payment_days: i64,
+        settlement_days: i64,
         calendar: JointCalendar,
         name: String,
         code: String,
@@ -123,7 +131,7 @@ impl FixedCouponBond {
             &busi_convention,
             &frequency,
             0,
-            payment_days,
+            coupon_payment_days,
         ).with_context(
             || anyhow!("Failed to build schedule in FixedCouponBond: {}({}))", &name, &code)
         )?;
@@ -149,7 +157,9 @@ impl FixedCouponBond {
             daycounter,
             busi_convention,
             frequency,
-            payment_days,
+            coupon_payment_days,
+            settlement_days,
+            calendar,
             //
             name,
             code,
@@ -170,6 +180,11 @@ impl FixedCouponBond {
 
     pub fn is_coupon_strip(&self) -> bool {
         self.is_coupon_strip
+    }
+
+    pub fn get_settlement_date(&self, date: OffsetDateTime) -> OffsetDateTime {
+        let dt = date + Duration::days(self.settlement_days);
+        self.calendar.adjust(&dt, &BusinessDayConvention::Following)
     }
 
 }

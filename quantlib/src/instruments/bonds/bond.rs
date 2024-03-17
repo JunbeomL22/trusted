@@ -5,7 +5,7 @@ use crate::instruments::bonds::{
 //
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Bond {
     FixedCouponBond(FixedCouponBond),
     FloatingRateNote(FloatingRateNote),

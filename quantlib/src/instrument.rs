@@ -1,5 +1,10 @@
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
+use crate::instruments::floating_rate_note::FloatingRateNote;
+use crate::instruments::stock_futures::StockFutures;
+use crate::instruments::irs::IRS;
+use crate::instruments::bond_futures::BondFutures;
+use crate::instruments::ktbf::KTBF;
 use time::OffsetDateTime;
 use std::ops::Index;
 use crate::pricing_engines::match_parameter::MatchParameter;
@@ -7,9 +12,10 @@ use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
 use std::rc::Rc;
 use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
-use crate::instruments::ktbf::KTBF;
 use anyhow::{Result, anyhow};
+use enum_dispatch::enum_dispatch;
 
+#[enum_dispatch]
 pub trait InstrumentTriat{
     // The following methods are mandatory for all instruments
     fn get_name(&self) -> &String;
@@ -53,27 +59,17 @@ pub trait InstrumentTriat{
     }
 }
 
+#[enum_dispatch(InstrumentTriat)]
 pub enum Instrument {
-    StockFutures(Box<dyn InstrumentTriat>),
-    FixedCouponBond(Box<dyn InstrumentTriat>),
-    FloatingRateNote(Box<dyn InstrumentTriat>),
-    BondFutures(Box<dyn InstrumentTriat>),
-    IRS(Box<dyn InstrumentTriat>),
-    KTBF(Box<dyn InstrumentTriat>),
+    StockFutures(StockFutures),
+    FixedCouponBond(FixedCouponBond),
+    FloatingRateNote(FloatingRateNote),
+    BondFutures(BondFutures),
+    IRS(IRS),
+    KTBF(KTBF),
 }
 
 impl Instrument {
-    pub fn as_trait(&self) -> &(dyn InstrumentTriat) {
-        match self {
-            Instrument::StockFutures(instrument) => &**instrument,
-            Instrument::FixedCouponBond(instrument) => &**instrument,
-            Instrument::FloatingRateNote(instrument) => &**instrument,
-            Instrument::BondFutures(instrument) => &**instrument,
-            Instrument::IRS(instrument) => &**instrument,
-            Instrument::KTBF(instrument) => &**instrument,
-        }
-    }
-
     pub fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> {
         match self {
             Instrument::FixedCouponBond(instrument) => {
@@ -83,9 +79,9 @@ impl Instrument {
                 Err(anyhow!(
                     "Instrument::as_fixed_coupon_bond: not supported instrument type: {}\n\
                     name: {}, code = {}", 
-                    self.as_trait().get_type_name(),
-                    self.as_trait().get_name(),
-                    self.as_trait().get_code(),
+                    self.get_type_name(),
+                    self.get_name(),
+                    self.get_code(),
                 ))
             }
         }
@@ -144,7 +140,7 @@ impl Instruments {
     pub fn get_all_underlying_codes(&self) -> Vec<&String> {
         let mut underlying_codes = Vec::<&String>::new();
         for instrument in self.instruments.iter() {
-            let names = instrument.as_trait().get_underlying_codes();
+            let names = instrument.get_underlying_codes();
             for name in names.iter() {
                 if !underlying_codes.contains(&name) {
                     underlying_codes.push(name);
@@ -157,7 +153,7 @@ impl Instruments {
     pub fn get_all_type_names(&self) -> Vec<&'static str> {
         let mut type_names = Vec::<&'static str>::new();
         for instrument in self.instruments.iter() {
-            let name = instrument.as_trait().get_type_name();
+            let name = instrument.get_type_name();
             if !type_names.contains(&name) {
                 type_names.push(name);
             }
@@ -168,7 +164,7 @@ impl Instruments {
     pub fn get_all_currencies(&self) -> Vec<&Currency> {
         let mut currencies = Vec::<&Currency>::new();
         for instrument in self.instruments.iter() {
-            let currency = instrument.as_trait().get_currency();
+            let currency = instrument.get_currency();
             if !currencies.contains(&currency) {
                 currencies.push(currency);
             }
@@ -182,7 +178,7 @@ impl Instruments {
     ) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
-            let names = instrument.as_trait().get_underlying_codes();
+            let names = instrument.get_underlying_codes();
             if names.contains(&und_code) {
                 res.push(instrument.clone());
             }
@@ -193,7 +189,7 @@ impl Instruments {
     pub fn instruments_with_currency(&self, currency: &Currency) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
-            if instrument.as_trait().get_currency() == currency {
+            if instrument.get_currency() == currency {
                 res.push(instrument.clone());
             }
         }
@@ -203,7 +199,7 @@ impl Instruments {
     pub fn instruments_with_type(&self, type_name: &'static str) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
-            if instrument.as_trait().get_type_name() == type_name {
+            if instrument.get_type_name() == type_name {
                 res.push(instrument.clone());
             }
         }
@@ -268,7 +264,7 @@ impl Instruments {
             Some(instruments) => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in instruments.iter() {
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if m <= maturity {
                             res.push(instrument.clone());
                         }
@@ -279,7 +275,7 @@ impl Instruments {
             None => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in self.instruments.iter() {
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if m <= maturity {
                             res.push(instrument.clone());
                         }
@@ -299,11 +295,11 @@ impl Instruments {
             Some(instruments) => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in instruments.iter() {
-                    if instrument.as_trait().get_maturity() == None {
+                    if instrument.get_maturity() == None {
                         res.push(instrument.clone());
                     }
                     
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if m > maturity {
                             res.push(instrument.clone());
                         }
@@ -314,11 +310,11 @@ impl Instruments {
             None => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in self.instruments.iter() {
-                    if instrument.as_trait().get_maturity() == None {
+                    if instrument.get_maturity() == None {
                         res.push(instrument.clone());
                     }
                     
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if m > maturity {
                             res.push(instrument.clone());
                         }
@@ -341,7 +337,7 @@ impl Instruments {
             Some(instruments) => {
                 let mut shortest_maturity: Option<OffsetDateTime> = None;
                 for instrument in instruments.iter() {
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if let Some(sm) = shortest_maturity {
                             if *m < sm {
                                 shortest_maturity = Some(*m);
@@ -356,7 +352,7 @@ impl Instruments {
             None => {
                 let mut shortest_maturity: Option<OffsetDateTime> = None;
                 for instrument in self.instruments.iter() {
-                    if let Some(m) = instrument.as_trait().get_maturity() {
+                    if let Some(m) = instrument.get_maturity() {
                         if let Some(sm) = shortest_maturity {
                             if *m < sm {
                                 shortest_maturity = Some(*m);
@@ -383,7 +379,7 @@ impl Instruments {
             Some(instruments) => {
                 let mut longest_maturity: Option<OffsetDateTime> = None;
                 for instrument in instruments.iter() {
-                    match instrument.as_trait().get_maturity() {
+                    match instrument.get_maturity() {
                         Some(m) => {
                             if let Some(sm) = longest_maturity {
                                 if *m > sm {
@@ -404,7 +400,7 @@ impl Instruments {
             None => {
                 let mut longest_maturity: Option<OffsetDateTime> = None;
                 for instrument in self.instruments.iter() {
-                    match instrument.as_trait().get_maturity() {
+                    match instrument.get_maturity() {
                         Some(m) => {
                             if let Some(sm) = longest_maturity {
                                 if *m > sm {
@@ -433,14 +429,14 @@ impl Instruments {
             Some(instruments) => {
                 let mut res = Vec::<String>::new();
                 for instrument in instruments.iter() {
-                    res.push(instrument.as_trait().get_code().clone());
+                    res.push(instrument.get_code().clone());
                 }
                 res
             },
             None => {
                 let mut res = Vec::<String>::new();
                 for instrument in self.instruments.iter() {
-                    res.push(instrument.as_trait().get_code().clone());
+                    res.push(instrument.get_code().clone());
                 }
                 res
             }
@@ -462,7 +458,7 @@ mod tests {
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use time::Duration;
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::time::calendar::{SouthKoreaWrapper, Calendar};
+    use crate::time::calendar::Calendar;
     use crate::time::jointcalendar::JointCalendar;
     use anyhow::Result;
     
@@ -508,7 +504,7 @@ mod tests {
 
         // make SouthKorea(SouthKorea::Settlement) JointCalendar
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let sk = Calendar::SouthKorea(SouthKoreaWrapper{c: sk});
+        let sk = Calendar::SouthKorea(sk);
         let joint_calendar = JointCalendar::new(vec![sk]);
 
         let irs = IRS::new_from_conventions(
@@ -532,9 +528,9 @@ mod tests {
 
         // make Instrument using fut1, fut2, irs
         let instruments = Instruments::new(vec![
-            Rc::new(Instrument::StockFutures(Box::new(fut1.clone()))),
-            Rc::new(Instrument::StockFutures(Box::new(fut2.clone()))),
-            Rc::new(Instrument::IRS(Box::new(irs.clone()))),
+            Rc::new(Instrument::StockFutures(fut1.clone())),
+            Rc::new(Instrument::StockFutures(fut2.clone())),
+            Rc::new(Instrument::IRS(irs.clone())),
         ]);
 
         // make MatchParameter
@@ -570,9 +566,9 @@ mod tests {
             &"KOSPI2".to_string(),
         );
 
-        assert_eq!(fut1.get_code(), instruments_with_kospi2[0].as_trait().get_code());
-        assert_eq!(fut1.get_name(), instruments_with_kospi2[0].as_trait().get_name());
-        assert_eq!(fut1.get_currency(), instruments_with_kospi2[0].as_trait().get_currency());
+        assert_eq!(fut1.get_code(), instruments_with_kospi2[0].get_code());
+        assert_eq!(fut1.get_name(), instruments_with_kospi2[0].get_name());
+        assert_eq!(fut1.get_currency(), instruments_with_kospi2[0].get_currency());
 
         // test get_all_curve_names
         let all_curve_names = instruments.get_all_curve_names(&match_parameter);
@@ -583,7 +579,7 @@ mod tests {
             &match_parameter,
         );
 
-        assert_eq!(fut1.get_code(), instruments_using_krw_gov[0].as_trait().get_code());
+        assert_eq!(fut1.get_code(), instruments_using_krw_gov[0].get_code());
 
 
         // test discount curve
@@ -592,28 +588,28 @@ mod tests {
             &match_parameter,
         );
 
-        assert_eq!(irs.get_code(), instruments_using_krw_irs[0].as_trait().get_code());
+        assert_eq!(irs.get_code(), instruments_using_krw_irs[0].get_code());
 
         // test instruments_with_currency
         let instruments_with_krw = instruments.instruments_with_currency(&Currency::KRW);
-        assert_eq!(fut1.get_code(), instruments_with_krw[0].as_trait().get_code());
-        assert_eq!(irs.get_code(), instruments_with_krw[1].as_trait().get_code());
+        assert_eq!(fut1.get_code(), instruments_with_krw[0].get_code());
+        assert_eq!(irs.get_code(), instruments_with_krw[1].get_code());
 
         // test instruments_with_type
         let instruments_with_stock_futures = instruments.instruments_with_type("StockFutures");
-        assert_eq!(fut1.get_code(), instruments_with_stock_futures[0].as_trait().get_code());
-        assert_eq!(fut2.get_code(), instruments_with_stock_futures[1].as_trait().get_code());
+        assert_eq!(fut1.get_code(), instruments_with_stock_futures[0].get_code());
+        assert_eq!(fut2.get_code(), instruments_with_stock_futures[1].get_code());
 
         let instruments_with_irs = instruments.instruments_with_type("IRS");
-        assert_eq!(irs.get_code(), instruments_with_irs[0].as_trait().get_code());
+        assert_eq!(irs.get_code(), instruments_with_irs[0].get_code());
 
         // test instruments_with_maturity_upto
         let instruments_with_maturity_upto = instruments.instruments_with_maturity_upto(
             None,
             &datetime!(2022-12-01 09:00:00 UTC)
         );
-        assert_eq!(fut1.get_code(), instruments_with_maturity_upto[0].as_trait().get_code());
-        assert_eq!(irs.get_code(), instruments_with_maturity_upto[1].as_trait().get_code());
+        assert_eq!(fut1.get_code(), instruments_with_maturity_upto[0].get_code());
+        assert_eq!(irs.get_code(), instruments_with_maturity_upto[1].get_code());
 
         Ok(())
     }

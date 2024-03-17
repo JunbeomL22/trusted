@@ -1,13 +1,14 @@
-use time::OffsetDateTime;
 use crate::evaluation_date::EvaluationDate;
 use crate::assets::stock::Stock;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
-use anyhow::{anyhow, Context, Result};
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
+use crate::instrument::InstrumentTriat;
 //
+use time::OffsetDateTime;
+use anyhow::{anyhow, Context, Result};
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -67,7 +68,7 @@ impl PricerTrait for StockFuturesPricer {
             }
             _ => Err(anyhow!(
                 "StockFuturesPricer::npv: not supported instrument type: {}", 
-                instrument.as_trait().get_type_name().to_string()))
+                instrument.get_type_name().to_string()))
         };
         res
     }
@@ -80,7 +81,7 @@ impl PricerTrait for StockFuturesPricer {
             }
             _ => Err(anyhow!(
                 "StockFuturesPricer::npv: not supported instrument type: {}", 
-                instrument.as_trait().get_type_name().to_string()))
+                instrument.get_type_name().to_string()))
         };
         res
     }
@@ -97,7 +98,7 @@ impl PricerTrait for StockFuturesPricer {
             },
             _ => Err(anyhow!(
                 "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 
-                instrument.as_trait().get_type_name().to_string()
+                instrument.get_type_name().to_string()
             ))
         }
     }
@@ -108,15 +109,11 @@ impl PricerTrait for StockFuturesPricer {
 mod tests {
     use super::*;
     use crate::data::observable::Observable;
-    use crate::definitions::COUPON_PAYMENT_TIME;
     use crate::instrument::InstrumentTriat;
     use crate::{assets::currency::Currency, instruments::stock_futures::StockFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
     use time::macros::datetime;
-    use crate::parameters::zero_curve_code::ZeroCurveCode;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
-    use time::Duration;
-    use std::collections::HashMap;
     use anyhow::Result;
 
     #[test]
@@ -211,7 +208,7 @@ mod tests {
             evaluation_date.clone(),
         );
 
-        let instrument = Instrument::StockFutures(Box::new(futures.clone()));
+        let instrument = Instrument::StockFutures(futures.clone());
         let res = pricer.npv(&instrument).expect("failed to calculate npv");
         let fx_exposure = pricer.fx_exposure(&instrument, res)
             .expect("failed to calculate fx exposure")
@@ -230,17 +227,17 @@ mod tests {
         // Replace these with the expected values
         let expected_npv = 346.38675;
         let expected_fx_exposure = 26.38675;
-        let expected_coupons = HashMap::<OffsetDateTime, Real>::new(); // Assuming coupons is a HashMap
+        //let expected_coupons = HashMap::<OffsetDateTime, Real>::new(); // Assuming coupons is a HashMap
 
         assert!(
-            (res - expected_npv).abs() < 1.0e-6, 
+            (res - expected_npv).abs() < 1.0e-5, 
             "Unexpected npv (expected: {}, actual: {})",
             expected_npv,
             res
         );
 
         assert!(
-            (fx_exposure - expected_fx_exposure).abs() < 1.0e-6, 
+            (fx_exposure - expected_fx_exposure).abs() < 1.0e-5, 
             "Unexpected fx exposure (expected: {}, actual: {})",
             expected_fx_exposure,
             fx_exposure

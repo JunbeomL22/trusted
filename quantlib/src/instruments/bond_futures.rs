@@ -2,6 +2,8 @@ use crate::assets::currency::Currency;
 use crate::definitions::Real;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+use crate::instrument::InstrumentTriat;
+
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BondFutures {
@@ -13,24 +15,24 @@ pub struct BondFutures {
     code: String,
 }
 
-impl BondFutures {
-    pub fn get_name(&self) -> &String {
+impl InstrumentTriat for BondFutures {
+    fn get_type_name(&self) -> &'static str {
+        "BondFutures"
+    }
+
+    fn get_name(&self) -> &String {
         &self.name
     }
 
-    pub fn get_code(&self) -> &String {
+    fn get_code(&self) -> &String {
         &self.code
     }
 
-    pub fn get_currency(&self) -> &Currency {
+    fn get_currency(&self) ->  &Currency {
         &self.currency
     }
 
-    pub fn get_unit_notional(&self) -> Real {
+    fn get_unit_notional(&self) -> Real {
         self.unit_notional
-    }
-
-    pub fn get_maturity(&self) -> &OffsetDateTime {
-        &self.maturity
     }
 }

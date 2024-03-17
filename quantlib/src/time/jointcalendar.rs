@@ -3,6 +3,7 @@ use crate::time::calendar::Calendar;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use anyhow::{Result, anyhow};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JointCalendar {
     name: String,
@@ -14,12 +15,12 @@ impl JointCalendar {
         let mut name = String::from("JoinCalendar : ");
         for (i, cal) in calendars.iter().enumerate() {
             if i == 0 {
-                name.push_str(cal.as_trait().calendar_name());
+                name.push_str(cal.calendar_name());
             } else {
             name.push_str(
                 format!(
                     "{} & ",
-                    cal.as_trait().calendar_name()
+                    cal.calendar_name()
                 ).as_str())
             }
         }
@@ -35,7 +36,7 @@ impl JointCalendar {
     }
 
     pub fn is_business_day(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().all(|c| c.as_trait().is_business_day(date))
+        self.calendars.iter().all(|c| c.is_business_day(date))
     }                      
 }
 
@@ -45,7 +46,7 @@ impl CalendarTrait for JointCalendar {
     }
 
     fn is_weekend(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().any(|c| c.as_trait().is_weekend(date))
+        self.calendars.iter().any(|c| c.is_weekend(date))
     }
 
     fn display_holidays(
@@ -63,27 +64,27 @@ impl CalendarTrait for JointCalendar {
     }
 
     fn is_removed_holiday(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().any(|c| c.as_trait().is_removed_holiday(date))
+        self.calendars.iter().any(|c| c.is_removed_holiday(date))
     }
 
     fn is_added_holiday(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().any(|c| c.as_trait().is_added_holiday(date))
+        self.calendars.iter().any(|c| c.is_added_holiday(date))
     }
 
     fn is_base_holiday(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().any(|c| c.as_trait().is_base_holiday(date))
+        self.calendars.iter().any(|c| c.is_base_holiday(date))
     }
 
-    fn add_holidays(&mut self, date: &time::Date) -> Result<()> {
+    fn add_holidays(&mut self, _date: &time::Date) -> Result<()> {
         Err(anyhow!("It is not allowed to add holidays to JointCalendar"))
     }
 
-    fn remove_holidays(&mut self, date: &time::Date) -> Result<()> {
+    fn remove_holidays(&mut self, _date: &time::Date) -> Result<()> {
         Err(anyhow!("It is not allowed to remove holidays from JointCalendar"))
     }
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
-        self.calendars.iter().any(|c| c.as_trait().is_holiday(date))
+        self.calendars.iter().any(|c| c.is_holiday(date))
     }
 
 }
@@ -93,20 +94,16 @@ mod tests {
     use super::*;
     use crate::time::calendars::unitedstates::{UnitedStates, UnitedStatesType};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::time::calendar::{
-        Calendar,
-        SouthKoreaWrapper,
-        UnitedStatesWrapper,
-    };
+    use crate::time::calendar::Calendar;
     use time::macros::datetime;
     
     #[test]
     fn test_joint_calendar() {
         let summer_time = false;
         let us = UnitedStates::new(UnitedStatesType::Settlement, summer_time);
-        let us_cal = Calendar::UnitedStates(UnitedStatesWrapper{c: us});
+        let us_cal = Calendar::UnitedStates(us);
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let sk_cal = Calendar::SouthKorea(SouthKoreaWrapper{c: sk});
+        let sk_cal = Calendar::SouthKorea(sk);
 
         let joint_calendar = JointCalendar::new(vec![us_cal, sk_cal]);
 

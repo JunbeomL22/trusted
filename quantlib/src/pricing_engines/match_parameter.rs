@@ -1,4 +1,4 @@
-use crate::{enums::RateIndexCode, instrument::Instrument};
+use crate::{enums::RateIndexCode, instrument::Instrument, instrument::InstrumentTriat};
 use crate::assets::currency::Currency;
 use std::collections::HashMap;
 use crate::enums::{CreditRating, IssuerType};
@@ -78,7 +78,17 @@ impl MatchParameter {
 
     pub fn get_discount_curve_name(&self, instrument: &Instrument) -> &String {
         match instrument {
-            Instrument::FixedCouponBond(instrument) |
+            Instrument::FixedCouponBond(instrument) => {
+                match self.bond_discount_curve_map.get(&(
+                    instrument.get_issuer_name().expect("Issuer name is not found").clone(),
+                    instrument.get_issuer_type().expect("Issuer type is not found").clone(),
+                    instrument.get_credit_rating().expect("Credit rating is not found").clone(),
+                    instrument.get_currency().clone(),
+                )) {
+                    Some(curve_name) => curve_name,
+                    None => &self.dummy_string,
+                }
+            }
             Instrument::FloatingRateNote(instrument) => {
                 match self.bond_discount_curve_map.get(&(
                     instrument.get_issuer_name().expect("Issuer name is not found").clone(),
@@ -110,12 +120,12 @@ impl MatchParameter {
     /// Curve name for underlying asset
     /// This retrives the curve name from self.collateral_curve_map
     pub fn get_collateral_curve_names(&self, instrument: &Instrument) -> Vec<&String> {
-        let und_codes = instrument.as_trait().get_underlying_codes();
+        let und_codes = instrument.get_underlying_codes();
         let res = und_codes.iter().map(|code| {
             self.collateral_curve_map.get(*code)
             .expect(format!(
                 "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
-                instrument.as_trait().get_name(),
+                instrument.get_name(),
                 code
             ).as_str())}).collect();
         res
@@ -125,7 +135,7 @@ impl MatchParameter {
         self.collateral_curve_map.get(und_code)
         .expect(format!(
             "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
-            instrument.as_trait().get_name(),
+            instrument.get_name(),
             und_code
         ).as_str())
     }
@@ -133,12 +143,12 @@ impl MatchParameter {
     /// Curve name for underlying asset
     /// This retrives the curve name from self.collateral_curve_map
     pub fn get_borrowing_curve_names(&self, instrument: &Instrument) -> Vec<&String> {
-        let und_codes = instrument.as_trait().get_underlying_codes();
+        let und_codes = instrument.get_underlying_codes();
         let res = und_codes.iter().map(|code| {
             self.borrowing_curve_map.get(*code)
             .expect(format!(
                 "{} has underlying code {} but no borrowing curve name in MatchParameter.collateral_curve_map",
-                instrument.as_trait().get_name(),
+                instrument.get_name(),
                 code
             ).as_str())}).collect();
         res
@@ -146,8 +156,14 @@ impl MatchParameter {
 
     pub fn get_rate_index_curve_name(&self, instrument: &Instrument) -> &String {
         match instrument {
-            Instrument::IRS(instrument) |
             Instrument::FloatingRateNote(instrument) => {
+                self.rate_index_forward_curve_map.get(
+                    instrument.get_rate_index()
+                    .expect("Rate index is not found")
+                    .get_code()
+                ).expect("Rate index forward curve is not found")
+            },
+            Instrument::IRS(instrument) => {
                 self.rate_index_forward_curve_map.get(
                     instrument.get_rate_index()
                     .expect("Rate index is not found")
@@ -172,7 +188,7 @@ mod tests {
     use crate::time::conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
     use crate::time::jointcalendar::JointCalendar;
-    use crate::time::calendar::{Calendar, SouthKoreaWrapper};
+    use crate::time::calendar::Calendar;
     use crate::parameters::rate_index::RateIndex;
     use time::Duration;
     use anyhow::Result;
@@ -207,7 +223,7 @@ mod tests {
         // By the reason of project architecture, its is inherently JointCalendar
 
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let calendar = Calendar::SouthKorea(SouthKoreaWrapper{c: sk});
+        let calendar = Calendar::SouthKorea(sk);
         let joint_calendar = JointCalendar::new(vec![calendar]);
 
         // make a CD 3M RateIndex
@@ -249,8 +265,8 @@ mod tests {
             bond_discount_curve_map,
             rate_index_forward_curve_map,
         );
-        let stock_futures_inst = Instrument::StockFutures(Box::new(stock_futures));
-        let irs_inst = Instrument::IRS(Box::new(irs));
+        let stock_futures_inst = Instrument::StockFutures(stock_futures);
+        let irs_inst = Instrument::IRS(irs);
 
         assert_eq!(
             match_parameter.get_collateral_curve_name(

@@ -35,7 +35,7 @@ fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> 
     chart.configure_mesh().draw()?;
 
     // Combine x and y values into a single vector of points for plotting
-    let data: Vec<(f32, f32)> = x_values.into_iter().zip(y_values.into_iter()).map(|(&x, &y)| (x, y)).collect();
+    let data: Vec<(f64, f64)> = x_values.into_iter().zip(y_values.into_iter()).map(|(&x, &y)| (x, y)).collect();
     // Draw the line
     chart.draw_series(LineSeries::new(data, &RED))?;
 

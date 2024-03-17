@@ -111,8 +111,8 @@ mod tests {
             "165XXX2".to_string(),
         );
 
-        let inst1 = Instrument::StockFutures(Box::new(stock_futures1));
-        let inst2 = Instrument::StockFutures(Box::new(stock_futures2));
+        let inst1 = Instrument::StockFutures(stock_futures1);
+        let inst2 = Instrument::StockFutures(stock_futures2);
         let inst_vec = vec![Rc::new(inst1), Rc::new(inst2)];
 
         // make a calculation configuration

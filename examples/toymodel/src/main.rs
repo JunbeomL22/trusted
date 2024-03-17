@@ -1,5 +1,4 @@
 use quantlib::assets::currency::Currency;
-use quantlib::definitions::THETA_PNL_UNIT;
 use quantlib::instruments::stock_futures::StockFutures;
 use quantlib::instrument::Instrument;
 use quantlib::definitions::Real;
@@ -18,7 +17,7 @@ use serde_json;
 use quantlib::instruments::fixed_coupon_bond::FixedCouponBond;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
 use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
-use quantlib::time::calendar::{Calendar, NullCalendarWrapper, SouthKoreaWrapper, UnitedStatesWrapper};
+use quantlib::time::calendar::Calendar;
 use quantlib::time::jointcalendar::JointCalendar;
 use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use anyhow::{Result, Context};
@@ -32,11 +31,12 @@ fn main() -> Result<()> {
 
     // make zero curve named "KSD". First make vector data whose values are 0.03 and 0.04
     // then make it as hash map whose key is "KSD"
-    let value = array![0.0333, 0.0333];
+    let value = array![0.03358, 0.03358];
     let dates = vec![
         datetime!(2025-03-13 00:00:00 +09:00),
         datetime!(2026-03-13 00:00:00 +09:00),
     ];
+
     let times = None;
     let market_datetime = datetime!(2021-01-01 00:00:00 +09:00);
     let zero_curve1 = "KSD".to_string();
@@ -133,8 +133,8 @@ fn main() -> Result<()> {
     let issuer_name = "Korea Gov";
     let bond_name = "Virtual KTB";
     let bond_code = "KR1234567890";
-    let sk = SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)};
-    let calendar = JointCalendar::new(vec![Calendar::SouthKorea(sk)]);
+    let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
+    let calendar = JointCalendar::new(vec![sk]);
 
     let bond_currency = Currency::KRW;
     let issuer_type = IssuerType::Government;
@@ -157,6 +157,7 @@ fn main() -> Result<()> {
         PaymentFrequency::SemiAnnually, 
         issuer_name.to_string(), 
         0, 
+        1,
         calendar, 
         bond_name.to_string(), 
         bond_code.to_string(),
@@ -167,8 +168,8 @@ fn main() -> Result<()> {
     let issuer_name2 = "Korea Gov";
     let bond_name2 = "국고채권 04250-2512(22-13)";
     let bond_code2 = "KR103501GCC0";
-    let sk = SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)};
-    let calendar = JointCalendar::new(vec![Calendar::SouthKorea(sk)]);
+    let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
+    let calendar = JointCalendar::new(vec![sk]);
 
     let bond_currency2 = Currency::KRW;
     let issuer_type2 = IssuerType::Government;
@@ -191,15 +192,16 @@ fn main() -> Result<()> {
         PaymentFrequency::SemiAnnually, 
         issuer_name2.to_string(), 
         0, 
+        1,
         calendar, 
         bond_name2.to_string(), 
         bond_code2.to_string(),
     )?;
 
-    let inst1 = Instrument::StockFutures(Box::new(stock_futures1));
-    let inst2 = Instrument::StockFutures(Box::new(stock_futures2));
-    let inst3: Instrument = Instrument::FixedCouponBond(Box::new(bond));
-    let inst4: Instrument = Instrument::FixedCouponBond(Box::new(bond2));
+    let inst1 = Instrument::StockFutures(stock_futures1);
+    let inst2 = Instrument::StockFutures(stock_futures2);
+    let inst3: Instrument = Instrument::FixedCouponBond(bond);
+    let inst4: Instrument = Instrument::FixedCouponBond(bond2);
 
     let inst_vec = vec![
         Rc::new(inst1), 
@@ -210,13 +212,13 @@ fn main() -> Result<()> {
 
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
-        .with_delta_calculation(true)
-        .with_gamma_calculation(true)
-        .with_rho_calculation(true)
-        .with_div_delta_calculation(true)
-        .with_rho_structure_calculation(true)
+        //.with_delta_calculation(true)
+        //.with_gamma_calculation(true)
+        //.with_rho_calculation(true)
+        //.with_div_delta_calculation(true)
+        //.with_rho_structure_calculation(true)
         .with_theta_calculation(true)
-        .with_div_structure_calculation(true)
+        //.with_div_structure_calculation(true)
         .with_theta_day(theta_day);
         
     // make a match parameter

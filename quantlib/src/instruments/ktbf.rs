@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use crate::instruments::bonds::bond::Bond;
 use crate::time::conventions::{DayCountConvention, PaymentFrequency, BusinessDayConvention};
+use crate::instrument::InstrumentTriat;
 
 pub struct VirtualBond {
     coudpon: Real,
@@ -11,7 +12,7 @@ pub struct VirtualBond {
     maturity: OffsetDateTime,
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KTBF {
     currency: Currency,
     unit_notional: Real,
@@ -48,24 +49,26 @@ impl KTBF {
             code,
         }
     }
+}
 
-    pub fn get_name(&self) -> &String {
+impl InstrumentTriat for KTBF {
+    fn get_type_name(&self) -> &'static str {
+        "KTBF"
+    }
+
+    fn get_name(&self) -> &String {
         &self.name
     }
 
-    pub fn get_code(&self) -> &String {
+    fn get_code(&self) -> &String {
         &self.code
     }
 
-    pub fn get_currency(&self) -> &Currency {
+    fn get_currency(&self) ->  &Currency {
         &self.currency
     }
 
-    pub fn get_unit_notional(&self) -> Real {
+    fn get_unit_notional(&self) -> Real {
         self.unit_notional
-    }
-
-    pub fn get_maturity(&self) -> &OffsetDateTime {
-        &self.maturity
     }
 }

@@ -183,7 +183,6 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use crate::time::calendar::Calendar;
-    use crate::time::calendar::SouthKoreaWrapper;
     // make a test for
     // calendar = SouthKorea::new(SouthKoreaType::Settlement)
     // effective_date = date!(2023-08-02 16:00:00 +09:00)
@@ -197,7 +196,7 @@ mod tests {
         let effective_date = datetime!(2023-08-03 16:00:00 +09:00);
         let maturity = datetime!(2024-02-05 16:00:00 +09:00);
         let cal = SouthKorea::new(SouthKoreaType::Settlement);
-        let calendar = Calendar::SouthKorea(SouthKoreaWrapper{c: cal});
+        let calendar = Calendar::SouthKorea(cal);
         let joint_calendar = JointCalendar::new(vec![calendar]);
         let schedule = build_schedule(
             &effective_date, 

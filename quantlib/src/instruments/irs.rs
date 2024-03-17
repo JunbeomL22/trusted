@@ -200,7 +200,7 @@ mod tests {
         assets::currency::Currency,
         time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
         time::calendars::southkorea::{SouthKorea, SouthKoreaType},
-        time::calendar::{SouthKoreaWrapper, Calendar},
+        time::calendar::Calendar,
         time::jointcalendar::JointCalendar,
         parameters::rate_index::RateIndex,
         enums::RateIndexCode,
@@ -230,7 +230,7 @@ mod tests {
 
         let sk = JointCalendar::new(
             vec![Calendar::SouthKorea(
-                SouthKoreaWrapper{c: SouthKorea::new(SouthKoreaType::Settlement)}
+                SouthKorea::new(SouthKoreaType::Settlement)
                 )]
             );
         
