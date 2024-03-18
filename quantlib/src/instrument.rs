@@ -505,7 +505,7 @@ mod tests {
         // make SouthKorea(SouthKorea::Settlement) JointCalendar
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
         let sk = Calendar::SouthKorea(sk);
-        let joint_calendar = JointCalendar::new(vec![sk]);
+        let joint_calendar = JointCalendar::new(vec![sk])?;
 
         let irs = IRS::new_from_conventions(
             Currency::KRW,

@@ -23,7 +23,7 @@ use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, Pay
 use anyhow::{Result, Context};
 
 fn main() -> Result<()> {
-    let theta_day = 1;
+    let theta_day = 200;
     let spot: Real = 350.0;
     // evaluation date = 2021-01-01 00:00:00 +09:00
     let dt = datetime!(2024-03-13 16:30:00 +09:00);
@@ -134,7 +134,7 @@ fn main() -> Result<()> {
     let bond_name = "Virtual KTB";
     let bond_code = "KR1234567890";
     let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
-    let calendar = JointCalendar::new(vec![sk]);
+    let calendar = JointCalendar::new(vec![sk])?;
 
     let bond_currency = Currency::KRW;
     let issuer_type = IssuerType::Government;
@@ -152,13 +152,13 @@ fn main() -> Result<()> {
         issuedate.clone(),
         maturity,
         None, 
-        DayCountConvention::ActActIsda, 
+        None,
+        calendar,
+        DayCountConvention::StreetConvention,
         BusinessDayConvention::Unadjusted, 
         PaymentFrequency::SemiAnnually, 
         issuer_name.to_string(), 
         0, 
-        1,
-        calendar, 
         bond_name.to_string(), 
         bond_code.to_string(),
     )?;
@@ -169,7 +169,7 @@ fn main() -> Result<()> {
     let bond_name2 = "국고채권 04250-2512(22-13)";
     let bond_code2 = "KR103501GCC0";
     let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
-    let calendar = JointCalendar::new(vec![sk]);
+    let calendar = JointCalendar::new(vec![sk])?;
 
     let bond_currency2 = Currency::KRW;
     let issuer_type2 = IssuerType::Government;
@@ -186,14 +186,14 @@ fn main() -> Result<()> {
         issuedate2.clone(), 
         issuedate2.clone(),
         maturity2,
+        None,
         None, 
-        DayCountConvention::ActActIsda, 
+        calendar,
+        DayCountConvention::StreetConvention,
         BusinessDayConvention::Unadjusted, 
         PaymentFrequency::SemiAnnually, 
         issuer_name2.to_string(), 
         0, 
-        1,
-        calendar, 
         bond_name2.to_string(), 
         bond_code2.to_string(),
     )?;
@@ -212,13 +212,13 @@ fn main() -> Result<()> {
 
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
-        //.with_delta_calculation(true)
-        //.with_gamma_calculation(true)
-        //.with_rho_calculation(true)
-        //.with_div_delta_calculation(true)
-        //.with_rho_structure_calculation(true)
+        .with_delta_calculation(true)
+        .with_gamma_calculation(true)
+        .with_rho_calculation(true)
+        .with_div_delta_calculation(true)
+        .with_rho_structure_calculation(true)
         .with_theta_calculation(true)
-        //.with_div_structure_calculation(true)
+        .with_div_structure_calculation(true)
         .with_theta_day(theta_day);
         
     // make a match parameter

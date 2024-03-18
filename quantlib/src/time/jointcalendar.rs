@@ -1,5 +1,6 @@
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendar::Calendar;
+use crate::definitions::Time;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use anyhow::{Result, anyhow};
@@ -11,7 +12,13 @@ pub struct JointCalendar {
 }
 
 impl JointCalendar {
-    pub fn new(calendars: Vec<Calendar>) -> JointCalendar {
+    pub fn new(calendars: Vec<Calendar>) -> Result<JointCalendar> {
+        if calendars.len() < 1 {
+            return Err(anyhow!(
+                "{}:{}  JointCalendar must have at least one calendar",
+                file!(), line!()
+            ));
+        }
         let mut name = String::from("JoinCalendar : ");
         for (i, cal) in calendars.iter().enumerate() {
             if i == 0 {
@@ -25,10 +32,10 @@ impl JointCalendar {
             }
         }
 
-        JointCalendar { 
+        Ok(JointCalendar { 
             name, 
             calendars,
-        }
+        })
     }
 
     pub fn calendars(&self) -> &Vec<Calendar> {
@@ -41,6 +48,14 @@ impl JointCalendar {
 }
 
 impl CalendarTrait for JointCalendar {
+    fn year_fraction(
+                &self, 
+                start_date: &OffsetDateTime, 
+                end_date: &OffsetDateTime, 
+                day_count: &super::conventions::DayCountConvention) -> Result<Time> {
+        self.calendars[0].year_fraction(start_date, end_date, day_count)
+    }
+
     fn calendar_name(&self) -> &String {
         &self.name
     }
@@ -98,17 +113,18 @@ mod tests {
     use time::macros::datetime;
     
     #[test]
-    fn test_joint_calendar() {
+    fn test_joint_calendar() -> Result<()> {
         let summer_time = false;
         let us = UnitedStates::new(UnitedStatesType::Settlement, summer_time);
         let us_cal = Calendar::UnitedStates(us);
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
         let sk_cal = Calendar::SouthKorea(sk);
 
-        let joint_calendar = JointCalendar::new(vec![us_cal, sk_cal]);
+        let joint_calendar = JointCalendar::new(vec![us_cal, sk_cal])?;
 
         let date = datetime!(2021-05-05 00:00:00 +09:00);
         assert_eq!(joint_calendar.is_holiday(&date), true);
         assert_eq!(joint_calendar.is_business_day(&date), false);
+        Ok(())
     }
 }

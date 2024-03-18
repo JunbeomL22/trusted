@@ -6,7 +6,7 @@ pub trait PricerTrait {
     // Code -> NPV
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult>;
     fn npv(&self, instrument: &Instrument) -> Result<Real>;
-    fn fx_exposure(&self, instrument: &Instrument, npv: Real) -> Result<Real>;
+    fn fx_exposure(&self, instrument: &Instrument, npv: Real) -> Result<Real> { Ok(npv) }
     /*
     fn coupons(
         &self, 

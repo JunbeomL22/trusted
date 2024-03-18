@@ -3,7 +3,7 @@ use time;
 use crate::assets::currency::{self, Currency};
 /// Note! must be a variable that can derive Copy and PartialOrd trait. 
 /// Of course, it would be highly likely either f32 or f64.
-pub type Real = f64; 
+pub type Real = f32; 
 pub type Time = Real;
 
 pub type Natural = u32;
@@ -15,7 +15,7 @@ pub type FX = (Currency, Currency);
 /// Default time. This actually changes regarding the markets and the instruments.
 pub const CLOSING_TIME: time::Time = time::macros::time!(16:00:00); 
 pub const EX_DIVIDEND_TIME: time::Time = time::macros::time!(00:00:01);
-pub const COUPON_PAYMENT_TIME: time::Time = time::macros::time!(16:00:00);
+pub const COUPON_PAYMENT_TIME: time::Time = time::macros::time!(16:30:00);
 pub const OPENING_TIME: time::Time = time::macros::time!(09:00:00);
 pub const MARKING_DATE: time::Date = time::macros::date!(1970-01-01); // to make an offsetdatetime to be an integer
 

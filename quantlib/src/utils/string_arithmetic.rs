@@ -2,7 +2,7 @@ use time::{OffsetDateTime, Duration, Month};
 use regex;
 
 
-fn from_i32_to_month(item: i32) -> Month {
+pub fn from_i32_to_month(item: i32) -> Month {
     match item {
         0 => Month::January,
         1 => Month::February,
@@ -20,7 +20,7 @@ fn from_i32_to_month(item: i32) -> Month {
     }
 }
 
-fn from_month_to_i32(month: Month) -> i32 {
+pub fn from_month_to_i32(month: Month) -> i32 {
     match month {
         Month::January => 0,
         Month::February => 1,

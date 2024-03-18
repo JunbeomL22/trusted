@@ -9,7 +9,6 @@ use crate::time::calendars::southkorea::SouthKorea;
 use crate::time::calendars::unitedstates::UnitedStates;
 use crate::time::calendar::Calendar;
 
-
 #[enum_dispatch::enum_dispatch]
 pub trait CalendarTrait {
     fn unpack_date(&self, date: &OffsetDateTime) -> (i32, Month, u8, Weekday, u16) {
@@ -213,6 +212,23 @@ pub trait CalendarTrait {
                     };
                 }
                 frac
+                },
+            // 30/360 but with EOM
+            DayCountConvention::StreetConvention => {
+                let (year_from, month_from, day_from, _, _) = self.unpack_date(start_date);
+                let (year_upto, month_upto, day_upto, _, _) = self.unpack_date(end_date);
+                let mut days = 0;
+                days += 360 * (year_upto - year_from);
+                days += 30 * (month_upto as i32 - month_from as i32);
+                days += day_upto as i32 - day_from as i32;
+                if day_from == 31 {
+                    if day_upto == 31 {
+                        days -= 30;
+                    } else {
+                        days += 1;
+                    }
+                }
+                days as Time / 360.0
                 },
             };
         Ok(res)

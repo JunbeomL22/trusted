@@ -224,7 +224,7 @@ mod tests {
 
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
         let calendar = Calendar::SouthKorea(sk);
-        let joint_calendar = JointCalendar::new(vec![calendar]);
+        let joint_calendar = JointCalendar::new(vec![calendar])?;
 
         // make a CD 3M RateIndex
         let cd = RateIndex::new(

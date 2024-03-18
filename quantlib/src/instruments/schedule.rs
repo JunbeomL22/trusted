@@ -1,13 +1,14 @@
-use anyhow::{Result, anyhow};
-use time::{OffsetDateTime, Duration};
-use serde::{Serialize, Deserialize};
 use crate::time::jointcalendar::JointCalendar;
 use crate::time::conventions::{PaymentFrequency, BusinessDayConvention};
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::utils::string_arithmetic::add_period;
-use std::ops::Index;
 use crate::definitions::COUPON_PAYMENT_TIME;
 use crate::definitions::Real;
+//
+use anyhow::{Result, anyhow};
+use time::{OffsetDateTime, Duration};
+use serde::{Serialize, Deserialize};
+use std::ops::Index;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct BaseSchedule {   
@@ -192,12 +193,12 @@ mod tests {
     // maturity = date!(2024-02-05 16:00:00 +09:00)
     // conv = ModifiedFollowing
     #[test]
-    fn test_build_schedule() {
+    fn test_build_schedule() -> Result<()> {
         let effective_date = datetime!(2023-08-03 16:00:00 +09:00);
         let maturity = datetime!(2024-02-05 16:00:00 +09:00);
         let cal = SouthKorea::new(SouthKoreaType::Settlement);
         let calendar = Calendar::SouthKorea(cal);
-        let joint_calendar = JointCalendar::new(vec![calendar]);
+        let joint_calendar = JointCalendar::new(vec![calendar])?;
         let schedule = build_schedule(
             &effective_date, 
             None, 
@@ -265,7 +266,7 @@ mod tests {
                 expected_schedule[i].get_payment_date()
             );
         }
-        
+        Ok(())
     }
     
     

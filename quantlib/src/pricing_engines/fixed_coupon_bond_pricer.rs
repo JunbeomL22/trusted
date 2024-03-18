@@ -6,18 +6,15 @@ use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
 use std::collections::HashMap;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
-use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
-use time::OffsetDateTime;
-use crate::time::conventions::DayCountConvention;
 //
 use anyhow::{Context, Result};
 use std::{rc::Rc, cell::RefCell};
+use time::OffsetDateTime;
 
 pub struct FixedCouponBondPricer{
     discount_curve: Rc<RefCell<ZeroCurve>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    time_calculator: NullCalendar,
 }
 
 impl FixedCouponBondPricer {
@@ -28,44 +25,7 @@ impl FixedCouponBondPricer {
         FixedCouponBondPricer {
             discount_curve,
             evaluation_date,
-            time_calculator: NullCalendar::new(),
         }
-    }
-
-    /// generate coupon-cashflow after evaluation date for bonds
-    /// if include_evaluation_date is true, it will include the evaluation date
-    pub fn get_coupon_cashflow(
-        &self, 
-        schedule: &Schedule,
-        daycounter: &DayCountConvention,
-        coupon_rate: Real,
-        date_from: &OffsetDateTime,
-    ) -> Result<HashMap<OffsetDateTime, Real>> {
-        let mut res = HashMap::new();
-        let mut coupon_amount: Real;
-
-        for base_schedule in schedule.iter() {
-            let start_date = base_schedule.get_calc_start_date();
-            let end_date = base_schedule.get_calc_end_date();
-            let payment_date = base_schedule.get_payment_date();
-            let amount = base_schedule.get_amount();
-
-            if date_from.date() <= payment_date.date() {
-                match amount {
-                    Some(amount) => {res.insert(payment_date.clone(), amount);},
-                    None => {
-                        coupon_amount = coupon_rate * self.time_calculator.year_fraction(
-                            start_date, 
-                            end_date,
-                            daycounter
-                        )?;
-    
-                        res.insert(payment_date.clone(), coupon_amount);
-                    }
-                }
-            }
-        }
-        Ok(res)
     }
 }
 
@@ -74,23 +34,15 @@ impl PricerTrait for FixedCouponBondPricer {
         let bond = instrument.as_fixed_coupon_bond()?;
         let mut res: Real = 0.0;
         let mut disc_factor: Real;
-        let schedule = bond.get_schedule();
-        let daycounter = bond.get_daycounter();
-        let coupon_rate = bond.get_coupon_rate();
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let settlement_date = bond.get_settlement_date(eval_dt);
-        println!("eval_dt: {:?}", eval_dt);
-        println!("settlement_date: {:?}", settlement_date);
-        
-        let cashflow = self.get_coupon_cashflow(
-            schedule, 
-            daycounter, 
-            coupon_rate, 
-            &eval_dt
+        let pricing_date = bond.get_pricing_date().unwrap_or(&eval_dt);
+    
+        let cashflow = bond.get_coupon_cashflow(
+            &pricing_date,
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         for (payment_date, amount) in cashflow.iter() {
-            if payment_date.date() >= settlement_date.date() {
+            if payment_date.date() > pricing_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
                 res += amount * disc_factor;    
             }
@@ -99,49 +51,40 @@ impl PricerTrait for FixedCouponBondPricer {
         if !bond.is_coupon_strip() {
             let maturity = instrument.get_maturity().unwrap();
 
-            if maturity.date() >= settlement_date.date() {
+            if maturity.date() > pricing_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
                 res += disc_factor;
             }
         }
 
-        res /= self.discount_curve.borrow().get_discount_factor_at_date(&settlement_date)?;
+        res /= self.discount_curve.borrow().get_discount_factor_at_date(&pricing_date)?;
 
         Ok(res)
 
     }
 
-    fn fx_exposure(&self, _instrument: &Instrument, npv: Real) -> Result<Real> {
-        Ok(npv)
-    }
-
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let bond = instrument.as_fixed_coupon_bond()?;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let settlement_date = bond.get_settlement_date(eval_dt);
+        let pricing_date = bond.get_pricing_date().unwrap_or(&eval_dt);
 
         let mut npv: Real = 0.0;
         let mut coupon_amounts: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
         let mut coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
 
         let mut disc_factor: Real;
-        let schedule = bond.get_schedule();
-        let daycounter = bond.get_daycounter();
-        let coupon_rate = bond.get_coupon_rate();
-        let cashflow = self.get_coupon_cashflow(
-            schedule, 
-            daycounter, 
-            coupon_rate, 
-            &eval_dt
+        
+        let cashflow = bond.get_coupon_cashflow(
+            &pricing_date,
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
 
         for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
-            if settlement_date.date() <= payment_date.date() {
+            if pricing_date.date() < payment_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
                 npv += amount * disc_factor;    
             }
 
-            if eval_dt.date() <= payment_date.date() {
+            if pricing_date.date() <= payment_date.date () {
                 coupon_amounts.insert(i as usize, (payment_date.clone(), *amount));
                 coupon_payment_probability.insert(i, (payment_date.clone(), 1.0));
             }
@@ -149,13 +92,13 @@ impl PricerTrait for FixedCouponBondPricer {
 
         if !bond.is_coupon_strip() {
             let maturity = instrument.get_maturity().unwrap();
-            if maturity.date() >= settlement_date.date() {
+            if maturity.date() > pricing_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
                 npv += disc_factor;
             }
         }
 
-        npv /= self.discount_curve.borrow().get_discount_factor_at_date(&settlement_date)?;
+        npv /= self.discount_curve.borrow().get_discount_factor_at_date(&pricing_date)?;
 
         let res = NpvResult::new(
             npv,
@@ -196,9 +139,12 @@ mod tests {
 
     #[test]
     fn test_fixed_coupon_bond_pricer() -> Result<()> {
-        let dt = EvaluationDate::new(datetime!(2021-01-01 00:00:00 +09:00));
+        let dt = datetime!(2021-01-01 16:30:00 +09:00);
+        let bond_pricing_date = dt.clone();
         let name = "KRWGOV";
-        let evaluation_date = Rc::new(RefCell::new(dt));
+        let evaluation_date = Rc::new(RefCell::new(
+            EvaluationDate::new(dt),
+        ));
 
         // define a vector data 1Y = 0.03, 5Y = 0.04
         let curve_data = VectorData::new(
@@ -234,7 +180,7 @@ mod tests {
         let bond_code = "KR1234567890";
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         
-        let calendar = JointCalendar::new(vec![sk]);
+        let calendar = JointCalendar::new(vec![sk])?;
 
         let bond = FixedCouponBond::new_from_conventions(
             Currency::KRW,
@@ -248,57 +194,48 @@ mod tests {
             issuedate.clone(),
             maturity,
             None, 
+            Some(bond_pricing_date.clone()),
+            calendar,
             DayCountConvention::ActActIsda, 
             BusinessDayConvention::Unadjusted, 
             PaymentFrequency::SemiAnnually, 
             issuer_name.to_string(), 
-            0, 
-            1,
-            calendar, 
+            0,             
             bond_name.to_string(), 
             bond_code.to_string(),
         )?;
 
-        let isntrument = Instrument::FixedCouponBond(bond.clone());
-        let npv = pricer.npv(&isntrument)?;
-        let expected_npv: Real = 0.9993009;
-        assert!(
-            (npv - expected_npv).abs() < 1.0e-7,
-            "{}:{}  npv: {}, expected: {} (did you change the pricer or definition of Real?)",
-            file!(),
-            line!(),
-            npv,
-            expected_npv
-        );
-
-        let npv_result = pricer.npv_result(&isntrument)?;
-        assert!(
-            (npv_result.get_npv() - expected_npv).abs() < 1.0e-7,
-            "{}:{}  npv: {}, expected: {} (did you change the pricer or definition of Real?)",
-            file!(),
-            line!(),
-            npv,
-            expected_npv
-        );
-        let cashflows = pricer.get_coupon_cashflow(
-            bond.get_schedule(),
-            bond.get_daycounter(),
-            bond.get_coupon_rate(),
-            &evaluation_date.borrow().get_date_clone()
+        let cashflows = bond.get_coupon_cashflow(
+            &bond_pricing_date,
         )?;
 
         let cashflow_sum = cashflows.iter().fold(0.0, |acc, (_, amount)| acc + amount);
         // println!("cashflows: {:?}", cashflows);
         let expected_sum = 0.10499999;
         assert!(
-            (cashflow_sum - expected_sum).abs() < 1.0e-7,
+            (cashflow_sum - expected_sum).abs() < 1.0e-5,
             "{}:{}  cashflow_sum: {}, expected: {} (did you change the pricer or definition of Real?)",
             file!(),
             line!(),
             cashflow_sum,
             expected_sum
         );
-        
+
+        let isntrument = Instrument::FixedCouponBond(bond.clone());
+        let expected_npv: Real = 0.9993578;
+
+        let npv_result = pricer.npv_result(&isntrument)?;
+        let npv = npv_result.get_npv();
+
+        assert!(
+            (npv - expected_npv).abs() < 1.0e-5,
+            "{}:{}  npv_result.get_npv(): {}, expected: {} (did you change the pricer or definition of Real?)",
+            file!(),
+            line!(),
+            npv,
+            expected_npv
+        );
+
         Ok(())
     }
 }

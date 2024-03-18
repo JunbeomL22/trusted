@@ -232,7 +232,7 @@ mod tests {
             vec![Calendar::SouthKorea(
                 SouthKorea::new(SouthKoreaType::Settlement)
                 )]
-            );
+            )?;
         
         let irs = IRS::new_from_conventions(
             currency,

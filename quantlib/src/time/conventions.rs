@@ -19,6 +19,7 @@ pub enum DayCountConvention {
     Actual364,
     Thirty360,
     ActActIsda,
+    StreetConvention, // 30/360 but with EOM
 }
 
 /// Interest payment frequency/year enumeration.

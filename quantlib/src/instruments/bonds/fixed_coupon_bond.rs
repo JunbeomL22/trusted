@@ -2,14 +2,20 @@ use crate::assets::currency::Currency;
 use crate::definitions::Real;
 use crate::time::jointcalendar::JointCalendar;
 use crate::instrument::InstrumentTriat;
-use crate::time::calendars::calendar_trait::CalendarTrait;
-use serde::{Serialize, Deserialize};
-use time::{OffsetDateTime, Duration};
 use crate::instruments::schedule::{self, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+use crate::time::calendars::calendar_trait::CalendarTrait;
+//
 use anyhow::{Result, Context, anyhow};
+use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
+use std::collections::HashMap;
 
+/// pricing date is not mandatory, if not given, it is assumed to be the same date as evaluation date in Engine
+/// Bond is settled on the next or day after the trade date. Therefore, the price must be calculated on the settlement date.
+/// However, after the trade date, if we calculate the price considering the settlement gap, we obtain a weird theta value.
+/// if pricing date is not None, it discounts the cashflows to the evaluation date and compound the value to the settlement date.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixedCouponBond {
     issuer_type: IssuerType,
@@ -26,15 +32,16 @@ pub struct FixedCouponBond {
     //
     issue_date: OffsetDateTime,
     effective_date: OffsetDateTime,
+    pricing_date: Option<OffsetDateTime>,
     first_coupon_date: Option<OffsetDateTime>,
     maturity: OffsetDateTime,
+    //
+    calendar: JointCalendar,
     //
     daycounter: DayCountConvention,
     busi_convention: BusinessDayConvention,
     frequency: PaymentFrequency, 
     coupon_payment_days: i64,
-    settlement_days: i64,
-    calendar: JointCalendar,
     //
     name: String,
     code: String,
@@ -58,13 +65,14 @@ impl FixedCouponBond {
         effective_date: OffsetDateTime,
         first_coupon_date: Option<OffsetDateTime>,
         maturity: OffsetDateTime,
+        pricing_date: Option<OffsetDateTime>,
+        //
+        calendar: JointCalendar,
         //
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
         frequency: PaymentFrequency, 
         coupon_payment_days: i64,
-        settlement_days: i64,
-        calendar: JointCalendar,
         //
         name: String,
         code: String,
@@ -86,13 +94,14 @@ impl FixedCouponBond {
             effective_date,
             first_coupon_date,
             maturity,
+            pricing_date,
+            //
+            calendar,
             //
             daycounter,
             busi_convention,
             frequency,
             coupon_payment_days,
-            settlement_days,
-            calendar,
             //
             name,
             code,            
@@ -113,13 +122,15 @@ impl FixedCouponBond {
         effective_date: OffsetDateTime,
         maturity: OffsetDateTime,
         first_coupon_date: Option<OffsetDateTime>,
+        pricing_date: Option<OffsetDateTime>,
+        //
+        calendar: JointCalendar,
+        //
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
         frequency: PaymentFrequency,
         issuer_name: String,
         coupon_payment_days: i64,
-        settlement_days: i64,
-        calendar: JointCalendar,
         name: String,
         code: String,
     ) -> Result<FixedCouponBond> {
@@ -153,17 +164,30 @@ impl FixedCouponBond {
             effective_date,
             first_coupon_date,
             maturity,
+            pricing_date,
+            //
+            calendar,
             //
             daycounter,
             busi_convention,
             frequency,
             coupon_payment_days,
-            settlement_days,
-            calendar,
             //
             name,
             code,
         })
+    }
+
+    pub fn get_frequency(&self) -> &PaymentFrequency {
+        &self.frequency
+    }
+
+    pub fn get_effective_date(&self) -> &OffsetDateTime {
+        &self.effective_date
+    }
+
+    pub fn get_issue_date(&self) -> &OffsetDateTime {
+        &self.issue_date
     }
 
     pub fn get_schedule(&self) -> &Schedule {
@@ -182,9 +206,45 @@ impl FixedCouponBond {
         self.is_coupon_strip
     }
 
-    pub fn get_settlement_date(&self, date: OffsetDateTime) -> OffsetDateTime {
-        let dt = date + Duration::days(self.settlement_days);
-        self.calendar.adjust(&dt, &BusinessDayConvention::Following)
+    pub fn get_pricing_date(&self) -> Option<&OffsetDateTime> {
+        self.pricing_date.as_ref()
+    }
+
+    pub fn get_calendar(&self) -> &JointCalendar {
+        &self.calendar
+    }
+
+    /// generate coupon-cashflow after evaluation date for bonds
+    /// if include_evaluation_date is true, it will include the evaluation date
+    pub fn get_coupon_cashflow(
+        &self, 
+        _date_from: &OffsetDateTime,
+    ) -> Result<HashMap<OffsetDateTime, Real>> {
+        let mut res = HashMap::new();
+        let mut coupon_amount: Real;
+
+        for base_schedule in self.schedule.iter() {
+            let start_date = base_schedule.get_calc_start_date();
+            let end_date = base_schedule.get_calc_end_date();
+            let payment_date = base_schedule.get_payment_date();
+            let amount = base_schedule.get_amount();
+
+            match amount {
+                Some(amount) => {
+                    res.insert(payment_date.clone(), amount);
+                },
+                None => {
+                    coupon_amount = self.coupon_rate * self.calendar.year_fraction(
+                        start_date, 
+                        end_date,
+                        &self.daycounter
+                    )?;
+
+                    res.insert(payment_date.clone(), coupon_amount);
+                }
+            }
+        }
+        Ok(res)
     }
 
 }
