@@ -456,10 +456,11 @@ mod tests {
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-    use time::Duration;
-    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::time::calendar::Calendar;
-    use crate::time::jointcalendar::JointCalendar;
+    use crate::time::{
+        jointcalendar::JointCalendar, 
+        calendars::southkorea::{SouthKorea, SouthKoreaType},
+        calendar::Calendar,
+    };
     use anyhow::Result;
     
     #[test]
@@ -492,12 +493,17 @@ mod tests {
             "ESH24".to_string(),
         );
 
+        let sk = SouthKorea::new(SouthKoreaType::Settlement);
+        let sk = Calendar::SouthKorea(sk);
+        let joint_calendar = JointCalendar::new(vec![sk])?;
+
         let rate_index = RateIndex::new(
             PaymentFrequency::Quarterly,
             BusinessDayConvention::ModifiedFollowing,
             DayCountConvention::Actual365Fixed,
-            Duration::days(91),
-            Currency::USD,
+            String::from("91D"),
+            joint_calendar,
+            Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
         );

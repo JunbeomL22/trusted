@@ -1,3 +1,4 @@
+use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::enums::RateIndexCode;
 use crate::instruments::schedule::BaseSchedule;
@@ -5,15 +6,20 @@ use crate::parameters::zero_curve::ZeroCurve;
 use crate::data::history_data::CloseData;
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
+use crate::time::jointcalendar::JointCalendar;
+use crate::utils::string_arithmetic::add_period;
+use crate::enums::Compounding;
+//
 use serde::{Deserialize, Serialize};
+use anyhow::Result;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RateIndex {
     frequency: PaymentFrequency,
     business_day_convention: BusinessDayConvention,
     daycounter: DayCountConvention,
-    fixing_days: i64,
     tenor: String,
+    calendar: JointCalendar,
     currency: Currency,
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
     code: RateIndexCode, 
@@ -24,8 +30,8 @@ impl RateIndex {
         frequency: PaymentFrequency,
         business_day_convention: BusinessDayConvention,
         daycounter: DayCountConvention,
-        fixing_days: i64,
         tenor: String,
+        calendar: JointCalendar,
         currency: Currency,
         code: RateIndexCode,
         name: String,
@@ -34,7 +40,7 @@ impl RateIndex {
             frequency,
             business_day_convention,
             daycounter,
-            fixing_days,
+            calendar,
             tenor,
             currency,
             code,
@@ -74,17 +80,37 @@ impl RateIndex {
         &self.tenor
     }
 
-    pub fn get_fixing_days(&self) -> i64 {
-        self.fixing_days
-    }
-
+    // if CloseDate has rate in the fixing date, return the rate
+    // otherwise, it retuns zero rate in the evaluation date
     pub fn get_coupon_amount(
         &self,
         base_schedule: &BaseSchedule,
         zero_curve: &ZeroCurve,
         close_data: &CloseData,
-    ) -> Real {
+    ) -> Result<Real> {
+        let fixing_date = base_schedule.get_fixing_date();
+        let rate = close_data.get(fixing_date);
+        let res = match rate {
+            Some(rate) => *rate,
+            None => {
+                let forward_date = add_period(
+                    &zero_curve.get_evaluation_date_clone().borrow().get_date_clone(),
+                    self.tenor.as_str(),
+                );
 
+                zero_curve.get_forward_rate_from_evaluation_date(
+                    &forward_date,
+                    Compounding::Simple, 
+                )?
+            }
+        };
+        let frac = self.calendar.year_fraction(
+            base_schedule.get_calc_start_date(),
+            base_schedule.get_calc_end_date(),
+            &self.daycounter,
+        )?;
+        
+        Ok(res * frac)
     }
 }
 

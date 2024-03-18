@@ -40,4 +40,15 @@ impl CloseData {
     pub fn get_code(&self) -> &String {
         &self.code
     }
+
+    // Get method
+    pub fn get(&self, key: &OffsetDateTime) -> Option<&Real> {
+        self.value.get(key)
+    }
+
+    // Get mutable method
+    pub fn get_mut(&mut self, key: &OffsetDateTime) -> Option<&mut Real> {
+        self.value.get_mut(key)
+    }
+    
 }

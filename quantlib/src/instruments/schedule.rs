@@ -194,8 +194,8 @@ mod tests {
     // conv = ModifiedFollowing
     #[test]
     fn test_build_schedule() -> Result<()> {
-        let effective_date = datetime!(2023-08-03 16:00:00 +09:00);
-        let maturity = datetime!(2024-02-05 16:00:00 +09:00);
+        let effective_date = datetime!(2023-08-03 16:30:00 +09:00);
+        let maturity = datetime!(2024-02-05 16:30:00 +09:00);
         let cal = SouthKorea::new(SouthKoreaType::Settlement);
         let calendar = Calendar::SouthKorea(cal);
         let joint_calendar = JointCalendar::new(vec![calendar])?;
@@ -213,17 +213,17 @@ mod tests {
         let expected_schedule = Schedule {
             data: vec![
                 BaseSchedule {
-                    fixing_date: datetime!(2023-08-02 16:00:00.0 +09:00:00),
-                    calc_start_date: datetime!(2023-08-03 16:00:00.0 +09:00:00),
-                    calc_end_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
-                    payment_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
+                    fixing_date: datetime!(2023-08-02 16:30:00.0 +09:00:00),
+                    calc_start_date: datetime!(2023-08-03 16:30:00.0 +09:00:00),
+                    calc_end_date: datetime!(2023-11-03 16:30:00.0 +09:00:00),
+                    payment_date: datetime!(2023-11-03 16:30:00.0 +09:00:00),
                     amount: None,
                 },
                 BaseSchedule {
-                    fixing_date: datetime!(2023-11-02 16:00:00.0 +09:00:00),
-                    calc_start_date: datetime!(2023-11-03 16:00:00.0 +09:00:00),
-                    calc_end_date: datetime!(2024-02-05 16:00:00.0 +09:00:00),
-                    payment_date: datetime!(2024-02-05 16:00:00.0 +09:00:00),
+                    fixing_date: datetime!(2023-11-02 16:30:00.0 +09:00:00),
+                    calc_start_date: datetime!(2023-11-03 16:30:00.0 +09:00:00),
+                    calc_end_date: datetime!(2024-02-05 16:30:00.0 +09:00:00),
+                    payment_date: datetime!(2024-02-05 16:30:00.0 +09:00:00),
                     amount: None,
                 },
             ],

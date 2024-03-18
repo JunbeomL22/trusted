@@ -13,7 +13,7 @@ pub type Integer = i32;
 pub type FX = (Currency, Currency); 
 
 /// Default time. This actually changes regarding the markets and the instruments.
-pub const CLOSING_TIME: time::Time = time::macros::time!(16:00:00); 
+pub const CLOSING_TIME: time::Time = time::macros::time!(16:30:00); 
 pub const EX_DIVIDEND_TIME: time::Time = time::macros::time!(00:00:01);
 pub const COUPON_PAYMENT_TIME: time::Time = time::macros::time!(16:30:00);
 pub const OPENING_TIME: time::Time = time::macros::time!(09:00:00);

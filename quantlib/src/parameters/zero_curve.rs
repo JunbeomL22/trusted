@@ -339,7 +339,19 @@ impl ZeroCurve {
         return self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
-    pub fn get_short_rate_from_time(&self, time: Time) -> Result<Real> {
+    pub fn get_forward_rate_from_evaluation_date(
+        &self, 
+        date: &OffsetDateTime, 
+        compounding: Compounding
+    ) -> Result<Real> {
+        self.get_forward_rate_between_dates(
+            &self.evaluation_date.borrow().get_date_clone(), 
+            date, 
+            compounding
+        )
+    }
+
+    pub fn get_short_rate_at_time(&self, time: Time) -> Result<Real> {
         match self.get_forward_rate_between_times(time, time + 0.002737, Compounding::Simple) {
             Ok(rate) => Ok(rate),
             Err(e) => Err(e)
@@ -349,7 +361,7 @@ impl ZeroCurve {
     pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Result<Vec<Real>> {
         let mut res = vec![0.0; times.len()];
         for i in 0..times.len() {
-            res[i] = match self.get_short_rate_from_time(times[i]) {
+            res[i] = match self.get_short_rate_at_time(times[i]) {
                 Ok(rate) => rate,
                 Err(e) => return Err(e)
             
@@ -359,7 +371,7 @@ impl ZeroCurve {
     }
     pub fn get_instantaneous_forward_rate_from_date(&self, date: &OffsetDateTime) -> Result<Real> {
         let time = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date);
-        self.get_short_rate_from_time(time)
+        self.get_short_rate_at_time(time)
     }
 
     pub fn get_cached_discount_factors_clone(&self) -> Array1<Real> {

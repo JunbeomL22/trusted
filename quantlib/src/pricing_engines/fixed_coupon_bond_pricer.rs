@@ -1,4 +1,3 @@
-use crate::instruments::schedule::*;
 use crate::instrument::InstrumentTriat;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
@@ -6,7 +5,6 @@ use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
 use std::collections::HashMap;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
-use crate::time::calendars::nullcalendar::NullCalendar;
 //
 use anyhow::{Context, Result};
 use std::{rc::Rc, cell::RefCell};
@@ -209,9 +207,16 @@ mod tests {
             &bond_pricing_date,
         )?;
 
-        let cashflow_sum = cashflows.iter().fold(0.0, |acc, (_, amount)| acc + amount);
-        // println!("cashflows: {:?}", cashflows);
-        let expected_sum = 0.10499999;
+
+        let filtered_cashflows: HashMap<OffsetDateTime, Real> = cashflows
+            .iter()
+            .filter(|(&key, _)| key > dt)
+            .map(|(&key, &value)| (key, value))
+            .collect();
+
+        let cashflow_sum = filtered_cashflows.iter().fold(0.0, |acc, (_, amount)| acc + amount);
+        
+        let expected_sum = 0.08991781;
         assert!(
             (cashflow_sum - expected_sum).abs() < 1.0e-5,
             "{}:{}  cashflow_sum: {}, expected: {} (did you change the pricer or definition of Real?)",

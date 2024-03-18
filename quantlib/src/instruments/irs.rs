@@ -9,7 +9,7 @@ use crate::time::jointcalendar::JointCalendar;
 use crate::instrument::InstrumentTriat;
 use anyhow::{Result, Context, anyhow};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IRS {
     fixed_legs: Schedule,
     floating_legs: Schedule,
@@ -215,11 +215,18 @@ mod tests {
         let issue_date = datetime!(2021-01-01 00:00:00 +09:00);
         let maturity = datetime!(2021-12-31 00:00:00 +09:00);
         let fixed_rate = 0.01;
+        let sk = JointCalendar::new(
+            vec![Calendar::SouthKorea(
+                SouthKorea::new(SouthKoreaType::Settlement)
+                )]
+            )?;
+
         let rate_index = RateIndex::new(
             PaymentFrequency::Quarterly,
             BusinessDayConvention::ModifiedFollowing,
             DayCountConvention::Actual365Fixed,
-            Duration::days(91),
+            String::from("91D"),
+            sk,
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
@@ -257,7 +264,6 @@ mod tests {
         assert_eq!(currency, *irs.get_currency());
         assert_eq!(unit_notional, irs.get_unit_notional());
         assert_eq!(maturity, irs.get_maturity().unwrap().clone());
-        assert_eq!(Some(&rate_index), irs.get_rate_index());
 
         Ok(())
     }

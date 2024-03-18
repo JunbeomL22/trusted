@@ -7,7 +7,7 @@ use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::instrument::InstrumentTriat;
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FloatingRateNote {
     currency: Currency,
     issuer_type: IssuerType,

@@ -1,4 +1,4 @@
-use crate::definitions::{Real, Integer};
+use crate::definitions::Real;
 use crate::instruments::fixed_coupon_bond::FixedCouponBond;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::time::calendars::calendar_trait::CalendarTrait;
@@ -7,13 +7,17 @@ use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::{Instrument, InstrumentTriat};
 use crate::evaluation_date::EvaluationDate;
 //
-use anyhow::{Result, Context, anyhow};
-use time::convert::Day;
+use anyhow::{Result, Context};
 use std::rc::Rc;
 use std::cell::RefCell;
+use argmin::core::{CostFunction, Error};
+use argmin::solver::quasinewton::LBFGS;
+use argmin::solver::linesearch::MoreThuenteLineSearch;
+use argmin::core::{Executor, Gradient};
 
 /// 금융투자회사의 영업 및 업무에 관한 규정 별표 14
 /// https://law.kofia.or.kr/service/law/lawFullScreenContent.do?seq=136&historySeq=263
+#[derive(Debug, Clone)]
 pub struct KrxYieldPricer {
     bond_yield: Real,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
@@ -39,8 +43,58 @@ impl KrxYieldPricer {
         self.bond_yield = bond_yield;
     }
 
-    pub fn find_bond_yield(&self, bond: FixedCouponBond, price: Real) -> Result<Real> {
-        Ok(0.0)
+    pub fn find_bond_yield(
+        &self, 
+        bond: FixedCouponBond, 
+        price: Real,
+    ) -> Result<Real> {
+        let pricer = self.clone();
+        let problem = KrxYieldPricerCostFunction::new(bond, price, pricer);
+        let solver = LBFGS::new(MoreThuenteLineSearch::new(), 3).with_tolerance_cost(1e-5)?;
+        //let solver = BFGS::new(MoreThuenteLineSearch::new()).with_tolerance_cost(1e-5)?;
+        let executor = Executor::new(problem, solver);
+        let init_param = 0.02;
+        let res = solver.run(&problem, init_param)?;
+        Ok(res.state.best_param)
+    }
+}
+
+pub struct KrxYieldPricerCostFunction {
+    bond: Instrument,
+    price: Real,
+    pricer: KrxYieldPricer,
+}
+
+impl KrxYieldPricerCostFunction {
+    pub fn new(bond: FixedCouponBond, price: Real, pricer: KrxYieldPricer) -> KrxYieldPricerCostFunction {
+        KrxYieldPricerCostFunction {
+            bond: Instrument::FixedCouponBond(bond),
+            price,
+            pricer,
+        }
+    }
+}
+
+impl CostFunction for KrxYieldPricerCostFunction {
+    type Param = Real;
+    type Output = Real;
+    
+
+    fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
+        self.pricer.set_bond_yield(*param);
+        let npv = self.pricer.npv(&self.bond)?;
+        Ok((npv - self.price).powf(2.0))
+    }
+}
+
+impl Gradient for KrxYieldPricerCostFunction {
+    type Param = Real;
+    type Gradient = Real;
+  
+    fn gradient(&self, param: &Self::Param) -> Result<Self::Gradient, Error> {
+        let h = 1e-7;
+        let grad = (self.cost(&(param + h))? - self.cost(&(param - h))?)/(2.0*h);
+        Ok(grad)
     }
 }
 
@@ -182,5 +236,4 @@ mod tests {
         println!("npv: {}", npv);
         Ok(())
     }
-
 }
