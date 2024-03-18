@@ -1,18 +1,22 @@
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::enums::RateIndexCode;
+use crate::instruments::schedule::BaseSchedule;
+use crate::parameters::zero_curve::ZeroCurve;
+use crate::data::history_data::CloseData;
+use crate::definitions::Real;
 use crate::assets::currency::Currency;
 use serde::{Deserialize, Serialize};
-use time::Duration;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RateIndex {
     frequency: PaymentFrequency,
     business_day_convention: BusinessDayConvention,
     daycounter: DayCountConvention,
-    tenor: Duration,
+    fixing_days: i64,
+    tenor: String,
     currency: Currency,
-    code: RateIndexCode, // rate tenor is determined by this code 1M, 2M, etc
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
+    code: RateIndexCode, 
 }
 
 impl RateIndex {
@@ -20,7 +24,8 @@ impl RateIndex {
         frequency: PaymentFrequency,
         business_day_convention: BusinessDayConvention,
         daycounter: DayCountConvention,
-        tenor: Duration,
+        fixing_days: i64,
+        tenor: String,
         currency: Currency,
         code: RateIndexCode,
         name: String,
@@ -29,6 +34,7 @@ impl RateIndex {
             frequency,
             business_day_convention,
             daycounter,
+            fixing_days,
             tenor,
             currency,
             code,
@@ -64,8 +70,21 @@ impl RateIndex {
         &self.daycounter
     }
 
-    pub fn get_tenor(&self) -> &Duration {
+    pub fn get_tenor(&self) -> &String {
         &self.tenor
+    }
+
+    pub fn get_fixing_days(&self) -> i64 {
+        self.fixing_days
+    }
+
+    pub fn get_coupon_amount(
+        &self,
+        base_schedule: &BaseSchedule,
+        zero_curve: &ZeroCurve,
+        close_data: &CloseData,
+    ) -> Real {
+
     }
 }
 
