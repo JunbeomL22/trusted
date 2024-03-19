@@ -200,7 +200,7 @@ impl RateIndex {
                 // if the fixing_date is in the past_date, use the rate in the past_date
                 // otherwise, use the zero rate in the evaluation date
                 // if the fixing_date is after the evaluation date, use the simple forward rate from the fixing date to the next fixing date
-                // if the fixing date is the last fixing date, then the compounding is stoppeds
+                // if the fixing date is the last fixing date, then the compounding stops
                 while fixing_date < last_fixing_date {
                     let next_fixing_date = self.calendar.adjust(
                         &add_period(&fixing_date, comp_tenor.as_str()),
