@@ -1,19 +1,34 @@
+use crate::instruments::{
+    fixed_coupon_bond::FixedCouponBond,
+    floating_rate_note::FloatingRateNote,
+    stock_futures::StockFutures,
+    irs::IRS,
+    bond_futures::BondFutures,
+    ktbf::KTBF,
+};
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
-use crate::instruments::floating_rate_note::FloatingRateNote;
-use crate::instruments::stock_futures::StockFutures;
-use crate::instruments::irs::IRS;
-use crate::instruments::bond_futures::BondFutures;
-use crate::instruments::ktbf::KTBF;
-use time::OffsetDateTime;
-use std::ops::Index;
 use crate::pricing_engines::match_parameter::MatchParameter;
-use crate::parameters::rate_index::RateIndex;
+use crate::parameters::{
+    rate_index::RateIndex,
+    zero_curve::ZeroCurve,
+};
 use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
-use std::rc::Rc;
-use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
+use crate::time::{
+    conventions::PaymentFrequency,
+    jointcalendar::JointCalendar,
+};
+// 
 use anyhow::{Result, anyhow};
 use enum_dispatch::enum_dispatch;
+use std::{
+    rc::Rc,
+    cell::RefCell,
+    ops::Index,
+    collections::HashMap,
+};
+use time::OffsetDateTime;
+
 
 #[enum_dispatch]
 pub trait InstrumentTriat{
@@ -23,39 +38,63 @@ pub trait InstrumentTriat{
     fn get_currency(&self) -> &Currency;
     fn get_unit_notional(&self) -> Real;
     fn get_type_name(&self) -> &'static str;
+    fn get_average_trade_price(&self) -> Real { 0.0 }
+    //
+    fn get_accountring_level(&self) -> AccountingLevel { AccountingLevel::Level1 }
+    //
     // There is an instrument that does not have maturity date, so it is optional
     fn get_maturity(&self) -> Option<&OffsetDateTime> { None }
     // There is an instrument that does not have underlying names, 
     // so the default action is to return an empty vector
     fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
     // only for bonds, so None must be allowed
-    fn get_credit_rating(&self) -> Option<&CreditRating> { None }
+    fn get_credit_rating(&self) -> Result<&CreditRating> {
+        Err(anyhow!("not supported instrument type on get_credit_rating"))
+    }
     // only for bonds, so None must be allowed
-    fn get_issuer_type(&self) -> Option<&IssuerType> { None }
+    fn get_issuer_type(&self) -> Result<&IssuerType> {
+        Err(anyhow!("not supported instrument type on get_issuer_type"))
+    }
     // only for bonds, so None must be allowed
-    fn get_rank_type(&self) -> Option<&RankType> { None }
+    fn get_rank_type(&self) -> Result<&RankType> {
+        Err(anyhow!("not supported instrument type on get_rank_type"))
+    }
     // only for bonds, so None must be allowed
-    fn get_issuer_name(&self) -> Option<&String> { None }
-    // only for instruments for floating coupon,
-    // e.g., frn, irs, etc, so None must be allowed
-    //fn get_rate_index_forward_curve_name(&self) -> Option<&String> { None }
-    //
-    fn get_average_trade_price(&self) -> Real { 0.0 }
-    //
-    fn get_accountring_level(&self) -> AccountingLevel { AccountingLevel::Level1 }
-    //
-    fn get_rate_index(&self) -> Option<&RateIndex> { None }
-    // 
-    fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> { 
-        Err(anyhow!(
-            "not supported instrument type on as_fixed_coupon_bond" 
-        ))
+    fn get_issuer_name(&self) -> Result<&String> {
+        Err(anyhow!("not supported instrument type on get_issuer_name"))
     }
 
-    fn as_ktbf(&self) -> Result<&KTBF> { 
-        Err(anyhow!(
-            "not supported instrument type on as_ktbf"
-        ))
+    // only for FloatingRateNote, IRS, OIS, and other swaps
+    fn get_rate_index(&self) -> Result<&RateIndex> {
+        Err(anyhow!("not supported instrument type on get_rate_index"))
+    }
+    
+    fn get_coupon_cashflow(
+        &self, 
+        _pricing_date: &OffsetDateTime,
+        _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
+    ) -> Result<HashMap<OffsetDateTime, Real>> { 
+        Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
+    }
+
+    fn get_pricing_date(&self) -> Result<Option<&OffsetDateTime>, anyhow::Error> {
+        Err(anyhow!("not supported instrument type on get_pricing_date"))
+    }
+
+    fn is_coupon_strip(&self) -> Result<bool> { 
+        Err(anyhow!("not supported instrument type on is_coupon_strip"))
+    }
+
+    fn get_frequency(&self) -> Result<PaymentFrequency> {
+        Err(anyhow!("not supported instrument type on get_frequency"))
+    }
+
+    fn get_calendar(&self) -> Result<&JointCalendar> {
+        Err(anyhow!("not supported instrument type on get_calendar"))
+    }
+
+    fn get_issue_date(&self) -> Result<&OffsetDateTime> {
+        Err(anyhow!("not supported instrument type on issue_date"))
     }
 }
 
@@ -67,25 +106,6 @@ pub enum Instrument {
     BondFutures(BondFutures),
     IRS(IRS),
     KTBF(KTBF),
-}
-
-impl Instrument {
-    pub fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> {
-        match self {
-            Instrument::FixedCouponBond(instrument) => {
-                instrument.as_fixed_coupon_bond()
-            },
-            _  => {
-                Err(anyhow!(
-                    "Instrument::as_fixed_coupon_bond: not supported instrument type: {}\n\
-                    name: {}, code = {}", 
-                    self.get_type_name(),
-                    self.get_name(),
-                    self.get_code(),
-                ))
-            }
-        }
-    }
 }
 
 /// calculation groups for calculation optimization, 

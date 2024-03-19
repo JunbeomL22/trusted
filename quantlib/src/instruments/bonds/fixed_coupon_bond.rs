@@ -6,11 +6,16 @@ use crate::instruments::schedule::{self, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::parameters::zero_curve::ZeroCurve;
 //
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    rc::Rc,
+    cell::RefCell,
+};
 
 /// pricing date is not mandatory, if not given, it is assumed to be the same date as evaluation date in Engine
 /// Bond is settled on the next or day after the trade date. Therefore, the price must be calculated on the settlement date.
@@ -186,10 +191,6 @@ impl FixedCouponBond {
         &self.effective_date
     }
 
-    pub fn get_issue_date(&self) -> &OffsetDateTime {
-        &self.issue_date
-    }
-
     pub fn get_schedule(&self) -> &Schedule {
         &self.schedule
     }
@@ -206,19 +207,67 @@ impl FixedCouponBond {
         self.is_coupon_strip
     }
 
-    pub fn get_pricing_date(&self) -> Option<&OffsetDateTime> {
-        self.pricing_date.as_ref()
+}
+
+impl InstrumentTriat for FixedCouponBond {
+    fn get_pricing_date(&self) -> Result<Option<&OffsetDateTime>, anyhow::Error> {
+        Ok(self.pricing_date.as_ref())
     }
 
-    pub fn get_calendar(&self) -> &JointCalendar {
-        &self.calendar
+    fn is_coupon_strip(&self) -> Result<bool> {
+        Ok(self.is_coupon_strip)
+    }
+
+    fn get_type_name(&self) -> &'static str {
+        "FixedCouponBond"
+    }
+
+    fn get_credit_rating(&self) -> Result<&CreditRating> {
+        Ok(&self.credit_rating)
+    }
+
+    fn get_issuer_type(&self) -> Result<&IssuerType> { 
+        Ok(&self.issuer_type)
+    }
+    
+    fn get_rank_type(&self) -> Result<&RankType> { 
+        Ok(&self.rank)
+    }
+    
+    fn get_issuer_name(&self) -> Result<&String> { 
+        Ok(&self.issuer_name)
+    }
+
+    fn get_currency(&self) -> &Currency { 
+        &self.currency
+    }
+
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_code(&self) -> &String {
+        &self.code
+    }
+
+    fn get_unit_notional(&self) -> Real {
+        self.unit_notional
+    }
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
+    }
+
+    fn get_issue_date(&self) -> Result<&OffsetDateTime> {
+        Ok(&self.issue_date)
     }
 
     /// generate coupon-cashflow after evaluation date for bonds
     /// if include_evaluation_date is true, it will include the evaluation date
-    pub fn get_coupon_cashflow(
+    fn get_coupon_cashflow(
         &self, 
-        _date_from: &OffsetDateTime,
+        _pricing_date: &OffsetDateTime,
+        _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         let mut coupon_amount: Real;
@@ -247,50 +296,11 @@ impl FixedCouponBond {
         Ok(res)
     }
 
-}
-
-impl InstrumentTriat for FixedCouponBond {
-    fn as_fixed_coupon_bond(&self) -> Result<&FixedCouponBond> {
-        Ok(self)
+    fn get_calendar(&self) -> Result<&JointCalendar> {
+        Ok(&self.calendar)
     }
 
-    fn get_type_name(&self) -> &'static str {
-        "FixedCouponBond"
-    }
-
-    fn get_credit_rating(&self) -> Option<&CreditRating> {
-        Some(&self.credit_rating)
-    }
-
-    fn get_issuer_type(&self) -> Option<&IssuerType> { 
-        Some(&self.issuer_type)
-    }
-    
-    fn get_rank_type(&self) -> Option<&RankType> { 
-        Some(&self.rank)
-    }
-    
-    fn get_issuer_name(&self) -> Option<&String> { 
-        Some(&self.issuer_name)
-    }
-
-    fn get_currency(&self) -> &Currency { 
-        &self.currency
-    }
-
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
-    }
-
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        Some(&self.maturity)
+    fn get_frequency(&self) -> Result<PaymentFrequency> {
+        Ok(self.frequency)
     }
 }

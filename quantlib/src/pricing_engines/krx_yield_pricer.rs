@@ -1,35 +1,43 @@
 use crate::definitions::Real;
 use crate::instruments::fixed_coupon_bond::FixedCouponBond;
 use crate::pricing_engines::pricer::PricerTrait;
-use crate::time::calendars::calendar_trait::CalendarTrait;
-use crate::time::conventions::DayCountConvention;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::{Instrument, InstrumentTriat};
 use crate::evaluation_date::EvaluationDate;
+use crate::time::{
+    conventions::DayCountConvention,
+    calendars::calendar_trait::CalendarTrait,
+};
+use crate::parameters::zero_curve::ZeroCurve;
 //
-use anyhow::{Result, Context};
-use std::rc::Rc;
-use std::cell::RefCell;
-use argmin::core::{CostFunction, Error};
-use argmin::solver::quasinewton::LBFGS;
+use anyhow::{Result, Context, anyhow};
+use std::{
+    rc::Rc,
+    cell::RefCell,
+};
+use argmin::core::{Error, Executor, CostFunction, Gradient};
+use argmin::solver::gradientdescent::SteepestDescent;
 use argmin::solver::linesearch::MoreThuenteLineSearch;
-use argmin::core::{Executor, Gradient};
 
 /// 금융투자회사의 영업 및 업무에 관한 규정 별표 14
 /// https://law.kofia.or.kr/service/law/lawFullScreenContent.do?seq=136&historySeq=263
 #[derive(Debug, Clone)]
 pub struct KrxYieldPricer {
     bond_yield: Real,
+    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     daycount: DayCountConvention,
 }
 
 impl KrxYieldPricer {
     pub fn new(
-        bond_yield: Real, evaluation_date: Rc<RefCell<EvaluationDate>>,
+        bond_yield: Real, 
+        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
+        evaluation_date: Rc<RefCell<EvaluationDate>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
             bond_yield,
+            forward_curve,
             evaluation_date,
             daycount: DayCountConvention::StreetConvention,
         }
@@ -46,31 +54,47 @@ impl KrxYieldPricer {
     pub fn find_bond_yield(
         &self, 
         bond: FixedCouponBond, 
-        price: Real,
+        npv: Real,
     ) -> Result<Real> {
         let pricer = self.clone();
-        let problem = KrxYieldPricerCostFunction::new(bond, price, pricer);
-        let solver = LBFGS::new(MoreThuenteLineSearch::new(), 3).with_tolerance_cost(1e-5)?;
+        let problem = KrxYieldPricerCostFunction::new(bond, npv, pricer);
+        //let solver = LBFGS::new(MoreThuenteLineSearch::new(), 3).with_tolerance_cost(1e-5)?;
         //let solver = BFGS::new(MoreThuenteLineSearch::new()).with_tolerance_cost(1e-5)?;
-        let executor = Executor::new(problem, solver);
+        // Set up line search needed by `SteepestDescent`
+        let linesearch = MoreThuenteLineSearch::new();        
+        // Set up solver -- `SteepestDescent` requires a linesearch
+        let solver = SteepestDescent::new(linesearch);
         let init_param = 0.02;
-        let res = solver.run(&problem, init_param)?;
-        Ok(res.state.best_param)
+        let executor = Executor::new(problem, solver)
+            .configure(|state|
+                state
+                    .param(init_param)
+                    .max_iters(30)
+                    .target_cost(1.0e-12)
+            );
+        
+        let res = executor.run()?;
+        //println!("res: {:?}", res.state);
+        match res.state.best_param {
+            Some(param) => Ok(param),
+            None => Err(anyhow!("Failed to find bond yield")),
+        
+        }
     }
 }
 
 pub struct KrxYieldPricerCostFunction {
     bond: Instrument,
-    price: Real,
-    pricer: KrxYieldPricer,
+    npv: Real,
+    pricer: RefCell<KrxYieldPricer>,
 }
 
 impl KrxYieldPricerCostFunction {
-    pub fn new(bond: FixedCouponBond, price: Real, pricer: KrxYieldPricer) -> KrxYieldPricerCostFunction {
+    pub fn new(bond: FixedCouponBond, npv: Real, pricer: KrxYieldPricer) -> KrxYieldPricerCostFunction {
         KrxYieldPricerCostFunction {
             bond: Instrument::FixedCouponBond(bond),
-            price,
-            pricer,
+            npv,
+            pricer: RefCell::new(pricer),
         }
     }
 }
@@ -81,9 +105,9 @@ impl CostFunction for KrxYieldPricerCostFunction {
     
 
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
-        self.pricer.set_bond_yield(*param);
-        let npv = self.pricer.npv(&self.bond)?;
-        Ok((npv - self.price).powf(2.0))
+        {self.pricer.borrow_mut().set_bond_yield(*param);}
+        let npv = self.pricer.borrow().npv(&self.bond)?;
+        Ok((npv - self.npv).powf(2.0))
     }
 }
 
@@ -99,21 +123,21 @@ impl Gradient for KrxYieldPricerCostFunction {
 }
 
 impl PricerTrait for KrxYieldPricer {
-    fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        let bond = instrument.as_fixed_coupon_bond()?;
+    fn npv(&self, bond: &Instrument) -> Result<Real> {
         let mut res: Real = 0.0;
         let mut disc_factor: Real;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let pricing_date = bond.get_pricing_date().unwrap_or(&eval_dt);
-        let freq = bond.get_frequency().as_real();
+        let pricing_date = bond.get_pricing_date()?.unwrap_or(&eval_dt);
+        let freq = bond.get_frequency()?.as_real();
         let effective_yield = self.bond_yield / freq;
-        let cal = bond.get_calendar();
+        let cal = bond.get_calendar()?;
         let mut diff: Real;
         let daycounter = self.daycount;
-        let maturity = instrument.get_maturity().unwrap();
+        let maturity = bond.get_maturity().unwrap();
 
         let cashflow = bond.get_coupon_cashflow(
             &pricing_date,
+            self.forward_curve.clone(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         // get minimum date after the pricing date (the key of cashflow)
@@ -137,7 +161,7 @@ impl PricerTrait for KrxYieldPricer {
             }
         }
 
-        if !bond.is_coupon_strip() {
+        if !bond.is_coupon_strip()? {
             if maturity.date() > pricing_date.date() {
                 diff = cal.year_fraction(
                     &min_cashflow_date, &maturity, &daycounter
@@ -157,7 +181,7 @@ impl PricerTrait for KrxYieldPricer {
             .keys()
             .filter(|&date| date.date() <= pricing_date.date())
             .max()
-            .unwrap_or(&bond.get_issue_date());
+            .unwrap_or(bond.get_issue_date()?);
         // b = days from previous_date to the next coupon date
         let b = (min_cashflow_date.date() - previous_date.date()).whole_days();
         let frac = d as Real / b as Real;
@@ -228,12 +252,30 @@ mod tests {
             bond_name2.to_string(), 
             bond_code2.to_string(),
         )?;
-        let inst = Instrument::FixedCouponBond(bond);
+        let inst = Instrument::FixedCouponBond(bond.clone());
         let bond_yield = 0.03390;
         
-        let pricer = KrxYieldPricer::new(bond_yield, eval_date_rc.clone());
+        let pricer = KrxYieldPricer::new(
+            bond_yield, 
+            None,
+            eval_date_rc.clone()
+        );
         let npv = pricer.npv(&inst)?;
+        let expected_npv = 1.025838;
         println!("npv: {}", npv);
+        assert!(
+            (npv - expected_npv).abs() < 1.0e-5,
+            "npv: {}, expected_npv: {}", npv, expected_npv);
+
+        // find bond yield
+        let calc_yield = pricer.find_bond_yield(bond, npv)?;
+        let expected_yield = 0.03390;
+        println!("calc yield: {:?}", calc_yield);
+        assert!(
+            (calc_yield - expected_yield).abs() < 1.0e-5,
+            "calc yield: {}, expected_yield: {}", calc_yield, expected_yield
+        );
+
         Ok(())
     }
 }

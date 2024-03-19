@@ -1,11 +1,13 @@
 use crate::assets::currency::Currency;
 use crate::definitions::Real;
-use serde::{Serialize, Deserialize};
-use time::OffsetDateTime;
 use crate::instruments::schedule::Schedule;
 use crate::parameters::rate_index::RateIndex;
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::instrument::InstrumentTriat;
+//
+use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
+use anyhow::Result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FloatingRateNote {
@@ -29,8 +31,8 @@ impl InstrumentTriat for FloatingRateNote {
         "FloatingRateNote"
     }
 
-    fn get_issuer_name(&self) -> Option<&String> {
-        Some(&self.issuer_name)
+    fn get_issuer_name(&self) -> Result<&String> {
+        Ok(&self.issuer_name)
     }
 
     fn get_name(&self) -> &String {

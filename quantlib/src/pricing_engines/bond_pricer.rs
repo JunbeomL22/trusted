@@ -2,41 +2,47 @@ use crate::instrument::InstrumentTriat;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
 use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
-use std::collections::HashMap;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
 //
 use anyhow::{Context, Result};
-use std::{rc::Rc, cell::RefCell};
+use std::{
+    rc::Rc, 
+    cell::RefCell,
+    collections::HashMap,
+};
 use time::OffsetDateTime;
 
-pub struct FixedCouponBondPricer{
+pub struct BondPricer{
     discount_curve: Rc<RefCell<ZeroCurve>>,
+    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
 }
 
-impl FixedCouponBondPricer {
+impl BondPricer {
     pub fn new(
         discount_curve: Rc<RefCell<ZeroCurve>>,
+        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>
-    ) -> FixedCouponBondPricer {
-        FixedCouponBondPricer {
+    ) -> BondPricer {
+        BondPricer {
             discount_curve,
+            forward_curve,
             evaluation_date,
         }
     }
 }
 
-impl PricerTrait for FixedCouponBondPricer {
+impl PricerTrait for BondPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        let bond = instrument.as_fixed_coupon_bond()?;
         let mut res: Real = 0.0;
         let mut disc_factor: Real;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let pricing_date = bond.get_pricing_date().unwrap_or(&eval_dt);
+        let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
     
-        let cashflow = bond.get_coupon_cashflow(
+        let cashflow = instrument.get_coupon_cashflow(
             &pricing_date,
+            self.forward_curve.clone(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         for (payment_date, amount) in cashflow.iter() {
@@ -46,7 +52,7 @@ impl PricerTrait for FixedCouponBondPricer {
             }
         }
 
-        if !bond.is_coupon_strip() {
+        if !instrument.is_coupon_strip()? {
             let maturity = instrument.get_maturity().unwrap();
 
             if maturity.date() > pricing_date.date() {
@@ -62,9 +68,8 @@ impl PricerTrait for FixedCouponBondPricer {
     }
 
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
-        let bond = instrument.as_fixed_coupon_bond()?;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let pricing_date = bond.get_pricing_date().unwrap_or(&eval_dt);
+        let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
 
         let mut npv: Real = 0.0;
         let mut coupon_amounts: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
@@ -72,8 +77,9 @@ impl PricerTrait for FixedCouponBondPricer {
 
         let mut disc_factor: Real;
         
-        let cashflow = bond.get_coupon_cashflow(
+        let cashflow = instrument.get_coupon_cashflow(
             &pricing_date,
+            self.forward_curve.clone(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
 
         for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
@@ -88,7 +94,7 @@ impl PricerTrait for FixedCouponBondPricer {
             }
         }
 
-        if !bond.is_coupon_strip() {
+        if !instrument.is_coupon_strip()? {
             let maturity = instrument.get_maturity().unwrap();
             if maturity.date() > pricing_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
@@ -165,8 +171,9 @@ mod tests {
         ));
         
         // make a pricer
-        let pricer = FixedCouponBondPricer::new(
+        let pricer = BondPricer::new(
             discount_curve.clone(),
+            None,
             evaluation_date.clone(),
         );
 
@@ -205,6 +212,7 @@ mod tests {
 
         let cashflows = bond.get_coupon_cashflow(
             &bond_pricing_date,
+            None,
         )?;
 
 

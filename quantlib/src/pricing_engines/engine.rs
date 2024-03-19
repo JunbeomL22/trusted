@@ -11,7 +11,7 @@ use crate::data::vector_data::VectorData;
 use crate::data::value_data::ValueData;
 use crate::pricing_engines::pricer::Pricer;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
-use crate::pricing_engines::fixed_coupon_bond_pricer::FixedCouponBondPricer;
+use crate::pricing_engines::bond_pricer::BondPricer;
 use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::time::calendars::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
@@ -328,13 +328,14 @@ impl Engine {
 
                 Instrument::FixedCouponBond(fcb) => {
                     let discount_curve = self.match_parameter.get_discount_curve_name(inst);
-                    let core = FixedCouponBondPricer::new(
+                    let core = BondPricer::new(
                         self.zero_curves.get(discount_curve)
                         .ok_or_else(|| anyhow::anyhow!(
                             "failed to get discount curve of {}.\nself.zero_curves does not have {}",
                             inst_code,
                             discount_curve,
                         ))?.clone(),
+                        None,
                         self.evaluation_date.clone(),
                     );
                     Pricer::FixedCouponBondPricer(Box::new(core))
