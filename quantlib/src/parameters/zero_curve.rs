@@ -11,12 +11,13 @@ use crate::math::interpolator::Interpolator1D;
 use crate::math::interpolators::stepwise_interpolatior::ConstantInterpolator1D;
 use crate::math::interpolator::ExtraPolationType;
 use crate::time::calendars::{nullcalendar::NullCalendar, calendar_trait::CalendarTrait};
+use crate::utils::string_arithmetic::add_period;
+//
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use ndarray::{Array1, array};
 use anyhow::{Result, Context, anyhow};
-use crate::utils::string_arithmetic::add_period;
 
 #[derive(Clone, Debug)]
 enum ZeroCurveInterpolator {

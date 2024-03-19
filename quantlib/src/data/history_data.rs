@@ -50,5 +50,16 @@ impl CloseData {
     pub fn get_mut(&mut self, key: &OffsetDateTime) -> Option<&mut Real> {
         self.value.get_mut(key)
     }
-    
+
+    pub fn get_ordered_data_by_datetime(&self) -> (Vec<OffsetDateTime>, Vec<Real>) {
+        let mut ordered_data = self.value.iter().collect::<Vec<_>>();
+        ordered_data.sort_by(|a, b| a.0.cmp(b.0));
+        let mut ordered_datetime = Vec::new();
+        let mut ordered_value = Vec::new();
+        for (datetime, value) in ordered_data {
+            ordered_datetime.push(*datetime);
+            ordered_value.push(*value);
+        }
+        (ordered_datetime, ordered_value)
+    }
 }

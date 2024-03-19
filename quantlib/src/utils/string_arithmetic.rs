@@ -1,6 +1,43 @@
+use crate::definitions::Time;
+//
 use time::{OffsetDateTime, Duration, Month};
 use regex;
+use anyhow::{anyhow, Result};
 
+/// rough implementation of from_period_string_to_float
+/// it does not consider leap year month day difference, etc
+pub fn from_period_string_to_float(period: &str) -> Result<Time> {
+    let re = regex::Regex::new(r"(\d+)(Y|M|W|D|h|min|sec)+").unwrap();
+
+    if !re.is_match(period) {
+        return Err(anyhow!(
+            "{}:{} (from_period_string_to_float) Invalid period: {}", 
+            file!(), line!(), period
+        ));
+    }
+
+    let mut result = 0.0;
+    for cap in re.captures_iter(period) {
+        let value = cap[1].parse::<Time>().unwrap();
+        let unit = &cap[2];
+        match unit {
+            "Y" => result += value * 365.0 * 24.0 * 60.0 * 60.0,
+            "M" => result += value * 30.5 * 24.0 * 60.0 * 60.0,
+            "W" => result += value * 7.0 * 24.0 * 60.0 * 60.0,
+            "D" => result += value * 24.0 * 60.0 * 60.0,
+            "h" => result += value * 60.0 * 60.0,
+            "min" => result += value * 60.0,
+            "sec" => result += value,
+            _ => {
+                return Err(anyhow!(
+                            "{}:{} (from_period_string_to_float) Invalid unit", 
+                            file!(), line!()
+                        ))?;
+                    },
+        }
+    }
+    Ok(result)
+}
 
 pub fn from_i32_to_month(item: i32) -> Month {
     match item {

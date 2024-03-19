@@ -1,5 +1,3 @@
-use time::OffsetDateTime;
-use std::ops::{AddAssign, SubAssign, Add, Sub};
 use crate::utils::string_arithmetic::{add_period, sub_period};
 use crate::data::observable::Observable;
 use crate::parameter::Parameter;
@@ -7,12 +5,41 @@ use std::fmt::Debug;
 use std::rc::Rc;
 use std::cell::RefCell;
 use serde::{Deserialize, Serialize};
+use time::{OffsetDateTime, Date};
+use std::{
+    ops::{AddAssign, SubAssign, Add, Sub},
+    cmp::Ordering,
+};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EvaluationDate {
     date: OffsetDateTime,
     #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
+}
+
+impl PartialEq<OffsetDateTime> for EvaluationDate {
+    fn eq(&self, other: &OffsetDateTime) -> bool {
+        self.date == *other
+    }
+}
+
+impl PartialOrd<OffsetDateTime> for EvaluationDate {
+    fn partial_cmp(&self, other: &OffsetDateTime) -> Option<Ordering> {
+        self.date.partial_cmp(other)
+    }
+}
+
+impl PartialEq<Date> for EvaluationDate {
+    fn eq(&self, other: &Date) -> bool {
+        self.date() == *other
+    }
+}
+
+impl PartialOrd<Date> for EvaluationDate {
+    fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
+        self.date().partial_cmp(other)
+    }
 }
 
 impl Debug for EvaluationDate {
@@ -46,6 +73,10 @@ impl EvaluationDate {
             date,
             observers: vec![],
         }
+    }
+
+    pub fn date(&self) -> Date {
+        self.date.date()
     }
 
     pub fn get_date_clone(&self) -> OffsetDateTime {
