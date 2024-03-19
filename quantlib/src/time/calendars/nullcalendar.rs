@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use time::{Date, OffsetDateTime};
 use anyhow::Result;
 

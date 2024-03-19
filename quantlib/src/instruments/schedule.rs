@@ -1,6 +1,6 @@
 use crate::time::jointcalendar::JointCalendar;
 use crate::time::conventions::{PaymentFrequency, BusinessDayConvention};
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use crate::utils::string_arithmetic::add_period;
 use crate::definitions::COUPON_PAYMENT_TIME;
 use crate::definitions::Real;

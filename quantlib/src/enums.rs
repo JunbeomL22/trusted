@@ -13,7 +13,8 @@ pub enum RateIndexCode {
     ESTR = 5,
     TONAR = 6,
     HONIA = 7,
-    Undefined = 8,
+    LIBOR = 8,
+    Undefined = 9,
 }
 
 impl fmt::Display for RateIndexCode {
@@ -27,6 +28,7 @@ impl fmt::Display for RateIndexCode {
             RateIndexCode::ESTR => write!(f, "ESTR"),
             RateIndexCode::TONAR => write!(f, "TONAR"),
             RateIndexCode::HONIA => write!(f, "HONIA"),
+            RateIndexCode::LIBOR => write!(f, "LIBOR"),
             RateIndexCode::Undefined => write!(f, "Undefined"),
         }
     }

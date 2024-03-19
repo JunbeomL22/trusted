@@ -6,7 +6,7 @@ use crate::instrument::{Instrument, InstrumentTriat};
 use crate::evaluation_date::EvaluationDate;
 use crate::time::{
     conventions::DayCountConvention,
-    calendars::calendar_trait::CalendarTrait,
+    calendar_trait::CalendarTrait,
 };
 use crate::parameters::zero_curve::ZeroCurve;
 //

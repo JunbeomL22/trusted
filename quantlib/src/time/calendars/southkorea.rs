@@ -1,4 +1,4 @@
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
 use crate::time::constants::{KOREAN_LUNAR_NEWYEARS, FIRST_LUNAR_NEWYEAR, LAST_LUNAR_NEWYEAR};
 use anyhow::Result;

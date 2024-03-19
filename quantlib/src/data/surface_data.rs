@@ -2,9 +2,9 @@ use crate::definitions::{Real, Time};
 use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use crate::parameter::Parameter;
-use crate::time::calendars::{
+use crate::time::{
     calendar_trait::CalendarTrait,
-    nullcalendar::NullCalendar,
+    calendars::nullcalendar::NullCalendar,
 };
 use std::rc::Rc;
 use std::cell::RefCell;

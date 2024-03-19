@@ -13,7 +13,7 @@ use crate::pricing_engines::pricer::Pricer;
 use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
 use crate::pricing_engines::bond_pricer::BondPricer;
 use crate::pricing_engines::match_parameter::MatchParameter;
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
 use crate::instrument::InstrumentTriat;
 use std::collections::HashMap;

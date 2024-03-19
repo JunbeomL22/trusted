@@ -5,7 +5,7 @@ use crate::instrument::InstrumentTriat;
 use crate::instruments::schedule::{self, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 //
 use anyhow::{Result, Context, anyhow};

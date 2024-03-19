@@ -236,7 +236,7 @@ mod tests {
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
-        );
+        )?;
 
         let irs = IRS::new_from_conventions(
             Currency::KRW,

@@ -1,4 +1,4 @@
-use crate::time::calendars::calendar_trait::CalendarTrait;
+use crate::time::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
 use serde::{Serialize, Deserialize};
 use time::{Date, Month, Weekday, UtcOffset, OffsetDateTime};
