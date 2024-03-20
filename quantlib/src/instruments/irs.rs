@@ -110,7 +110,7 @@ impl IRS {
         code: String,
     ) -> Result<IRS> {
         let floating_daycounter = rate_index.get_daycounter().clone();
-        let floating_busi_convention = rate_index.get_business_day_convention().clone();
+        let floating_busi_convention = rate_index.get_calc_day_convention().clone();
         let floating_frequency = rate_index.get_frequency().clone();
 
         let fixed_legs = schedule::build_schedule(

@@ -18,6 +18,7 @@ use std::{
     rc::Rc,
     cell::RefCell,
 };
+use time::Duration;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +32,7 @@ use std::{
 /// but I have not seen such a case in the market, so I chose not to allow such case (return error)
 pub struct RateIndex {
     payment_frequency: PaymentFrequency,
-    business_day_convention: BusinessDayConvention,
+    calc_day_convention: BusinessDayConvention,
     daycounter: DayCountConvention,
     tenor: String,
     compounding_tenor: Option<String>,
@@ -45,7 +46,7 @@ pub struct RateIndex {
 impl RateIndex {
     pub fn new(
         payment_frequency: PaymentFrequency,
-        business_day_convention: BusinessDayConvention,
+        calc_day_convention: BusinessDayConvention,
         daycounter: DayCountConvention,
         tenor: String,
         compounding_tenor: Option<String>,
@@ -104,7 +105,7 @@ impl RateIndex {
 
         Ok(RateIndex {
             payment_frequency,
-            business_day_convention,
+            calc_day_convention,
             daycounter,
             calendar,
             tenor,
@@ -120,8 +121,8 @@ impl RateIndex {
         &self.payment_frequency
     }
 
-    pub fn get_business_day_convention(&self) -> &BusinessDayConvention {
-        &self.business_day_convention
+    pub fn get_calc_day_convention(&self) -> &BusinessDayConvention {
+        &self.calc_day_convention
     }
 
     pub fn get_code(&self) -> &RateIndexCode {
@@ -164,6 +165,12 @@ impl RateIndex {
                 let res = match rate {
                     Some(rate) => *rate,
                     None => {
+                        println!(
+                            "{}:{} fixing_date = {:?} is before the evaluation date = {:?}, \
+                            but there is no rate in the fixing date",
+                            file!(), line!(), fixing_date, evaluation_date.borrow().get_date_clone()
+                        );
+
                         let forward_date = add_period(
                             &forward_curve.get_evaluation_date_clone().borrow().get_date_clone(),
                             self.tenor.as_str(),
@@ -185,31 +192,30 @@ impl RateIndex {
             },
             Some(comp_tenor) => {
                 let eval_date = evaluation_date.borrow().get_date_clone();
-                let calc_date = base_schedule.get_calc_start_date();
+                let mut calc_start_date = base_schedule.get_calc_start_date();
+                let calc_end_date = base_schedule.get_calc_end_date();
                 let fixing_days = self.compounding_fixing_days.unwrap();
                 let fixing_days_string = format!("{}D", fixing_days);
                 let fixing_days_str = fixing_days_string.as_str();
-                let mut fixing_date = sub_period(&calc_date, fixing_days_str);
-                let last_fixing_date = sub_period(&base_schedule.get_calc_end_date(), comp_tenor.as_str());
+                
                 let spot_rate = forward_curve.get_short_rate_at_time(0.0)?;
                 let mut compounded_value: Real = 1.0;
                 let mut rate: Real;
-                // compound by 1 + rate * frac
-                // frac is the year fraction between the previous fixing date and the current fixing date
-                // In case of the fixing date is before the evaluation date,
-                // if the fixing_date is in the past_date, use the rate in the past_date
-                // otherwise, use the zero rate in the evaluation date
-                // if the fixing_date is after the evaluation date, use the simple forward rate from the fixing date to the next fixing date
-                // if the fixing date is the last fixing date, then the compounding stops
-                while fixing_date < last_fixing_date {
-                    let next_fixing_date = self.calendar.adjust(
-                        &add_period(&fixing_date, comp_tenor.as_str()),
-                        &BusinessDayConvention::Following,
+                
+                while calc_start_date < calc_end_date {
+                    let fixing_date = self.calendar.adjust(
+                        &(*calc_start_date - Duration::days(fixing_days)),
+                        &BusinessDayConvention::Preceding,
+                    );
+
+                    let next_calc_date = self.calendar.adjust(
+                        &(*calc_start_date + Duration::days(1)),
+                        &self.calc_day_convention,
                     );
 
                     let frac = self.calendar.year_fraction(
-                        &fixing_date, 
-                        &next_fixing_date,
+                        &calc_start_date,
+                        &next_calc_date,
                         &self.daycounter
                     )?;
 
@@ -228,13 +234,13 @@ impl RateIndex {
                     } else {
                         rate = forward_curve.get_forward_rate_between_dates(
                             &fixing_date,
-                            &next_fixing_date,
+                            &(fixing_date.clone() + Duration::days(fixing_days)),
                             Compounding::Simple,
                         )?;
                     };
                     
                     compounded_value *= 1.0 + rate * frac;
-                    fixing_date = next_fixing_date;
+                    calc_start_date = &next_calc_date;
 
                     println!("fixing_date = {:?}", fixing_date);
                 }
@@ -326,11 +332,13 @@ mod tests {
             "USDOIS".to_string(),
         )?;
 
+        let calc_end_date = dt + Duration::days(90);
+        println!("calc_end_date = {:?}", calc_end_date);
         let base_schedule = BaseSchedule::new(
             calendar.adjust(&(dt - Duration::days(7)), &BusinessDayConvention::Following),
             dt,
-            dt + Duration::days(90),
-            dt + Duration::days(90),
+            calc_end_date.clone(),
+            calc_end_date,
             None,
         );
 
@@ -349,14 +357,14 @@ mod tests {
             "SOFR1D".to_string(),
         );
 
-        let compound = rate_index.get_coupon_amount(
+        let rate = rate_index.get_coupon_amount(
             &base_schedule,
             &zero_curve,
             &close_date,
             evaluation_date.clone(),
         )?;
 
-        println!("coumpound = {}", compound);
+        println!("annual rate = {}", rate * 360.0 /90.0);
 
         Ok(())
     }
