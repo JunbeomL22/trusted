@@ -253,7 +253,7 @@ fn main() -> Result<()> {
         zero_curve_map,
         dividend_data_map,
         //
-        match_parameter,
+        Rc::new(match_parameter),
     ).expect("Failed to create an engine");
 
     engine.initialize(inst_vec)?;

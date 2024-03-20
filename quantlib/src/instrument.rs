@@ -18,6 +18,7 @@ use crate::time::{
     conventions::PaymentFrequency,
     jointcalendar::JointCalendar,
 };
+use crate::data::history_data::CloseData;
 // 
 use anyhow::{Result, anyhow};
 use enum_dispatch::enum_dispatch;
@@ -71,8 +72,9 @@ pub trait InstrumentTriat{
     
     fn get_coupon_cashflow(
         &self, 
-        _pricing_date: &OffsetDateTime,
+        _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
+        _past_data: Option<&CloseData>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
     }
@@ -523,7 +525,7 @@ mod tests {
             DayCountConvention::Actual365Fixed,
             String::from("91D"),
             None,
-            None,
+            2,
             joint_calendar,
             Currency::KRW,
             RateIndexCode::CD,

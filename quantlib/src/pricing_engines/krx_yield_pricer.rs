@@ -9,6 +9,7 @@ use crate::time::{
     calendar_trait::CalendarTrait,
 };
 use crate::parameters::zero_curve::ZeroCurve;
+use crate::data::history_data::CloseData;
 //
 use anyhow::{Result, Context, anyhow};
 use std::{
@@ -27,6 +28,7 @@ pub struct KrxYieldPricer {
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     daycount: DayCountConvention,
+    past_close_data: Option<Rc<CloseData>>,
 }
 
 impl KrxYieldPricer {
@@ -34,12 +36,14 @@ impl KrxYieldPricer {
         bond_yield: Real, 
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        past_close_data: Option<Rc<CloseData>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
             bond_yield,
             forward_curve,
             evaluation_date,
             daycount: DayCountConvention::StreetConvention,
+            past_close_data,
         }
     }
 
@@ -135,8 +139,9 @@ impl PricerTrait for KrxYieldPricer {
         let maturity = bond.get_maturity().unwrap();
 
         let cashflow = bond.get_coupon_cashflow(
-            &pricing_date,
+            Some(&pricing_date),
             self.forward_curve.clone(),
+
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         // get minimum date after the pricing date (the key of cashflow)

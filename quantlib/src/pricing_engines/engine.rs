@@ -1,29 +1,39 @@
 use crate::instruments::instrument_info::InstrumentInfo;
-use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
-use crate::parameters::zero_curve::ZeroCurve;
-use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
+use crate::parameters::{
+    discrete_ratio_dividend::DiscreteRatioDividend,
+    zero_curve::ZeroCurve,
+};
 use crate::evaluation_date::EvaluationDate;
-use crate::instrument::{Instrument, Instruments};
-use crate::pricing_engines::calculation_result::CalculationResult;
+use crate::instrument::{Instrument, Instruments, InstrumentTriat};
 use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
 use crate::assets::stock::Stock;
-use crate::data::vector_data::VectorData;
-use crate::data::value_data::ValueData;
-use crate::pricing_engines::pricer::Pricer;
-use crate::pricing_engines::stock_futures_pricer::StockFuturesPricer;
-use crate::pricing_engines::bond_pricer::BondPricer;
-use crate::pricing_engines::match_parameter::MatchParameter;
-use crate::time::calendar_trait::CalendarTrait;
-use crate::time::calendars::nullcalendar::NullCalendar;
-use crate::instrument::InstrumentTriat;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
-use anyhow::{Result, Context, anyhow, bail};
-use time::{OffsetDateTime, Duration};
-use crate::pricing_engines::npv_result::NpvResult;
+use crate::data::{
+    vector_data::VectorData,
+    value_data::ValueData,
+    history_data::CloseData,
+};
 use crate::util::format_duration;
 use crate::utils::string_arithmetic::add_period;
+use crate::pricing_engines::{
+    pricer::Pricer,
+    match_parameter::MatchParameter,
+    calculation_result::CalculationResult,
+    calculation_configuration::CalculationConfiguration,
+    npv_result::NpvResult,
+    pricer_factory::PricerFactory,
+};
+use crate::time::{
+    calendar_trait::CalendarTrait,
+    calendars::nullcalendar::NullCalendar,
+};
+use std::{
+    collections::HashMap,
+    rc::Rc,
+    cell::RefCell,
+};
+//
+use anyhow::{Result, Context, anyhow, bail};
+use time::{OffsetDateTime, Duration};
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
@@ -43,13 +53,14 @@ pub struct Engine {
     stocks: HashMap<String, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
+    past_data: HashMap<String, Rc<CloseData>>,
     // instruments
     instruments: Instruments, // all instruments
     pricers: HashMap<String, Pricer>, // pricers for each instrument
     // selected instuments for calculation,
     // e.g., if we calcualte a delta of a single stock, we do not need calculate all instruments
     instruments_in_action: Vec<Rc<Instrument>>, 
-    match_parameter: MatchParameter, // this must be cloned 
+    match_parameter: Rc<MatchParameter>, // this must be cloned 
 }
 
 impl Engine {
@@ -62,8 +73,9 @@ impl Engine {
         stock_data: HashMap<String, ValueData>,
         curve_data: HashMap<String, VectorData>,
         dividend_data: HashMap<String, VectorData>,
+        past_close_data: HashMap<String, Rc<CloseData>>,
         //
-        match_parameter: MatchParameter,
+        match_parameter: Rc<MatchParameter>,
     ) -> Result<Engine> {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
@@ -161,6 +173,7 @@ impl Engine {
             stocks,
             zero_curves,
             dividends,
+            past_close_data,
             //
             instruments: Instruments::default(),
             instruments_in_action: vec![],
@@ -296,59 +309,23 @@ impl Engine {
 
     pub fn initialize_pricers(&mut self) -> Result<()> {
         let inst_vec = self.instruments.get_instruments_clone();
+        let pricer_factory = PricerFactory::new(
+            self.evaluation_date.clone(),
+            self.fxs.clone(),
+            self.stocks.clone(),
+            self.zero_curves.clone(),
+            self.dividends.clone(),
+            self.match_parameter.clone(),
+        );
         for inst in inst_vec.iter() {
-            let inst_type = inst.get_type_name();
-            let inst_name = inst.get_name();
-            let inst_code = inst.get_code();
-            let undertlying_codes = inst.get_underlying_codes();
-
-            let pricer = match Rc::as_ref(inst) {
-                Instrument::StockFutures(_) => {
-                    let stock = self.stocks.get(undertlying_codes[0]).unwrap().clone();
-                    let collatral_curve_name = self.match_parameter.get_collateral_curve_names(inst)[0];
-                    let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(inst)[0];
-                    let core = StockFuturesPricer::new(
-                        stock,
-                        self.zero_curves.get(collatral_curve_name)
-                        .ok_or_else(|| anyhow::anyhow!(
-                            "failed to get collateral curve of {}.\nself.zero_curves does not have {}",
-                            inst_code,
-                            collatral_curve_name,
-                        ))?.clone(),
-                        self.zero_curves.get(borrowing_curve_name)
-                        .ok_or_else(|| anyhow::anyhow!(
-                            "failed to get borrowing curve of {}.\nself.zero_curves does not have {}",
-                            inst_code,
-                            borrowing_curve_name,
-                        ))?.clone(),
-                        self.evaluation_date.clone(),
-                    );
-                    Pricer::StockFuturesPricer(Box::new(core))
-                },
-
-                Instrument::FixedCouponBond(fcb) => {
-                    let discount_curve = self.match_parameter.get_discount_curve_name(inst);
-                    let core = BondPricer::new(
-                        self.zero_curves.get(discount_curve)
-                        .ok_or_else(|| anyhow::anyhow!(
-                            "failed to get discount curve of {}.\nself.zero_curves does not have {}",
-                            inst_code,
-                            discount_curve,
-                        ))?.clone(),
-                        None,
-                        self.evaluation_date.clone(),
-                    );
-                    Pricer::FixedCouponBondPricer(Box::new(core))
-                },
-
-                _ => {
-                    return Err(anyhow!(
-                        "{}:{}  pricer for {} ({}) is not implemented yet", 
-                        file!(), line!(), inst_code, inst_type
-                    ));
-                }
-            };
-            self.pricers.insert(inst_code.clone(), pricer);
+            let pricer = pricer_factory.create_pricer(inst)
+                .with_context(|| anyhow!(
+                    "failed to create pricer for {} ({})\n{}",
+                    inst.get_code(),
+                    inst.get_type_name(),
+                    self.err_tag,
+                ))?;
+            self.pricers.insert(inst.get_code().clone(), pricer);
         }
         Ok(())
     }

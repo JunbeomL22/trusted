@@ -1,12 +1,15 @@
 use crate::assets::currency::Currency;
 use crate::definitions::Real;
-use crate::time::jointcalendar::JointCalendar;
 use crate::instrument::InstrumentTriat;
 use crate::instruments::schedule::{self, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
-use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-use crate::time::calendar_trait::CalendarTrait;
+use crate::time::{
+    conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
+    jointcalendar::JointCalendar,
+    calendar_trait::CalendarTrait,
+};
 use crate::parameters::zero_curve::ZeroCurve;
+use crate::data::history_data::CloseData;
 //
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
@@ -45,7 +48,7 @@ pub struct FixedCouponBond {
     //
     daycounter: DayCountConvention,
     busi_convention: BusinessDayConvention,
-    frequency: PaymentFrequency, 
+    frequency: PaymentFrequency,
     coupon_payment_days: i64,
     //
     name: String,
@@ -266,8 +269,9 @@ impl InstrumentTriat for FixedCouponBond {
     /// if include_evaluation_date is true, it will include the evaluation date
     fn get_coupon_cashflow(
         &self, 
-        _pricing_date: &OffsetDateTime,
+        _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
+        _past_data: Option<&CloseData>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         let mut coupon_amount: Real;

@@ -233,7 +233,7 @@ mod tests {
             DayCountConvention::Actual365Fixed,
             String::from("91D"),
             None,
-            None,
+            1,
             joint_calendar.clone(),
             Currency::KRW,
             RateIndexCode::CD,

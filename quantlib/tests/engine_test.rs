@@ -153,7 +153,7 @@ mod tests {
             zero_curve_map,
             dividend_data_map,
             //
-            match_parameter,
+            Rc::new(match_parameter.clone()),
         ).expect("Failed to create an engine");
 
         engine.initialize(inst_vec).expect("Failed to initialize");
