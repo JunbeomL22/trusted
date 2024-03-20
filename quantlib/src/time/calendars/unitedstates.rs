@@ -10,6 +10,7 @@ pub enum UnitedStatesType {
     Nyse,
     GovernmentBond,
     FederalReserve,
+    Sofr,
 }
 
 impl UnitedStatesType {
@@ -74,6 +75,35 @@ impl UnitedStatesType {
                         && (m == Month::June && y >= 2022);
         res
     }
+
+    fn goverment_bond_holiday(&self, date: &OffsetDateTime) -> bool {
+        let (y, m, d, w, _) = self.unpack(&date);
+
+        if ((d == 1 || (d == 2 && w == Weekday::Monday)) && m == Month::January) // New Year's Day (possibly moved to Monday if on Sunday)
+        || ((d >= 15 && d <= 21) && w == Weekday::Monday && m == Month::January && y >= 1983)// Martin Luther King's birthday (third Monday in January)
+        || self.is_washington_birthday(&date)// Washington's birthday (third Monday in February)
+        // Good Friday (2015, 2021, 2023 are half day due to NFP/SIFMA; see <https://www.sifma.org/resources/general/holiday-schedule/>)
+        || (self.is_good_friday(&date, false) && !(y == 2015 || y == 2021 || y == 2023))
+        || self.is_memorial_day(&date) // Memorial Day (last Monday in May)
+        || self.is_juneteenth(&date, true) // Juneteenth (Monday if Sunday or Friday if Saturday)
+        || ((d == 4 || (d == 5 && w == Weekday::Monday) || (d == 3 && w == Weekday::Friday)) && m == Month::July) // Independence Day (Monday if Sunday or Friday if Saturday)
+        || self.is_labor_day(&date)// Labor Day (first Monday in September)
+        || self.is_columbus_day(&date)// Columbus Day (second Monday in October)
+        || self.is_veterans_day_no_saturday(&date)// Veteran's Day (Monday if Sunday)
+        || ((d >= 22 && d <= 28) && w == Weekday::Thursday && m == Month::November) //Thanksgiving Day (fourth Thursday in November)
+        || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)// Christmas (Monday if Sunday or Friday if Saturday)
+        {
+            return true
+        } 
+        // special closings
+        if (y == 2018 && m == Month::December && d == 5) // President Bush's Funeral
+        || (y == 2012 && m == Month::October && d == 30) // Hurricane Sandy
+        || (y == 2004 && m == Month::June && d == 11) // President Reagan's funeral
+        {
+            return true
+        }
+        return false
+    }
 }
 
 impl Holidays for UnitedStatesType {
@@ -84,7 +114,6 @@ impl Holidays for UnitedStatesType {
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
         // united states holidays are very much hard coded since there are many calendar types: nyse, settlement, government bond, federal reserve
-
         if self.is_temporary_holiday(&date) {
             return true
         }
@@ -156,33 +185,18 @@ impl Holidays for UnitedStatesType {
                 return false
             },
             UnitedStatesType::GovernmentBond => {
-                let (y, m, d, w, _) = self.unpack(&date);
-
-                if ((d == 1 || (d == 2 && w == Weekday::Monday)) && m == Month::January) // New Year's Day (possibly moved to Monday if on Sunday)
-                || ((d >= 15 && d <= 21) && w == Weekday::Monday && m == Month::January && y >= 1983)// Martin Luther King's birthday (third Monday in January)
-                || self.is_washington_birthday(&date)// Washington's birthday (third Monday in February)
-                // Good Friday (2015, 2021, 2023 are half day due to NFP/SIFMA; see <https://www.sifma.org/resources/general/holiday-schedule/>)
-                || (self.is_good_friday(&date, false) && !(y == 2015 || y == 2021 || y == 2023))
-                || self.is_memorial_day(&date) // Memorial Day (last Monday in May)
-                || self.is_juneteenth(&date, true) // Juneteenth (Monday if Sunday or Friday if Saturday)
-                || ((d == 4 || (d == 5 && w == Weekday::Monday) || (d == 3 && w == Weekday::Friday)) && m == Month::July) // Independence Day (Monday if Sunday or Friday if Saturday)
-                || self.is_labor_day(&date)// Labor Day (first Monday in September)
-                || self.is_columbus_day(&date)// Columbus Day (second Monday in October)
-                || self.is_veterans_day_no_saturday(&date)// Veteran's Day (Monday if Sunday)
-                || ((d >= 22 && d <= 28) && w == Weekday::Thursday && m == Month::November) //Thanksgiving Day (fourth Thursday in November)
-                || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)// Christmas (Monday if Sunday or Friday if Saturday)
-                {
-                    return true
-                } 
-                // special closings
-                if (y == 2018 && m == Month::December && d == 5) // President Bush's Funeral
-                || (y == 2012 && m == Month::October && d == 30) // Hurricane Sandy
-                || (y == 2004 && m == Month::June && d == 11) // President Reagan's funeral
-                {
+                return self.goverment_bond_holiday(&date)
+            },
+            UnitedStatesType::Sofr => {
+                // so far (that is, up to 2023 at the time of this change) SOFR never fixed
+                // on Good Friday.  We're extrapolating that pattern.  This might change if
+                // a fixing on Good Friday occurs in future years.
+                if self.is_good_friday(&date, false) {
                     return true
                 }
-                return false
-            },
+                // otherwise it follows the same as UnitedStatesType::GovernmentBond
+                return self.goverment_bond_holiday(&date)
+            }
             UnitedStatesType::FederalReserve => {
                 let (y, m, d, w, _) = self.unpack(&date);
                 if ((d == 1 || (d == 2 && w == Weekday::Monday)) && m == Month::January) // New Year's Day (possibly moved to Monday if on Sunday)                   

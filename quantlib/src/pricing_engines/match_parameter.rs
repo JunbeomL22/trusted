@@ -232,6 +232,8 @@ mod tests {
             BusinessDayConvention::ModifiedFollowing,
             DayCountConvention::Actual365Fixed,
             String::from("91D"),
+            None,
+            None,
             joint_calendar.clone(),
             Currency::KRW,
             RateIndexCode::CD,

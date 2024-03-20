@@ -522,11 +522,13 @@ mod tests {
             BusinessDayConvention::ModifiedFollowing,
             DayCountConvention::Actual365Fixed,
             String::from("91D"),
+            None,
+            None,
             joint_calendar,
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
-        );
+        )?;
 
         // make SouthKorea(SouthKorea::Settlement) JointCalendar
         let sk = SouthKorea::new(SouthKoreaType::Settlement);

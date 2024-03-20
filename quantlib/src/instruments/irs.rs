@@ -226,11 +226,13 @@ mod tests {
             BusinessDayConvention::ModifiedFollowing,
             DayCountConvention::Actual365Fixed,
             String::from("91D"),
+            None,
+            None,
             sk,
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
-        );
+        )?;
 
         let fixing_days = 2;
         let payment_days = 0;

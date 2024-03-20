@@ -55,22 +55,21 @@ impl KrxYieldPricer {
         &self, 
         bond: FixedCouponBond, 
         npv: Real,
+        init_guess: Option<Real>,
     ) -> Result<Real> {
         let pricer = self.clone();
         let problem = KrxYieldPricerCostFunction::new(bond, npv, pricer);
-        //let solver = LBFGS::new(MoreThuenteLineSearch::new(), 3).with_tolerance_cost(1e-5)?;
-        //let solver = BFGS::new(MoreThuenteLineSearch::new()).with_tolerance_cost(1e-5)?;
-        // Set up line search needed by `SteepestDescent`
+        
         let linesearch = MoreThuenteLineSearch::new();        
-        // Set up solver -- `SteepestDescent` requires a linesearch
+        
         let solver = SteepestDescent::new(linesearch);
-        let init_param = 0.02;
+        let init_param = init_guess.unwrap_or(0.02);
         let executor = Executor::new(problem, solver)
             .configure(|state|
                 state
                     .param(init_param)
                     .max_iters(30)
-                    .target_cost(1.0e-12)
+                    .target_cost(1.0e-11)
             );
         
         let res = executor.run()?;
@@ -116,7 +115,7 @@ impl Gradient for KrxYieldPricerCostFunction {
     type Gradient = Real;
   
     fn gradient(&self, param: &Self::Param) -> Result<Self::Gradient, Error> {
-        let h = 1e-7;
+        let h = 5.0e-5;
         let grad = (self.cost(&(param + h))? - self.cost(&(param - h))?)/(2.0*h);
         Ok(grad)
     }
@@ -268,7 +267,7 @@ mod tests {
             "npv: {}, expected_npv: {}", npv, expected_npv);
 
         // find bond yield
-        let calc_yield = pricer.find_bond_yield(bond, npv)?;
+        let calc_yield = pricer.find_bond_yield(bond, npv, Some(-0.1))?;
         let expected_yield = 0.03390;
         println!("calc yield: {:?}", calc_yield);
         assert!(

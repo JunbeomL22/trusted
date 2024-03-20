@@ -214,7 +214,17 @@ impl RateIndex {
                     )?;
 
                     if fixing_date < eval_date {
-                        rate = close_data.get(&fixing_date).unwrap_or(&spot_rate).clone();
+                        rate = match close_data.get(&fixing_date) {
+                            Some(rate) => *rate,
+                            None => {
+                                println!(
+                                    "{}:{} fixing_date = {:?} is before the evaluation date = {:?}, \
+                                    but there is no rate in the fixing date",
+                                    file!(), line!(), fixing_date, eval_date
+                                );
+                                spot_rate
+                            },
+                        }
                     } else {
                         rate = forward_curve.get_forward_rate_between_dates(
                             &fixing_date,
@@ -225,6 +235,8 @@ impl RateIndex {
                     
                     compounded_value *= 1.0 + rate * frac;
                     fixing_date = next_fixing_date;
+
+                    println!("fixing_date = {:?}", fixing_date);
                 }
 
                 let res = compounded_value - 1.0;
@@ -236,12 +248,13 @@ impl RateIndex {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     use crate::time::{
         calendars::{
             southkorea::{SouthKorea, SouthKoreaType},
             unitedstates::{UnitedStates, UnitedStatesType},
-
         },
         jointcalendar::JointCalendar,
         calendar::Calendar,
@@ -250,23 +263,38 @@ mod tests {
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::assets::currency::Currency;
     use crate::enums::RateIndexCode;
+    use crate::parameters::zero_curve::ZeroCurve;
+    use crate::data::{
+        history_data::CloseData,
+        vector_data::VectorData,
+    };
+    use crate::instruments::schedule::BaseSchedule;
+    //
+    use time::{
+        macros::datetime,
+        Duration,
+    };
     use anyhow::{Result, anyhow};
+    use ndarray::array;
     
     #[test]
     fn test_rate_index() -> Result<()> {
+        let dt = datetime!(2024-01-02 16:30:00 -05:00);
+        let evaluation_date = Rc::new(RefCell::new(
+            EvaluationDate::new(dt.clone())
+        ));
         let payment_frequency = PaymentFrequency::Quarterly;
         let business_day_convention = BusinessDayConvention::ModifiedFollowing;
         let daycounter = DayCountConvention::Actual360;
-        let tenor = "3M".to_string();
-        let compounding_tenor = Some("1M".to_string());
-        let compounding_fixing_days = Some(2);
+        let tenor = "1D".to_string();
+        let compounding_tenor = Some("1D".to_string());
+        let compounding_fixing_days = Some(7);
         let calendar = JointCalendar::new(
             vec![
-                Calendar::SouthKorea(
-                SouthKorea::new(SouthKoreaType::Settlement)
-            )?]
-        );
-        let currency = Currency::new("USD".to_string());
+                Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Sofr, false)),
+                ]
+            )?;
+        let currency = Currency::USD;
         let code = RateIndexCode::SOFR;
         let name = "SOFR1D".to_string();
         let rate_index = RateIndex::new(
@@ -276,11 +304,59 @@ mod tests {
             tenor,
             compounding_tenor,
             compounding_fixing_days,
-            calendar,
+            calendar.clone(),
             currency,
             code,
             name,
         )?;
+
+        let curve_data = VectorData::new(
+            array![0.03, 0.03],
+            None,
+            Some(array![0.2, 0.5]),
+            dt.clone(),
+            Currency::USD,
+            "USDOIS".to_string(),
+        )?;
+        
+        let zero_curve = ZeroCurve::new(
+            evaluation_date.clone(),
+            &curve_data,
+            "USDOIS".to_string(),
+            "USDOIS".to_string(),
+        )?;
+
+        let base_schedule = BaseSchedule::new(
+            calendar.adjust(&(dt - Duration::days(7)), &BusinessDayConvention::Following),
+            dt,
+            dt + Duration::days(90),
+            dt + Duration::days(90),
+            None,
+        );
+
+        let mut history_map = HashMap::new();
+        history_map.insert(datetime!(2024-01-01 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-31 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-30 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-29 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-28 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-27 16:30:00 -05:00), 0.03);
+        history_map.insert(datetime!(2023-12-26 16:30:00 -05:00), 0.03);
+        
+        let close_date = CloseData::new(
+            history_map,
+            "SOFR1D".to_string(),
+            "SOFR1D".to_string(),
+        );
+
+        let compound = rate_index.get_coupon_amount(
+            &base_schedule,
+            &zero_curve,
+            &close_date,
+            evaluation_date.clone(),
+        )?;
+
+        println!("coumpound = {}", compound);
 
         Ok(())
     }
