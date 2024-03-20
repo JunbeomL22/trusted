@@ -18,7 +18,7 @@ use std::{
     rc::Rc,
     cell::RefCell,
 };
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -192,24 +192,24 @@ impl RateIndex {
             },
             Some(comp_tenor) => {
                 let eval_date = evaluation_date.borrow().get_date_clone();
-                let mut calc_start_date = base_schedule.get_calc_start_date();
-                let calc_end_date = base_schedule.get_calc_end_date();
+                let mut calc_start_date = base_schedule.get_calc_start_date().clone();
+                let mut next_calc_date: OffsetDateTime;
+                let calc_end_date = base_schedule.get_calc_end_date().clone();
                 let fixing_days = self.compounding_fixing_days.unwrap();
-                let fixing_days_string = format!("{}D", fixing_days);
-                let fixing_days_str = fixing_days_string.as_str();
-                
+                compounding self.tenor
+                and tenor is 91D, compounding_tenor is 1D, and payment_frequency is 3M,
                 let spot_rate = forward_curve.get_short_rate_at_time(0.0)?;
                 let mut compounded_value: Real = 1.0;
                 let mut rate: Real;
                 
                 while calc_start_date < calc_end_date {
                     let fixing_date = self.calendar.adjust(
-                        &(*calc_start_date - Duration::days(fixing_days)),
+                        &(calc_start_date - Duration::days(fixing_days)),
                         &BusinessDayConvention::Preceding,
                     );
 
-                    let next_calc_date = self.calendar.adjust(
-                        &(*calc_start_date + Duration::days(1)),
+                    next_calc_date = self.calendar.adjust(
+                        &(calc_start_date + Duration::days(1)),
                         &self.calc_day_convention,
                     );
 
@@ -240,7 +240,7 @@ impl RateIndex {
                     };
                     
                     compounded_value *= 1.0 + rate * frac;
-                    calc_start_date = &next_calc_date;
+                    calc_start_date = next_calc_date;
 
                     println!("fixing_date = {:?}", fixing_date);
                 }
