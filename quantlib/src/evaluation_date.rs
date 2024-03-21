@@ -83,6 +83,10 @@ impl EvaluationDate {
         self.date.clone()
     }
 
+    pub fn get_date(&self) -> &OffsetDateTime {
+        &self.date
+    }
+
     pub fn set_date(&mut self, date: OffsetDateTime) {
         self.date = date;
         self.notify_observers();

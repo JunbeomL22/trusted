@@ -28,7 +28,7 @@ pub struct KrxYieldPricer {
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     daycount: DayCountConvention,
-    past_close_data: Option<Rc<CloseData>>,
+    past_fixing_data: Option<Rc<CloseData>>,
 }
 
 impl KrxYieldPricer {
@@ -36,14 +36,14 @@ impl KrxYieldPricer {
         bond_yield: Real, 
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        past_close_data: Option<Rc<CloseData>>,
+        past_fixing_data: Option<Rc<CloseData>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
             bond_yield,
             forward_curve,
             evaluation_date,
             daycount: DayCountConvention::StreetConvention,
-            past_close_data,
+            past_fixing_data,
         }
     }
 
@@ -73,7 +73,7 @@ impl KrxYieldPricer {
                 state
                     .param(init_param)
                     .max_iters(30)
-                    .target_cost(1.0e-11)
+                    .target_cost(1.0e-9)
             );
         
         let res = executor.run()?;
@@ -141,7 +141,7 @@ impl PricerTrait for KrxYieldPricer {
         let cashflow = bond.get_coupon_cashflow(
             Some(&pricing_date),
             self.forward_curve.clone(),
-
+            self.past_fixing_data.as_ref(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         // get minimum date after the pricing date (the key of cashflow)
@@ -262,7 +262,8 @@ mod tests {
         let pricer = KrxYieldPricer::new(
             bond_yield, 
             None,
-            eval_date_rc.clone()
+            eval_date_rc.clone(),
+            None,
         );
         let npv = pricer.npv(&inst)?;
         let expected_npv = 1.025838;

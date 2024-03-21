@@ -74,7 +74,7 @@ pub trait InstrumentTriat{
         &self, 
         _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        _past_data: Option<&CloseData>,
+        _past_data: Option<&Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
     }
@@ -101,6 +101,7 @@ pub trait InstrumentTriat{
 }
 
 #[enum_dispatch(InstrumentTriat)]
+#[derive(Clone, Debug)]
 pub enum Instrument {
     StockFutures(StockFutures),
     FixedCouponBond(FixedCouponBond),
@@ -520,13 +521,7 @@ mod tests {
         let joint_calendar = JointCalendar::new(vec![sk])?;
 
         let rate_index = RateIndex::new(
-            PaymentFrequency::Quarterly,
-            BusinessDayConvention::ModifiedFollowing,
-            DayCountConvention::Actual365Fixed,
             String::from("91D"),
-            None,
-            2,
-            joint_calendar,
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
@@ -546,10 +541,14 @@ mod tests {
             None,
             0.03,
             rate_index,
+            None,
+            DayCountConvention::Actual365Fixed,
             DayCountConvention::Actual365Fixed,
             BusinessDayConvention::ModifiedFollowing,
+            BusinessDayConvention::ModifiedFollowing,
             PaymentFrequency::Quarterly,
-            2,
+            PaymentFrequency::Quarterly,
+            1,
             0,
             joint_calendar,
             "KRW IRS".to_string(),

@@ -53,7 +53,7 @@ pub struct Engine {
     stocks: HashMap<String, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
-    past_data: HashMap<String, Rc<CloseData>>,
+    past_close_data: HashMap<String, Rc<CloseData>>,
     // instruments
     instruments: Instruments, // all instruments
     pricers: HashMap<String, Pricer>, // pricers for each instrument
@@ -315,8 +315,10 @@ impl Engine {
             self.stocks.clone(),
             self.zero_curves.clone(),
             self.dividends.clone(),
+            self.past_close_data.clone(),
             self.match_parameter.clone(),
         );
+        
         for inst in inst_vec.iter() {
             let pricer = pricer_factory.create_pricer(inst)
                 .with_context(|| anyhow!(

@@ -2,6 +2,14 @@ use ndarray::Array1;
 use time::OffsetDateTime;
 use crate::definitions::Integer;
 
+pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDateTime {
+    if d1 < d2 {
+        d1.clone()
+    } else {
+        d2.clone()
+    }
+}
+
 //use crate::definitions::Real;
 /// This return the type name of a variable (only name, not the full path)
 /// 

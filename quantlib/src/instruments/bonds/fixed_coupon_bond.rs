@@ -271,7 +271,7 @@ impl InstrumentTriat for FixedCouponBond {
         &self, 
         _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        _past_data: Option<&CloseData>,
+        _past_data: Option<&Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         let mut coupon_amount: Real;

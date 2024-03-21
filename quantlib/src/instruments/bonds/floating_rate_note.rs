@@ -7,6 +7,7 @@ use crate::parameters::zero_curve::ZeroCurve;
 use crate::time::{
     conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
     jointcalendar::JointCalendar,
+    calendar_trait::CalendarTrait,
 };
 use crate::data::history_data::CloseData;
 use crate::parameters::rate_index::RateIndex;
@@ -46,8 +47,10 @@ pub struct FloatingRateNote {
     //
     daycounter: DayCountConvention,
     busi_convention: BusinessDayConvention,
-    frequency: PaymentFrequency, 
+    payment_frequency: PaymentFrequency, 
     coupon_payment_days: i64,
+    fixing_days: i64,
+    compound_tenor: Option<String>,
     //
     name: String,
     code: String,
@@ -78,8 +81,10 @@ impl FloatingRateNote {
         //
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
-        frequency: PaymentFrequency, 
+        payment_frequency: PaymentFrequency, 
         coupon_payment_days: i64,
+        fixing_days: i64,
+        compound_tenor: Option<String>,
         //
         name: String,
         code: String,
@@ -108,8 +113,10 @@ impl FloatingRateNote {
             //
             daycounter,
             busi_convention,
-            frequency, 
+            payment_frequency, 
             coupon_payment_days,
+            fixing_days,
+            compound_tenor,
             //
             name,
             code,
@@ -128,30 +135,32 @@ impl FloatingRateNote {
         //
         issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
+        pricing_date: Option<OffsetDateTime>,
         first_coupon_date: Option<OffsetDateTime>,
         maturity: OffsetDateTime,
         //
         spread: Real,
         rate_index: RateIndex,
-        coupon_payment_days: i64,
         calendar: JointCalendar,
+        //
+        daycounter: DayCountConvention,
+        busi_convention: BusinessDayConvention,
+        payment_frequency: PaymentFrequency, 
+        coupon_payment_days: i64,
+        compound_tenor: Option<String>,
+        fixing_days: i64,
         payment_days: i64,
         //
         name: String,
         code: String,
     ) -> Result<FloatingRateNote> {
-        let daycounter = rate_index.get_daycounter().clone();
-        let calc_day_convention = rate_index.get_calc_day_convention().clone();
-        let frequency = rate_index.get_frequency().clone();
-        let fixing_days = rate_index.get_fixing_days();
-
         let schedule = build_schedule(
             &effective_date,
             first_coupon_date.as_ref(),
             &maturity,
             &calendar,
-            &calc_day_convention,
-            &frequency,
+            &busi_convention,
+            &payment_frequency,
             fixing_days,
             payment_days,
         ).with_context(
@@ -174,16 +183,18 @@ impl FloatingRateNote {
             //
             issue_date,
             effective_date,
-            pricing_date: None,
+            pricing_date,
             first_coupon_date,
             maturity,
             //
             calendar,
             //
             daycounter,
-            busi_convention: calc_day_convention,
-            frequency, 
+            busi_convention,
+            payment_frequency, 
             coupon_payment_days,
+            fixing_days,
+            compound_tenor,
             //
             name,
             code,
@@ -228,15 +239,35 @@ impl InstrumentTriat for FloatingRateNote {
     fn get_coupon_cashflow(&self,
         pricing_date: Option<&OffsetDateTime>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_data: Option<&CloseData>,
+        past_data: Option<&Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
-        // similar to FixedCouponBond::get_coupon_cashflow
-        // but use rate_index to calculate the coupon amount
-        // and use schedule to get the coupon payment date
-        // moreover, it should consider the spread and the cashflow is given only when 
-        // the payment date is after the pricing date
         let mut res = HashMap::new();
-        let mut coupon_amount: Real;
-        let eval_dt = pricing_date.date();
+        let mut amount: Real;
+        for base_schedule in self.schedule.iter() {
+            let payment_date = base_schedule.get_payment_date();
+            let given_amount = base_schedule.get_amount();
+            match given_amount {
+                Some(amount) => {
+                    res.insert(payment_date.clone(), amount);
+                },
+                None => {
+                    amount = self.rate_index.get_coupon_amount(
+                        &base_schedule,
+                        Some(self.spread),
+                        forward_curve.clone().unwrap(),
+                        past_data.unwrap(),
+                        pricing_date.unwrap(),
+                        self.compound_tenor.as_ref(),
+                        &self.calendar,
+                        &self.daycounter,
+                        self.fixing_days,
+                    )?;
+
+                    res.insert(payment_date.clone(), amount);
+                }
+            }
+        }
+
+        Ok(res)
     }
 }

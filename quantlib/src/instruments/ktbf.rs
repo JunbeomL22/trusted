@@ -3,6 +3,7 @@ use crate::definitions::{Integer, Real, COUPON_PAYMENT_TIME};
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use crate::instruments::bonds::bond::Bond;
+use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
 use crate::time::conventions::{DayCountConvention, PaymentFrequency, BusinessDayConvention};
 use crate::instrument::InstrumentTriat;
 
@@ -48,7 +49,7 @@ pub struct KTBF {
     maturity: OffsetDateTime,
     settlement_date: OffsetDateTime,
     virtual_bond: KtbfVirtualBond,
-    underlying_bonds: Vec<Bond>,
+    underlying_bonds: Vec<FixedCouponBond>,
     name: String,
     code: String,
 }
@@ -61,7 +62,7 @@ impl KTBF {
         maturity: OffsetDateTime,
         settlement_date: OffsetDateTime,
         virtual_bond: KtbfVirtualBond,
-        underlying_bonds: Vec<Bond>,
+        underlying_bonds: Vec<FixedCouponBond>,
         name: String,
         code: String,
     ) -> KTBF {
@@ -76,6 +77,9 @@ impl KTBF {
             name,
             code,
         }
+    }
+    pub fn get_underlying_bonds(&self) -> &Vec<FixedCouponBond> {
+        &self.underlying_bonds
     }
 }
 
@@ -98,5 +102,9 @@ impl InstrumentTriat for KTBF {
 
     fn get_unit_notional(&self) -> Real {
         self.unit_notional
+    }
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
     }
 }

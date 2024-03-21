@@ -5,15 +5,17 @@ pub struct ConstantVolatility {
     value: Real,
 }
 
-pub struct VolatilitySurface {
+pub struct ImpliedVolatilitySurface {
     spot_moneyness: Array1<Real>,
     expiries: Array1<Real>,
     vols: Array2<Real>,
     name: String,
     code: String,
+    forward_moneyness: Option<Array1<Real>>,
+    vols_on_forward: Option<Array2<Real>>,
 }
 
-impl VolatilitySurface {
+impl ImpliedVolatilitySurface {
     pub fn new(
         strikes: Array1<Real>,
         expiries: Array1<Real>,
@@ -27,6 +29,8 @@ impl VolatilitySurface {
             vols,
             name,
             code,
+            None,
+            None,
         }
     }
 

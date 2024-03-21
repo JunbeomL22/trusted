@@ -1,3 +1,4 @@
+use crate::data::history_data::CloseData;
 use crate::instrument::InstrumentTriat;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
@@ -17,18 +18,21 @@ pub struct BondPricer{
     discount_curve: Rc<RefCell<ZeroCurve>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
+    past_fixing_data: Option<Rc<CloseData>>,
 }
 
 impl BondPricer {
     pub fn new(
         discount_curve: Rc<RefCell<ZeroCurve>>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        evaluation_date: Rc<RefCell<EvaluationDate>>
+        evaluation_date: Rc<RefCell<EvaluationDate>>,
+        past_fixing_data: Option<Rc<CloseData>>,
     ) -> BondPricer {
         BondPricer {
             discount_curve,
             forward_curve,
             evaluation_date,
+            past_fixing_data,
         }
     }
 }
@@ -41,8 +45,9 @@ impl PricerTrait for BondPricer {
         let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
     
         let cashflow = instrument.get_coupon_cashflow(
-            &pricing_date,
+            Some(&pricing_date),
             self.forward_curve.clone(),
+            self.past_fixing_data.as_ref(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         for (payment_date, amount) in cashflow.iter() {
@@ -62,7 +67,6 @@ impl PricerTrait for BondPricer {
         }
 
         res /= self.discount_curve.borrow().get_discount_factor_at_date(&pricing_date)?;
-
         Ok(res)
 
     }
@@ -78,8 +82,9 @@ impl PricerTrait for BondPricer {
         let mut disc_factor: Real;
         
         let cashflow = instrument.get_coupon_cashflow(
-            &pricing_date,
+            Some(&pricing_date),
             self.forward_curve.clone(),
+            self.past_fixing_data.as_ref(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
 
         for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
@@ -175,6 +180,7 @@ mod tests {
             discount_curve.clone(),
             None,
             evaluation_date.clone(),
+            None,
         );
 
         // let's make a fixed coupnon bond paying quaterly 3% coupon
@@ -211,7 +217,8 @@ mod tests {
         )?;
 
         let cashflows = bond.get_coupon_cashflow(
-            &bond_pricing_date,
+            Some(&bond_pricing_date),
+            None,
             None,
         )?;
 

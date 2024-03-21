@@ -159,7 +159,6 @@ impl MatchParameter {
             Instrument::FloatingRateNote(instrument) => {
                 self.rate_index_forward_curve_map.get(
                     instrument.get_rate_index()
-                    .expect("Rate index is not found")
                     .get_code()
                 ).expect("Rate index forward curve is not found")
             },
@@ -228,13 +227,7 @@ mod tests {
 
         // make a CD 3M RateIndex
         let cd = RateIndex::new(
-            PaymentFrequency::Quarterly,
-            BusinessDayConvention::ModifiedFollowing,
-            DayCountConvention::Actual365Fixed,
             String::from("91D"),
-            None,
-            1,
-            joint_calendar.clone(),
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
@@ -249,10 +242,14 @@ mod tests {
             None,
             0.01,
             cd,
+            None,
+            DayCountConvention::Actual365Fixed,
             DayCountConvention::Actual365Fixed,
             BusinessDayConvention::ModifiedFollowing,
+            BusinessDayConvention::ModifiedFollowing,
             PaymentFrequency::Quarterly,
-            2,
+            PaymentFrequency::Quarterly,
+            1,
             0,
             joint_calendar,
             "IRS".to_string(),

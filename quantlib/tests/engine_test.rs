@@ -152,6 +152,7 @@ mod tests {
             stock_data_map,
             zero_curve_map,
             dividend_data_map,
+            HashMap::new(),
             //
             Rc::new(match_parameter.clone()),
         ).expect("Failed to create an engine");

@@ -15,6 +15,9 @@ pub struct IRS {
     floating_legs: Schedule,
     fixed_rate: Real,
     rate_index: RateIndex,
+    //
+    floating_compound_tenor: Option<String>,
+    //
     currency: Currency,
     unit_notional: Real,
     //
@@ -44,6 +47,7 @@ impl IRS {
         floating_legs: Schedule,
         fixed_rate: Real,
         rate_index: RateIndex,
+        floating_compound_tenor: Option<String>,
         currency: Currency,
         unit_notional: Real,
         //
@@ -71,6 +75,7 @@ impl IRS {
             floating_legs,
             fixed_rate,
             rate_index,
+            floating_compound_tenor,
             currency,
             unit_notional,
             issue_date,
@@ -100,19 +105,19 @@ impl IRS {
         fixed_first_coupon_date: Option<OffsetDateTime>,
         fixed_rate: Real,
         rate_index: RateIndex,
+        floating_compound_tenor: Option<String>,
         fixed_daycounter: DayCountConvention,
+        floating_daycounter: DayCountConvention,
         fixed_busi_convention: BusinessDayConvention,
+        floating_busi_convention: BusinessDayConvention,
         fixed_frequency: PaymentFrequency,
+        floating_frequency: PaymentFrequency,
         fixing_days: Integer,
         payment_days: Integer,
         calendar: JointCalendar,
         name: String,
         code: String,
     ) -> Result<IRS> {
-        let floating_daycounter = rate_index.get_daycounter().clone();
-        let floating_busi_convention = rate_index.get_calc_day_convention().clone();
-        let floating_frequency = rate_index.get_frequency().clone();
-
         let fixed_legs = schedule::build_schedule(
             &effective_date,
             None,
@@ -144,6 +149,7 @@ impl IRS {
             floating_legs,
             fixed_rate,
             rate_index,
+            floating_compound_tenor,
             currency,
             unit_notional,
             issue_date,
@@ -222,13 +228,7 @@ mod tests {
             )?;
 
         let rate_index = RateIndex::new(
-            PaymentFrequency::Quarterly,
-            BusinessDayConvention::ModifiedFollowing,
-            DayCountConvention::Actual365Fixed,
             String::from("91D"),
-            None,
-            1,
-            sk,
             Currency::KRW,
             RateIndexCode::CD,
             "CD91".to_string(),
@@ -252,8 +252,12 @@ mod tests {
             None,
             fixed_rate,
             rate_index.clone(),
+            None,
+            DayCountConvention::Actual365Fixed,
             DayCountConvention::Actual365Fixed,
             BusinessDayConvention::ModifiedFollowing,
+            BusinessDayConvention::ModifiedFollowing,
+            PaymentFrequency::Quarterly,
             PaymentFrequency::Quarterly,
             fixing_days,
             payment_days,
