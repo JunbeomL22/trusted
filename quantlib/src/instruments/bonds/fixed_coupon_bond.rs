@@ -210,6 +210,10 @@ impl FixedCouponBond {
         self.is_coupon_strip
     }
 
+    pub fn set_pricing_date(&mut self, pricing_date: Option<OffsetDateTime>) {
+        self.pricing_date = pricing_date;
+    }
+
 }
 
 impl InstrumentTriat for FixedCouponBond {

@@ -50,7 +50,21 @@ impl PricerTrait for KtbfPricer {
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let pricing_date = instrument.get_maturity().unwrap();
         
-        let bond_pricer = FixedCouponBondPricer
+        let bond_pricer = BondPricer::new(
+            self.discount_curve.clone(),
+            None,
+            self.evaluation_date.clone(),
+            None,
+        );
+
+        let mut bond_yields = Vec::new();
+        let underlying_bonds = instrument.get_underlying_bonds();
+
+        for bond in underlying_bonds.iter_mut() {
+            bond.set_pricing_date(Some(pricing_date.clone()));
+            let npv = bond_pricer.npv(Instrument::FixedCouponBond(bond))?;
+        }
+
         let cashflow = instrument.get_coupon_cashflow(
             Some(&pricing_date),
             None,
