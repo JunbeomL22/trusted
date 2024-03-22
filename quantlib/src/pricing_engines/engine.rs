@@ -366,7 +366,7 @@ impl Engine {
                     self.err_tag,
                 ))?;
 
-            let npv = pricer.as_trait().npv_result(inst)?;
+            let npv = pricer.npv_result(inst)?;
             npvs.insert(inst.get_code().clone(), npv);
         }
         Ok(npvs)
@@ -414,7 +414,7 @@ impl Engine {
                 .ok_or_else(|| anyhow!("npv is not set for {} in getting fx-exposure", inst_code))?
                 .get_npv();
 
-            let fx_exposure = pricer.as_trait().fx_exposure(inst, npv)
+            let fx_exposure = pricer.fx_exposure(inst, npv)
                 .context("failed to get fx exposure")?;
             
             fx_exposures.insert(inst.get_code(), fx_exposure);

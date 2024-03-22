@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use crate::instruments::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::bond::Bond;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::{Instrument, InstrumentTriat};
@@ -57,7 +57,7 @@ impl KrxYieldPricer {
 
     pub fn find_bond_yield(
         &self, 
-        bond: FixedCouponBond, 
+        bond: Bond, 
         npv: Real,
         init_guess: Option<Real>,
     ) -> Result<Real> {
@@ -90,9 +90,9 @@ pub struct KrxYieldPricerCostFunction {
 }
 
 impl KrxYieldPricerCostFunction {
-    pub fn new(bond: FixedCouponBond, npv: Real, pricer: KrxYieldPricer) -> KrxYieldPricerCostFunction {
+    pub fn new(bond: Bond, npv: Real, pricer: KrxYieldPricer) -> KrxYieldPricerCostFunction {
         KrxYieldPricerCostFunction {
-            bond: Instrument::FixedCouponBond(bond),
+            bond: Instrument::Bond(bond),
             npv,
             pricer: RefCell::new(pricer),
         }
@@ -137,8 +137,11 @@ impl PricerTrait for KrxYieldPricer {
         let cashflow = bond.get_coupon_cashflow(
             Some(&pricing_date),
             self.forward_curve.clone(),
-            self.past_fixing_data.as_ref(),
-        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
+            self.past_fixing_data.clone()
+        ).with_context(|| anyhow!(
+            "{}:{} (KrxYieldPricer) Failed to get coupon cashflow of {} ({})",
+            file!(), line!(), bond.get_name(), bond.get_code()
+        ))?;
 
         // get minimum date after the pricing date (the key of cashflow)
         let min_cashflow_date = cashflow

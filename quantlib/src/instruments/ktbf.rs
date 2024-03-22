@@ -1,7 +1,6 @@
 use crate::assets::currency::Currency;
 use crate::definitions::{Integer, Real, COUPON_PAYMENT_TIME};
-use crate::instruments::bonds::bond_cache::Bond;
-use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
+use crate::instruments::bond::Bond;
 use crate::time::conventions::{DayCountConvention, PaymentFrequency, BusinessDayConvention};
 use crate::instrument::InstrumentTriat;
 //
@@ -51,7 +50,7 @@ pub struct KTBF {
     maturity: OffsetDateTime,
     settlement_date: OffsetDateTime,
     virtual_bond: KtbfVirtualBond,
-    underlying_bonds: Vec<FixedCouponBond>,
+    underlying_bonds: Vec<Bond>,
     name: String,
     code: String,
 }
@@ -64,7 +63,7 @@ impl KTBF {
         maturity: OffsetDateTime,
         settlement_date: OffsetDateTime,
         virtual_bond: KtbfVirtualBond,
-        underlying_bonds: Vec<FixedCouponBond>,
+        underlying_bonds: Vec<Bond>,
         name: String,
         code: String,
     ) -> KTBF {
@@ -80,7 +79,7 @@ impl KTBF {
             code,
         }
     }
-    pub fn get_underlying_bonds(&self) -> &Vec<FixedCouponBond> {
+    pub fn get_underlying_bonds(&self) -> &Vec<Bond> {
         &self.underlying_bonds
     }
 }

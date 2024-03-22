@@ -190,8 +190,8 @@ impl InstrumentTriat for IRS {
         self.unit_notional
     }
 
-    fn get_rate_index(&self) -> Result<&RateIndex> {
-        Ok(&self.rate_index)
+    fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
+        Ok(Some(&self.rate_index))
     }
 
     fn get_type_name(&self) -> &'static str {

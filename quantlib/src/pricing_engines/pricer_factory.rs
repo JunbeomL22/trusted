@@ -102,6 +102,7 @@ impl PricerFactory {
                 Some(res)
             },
         }; // the end of the forward curve construction which is optional
+
         let past_fixing_data = match rate_index {
             None => {
                 None
@@ -149,22 +150,5 @@ impl PricerFactory {
             self.evaluation_date.clone(),
         );
         Ok(Pricer::StockFuturesPricer(core))
-    }
-
-    fn get_fixed_coupon_bond_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
-        let discount_curve = self.match_parameter.get_discount_curve_name(instrument)?;
-        let core = BondPricer::new(
-            self.zero_curves.get(discount_curve)
-            .ok_or_else(
-                || anyhow::anyhow!(
-                    "failed to get discount curve of {}.\nself.zero_curves does not have {}",
-                    instrument.get_code(),
-                    discount_curve,
-                ))?.clone(),
-                None,
-                self.evaluation_date.clone(),
-                None,
-            );
-        Ok(Pricer::BondPricer(core))
     }
 }

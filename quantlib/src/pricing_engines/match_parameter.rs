@@ -77,7 +77,7 @@ impl MatchParameter {
 
     pub fn get_discount_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
-            Instrument::FixedCouponBond(instrument) => {
+            Instrument::Bond(instrument) => {
                 match self.bond_discount_curve_map.get(&(
                     instrument.get_issuer_name().context("Issuer name is not found").clone(),
                     instrument.get_issuer_type().context("Issuer type is not found").clone(),
@@ -88,17 +88,6 @@ impl MatchParameter {
                     None => Ok(&self.dummy_string),
                 }
             }
-            Instrument::FloatingRateNote(instrument) => {
-                match self.bond_discount_curve_map.get(&(
-                    instrument.get_issuer_name().context("Issuer name is not found").clone(),
-                    instrument.get_issuer_type().context("Issuer type is not found").clone(),
-                    instrument.get_credit_rating().context("Credit rating is not found").clone(),
-                    instrument.get_currency().clone(),
-                )) {
-                    Some(curve_name) => Ok(curve_name),
-                    None => Ok(&self.dummy_string),
-                }
-            },
             // IRS (or OIS) uses rate index forward curve as discount curve
             Instrument::IRS(instrument) => {
                 let rate_index = instrument.get_rate_index()
@@ -129,23 +118,21 @@ impl MatchParameter {
     /// This retrives the curve name from self.collateral_curve_map
     pub fn get_collateral_curve_names(&self, instrument: &Instrument) -> Result<Vec<&String>> {
         let und_codes = instrument.get_underlying_codes();
-        let res = und_codes.iter().map(|code| {
-            self.collateral_curve_map.get(*code)
-            .with_context(|| anyhow!(
-                "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
-                instrument.get_name(),
-                code
-            ).as_str())}).collect();
+        let res = und_codes.iter().map(
+            |code| {self.collateral_curve_map.get(*code)
+                    .ok_or_else(|| anyhow!(
+                        "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
+                        instrument.get_name(),
+                        code))}).collect();
         res
     }
 
     pub fn get_collateral_curve_name(&self, instrument: &Instrument, und_code: &String) -> Result<&String> {
         self.collateral_curve_map.get(und_code)
-        .with_context(|| anyhow!(
+        .ok_or_else(|| anyhow!(
             "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
             instrument.get_name(),
-            und_code
-        ).as_str())
+            und_code))
     }
     /// Curve name for underlying asset
     /// This retrives the curve name from self.collateral_curve_map
@@ -162,23 +149,30 @@ impl MatchParameter {
 
     pub fn get_rate_index_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
-            Instrument::FloatingRateNote(instrument) => {
-                let res = self.rate_index_forward_curve_map.get(
-                    instrument.get_rate_index()
-                    .get_code()
-                ).with_context(|| anyhow!(
-                    "Rate index forward curve is not found for {}",
-                    instrument.get_rate_index().get_code()));
+            Instrument::Bond(instrument) => {
+                let rate_index = instrument.get_rate_index()?;
+                let res = match rate_index {
+                    None => Ok(&self.dummy_string),
+                    Some(rate_index) => {
+                        self.rate_index_forward_curve_map.get(rate_index.get_code())
+                        .ok_or_else(|| anyhow!(
+                            "Rate index forward curve is not found for {}",
+                            rate_index.get_code()))
+                    }
+                };
                 res
             },
             Instrument::IRS(instrument) => {
-                let res = self.rate_index_forward_curve_map.get(
-                    instrument.get_rate_index()
-                    .expect("Rate index is not found")
-                    .get_code()
-                ).with_context(|| anyhow!(
-                    "Rate index forward curve is not found for {}",
-                    instrument.get_rate_index().expect("Rate index is not found").get_code()));
+                let rate_index = instrument.get_rate_index()?;
+                let res = match rate_index {
+                    None => Err(anyhow!("Rate index is not found for IRS {} ({})", instrument.get_name(), instrument.get_code())),   
+                    Some(rate_index) => {
+                        self.rate_index_forward_curve_map.get(rate_index.get_code())
+                        .ok_or_else(|| anyhow!(
+                            "Rate index forward curve is not found for {}",
+                            rate_index.get_code()))
+                    }
+                };
                 res
             },
             _ => Ok(&self.dummy_string),

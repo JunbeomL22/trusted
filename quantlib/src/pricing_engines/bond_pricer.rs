@@ -52,7 +52,7 @@ impl PricerTrait for BondPricer {
         let cashflow = instrument.get_coupon_cashflow(
             Some(&pricing_date),
             self.forward_curve.clone(),
-            self.past_fixing_data.as_ref(),
+            self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
 
         for (payment_date, amount) in cashflow.iter() {
@@ -89,7 +89,7 @@ impl PricerTrait for BondPricer {
         let cashflow = instrument.get_coupon_cashflow(
             Some(&pricing_date),
             self.forward_curve.clone(),
-            self.past_fixing_data.as_ref(),
+            self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
 
         for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
