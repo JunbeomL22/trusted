@@ -25,24 +25,24 @@ use argmin::solver::linesearch::MoreThuenteLineSearch;
 #[derive(Debug, Clone)]
 pub struct KrxYieldPricer {
     bond_yield: Real,
-    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     daycount: DayCountConvention,
+    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     past_fixing_data: Option<Rc<CloseData>>,
 }
 
 impl KrxYieldPricer {
     pub fn new(
         bond_yield: Real, 
-        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<CloseData>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
             bond_yield,
-            forward_curve,
             evaluation_date,
             daycount: DayCountConvention::StreetConvention,
+            forward_curve,
             past_fixing_data,
         }
     }
@@ -63,7 +63,6 @@ impl KrxYieldPricer {
     ) -> Result<Real> {
         let pricer = self.clone();
         let problem = KrxYieldPricerCostFunction::new(bond, npv, pricer);
-        
         let linesearch = MoreThuenteLineSearch::new();        
         
         let solver = SteepestDescent::new(linesearch);
@@ -77,11 +76,9 @@ impl KrxYieldPricer {
             );
         
         let res = executor.run()?;
-        //println!("res: {:?}", res.state);
         match res.state.best_param {
             Some(param) => Ok(param),
             None => Err(anyhow!("Failed to find bond yield")),
-        
         }
     }
 }
@@ -106,7 +103,6 @@ impl CostFunction for KrxYieldPricerCostFunction {
     type Param = Real;
     type Output = Real;
     
-
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
         {self.pricer.borrow_mut().set_bond_yield(*param);}
         let npv = self.pricer.borrow().npv(&self.bond)?;

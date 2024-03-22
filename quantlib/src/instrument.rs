@@ -1,6 +1,5 @@
 use crate::instruments::{
-    fixed_coupon_bond::FixedCouponBond,
-    floating_rate_note::FloatingRateNote,
+    bond::Bond,
     stock_futures::StockFutures,
     irs::IRS,
     bond_futures::BondFutures,
@@ -66,7 +65,7 @@ pub trait InstrumentTriat{
     }
 
     // only for FloatingRateNote, IRS, OIS, and other swaps
-    fn get_rate_index(&self) -> Result<&RateIndex> {
+    fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
         Err(anyhow!("not supported instrument type on get_rate_index"))
     }
     
@@ -74,7 +73,7 @@ pub trait InstrumentTriat{
         &self, 
         _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        _past_data: Option<&Rc<CloseData>>,
+        _past_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
     }
@@ -98,14 +97,17 @@ pub trait InstrumentTriat{
     fn get_issue_date(&self) -> Result<&OffsetDateTime> {
         Err(anyhow!("not supported instrument type on issue_date"))
     }
+
+    fn get_virtual_bond_npv(&self, bond_yield: Real) -> Result<Real> {
+        Err(anyhow!("not supported instrument type on get_virtual_bond_npv"))
+    }
 }
 
 #[enum_dispatch(InstrumentTriat)]
 #[derive(Clone, Debug)]
 pub enum Instrument {
     StockFutures(StockFutures),
-    FixedCouponBond(FixedCouponBond),
-    FloatingRateNote(FloatingRateNote),
+    Bond(Bond),
     BondFutures(BondFutures),
     IRS(IRS),
     KTBF(KTBF),

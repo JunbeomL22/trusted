@@ -10,6 +10,10 @@ use time::{OffsetDateTime, Duration};
 use serde::{Serialize, Deserialize};
 use std::ops::Index;
 
+/// if the amount is None, the pricer calculate the coupon amount. 
+/// Otherwise, the amount is used as the coupon amount. 
+/// This is useful if the user wants to calculate the coupon amount 
+/// in the IO section, e.g., serialization, deserialization, etc.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct BaseSchedule {   
     fixing_date: OffsetDateTime,

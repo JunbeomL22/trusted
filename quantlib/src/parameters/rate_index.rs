@@ -73,14 +73,19 @@ impl RateIndex {
         &self.curve_tenor
     }
 
-    // if CloseDate has rate in the fixing date, return the rate
-    // otherwise, it retuns zero rate in the evaluation date
+    /// base_schedule (BaseSchedule): fixing_date, calc_start_date, calc_end_date, payment_date, amount (Option)
+    /// spread (Option<Real>): spread to be added to the rate. None means zero spread
+    /// forward_curve (Rc<RefCell<ZeroCurve>>): forward curve
+    /// close_data (Rc<CloseData>): historical data which is used when the fixing date is before the evaluation date
+    /// pricing_date (OffsetDateTime): evaluation date
+    /// compound_tenor (Option<&String>): compounding tenor. This is optional and None means that it is not a overnight type index. 
+    /// For example, if the floatin part is CD91, Libor3M, etc, it is None, but in case of SOFR1D, it is Some(String::from("1D"))
     pub fn get_coupon_amount(
         &self,
         base_schedule: &BaseSchedule,
         spread: Option<Real>,
         forward_curve: Rc<RefCell<ZeroCurve>>,
-        close_data: &Rc<CloseData>,
+        close_data: Rc<CloseData>,
         pricing_date: &OffsetDateTime,
         compound_tenor: Option<&String>,
         calendar: &JointCalendar,

@@ -56,35 +56,37 @@ impl PricerTrait for KtbfPricer {
             self.evaluation_date.clone(),
             None,
         );
-
+        
         let mut bond_yields = Vec::new();
         let underlying_bonds = instrument.get_underlying_bonds();
 
+        let krx_yield_pricer = KrxYieldPricer::new(
+            0.0,
+            None,
+            self.evaluation_date.clone(),
+            None,
+        );
+
+        let init_guess = self.discount_curve.borrow().get_forward_rate_from_evaluation_date(
+            underlying_bonds[0].get_maturity().unwrap(),
+        );
+
         for bond in underlying_bonds.iter_mut() {
             bond.set_pricing_date(Some(pricing_date.clone()));
-            let npv = bond_pricer.npv(Instrument::FixedCouponBond(bond))?;
+            let npv = bond_pricer.npv(Instrument::Bond(bond))?;
+            let yield_ = krx_yield_pricer.find_yield(
+                Instrument::Bond(bond), 
+                npv,
+                init_guess
+            )?;
+
+            bond_yields.push(yield_);
         }
 
-        let cashflow = instrument.get_coupon_cashflow(
-            Some(&pricing_date),
-            None,
-            None,
-        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
+        let average_yield = bond_yields.iter().sum::<Real>() / bond_yields.len() as Real;
 
-        for (payment_date, amount) in cashflow.iter() {
-            if payment_date.date() > pricing_date.date() {
-                disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
-                res += amount * disc_factor;    
-            }
-        }
+        let ktbf_price = instrument.get_virtual_bond_npv(average_yield)?;
 
-        if !instrument.is_coupon_strip()? {
-            let maturity = instrument.get_maturity().unwrap();
-
-            disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
-            res += disc_factor * instrument.get_redemption()?;
-        }
-
-        Ok(res)
+        Ok(ktbf_price)
     }
 }

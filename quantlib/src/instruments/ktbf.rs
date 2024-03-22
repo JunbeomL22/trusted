@@ -1,11 +1,13 @@
 use crate::assets::currency::Currency;
 use crate::definitions::{Integer, Real, COUPON_PAYMENT_TIME};
-use serde::{Serialize, Deserialize};
-use time::OffsetDateTime;
-use crate::instruments::bonds::bond::Bond;
+use crate::instruments::bonds::bond_cache::Bond;
 use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
 use crate::time::conventions::{DayCountConvention, PaymentFrequency, BusinessDayConvention};
 use crate::instrument::InstrumentTriat;
+//
+use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
+use anyhow::Result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KtbfVirtualBond {
@@ -107,4 +109,9 @@ impl InstrumentTriat for KTBF {
     fn get_maturity(&self) -> Option<&OffsetDateTime> {
         Some(&self.maturity)
     }
+
+    fn get_virtual_bond_npv(&self, bond_yield: Real) -> Result<Real> {
+        Ok(self.virtual_bond.npv(bond_yield))
+    }
+
 }

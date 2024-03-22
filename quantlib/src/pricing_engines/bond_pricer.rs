@@ -2,7 +2,10 @@ use crate::data::history_data::CloseData;
 use crate::instrument::InstrumentTriat;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
-use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
+use crate::pricing_engines::{
+    npv_result::NpvResult, 
+    pricer::PricerTrait
+};
 use crate::instrument::Instrument;
 use crate::definitions::Real;
 //
@@ -14,24 +17,26 @@ use std::{
 };
 use time::OffsetDateTime;
 
+/// forward_curve (Optional<Rc<RefCell<ZeroCurve>>>): forward curve for floating rate bond, so it is optional
+/// past_fixing_data (Optional<Rc<CloseData>>): past fixing data for floating rate bond, so it is optional
 pub struct BondPricer{
     discount_curve: Rc<RefCell<ZeroCurve>>,
-    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
+    forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     past_fixing_data: Option<Rc<CloseData>>,
 }
 
 impl BondPricer {
     pub fn new(
         discount_curve: Rc<RefCell<ZeroCurve>>,
-        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<CloseData>>,
     ) -> BondPricer {
         BondPricer {
             discount_curve,
-            forward_curve,
             evaluation_date,
+            forward_curve,
             past_fixing_data,
         }
     }
