@@ -49,24 +49,24 @@ pub trait InstrumentTriat{
     fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Result<&CreditRating> {
-        Err(anyhow!("not supported instrument type on get_credit_rating"))
+        Err(anyhow!("({}:{}) not supported instrument type on get_credit_rating", file!(), line!()))
     }
     // only for bonds, so None must be allowed
     fn get_issuer_type(&self) -> Result<&IssuerType> {
-        Err(anyhow!("not supported instrument type on get_issuer_type"))
+        Err(anyhow!("({}:{}) not supported instrument type on get_issuer_type", file!(), line!()))
     }
     // only for bonds, so None must be allowed
     fn get_rank_type(&self) -> Result<&RankType> {
-        Err(anyhow!("not supported instrument type on get_rank_type"))
+        Err(anyhow!("({}:{}) not supported instrument type on get_rank_type", file!(), line!()))
     }
     // only for bonds, so None must be allowed
     fn get_issuer_name(&self) -> Result<&String> {
-        Err(anyhow!("not supported instrument type on get_issuer_name"))
+        Err(anyhow!("({}:{}) not supported instrument type on get_issuer_name", file!(), line!()))
     }
 
     // only for FloatingRateNote, IRS, OIS, and other swaps
     fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
-        Err(anyhow!("not supported instrument type on get_rate_index"))
+        Err(anyhow!("({}:{}) not supported instrument type on get_rate_index", file!(), line!()))
     }
     
     fn get_coupon_cashflow(
@@ -235,7 +235,7 @@ impl Instruments {
         &self, 
         curve_name: &String,
         match_parameter: &MatchParameter,
-    ) -> Vec<Rc<Instrument>> {
+    ) -> Result<Vec<Rc<Instrument>>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         // 1) discount curve
         // 2) collateral curves
@@ -243,41 +243,41 @@ impl Instruments {
         // borrowing curve can not be hedged, so it skips
         for instrument in self.instruments.iter() {
             // 1)
-            if match_parameter.get_discount_curve_name(instrument) == curve_name {
+            if match_parameter.get_discount_curve_name(instrument)? == curve_name {
                 res.push(instrument.clone());
             }
             // 2)
-            if match_parameter.get_collateral_curve_names(instrument).contains(&curve_name) {
+            if match_parameter.get_collateral_curve_names(instrument)?.contains(&curve_name) {
                 res.push(instrument.clone());
             }
             // 3) forward curve
-            if match_parameter.get_rate_index_curve_name(instrument) == curve_name {
+            if match_parameter.get_rate_index_curve_name(instrument)? == curve_name {
                 res.push(instrument.clone());
             }
         }
-        res
+        Ok(res)
     }
 
     // all curve names including discount, collateral, and rate index forward curves
-    pub fn get_all_curve_names<'a>(&'a self, match_parameter: &'a MatchParameter) -> Vec<&String> {
+    pub fn get_all_curve_names<'a>(&'a self, match_parameter: &'a MatchParameter) -> Result<Vec<&String>> {
         let mut res = Vec::<&String>::new();
         for instrument in self.instruments.iter() {
-            let discount_curve_name = match_parameter.get_discount_curve_name(instrument);
+            let discount_curve_name = match_parameter.get_discount_curve_name(instrument)?;
             if !res.contains(&discount_curve_name) && discount_curve_name != "Dummy" {
                 res.push(discount_curve_name);
             }
-            let collateral_curve_names = match_parameter.get_collateral_curve_names(instrument);
+            let collateral_curve_names = match_parameter.get_collateral_curve_names(instrument)?;
             for name in collateral_curve_names.iter() {
                 if !res.contains(name) && *name != "Dummy"{
                     res.push(name);
                 }
             }
-            let rate_index_curve_name = match_parameter.get_rate_index_curve_name(instrument);
+            let rate_index_curve_name = match_parameter.get_rate_index_curve_name(instrument)?;
             if !res.contains(&rate_index_curve_name) && rate_index_curve_name != "Dummy" {
                 res.push(rate_index_curve_name);
             }
         }
-        res
+        Ok(res)
     }
 
     pub fn instruments_with_maturity_upto(

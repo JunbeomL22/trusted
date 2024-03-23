@@ -79,9 +79,21 @@ impl MatchParameter {
         match instrument {
             Instrument::Bond(instrument) => {
                 match self.bond_discount_curve_map.get(&(
-                    instrument.get_issuer_name().context("Issuer name is not found").clone(),
-                    instrument.get_issuer_type().context("Issuer type is not found").clone(),
-                    instrument.get_credit_rating().context("Credit rating is not found").clone(),
+                    instrument.get_issuer_name().with_context(
+                        || anyhow!(
+                            "({}:{}) Issuer name is not found for {} ({})", 
+                            file!(), line!(),
+                            instrument.get_name(), instrument.get_code()))?.clone(),
+                    instrument.get_issuer_type().with_context(
+                        || anyhow!(
+                            "({}:{}) Issuer type is not found for {} ({})", 
+                            file!(), line!(),
+                            instrument.get_name(), instrument.get_code()))?.clone(),
+                    instrument.get_credit_rating().with_context(
+                        || anyhow!(
+                            "({}:{}) Credit rating is not found for {} ({})", 
+                            file!(), line!(),
+                            instrument.get_name(), instrument.get_code()))?.clone(),
                     instrument.get_currency().clone(),
                 )) {
                     Some(curve_name) => Ok(curve_name),

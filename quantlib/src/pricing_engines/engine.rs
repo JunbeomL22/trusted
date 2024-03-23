@@ -15,7 +15,7 @@ use crate::data::{
 use crate::util::format_duration;
 use crate::utils::string_arithmetic::add_period;
 use crate::pricing_engines::{
-    pricer::Pricer,
+    pricer::{Pricer, PricerTrait},
     match_parameter::MatchParameter,
     calculation_result::CalculationResult,
     calculation_configuration::CalculationConfiguration,
@@ -346,7 +346,6 @@ impl Engine {
                 .with_context(|| anyhow!("(Egnine::get_npvs) failed to get pricer for {}\n{}", inst_code, self.err_tag))?;
 
             let npv = pricer
-                .as_trait()
                 .npv(inst)
                 .with_context(|| anyhow!("(Egnine::get_npvs) failed to get npv for {}\n{}", inst_code, self.err_tag))?;
     
@@ -541,12 +540,12 @@ impl Engine {
 
     pub fn set_rho(&mut self) -> Result<()> {
         let mut npvs_up: HashMap::<String, Real>;
-        let all_curve_names = self.instruments.get_all_curve_names(&self.match_parameter);
+        let all_curve_names = self.instruments.get_all_curve_names(&self.match_parameter)?;
         let bump_val = self.calculation_configuration.get_rho_bump_value();
 
         for curve_name in all_curve_names {
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_name, &self.match_parameter);
+                .instruments_using_curve(curve_name, &self.match_parameter)?;
 
             // bump the curve but limit the scope that the zero_curve ismutably borrowed
             {
@@ -729,7 +728,7 @@ impl Engine {
     }
 
     pub fn set_rho_structure(&mut self) -> Result<()> {
-        let all_curve_codes = self.instruments.get_all_curve_names(&self.match_parameter);
+        let all_curve_codes = self.instruments.get_all_curve_names(&self.match_parameter)?;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let bump_val = self.calculation_configuration.get_rho_bump_value();
         let calc_tenors = self.calculation_configuration.get_rho_structure_tenors();
@@ -753,7 +752,7 @@ impl Engine {
         
         for curve_code in all_curve_codes {
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_code, &self.match_parameter);
+                .instruments_using_curve(curve_code, &self.match_parameter)?;
             let inst_codes_in_action = self.instruments.get_all_inst_code_clone(Some(&self.instruments_in_action));
             let init_vec: Vec<Vec<Real>> = vec![vec![0.0; tenor_length];inst_codes_in_action.len()];
             single_rho_structure = inst_codes_in_action.into_iter().zip(init_vec.into_iter()).collect();

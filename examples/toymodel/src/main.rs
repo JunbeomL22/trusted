@@ -15,7 +15,7 @@ use quantlib::pricing_engines::engine::Engine;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
 use serde_json;
-use quantlib::instruments::fixed_coupon_bond::FixedCouponBond;
+use quantlib::instruments::bond::Bond;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
 use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
 use quantlib::time::calendar::Calendar;
@@ -133,7 +133,7 @@ fn main() -> Result<()> {
     let maturity = issuedate + Duration::days(365 * 6);
     let issuer_name = "Korea Gov";
     let bond_name = "Virtual KTB";
-    let bond_code = "KR1234567890";
+    let bond_code = "KRxxxxxxxxxx";
     let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
     let calendar = JointCalendar::new(vec![sk])?;
 
@@ -141,25 +141,29 @@ fn main() -> Result<()> {
     let issuer_type = IssuerType::Government;
     let credit_rating = CreditRating::None;
 
-    let bond = FixedCouponBond::new_from_conventions(
-        bond_currency,
+    let bond = Bond::new_from_conventions(
         issuer_type,
         credit_rating,     
+        issuer_name.to_string(), 
         RankType::Senior, 
+        bond_currency,
+        10_000.0,
         false, 
-        0.03, 
-        10_000.0, 
         issuedate.clone(), 
         issuedate.clone(),
-        maturity,
+        None,
         None, 
+        maturity,
+        Some(0.03),
+        None, 
+        None,
         None,
         calendar,
         DayCountConvention::StreetConvention,
         BusinessDayConvention::Unadjusted, 
         PaymentFrequency::SemiAnnually, 
-        issuer_name.to_string(), 
         0, 
+        0,
         bond_name.to_string(), 
         bond_code.to_string(),
     )?;
@@ -176,33 +180,37 @@ fn main() -> Result<()> {
     let issuer_type2 = IssuerType::Government;
     let credit_rating2 = CreditRating::None;
 
-    let bond2 = FixedCouponBond::new_from_conventions(
-        bond_currency2,
+    let bond2 = Bond::new_from_conventions(
         issuer_type2,
         credit_rating2,     
+        issuer_name2.to_string(), 
         RankType::Senior, 
-        false, 
-        0.0425, 
+        bond_currency2,
         10_000.0, 
+        false, 
         issuedate2.clone(), 
         issuedate2.clone(),
+        None,
+        None,
         maturity2,
+        Some(0.0425),
         None,
         None, 
+        None,
         calendar,
         DayCountConvention::StreetConvention,
         BusinessDayConvention::Unadjusted, 
         PaymentFrequency::SemiAnnually, 
-        issuer_name2.to_string(), 
         0, 
+        0,
         bond_name2.to_string(), 
         bond_code2.to_string(),
     )?;
 
     let inst1 = Instrument::StockFutures(stock_futures1);
     let inst2 = Instrument::StockFutures(stock_futures2);
-    let inst3: Instrument = Instrument::FixedCouponBond(bond);
-    let inst4: Instrument = Instrument::FixedCouponBond(bond2);
+    let inst3: Instrument = Instrument::Bond(bond);
+    let inst4: Instrument = Instrument::Bond(bond2);
 
     let inst_vec = vec![
         Rc::new(inst1), 

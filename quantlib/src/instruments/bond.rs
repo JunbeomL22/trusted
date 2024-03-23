@@ -242,6 +242,14 @@ impl InstrumentTriat for Bond {
         Ok(self.rate_index.as_ref())
     }
 
+    fn get_credit_rating(&self) -> Result<&CreditRating> {
+        Ok(&self.credit_rating)
+    }
+    
+    fn get_issuer_type(&self) -> Result<&IssuerType> {
+        Ok(&self.issuer_type)
+    }
+
     fn get_issuer_name(&self) -> Result<&String> {
         Ok(&self.issuer_name)
     }
@@ -277,13 +285,13 @@ impl InstrumentTriat for Bond {
                     res.insert(payment_date.clone(), amount);
                 },
                 None => {
-                    match self.rate_index {
+                    match self.rate_index.as_ref() {
                         Some(rate_index) => {// begin of the case of frn
                             let amount = rate_index.get_coupon_amount(
                                 &base_schedule,
                                 self.floating_coupon_spread,
                                 forward_curve.clone().unwrap(),
-                                past_data.unwrap_or(Rc::new(CloseData::default())),
+                                past_data.clone().unwrap_or(Rc::new(CloseData::default())),
                                 pricing_date.unwrap_or(
                                     forward_curve
                                         .clone()
