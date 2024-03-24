@@ -1,10 +1,11 @@
 use crate::instruments::instrument_info::InstrumentInfo;
+use crate::assets::currency::Currency;
 use crate::definitions::{Real, Integer};
+use crate::pricing_engines::npv_result::NpvResult;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use crate::pricing_engines::npv_result::NpvResult;
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
 /// instrument: InstrumentInfo
@@ -23,7 +24,7 @@ pub struct CalculationResult {
     evaluation_date: Option<OffsetDateTime>,
     npv_result: Option<NpvResult>, 
     value: Option<Real>,
-    fx_exposure: Option<Real>,
+    fx_exposure: Option<HashMap<Currency, Real>>,
     delta: Option<HashMap<String, Real>>,
     gamma: Option<HashMap<String, Real>>,
     vega: Option<HashMap<String, Real>>,
@@ -108,7 +109,7 @@ impl CalculationResult {
         self.value
     }
 
-    pub fn set_fx_exposure(&mut self, fx_exposure: Real) {
+    pub fn set_fx_exposure(&mut self, fx_exposure: HashMap<Currency, Real>) {
         self.fx_exposure = Some(fx_exposure);
     }
 

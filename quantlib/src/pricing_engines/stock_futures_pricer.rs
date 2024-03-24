@@ -1,5 +1,8 @@
 use crate::evaluation_date::EvaluationDate;
-use crate::assets::stock::Stock;
+use crate::assets::{
+    stock::Stock,
+    currency::Currency,
+};
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
@@ -9,8 +12,11 @@ use crate::instrument::InstrumentTrait;
 //
 use time::OffsetDateTime;
 use anyhow::{anyhow, Context, Result};
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::{
+    rc::Rc,
+    cell::RefCell,
+    collections::HashMap,
+};
 
 pub struct StockFuturesPricer {
     stock: Rc<RefCell<Stock>>,
@@ -86,7 +92,7 @@ impl PricerTrait for StockFuturesPricer {
         res
     }
 
-    fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<Real> {
+    fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         match instrument {
             Instrument::StockFutures(stock_futures) => {
                 let npv = self.npv(instrument)
@@ -94,7 +100,10 @@ impl PricerTrait for StockFuturesPricer {
                         
                 let average_trade_price = stock_futures.get_average_trade_price();
                 let unit_notional = stock_futures.get_unit_notional();
-                Ok((npv - average_trade_price) * unit_notional)
+                let exposure = (npv - average_trade_price) * unit_notional;
+                let currency = stock_futures.get_currency();
+                let res = HashMap::from_iter(vec![(currency.clone(), exposure)]);
+                Ok(res)
             },
             _ => Err(anyhow!(
                 "StockFuturesPricer::fx_exposure: not supported instrument type: {}", 

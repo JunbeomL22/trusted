@@ -1,3 +1,4 @@
+use crate::assets::currency::Currency;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
 use crate::pricing_engines::npv_result::NpvResult;
@@ -11,13 +12,16 @@ use crate::pricing_engines::{
 //
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
+use std::collections::HashMap;
 
 #[enum_dispatch]
 pub trait PricerTrait {
     // Code -> NPV
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult>;
+    
     fn npv(&self, instrument: &Instrument) -> Result<Real>;
-    fn fx_exposure(&self, _instrument: &Instrument, npv: Real) -> Result<Real> { Ok(npv) }
+    /// unit_notional is considered
+    fn fx_exposure(&self, _instrument: &Instrument, npv: Real) -> Result<HashMap<Currency, Real>>;
 }
 
 #[enum_dispatch(PricerTrait)]
@@ -26,5 +30,5 @@ pub enum Pricer {
     BondPricer(BondPricer),
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),
-    IrsPricer(IrsPricer),
+    //IrsPricer(IrsPricer),
 }

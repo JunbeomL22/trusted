@@ -130,6 +130,23 @@ impl RateIndex {
                 Ok((res + spread) * frac)
             },
             Some(comp_tenor) => {//some means it is an ovenight type index
+                let fixing_date = base_schedule.get_fixing_date();
+                if fixing_date >= pricing_date {// if the fixing date is after the evaluation date, the rate is calculated by the forward curve
+                    let curve_end_date = add_period(fixing_date, &self.curve_tenor.as_str());
+                        
+                    let rate = forward_curve.borrow().get_forward_rate_between_dates(
+                        &fixing_date,
+                        &curve_end_date,
+                        Compounding::Simple,
+                    )?;
+
+                    let frac = calendar.year_fraction(
+                        base_schedule.get_calc_start_date(),
+                        base_schedule.get_calc_end_date(),
+                        daycounter,
+                    )?;
+                    return Ok((rate + spread) * frac);
+                }
                 let curve_end_date_from_eval_date = add_period(pricing_date, &comp_tenor.as_str());
                 let mut calc_start_date = base_schedule.get_calc_start_date().clone();
                 let mut next_calc_date: OffsetDateTime;
@@ -167,8 +184,8 @@ impl RateIndex {
                             None => {
                                 println!(
                                     "{}:{} fixing_date = {:?} is before the evaluation date = {:?}, \
-                                    but there is no rate in the fixing date",
-                                    file!(), line!(), fixing_date, pricing_date
+                                    but there is no rate in the fixing date, thus spot rate is taken",
+                                    file!(), line!(), fixing_date.date(), pricing_date.date()
                                 );
                                 spot_rate
                             },

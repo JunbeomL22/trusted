@@ -418,6 +418,7 @@ impl Engine {
             
             fx_exposures.insert(inst.get_code(), fx_exposure);
         }
+        
         for (code, result) in self.calculation_results.iter_mut() {
             result.borrow_mut().set_fx_exposure(
                 fx_exposures.get(code)

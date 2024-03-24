@@ -36,9 +36,3 @@ impl IrsPricer {
         }
     }
 }
-
-impl PricerTrait for IrsPricer {
-    fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        unimplemented!()
-    }
-}

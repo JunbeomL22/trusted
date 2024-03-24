@@ -369,7 +369,7 @@ mod tests {
             None,
             Some(0.005),
             Some(rate_index),
-            None,//Some(String::from("1D")),
+            Some(String::from("1D")),
             //
             calendar,
             //
@@ -384,7 +384,7 @@ mod tests {
         )?;
 
         let npv = pricer.npv(&Instrument::Bond(bond.clone()))?;
-        let expected_np = 1.0551178;
+        let expected_np = 1.0551832;
         assert!(
             (npv - expected_np).abs() < 1.0e-5,
             "{}:{}  npv: {}, expected: {} (did you change the pricer or definition of Real?)",

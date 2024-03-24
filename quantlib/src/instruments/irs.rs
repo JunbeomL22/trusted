@@ -1,14 +1,30 @@
 use crate::assets::currency::Currency;
 use crate::definitions::{Integer, Real};
-use serde::{Serialize, Deserialize};
-use time::OffsetDateTime;
 use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-use crate::time::jointcalendar::JointCalendar;
+use crate::time::{
+    jointcalendar::JointCalendar,
+    calendar_trait::CalendarTrait,
+};
 use crate::instrument::InstrumentTrait;
+use crate::data::history_data::CloseData;
 use anyhow::{Result, Context, anyhow};
+use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
+use std::{
+    rc::Rc,
+    cell::RefCell,
+    collections::HashMap,
+};
 
+/// This includes the case of CRS
+/// In crs case, fixed_leg_currency != floating_leg_currency and 
+/// the following fields are not zero: 
+/// initial_fixed_side_payment, initial_floating_side_endorsement,
+/// last_fixed_side_endorsement, last_floating_side_payment.\n
+/// In plain IRS case, fixed_leg_currency == floating_leg_currency and
+/// the initial and last swaps of notional amounts are zero
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IRS {
     fixed_legs: Schedule,
@@ -16,13 +32,20 @@ pub struct IRS {
     fixed_rate: Real,
     rate_index: RateIndex,
     floating_compound_tenor: Option<String>,
-    //
-    currency: Currency,
+    calendar: JointCalendar,
     unit_notional: Real,
     //
     issue_date: OffsetDateTime,
     effective_date: OffsetDateTime,
     maturity: OffsetDateTime,
+    //
+    fixed_leg_currency: Currency,
+    floating_leg_currency: Currency,
+    //
+    initial_fixed_side_payment: Real, // 0.0 in plain IRS case
+    initial_floating_side_endorsement: Real, // 0.0 in plain IRS case
+    last_fixed_side_endorsement: Real, // 0.0 in plain IRS case
+    last_floating_side_payment: Real, // 0.0 in plain IRS case
     //
     fixed_daycounter: DayCountConvention,
     floating_daycounter: DayCountConvention,
@@ -47,6 +70,7 @@ impl IRS {
         fixed_rate: Real,
         rate_index: RateIndex,
         floating_compound_tenor: Option<String>,
+        calendar: JointCalendar,
         currency: Currency,
         unit_notional: Real,
         //
@@ -75,6 +99,7 @@ impl IRS {
             fixed_rate,
             rate_index,
             floating_compound_tenor,
+            calendar,
             currency,
             unit_notional,
             issue_date,
@@ -149,6 +174,7 @@ impl IRS {
             fixed_rate,
             rate_index,
             floating_compound_tenor,
+            calendar,
             currency,
             unit_notional,
             issue_date,
@@ -165,6 +191,88 @@ impl IRS {
             name,
             code,
         })
+    }
+
+    fn get_fixed_cashflows(
+        &self, pricing_date: &OffsetDateTime
+    ) -> Result<HashMap<OffsetDateTime, Real>> {
+        let mut res = HashMap::new();
+        let mut frac: Real;
+        
+        for base_schedule in self.fixed_legs.iter() {
+            let payment_date = base_schedule.get_payment_date();
+            if payment_date.date() < pricing_date.date() {
+                continue;
+            }
+
+            frac = self.calendar.year_fraction(
+                &base_schedule.get_calc_start_date(),
+                &base_schedule.get_calc_end_date(),
+                &self.fixed_daycounter
+            )?;
+
+            let amount = self.fixed_rate * frac;
+            res.insert(payment_date.clone(), amount);
+        }
+        Ok(res)
+    }
+
+    fn get_floating_cashflow(
+        &self, pricing_date: &OffsetDateTime, 
+        forward_curve: Rc<RefCell<HashMap<OffsetDateTime, Real>>>,
+        past_fixing_data: Rc<RefCell<CloseData>>,
+    ) -> Result<HashMap<OffsetDateTime, Real>> {
+        let mut res = HashMap::new();
+        let mut frac: Real;
+        let mut disc_factor: Real;
+        let mut fixing_date: OffsetDateTime;
+        let mut fixing_rate: Real;
+        let mut fixing_data: Real;
+        let mut fixing_rate_index: RateIndex;
+        let mut fixing_rate_index_name: String;
+        let mut fixing_rate_index_code: String;
+
+        for base_schedule in self.floating_legs.iter() {
+            let payment_date = base_schedule.get_payment_date();
+            if payment_date.date() < pricing_date.date() {
+                continue;
+            }
+
+            frac = self.calendar.year_fraction(
+                &base_schedule.get_calc_start_date(),
+                &base_schedule.get_calc_end_date(),
+                &self.floating_daycounter
+            )?;
+
+            fixing_date = self.calendar.adjust_date(
+                &payment_date,
+                &self.rate_index.get_calendar(),
+                &self.rate_index.get_business_day_convention()
+            )?;
+
+            fixing_rate_index_name = self.rate_index.get_name();
+            fixing_rate_index_code = self.rate_index.get_code();
+            fixing_rate_index = RateIndex::new(
+                fixing_rate_index_name.clone(),
+                self.currency.clone(),
+                self.rate_index.get_rate_index_code(),
+                fixing_rate_index_code.clone()
+            )?;
+
+            fixing_data = past_fixing_data.borrow().get(&fixing_date)
+                .ok_or_else(
+                    || anyhow!(
+                        "Failed to get fixing data of {} on {}",
+                        fixing_rate_index_name,
+                        fixing_date
+                    )
+                )?;
+
+            fixing_rate = fixing_data;
+            disc_factor = 1.0 / (1.0 + fixing_rate).powf(frac);
+            res.insert(payment_date.clone(), disc_factor);
+        }
+        Ok(res)
     }
 }
 

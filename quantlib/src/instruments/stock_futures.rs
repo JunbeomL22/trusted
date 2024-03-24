@@ -14,7 +14,6 @@ pub struct StockFutures {
     settlement_date: OffsetDateTime,
     unit_notional: Real,
     currency: Currency,
-    futures_currency: Currency, //may have a difference currency with the underlying
     underlying_codes: Vec<String>,
     name: String,
     code: String,
@@ -30,7 +29,6 @@ impl Default for StockFutures {
             settlement_date: OffsetDateTime::now_utc(),
             unit_notional: 0.0,
             currency: Currency::KRW,
-            futures_currency: Currency::KRW,
             underlying_codes: vec![],
             name: String::from(""),
             code: String::from(""),
@@ -60,15 +58,10 @@ impl StockFutures {
             settlement_date,
             unit_notional,
             currency,
-            futures_currency,
             underlying_codes: vec![underlying_code],
             name,
             code,
         }
-    }
-
-    pub fn get_futures_currency(&self) -> &Currency {
-        &self.futures_currency
     }
 
 }
