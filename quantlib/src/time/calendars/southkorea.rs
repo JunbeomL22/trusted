@@ -783,8 +783,8 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use crate::time::conventions::BusinessDayConvention;
-
-    //name test
+    use anyhow::Result;
+    
     #[test]
     fn test_south_korea_name() {
         let calendar = SouthKorea::new(SouthKoreaType::Krx);
@@ -794,7 +794,7 @@ mod tests {
     }
 
     #[test]
-    fn test_south_korea_calendar() {
+    fn test_south_korea_calendar() -> Result<()> {
         let mut calendar = SouthKorea::new(SouthKoreaType::Krx);
         
         let dt = datetime!(2024-2-12 0:0:0 +09:00);
@@ -816,16 +816,17 @@ mod tests {
         
         let test_date = datetime!(2024-01-29 0:0:0 +09:00);
         assert!(!calendar.is_holiday(&test_date));
-        calendar.add_holidays(&test_date.date());
+        calendar.add_holidays(&test_date.date())?;
         assert!(calendar.is_holiday(&test_date));
-        calendar.remove_holidays(&test_date.date());
+        calendar.remove_holidays(&test_date.date())?;
         assert!(!calendar.is_holiday(&test_date));
+        Ok(())
     }
 
     //unittest for adjusted business day
     
     #[test]
-    fn test_south_korea_calendar_adjusted_business_day() {
+    fn test_south_korea_calendar_adjusted_business_day() -> Result<()> {
         let calendar = SouthKorea::new(SouthKoreaType::Krx);
         
         let test_date = datetime!(2023-12-29 0:0:0 +09:00);
@@ -843,6 +844,7 @@ mod tests {
 
         let test_date = datetime!(2024-01-01 0:0:0 +09:00);
         assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::Preceding), datetime!(2023-12-29 0:0:0 +09:00));
+        Ok(())
     }
 }
 

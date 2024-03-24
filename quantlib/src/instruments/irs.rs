@@ -6,7 +6,7 @@ use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::time::jointcalendar::JointCalendar;
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 use anyhow::{Result, Context, anyhow};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,7 +15,6 @@ pub struct IRS {
     floating_legs: Schedule,
     fixed_rate: Real,
     rate_index: RateIndex,
-    //
     floating_compound_tenor: Option<String>,
     //
     currency: Currency,
@@ -169,7 +168,7 @@ impl IRS {
     }
 }
 
-impl InstrumentTriat for IRS {
+impl InstrumentTrait for IRS {
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -211,7 +210,7 @@ mod tests {
         parameters::rate_index::RateIndex,
         enums::RateIndexCode,
     };
-    use time::{Duration, macros::datetime};
+    use time::macros::datetime;
     use anyhow::Result;
 
     #[test]

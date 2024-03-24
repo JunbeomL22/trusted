@@ -273,7 +273,7 @@ mod tests {
         },
     };
     use time::macros::datetime;
-    use crate::instrument::InstrumentTriat;
+    use crate::instrument::InstrumentTrait;
 
     #[test]
     fn test_calculation_result() {

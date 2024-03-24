@@ -9,10 +9,7 @@ mod tests {
     use quantlib::data::observable::Observable;
     use quantlib::parameters::zero_curve::ZeroCurve;
     use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
-    //use quantlib::parameter::Parameter;
     use quantlib::data::vector_data::VectorData;
-    use quantlib::parameters::zero_curve_code::ZeroCurveCode;
-    //use quantlib::utils::string_arithmetic::{add_period, sub_period};
     use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
     use quantlib::assets::currency::Currency;
     use anyhow::Result;

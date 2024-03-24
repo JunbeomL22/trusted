@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
 use crate::assets::currency::Currency;
 //
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct StockFutures {
@@ -73,7 +73,7 @@ impl StockFutures {
 
 }
 
-impl InstrumentTriat for StockFutures {
+impl InstrumentTrait for StockFutures {
     fn get_name(&self) -> &String {
         &self.name
     }

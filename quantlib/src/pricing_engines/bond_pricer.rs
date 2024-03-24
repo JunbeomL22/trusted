@@ -1,5 +1,5 @@
 use crate::data::history_data::CloseData;
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
 use crate::pricing_engines::{
@@ -19,7 +19,7 @@ use time::OffsetDateTime;
 
 /// forward_curve (Optional<Rc<RefCell<ZeroCurve>>>): forward curve for floating rate bond, so it is optional
 /// past_fixing_data (Optional<Rc<CloseData>>): past fixing data for floating rate bond, so it is optional
-pub struct BondPricer{
+pub struct BondPricer {
     discount_curve: Rc<RefCell<ZeroCurve>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
@@ -53,7 +53,7 @@ impl PricerTrait for BondPricer {
             Some(&pricing_date),
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
-        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv")?;
+        ).context("Failed to get coupon cashflow in calculating Bond::npv")?;
 
         for (payment_date, amount) in cashflow.iter() {
             if payment_date.date() > pricing_date.date() {
@@ -90,7 +90,7 @@ impl PricerTrait for BondPricer {
             Some(&pricing_date),
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
-        ).context("Failed to get coupon cashflow in calculating FixedCouponBond::npv_result")?; // include evaluation date
+        ).context("Failed to get coupon cashflow in calculating Bond::npv_result")?; // include evaluation date
 
         for (i, (payment_date, amount)) in cashflow.iter().enumerate() {
             if pricing_date.date() < payment_date.date() {
@@ -136,20 +136,23 @@ mod tests {
     use crate::pricing_engines::pricer::PricerTrait;
     use crate::instrument::Instrument;
     use crate::definitions::Real;
-    use std::{rc::Rc, cell::RefCell};
-    use time::{Duration, macros::datetime};
     use crate::data::vector_data::VectorData;
-    use ndarray::array;
     use crate::time::conventions::{DayCountConvention, BusinessDayConvention, PaymentFrequency};
-    use crate::instruments::bonds::fixed_coupon_bond::FixedCouponBond;
+    use crate::instruments::bond::Bond;
     use crate::assets::currency::Currency;
-    use anyhow::Result;
     use crate::enums::{CreditRating, IssuerType, RankType};
     use crate::time::{
         calendars::southkorea::{SouthKorea, SouthKoreaType},
         calendar::Calendar,
         jointcalendar::JointCalendar,
     };
+    use crate::parameters::rate_index::RateIndex;
+    use crate::enums::RateIndexCode;
+    //
+    use std::{rc::Rc, cell::RefCell};
+    use time::{Duration, macros::datetime};
+    use ndarray::array;
+    use anyhow::Result;
 
     #[test]
     fn test_fixed_coupon_bond_pricer() -> Result<()> {
@@ -183,8 +186,8 @@ mod tests {
         // make a pricer
         let pricer = BondPricer::new(
             discount_curve.clone(),
-            None,
             evaluation_date.clone(),
+            None,
             None,
         );
 
@@ -198,24 +201,34 @@ mod tests {
         
         let calendar = JointCalendar::new(vec![sk])?;
 
-        let bond = FixedCouponBond::new_from_conventions(
-            Currency::KRW,
-            IssuerType::Government, 
+        let bond = Bond::new_from_conventions(
+            IssuerType::Government,
             CreditRating::None, 
+            issuer_name.to_string(),
             RankType::Senior, 
-            false, 
-            0.03, 
+            Currency::KRW,
+            //
             10_000.0, 
-            issuedate.clone(), 
+            false, 
+            //
             issuedate.clone(),
+            issuedate.clone(),
+            None,
+            None,
             maturity,
-            None, 
-            Some(bond_pricing_date.clone()),
+            //
+            Some(0.03), 
+            None,
+            None,
+            None,
+            //
             calendar,
-            DayCountConvention::ActActIsda, 
-            BusinessDayConvention::Unadjusted, 
-            PaymentFrequency::SemiAnnually, 
-            issuer_name.to_string(), 
+            //
+            DayCountConvention::ActActIsda,
+            BusinessDayConvention::Unadjusted,
+            PaymentFrequency::Quarterly,
+            //
+            0,
             0,             
             bond_name.to_string(), 
             bond_code.to_string(),
@@ -246,8 +259,8 @@ mod tests {
             expected_sum
         );
 
-        let isntrument = Instrument::FixedCouponBond(bond.clone());
-        let expected_npv: Real = 0.9993578;
+        let isntrument = Instrument::Bond(bond.clone());
+        let expected_npv: Real = 0.99967957;
 
         let npv_result = pricer.npv_result(&isntrument)?;
         let npv = npv_result.get_npv();
@@ -261,6 +274,125 @@ mod tests {
             expected_npv
         );
 
+        Ok(())
+    }
+
+    #[test]
+    // test bond pricer for floating rate note
+    // which calculate overnight rate (compound_tenor = String::from("1D")) + spread
+    fn test_floating_rate_note_pricer() -> Result<()> {
+        let dt = datetime!(2021-01-01 16:30:00 +09:00);
+        let name = "KRWGOV";
+        let evaluation_date = Rc::new(RefCell::new(
+            EvaluationDate::new(dt),
+        ));
+
+        // define a vector data 1Y = 0.03, 5Y = 0.04
+        let curve_data = VectorData::new(
+            array!(0.03, 0.03),
+            None,
+            Some(array!(1.0, 5.0)),
+            evaluation_date.borrow().get_date_clone(),
+            Currency::KRW,
+            name.to_string(),
+        )?;
+
+        // make a discount curve (ZeroCurve)
+        let discount_curve = Rc::new(RefCell::new(
+            ZeroCurve::new(
+                evaluation_date.clone(),
+                &curve_data,
+                name.to_string(),
+                name.to_string(),
+            )?
+        ));
+
+        // define a vector data 1Y = 0.03, 5Y = 0.04
+        let forward_curve_data = VectorData::new(
+            array!(0.04, 0.04),
+            None,
+            Some(array!(1.0, 5.0)),
+            evaluation_date.borrow().get_date_clone(),
+            Currency::KRW,
+            name.to_string(),
+        )?;
+
+        // make a discount curve (ZeroCurve)
+        let forward_curve = Rc::new(RefCell::new(
+            ZeroCurve::new(
+                evaluation_date.clone(),
+                &forward_curve_data,
+                "KRWIRS".to_string(),
+                "KRWIRS".to_string(),
+            )?
+        ));
+        
+        // make a pricer
+        let pricer = BondPricer::new(
+            discount_curve.clone(),
+            evaluation_date.clone(),
+            Some(forward_curve.clone()),
+            None,
+        );
+
+        // let's make a floating rate note paying quaterly 3% coupon
+        let issuedate = datetime!(2021-01-01 16:30:00 +09:00);
+        let maturity = issuedate + Duration::days(365 * 4);
+        let issuer_name = "Korea Government";
+        let bond_name = "KRW Floating Rate Note";
+        let bond_code = "KR1234567890";
+        let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
+        let calendar = JointCalendar::new(vec![sk])?;
+        let rate_index = RateIndex::new(
+            String::from("91D"),
+            Currency::KRW,
+            RateIndexCode::CD,
+            "CD91".to_string(),
+        )?;
+
+        let bond = Bond::new_from_conventions(
+            IssuerType::Government,
+            CreditRating::None, 
+            issuer_name.to_string(),
+            RankType::Senior, 
+            Currency::KRW,
+            //
+            10_000.0, 
+            false, 
+            //
+            issuedate.clone(),
+            issuedate.clone(),
+            None,
+            None,
+            maturity,
+            //
+            None,
+            Some(0.005),
+            Some(rate_index),
+            None,//Some(String::from("1D")),
+            //
+            calendar,
+            //
+            DayCountConvention::ActActIsda,
+            BusinessDayConvention::Unadjusted,
+            PaymentFrequency::Quarterly,
+            //
+            1,
+            0,
+            bond_name.to_string(),
+            bond_code.to_string(),
+        )?;
+
+        let npv = pricer.npv(&Instrument::Bond(bond.clone()))?;
+        let expected_np = 1.0551178;
+        assert!(
+            (npv - expected_np).abs() < 1.0e-5,
+            "{}:{}  npv: {}, expected: {} (did you change the pricer or definition of Real?)",
+            file!(),
+            line!(),
+            npv,
+            expected_np
+        );
         Ok(())
     }
 }

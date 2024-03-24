@@ -7,7 +7,7 @@ use crate::parameters::{
 use crate::data::history_data::CloseData;
 use crate::definitions::Real;
 use crate::evaluation_date::EvaluationDate;
-use crate::instrument::{Instrument, InstrumentTriat};
+use crate::instrument::{Instrument, InstrumentTrait};
 use crate::pricing_engines::{
     match_parameter::MatchParameter,
     pricer::Pricer,

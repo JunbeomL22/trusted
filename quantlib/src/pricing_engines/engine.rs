@@ -4,7 +4,7 @@ use crate::parameters::{
     zero_curve::ZeroCurve,
 };
 use crate::evaluation_date::EvaluationDate;
-use crate::instrument::{Instrument, Instruments, InstrumentTriat};
+use crate::instrument::{Instrument, Instruments, InstrumentTrait};
 use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
 use crate::assets::stock::Stock;
 use crate::data::{

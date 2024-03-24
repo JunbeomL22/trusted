@@ -2,7 +2,7 @@ use crate::definitions::Real;
 use crate::instruments::bond::Bond;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::instrument::{Instrument, InstrumentTriat};
+use crate::instrument::{Instrument, InstrumentTrait};
 use crate::evaluation_date::EvaluationDate;
 use crate::time::{
     conventions::DayCountConvention,
@@ -127,7 +127,7 @@ impl PricerTrait for KrxYieldPricer {
         let mut disc_factor: Real;
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let pricing_date = bond.get_pricing_date()?.unwrap_or(&eval_dt);
-        let freq = bond.get_frequency()?.as_real();
+        let freq = bond.get_coupon_frequency()?.as_real();
         let effective_yield = self.bond_yield / freq;
         let cal = bond.get_calendar()?;
         let mut diff: Real;
@@ -180,11 +180,19 @@ impl PricerTrait for KrxYieldPricer {
         let d = (min_cashflow_date.date() - pricing_date.date()).whole_days();
         
         // previous coupon date (or issue date)
-        let previous_date = cashflow
-            .keys()
-            .filter(|&date| date.date() <= pricing_date.date())
+        let schedule = bond.get_schedule()?;
+
+        let previous_date = schedule
+            .iter()
+            .filter(|&base_schedule| base_schedule.get_payment_date().date() <= pricing_date.date())
+            .map(|base_schedule| base_schedule.get_payment_date())
             .max()
             .unwrap_or(bond.get_issue_date()?);
+        //let previous_date = cashflow
+        //    .keys()
+        //    .filter(|&date| date.date() <= pricing_date.date())
+        //    .max()
+        //    .unwrap_or(bond.get_issue_date()?);
         // b = days from previous_date to the next coupon date
         let b = (min_cashflow_date.date() - previous_date.date()).whole_days();
         let frac = d as Real / b as Real;
@@ -205,7 +213,7 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use crate::evaluation_date;
-    use crate::instruments::fixed_coupon_bond::FixedCouponBond;
+    use crate::instruments::bond::Bond;
     use crate::time::{calendar::Calendar, jointcalendar::JointCalendar};
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
@@ -233,37 +241,49 @@ mod tests {
         let issuer_type2 = IssuerType::Government;
         let credit_rating2 = CreditRating::None;
 
-        let bond = FixedCouponBond::new_from_conventions(
+        let bond = Bond::new_from_conventions(
+            issuer_type2, 
+            credit_rating2, 
+            issuer_name2.to_string(), 
+            RankType::Senior,
             bond_currency2,
-            issuer_type2,
-            credit_rating2,     
-            RankType::Senior, 
+            //
+            1_000_0.0,
             false, 
-            0.0425, 
-            10_000.0, 
+            //
             issuedate2.clone(), 
             issuedate2.clone(),
-            maturity2,
-            None,
             Some(pricing_date),
+            None,
+            maturity2,
+            //
+            Some(0.0425), 
+            None,
+            None,
+            None,
+            //
             calendar,
+            //
             DayCountConvention::StreetConvention,
             BusinessDayConvention::Unadjusted, 
             PaymentFrequency::SemiAnnually, 
-            issuer_name2.to_string(), 
-            0, 
+            //
+            0,
+            0,  
             bond_name2.to_string(), 
             bond_code2.to_string(),
         )?;
-        let inst = Instrument::FixedCouponBond(bond.clone());
+
+        let inst = Instrument::Bond(bond.clone());
         let bond_yield = 0.03390;
         
         let pricer = KrxYieldPricer::new(
             bond_yield, 
-            None,
             eval_date_rc.clone(),
             None,
+            None,
         );
+
         let npv = pricer.npv(&inst)?;
         let expected_npv = 1.025838;
         println!("npv: {}", npv);

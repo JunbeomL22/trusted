@@ -321,7 +321,11 @@ impl ZeroCurve {
                 }
             }
             false => {
-                let error = anyhow!("{} > {} in ZeroCurve::get_forward_rate_between_times", t1, t2);
+                let error = anyhow!(
+                    "({}:{}) {} > {} in ZeroCurve::get_forward_rate_between_times", 
+                    file!(), line!(),
+                    t1, t2
+                );
                 Err(error)
             }
         }
@@ -334,7 +338,10 @@ impl ZeroCurve {
         compounding: Compounding
     ) -> Result<Real> {
         if date1 > date2 {
-            let error = anyhow!("{:?} > {:?} in ZeroCurve::get_forward_rate_between_dates", date1, date2);
+            let error = anyhow!(
+                "({}:{}) {:?} > {:?} in ZeroCurve::get_forward_rate_between_dates", 
+                file!(), line!(),
+                date1, date2);
             return Err(error)
         }
 
@@ -348,8 +355,16 @@ impl ZeroCurve {
         date: &OffsetDateTime, 
         compounding: Compounding
     ) -> Result<Real> {
+        let dt = self.evaluation_date.borrow().get_date_clone();
+        if date < &dt {
+            let error = anyhow!(
+                "({}:{}) date = {:?} < evaluation date = {:?} in ZeroCurve::get_forward_rate_from_evaluation_date", 
+                file!(), line!(),
+                date, dt);
+            return Err(error)
+        }
         self.get_forward_rate_between_dates(
-            &self.evaluation_date.borrow().get_date_clone(), 
+            &dt,
             date, 
             compounding
         )

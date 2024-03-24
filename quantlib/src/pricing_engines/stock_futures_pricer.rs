@@ -5,7 +5,7 @@ use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 //
 use time::OffsetDateTime;
 use anyhow::{anyhow, Context, Result};
@@ -109,7 +109,7 @@ impl PricerTrait for StockFuturesPricer {
 mod tests {
     use super::*;
     use crate::data::observable::Observable;
-    use crate::instrument::InstrumentTriat;
+    use crate::instrument::InstrumentTrait;
     use crate::{assets::currency::Currency, instruments::stock_futures::StockFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
     use time::macros::datetime;
     use crate::data::vector_data::VectorData;

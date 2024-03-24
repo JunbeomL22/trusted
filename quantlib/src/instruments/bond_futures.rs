@@ -2,7 +2,7 @@ use crate::assets::currency::Currency;
 use crate::definitions::Real;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -15,7 +15,7 @@ pub struct BondFutures {
     code: String,
 }
 
-impl InstrumentTriat for BondFutures {
+impl InstrumentTrait for BondFutures {
     fn get_type_name(&self) -> &'static str {
         "BondFutures"
     }
@@ -34,5 +34,10 @@ impl InstrumentTriat for BondFutures {
 
     fn get_unit_notional(&self) -> Real {
         self.unit_notional
+    }
+
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
     }
 }

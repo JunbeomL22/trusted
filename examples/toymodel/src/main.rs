@@ -5,7 +5,6 @@ use quantlib::definitions::Real;
 use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
-use std::hash::Hash;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -14,7 +13,6 @@ use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
-use serde_json;
 use quantlib::instruments::bond::Bond;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
 use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
@@ -273,7 +271,6 @@ fn main() -> Result<()> {
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
     let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
     let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
-    // display div-delta of RefCell<CalculationResult>
     
     println!("\n165XXX1");
     println!("result1 value: {:?}", result1.borrow().get_value());

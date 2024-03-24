@@ -4,6 +4,9 @@ use crate::pricing_engines::npv_result::NpvResult;
 use crate::pricing_engines::{
     bond_pricer::BondPricer,
     stock_futures_pricer::StockFuturesPricer,
+    ktbf_pricer::KtbfPricer,
+    krx_yield_pricer::KrxYieldPricer,
+    irs_pricer::IrsPricer,
 };
 //
 use anyhow::Result;
@@ -21,4 +24,7 @@ pub trait PricerTrait {
 pub enum Pricer {
     StockFuturesPricer(StockFuturesPricer),
     BondPricer(BondPricer),
+    KtbfPricer(KtbfPricer),
+    KrxYieldPricer(KrxYieldPricer),
+    IrsPricer(IrsPricer),
 }

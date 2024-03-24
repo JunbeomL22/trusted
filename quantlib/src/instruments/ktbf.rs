@@ -1,26 +1,33 @@
 use crate::assets::currency::Currency;
-use crate::definitions::{Integer, Real, COUPON_PAYMENT_TIME};
+use crate::definitions::{Integer, Real};
 use crate::instruments::bond::Bond;
-use crate::time::conventions::{DayCountConvention, PaymentFrequency, BusinessDayConvention};
-use crate::instrument::InstrumentTriat;
+use crate::time::conventions::PaymentFrequency;
+use crate::instrument::InstrumentTrait;
 //
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KtbfVirtualBond {
     year: Integer,
     coupon_rate: Real,
     frequency: PaymentFrequency,
+    unit_notional: Real,
 }
 
 impl KtbfVirtualBond {
-    pub fn new(year: Integer, coupon_rate: Real, frequency: PaymentFrequency) -> KtbfVirtualBond {
+    pub fn new(
+        year: Integer, 
+        coupon_rate: Real, 
+        frequency: PaymentFrequency,
+        unit_notional: Real,
+    ) -> KtbfVirtualBond {
         KtbfVirtualBond {
             year,
             coupon_rate,
             frequency,
+            unit_notional,
         }
     }
 
@@ -36,7 +43,7 @@ impl KtbfVirtualBond {
             res += effective_coupon / (1.0 + effective_yield).powi(i as i32);
         }
         res += 1.0 / (1.0 + effective_yield).powi(coupon_payment_number as i32);
-        res
+        res * self.unit_notional
     }
     
     
@@ -66,8 +73,34 @@ impl KTBF {
         underlying_bonds: Vec<Bond>,
         name: String,
         code: String,
-    ) -> KTBF {
-        KTBF {
+    ) -> Result<KTBF> {
+        // all underlying_bonds should have the same pricing date as the maturity
+        for bond in underlying_bonds.iter() {
+            let pricing_date = bond.get_pricing_date()?;
+            if pricing_date.is_none() {
+                return Err(anyhow!(
+                    "({}:{}) The underlying bond {} ({}) in ktbf {} ({}) does not have a pricing date",
+                    file!(), line!(),
+                    bond.get_name(),
+                    bond.get_code(),
+                    name,
+                    code,
+                ));
+            }
+            match pricing_date.unwrap() == &maturity {
+                true => (),
+                false => return Err(anyhow!(
+                    "({}:{}) The pricing date of the underlying bond {} ({}) in ktbf {} ({}) is not the same as the ktbf maturity",
+                    file!(), line!(),
+                    bond.get_name(),
+                    bond.get_code(),
+                    name,
+                    code,
+                )),
+            }
+        }    
+        
+        Ok(KTBF {
             currency,
             unit_notional,
             issue_date,
@@ -77,14 +110,15 @@ impl KTBF {
             underlying_bonds,
             name,
             code,
-        }
+        })
     }
     pub fn get_underlying_bonds(&self) -> &Vec<Bond> {
         &self.underlying_bonds
     }
+
 }
 
-impl InstrumentTriat for KTBF {
+impl InstrumentTrait for KTBF {
     fn get_type_name(&self) -> &'static str {
         "KTBF"
     }
@@ -111,6 +145,10 @@ impl InstrumentTriat for KTBF {
 
     fn get_virtual_bond_npv(&self, bond_yield: Real) -> Result<Real> {
         Ok(self.virtual_bond.npv(bond_yield))
+    }
+
+    fn get_underlying_bonds(&self) -> Result<&Vec<Bond>> {
+        Ok(&self.underlying_bonds)
     }
 
 }

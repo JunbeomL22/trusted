@@ -1,4 +1,4 @@
-use crate::{enums::RateIndexCode, instrument::Instrument, instrument::InstrumentTriat};
+use crate::{enums::RateIndexCode, instrument::Instrument, instrument::InstrumentTrait};
 use crate::assets::currency::Currency;
 use crate::enums::{CreditRating, IssuerType};
 //
@@ -290,41 +290,41 @@ mod tests {
             match_parameter.get_collateral_curve_name(
                 &stock_futures_inst,
                 &String::from("AAPL")
-            ).clone(),
+            )?.clone(),
             String::from("USDGOV"),
             "StockFutures has underlying code AAPL but it returns a curve name: {}",
             match_parameter.get_collateral_curve_name(
                 &stock_futures_inst,
                 &String::from("AAPL")
-            )
+            )?
         );
 
         assert_eq!(
-            match_parameter.get_discount_curve_name(&stock_futures_inst).clone(), 
+            match_parameter.get_discount_curve_name(&stock_futures_inst)?.clone(), 
             String::from("Dummy"),
             "StockFutures does not need to be discounted but it returns a curve name: {}",
-            match_parameter.get_discount_curve_name(&stock_futures_inst)
+            match_parameter.get_discount_curve_name(&stock_futures_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_rate_index_curve_name(&stock_futures_inst).clone(), 
+            match_parameter.get_rate_index_curve_name(&stock_futures_inst)?.clone(), 
             String::from("Dummy"),
             "StockFutures does not need to be discounted but it returns a curve name: {}",
-            match_parameter.get_rate_index_curve_name(&stock_futures_inst)
+            match_parameter.get_rate_index_curve_name(&stock_futures_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_discount_curve_name(&irs_inst).clone(), 
+            match_parameter.get_discount_curve_name(&irs_inst)?.clone(), 
             String::from("KRWIRS"),
             "IRS needs to be discounted but it returns a curve name: {}",
-            match_parameter.get_discount_curve_name(&irs_inst)
+            match_parameter.get_discount_curve_name(&irs_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_rate_index_curve_name(&irs_inst).clone(), 
+            match_parameter.get_rate_index_curve_name(&irs_inst)?.clone(), 
             String::from("KRWIRS"),
             "IRS needs to be discounted but it returns a curve name: {}",
-            match_parameter.get_rate_index_curve_name(&irs_inst)
+            match_parameter.get_rate_index_curve_name(&irs_inst)?
         );
         Ok(())
     }

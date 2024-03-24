@@ -58,7 +58,7 @@ mod tests {
         zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
         
         // make a vector data for dividend ratio
-        let mut dividend_data = VectorData::new(
+        let dividend_data = VectorData::new(
             Array1::from(vec![3.0, 3.0]),
             Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-06-01 00:00:00 +09:00)]),
             None,

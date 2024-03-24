@@ -1,6 +1,6 @@
 use crate::assets::currency::Currency;
 use crate::definitions::Real;
-use crate::instrument::InstrumentTriat;
+use crate::instrument::InstrumentTrait;
 use crate::instruments::schedule::{build_schedule, Schedule};
 use crate::enums::{IssuerType, CreditRating, RankType};
 use crate::parameters::zero_curve::ZeroCurve;
@@ -13,7 +13,6 @@ use crate::data::history_data::CloseData;
 use crate::parameters::rate_index::RateIndex;
 //
 use anyhow::{Result, Context, anyhow};
-use num_traits::float;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use std::{
@@ -227,13 +226,32 @@ impl Bond {
         })
     }
 
-    pub fn get_schedule(&self) -> &Schedule {
-        &self.schedule
+    pub fn set_pricing_date(&mut self, pricing_date: OffsetDateTime) {
+        self.pricing_date = Some(pricing_date);
     }
-
 }
 
-impl InstrumentTriat for Bond {
+impl InstrumentTrait for Bond {
+    fn get_pricing_date(&self) -> Result<Option<&OffsetDateTime>> {
+        Ok(self.pricing_date.as_ref())
+    }
+
+    fn get_maturity(&self) -> Option<&OffsetDateTime> {
+        Some(&self.maturity)
+    }
+
+    fn get_schedule(&self) -> Result<&Schedule> {
+        Ok(&self.schedule)
+    }
+
+    fn get_calendar(&self) -> Result<&JointCalendar> {
+        Ok(&self.calendar)
+    }
+
+    fn get_coupon_frequency(&self) -> Result<PaymentFrequency> {
+        Ok(self.payment_frequency)
+    }
+
     fn get_type_name(&self) -> &'static str {
         "Bond"
     }
@@ -270,15 +288,26 @@ impl InstrumentTriat for Bond {
         self.unit_notional
     }
 
+    fn get_issue_date(&self) -> Result<&OffsetDateTime> {
+        Ok(&self.issue_date)
+    }
+
+    fn is_coupon_strip(&self) -> Result<bool> {
+        Ok(self.is_coupon_strip)
+    }
+
     fn get_coupon_cashflow(&self,
         pricing_date: Option<&OffsetDateTime>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
-        let mut amount: Real;
         for base_schedule in self.schedule.iter() {
             let payment_date = base_schedule.get_payment_date();
+            if payment_date.date() < pricing_date.unwrap().date() {
+                continue;
+            }
+
             let given_amount = base_schedule.get_amount();
             match given_amount {
                 Some(amount) => {

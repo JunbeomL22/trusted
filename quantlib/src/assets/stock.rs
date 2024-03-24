@@ -7,7 +7,7 @@ use crate::definitions::Real;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use std::rc::Rc;
 use std::cell::RefCell;
-use anyhow::{Result, anyhow, Context};
+use anyhow::Result;
 
 /// an observer of evaluation_date 
 /// when ever calculating theta the Stock price mut be deducted by the dividend

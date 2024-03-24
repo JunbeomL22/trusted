@@ -1,9 +1,8 @@
 use crate::time::calendar_trait::CalendarTrait;
-use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+use crate::time::conventions::{BusinessDayConvention, DayCountConvention};
 use crate::enums::RateIndexCode;
 use crate::instruments::schedule::BaseSchedule;
 use crate::parameters::zero_curve::ZeroCurve;
-use crate::evaluation_date::EvaluationDate;
 use crate::data::history_data::CloseData;
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
@@ -13,7 +12,7 @@ use crate::enums::Compounding;
 use crate::util::min_offsetdatetime;
 //
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use std::{
     rc::Rc,
     cell::RefCell,
@@ -97,15 +96,15 @@ impl RateIndex {
             None => {// None means that it is not a overnight type index
                 let fixing_date = base_schedule.get_fixing_date();
                 let curve_end_date = add_period(
-                    pricing_date, self.curve_tenor.as_str());
+                    fixing_date, self.curve_tenor.as_str());
                 let res: Real;
                 if fixing_date < pricing_date {
                     res = match close_data.get(fixing_date) {
                         Some(rate) => *rate,
                         None => {
                             println!(
-                                "{}:{} fixing_date = {:?} is before the evaluation date = {:?}, \
-                                but there is no rate in the fixing date",
+                                "Warning! ({}:{}) fixing_date = {:?} is before the evaluation date = {:?}, \
+                                but there is no rate in the fixing date, Thus, spot rate at the evalaution date is used",
                                 file!(), line!(), fixing_date, pricing_date
                             );
 
@@ -130,7 +129,7 @@ impl RateIndex {
                 
                 Ok((res + spread) * frac)
             },
-            Some(comp_tenor) => {
+            Some(comp_tenor) => {//some means it is an ovenight type index
                 let curve_end_date_from_eval_date = add_period(pricing_date, &comp_tenor.as_str());
                 let mut calc_start_date = base_schedule.get_calc_start_date().clone();
                 let mut next_calc_date: OffsetDateTime;
@@ -199,10 +198,7 @@ mod tests {
 
     use super::*;
     use crate::time::{
-        calendars::{
-            southkorea::{SouthKorea, SouthKoreaType},
-            unitedstates::{UnitedStates, UnitedStatesType},
-        },
+        calendars::unitedstates::{UnitedStates, UnitedStatesType},
         jointcalendar::JointCalendar,
         calendar::Calendar,
         calendar_trait::CalendarTrait,
@@ -215,13 +211,14 @@ mod tests {
         history_data::CloseData,
         vector_data::VectorData,
     };
+    use crate::evaluation_date::EvaluationDate;
     use crate::instruments::schedule::BaseSchedule;
     //
     use time::{
         macros::datetime,
         Duration,
     };
-    use anyhow::{Result, anyhow};
+    use anyhow::Result;
     use ndarray::array;
     
     #[test]
@@ -295,7 +292,7 @@ mod tests {
             &base_schedule,
             None,
             zero_curve.clone(),
-            &close_data,
+            close_data.clone(),
             evaluation_date.borrow().get_date(),
             compound_tenor.as_ref(),
             &calendar,

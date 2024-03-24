@@ -1,3 +1,4 @@
+use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
     stock_futures::StockFutures,
@@ -31,7 +32,7 @@ use time::OffsetDateTime;
 
 
 #[enum_dispatch]
-pub trait InstrumentTriat{
+pub trait InstrumentTrait{
     // The following methods are mandatory for all instruments
     fn get_name(&self) -> &String;
     fn get_code(&self) -> &String;
@@ -86,7 +87,11 @@ pub trait InstrumentTriat{
         Err(anyhow!("not supported instrument type on is_coupon_strip"))
     }
 
-    fn get_frequency(&self) -> Result<PaymentFrequency> {
+    fn get_underlying_bonds(&self) -> Result<&Vec<Bond>> {
+        Err(anyhow!("not supported instrument type on get_underlying_bonds"))
+    }
+    
+    fn get_coupon_frequency(&self) -> Result<PaymentFrequency> {
         Err(anyhow!("not supported instrument type on get_frequency"))
     }
 
@@ -98,12 +103,16 @@ pub trait InstrumentTriat{
         Err(anyhow!("not supported instrument type on issue_date"))
     }
 
-    fn get_virtual_bond_npv(&self, bond_yield: Real) -> Result<Real> {
+    fn get_virtual_bond_npv(&self, _bond_yield: Real) -> Result<Real> {
         Err(anyhow!("not supported instrument type on get_virtual_bond_npv"))
+    }
+
+    fn get_schedule(&self) -> Result<&Schedule> {
+        Err(anyhow!("not supported instrument type on get_schedule"))
     }
 }
 
-#[enum_dispatch(InstrumentTriat)]
+#[enum_dispatch(InstrumentTrait)]
 #[derive(Clone, Debug)]
 pub enum Instrument {
     StockFutures(StockFutures),
@@ -602,13 +611,13 @@ mod tests {
         assert_eq!(fut1.get_currency(), instruments_with_kospi2[0].get_currency());
 
         // test get_all_curve_names
-        let all_curve_names = instruments.get_all_curve_names(&match_parameter);
+        let all_curve_names = instruments.get_all_curve_names(&match_parameter)?;
         assert_eq!(all_curve_names, vec![&"KRWGOV", &"USGOV", &"KRWIRS"]);
         // test instruments_using_curve
         let instruments_using_krw_gov = instruments.instruments_using_curve(
             &"KRWGOV".to_string(),
             &match_parameter,
-        );
+        )?;
 
         assert_eq!(fut1.get_code(), instruments_using_krw_gov[0].get_code());
 
@@ -617,7 +626,7 @@ mod tests {
         let instruments_using_krw_irs = instruments.instruments_using_curve(
             &"KRWIRS".to_string(),
             &match_parameter,
-        );
+        )?;
 
         assert_eq!(irs.get_code(), instruments_using_krw_irs[0].get_code());
 
