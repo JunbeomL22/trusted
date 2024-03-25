@@ -49,7 +49,7 @@ impl PricerTrait for BondPricer {
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
     
-        let cashflow = instrument.get_coupon_cashflow(
+        let cashflow = instrument.get_cashflows(
             Some(&pricing_date),
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
@@ -59,15 +59,6 @@ impl PricerTrait for BondPricer {
             if payment_date.date() > pricing_date.date() {
                 disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(payment_date)?;
                 res += amount * disc_factor;    
-            }
-        }
-
-        if !instrument.is_coupon_strip()? {
-            let maturity = instrument.get_maturity().unwrap();
-
-            if maturity.date() > pricing_date.date() {
-                disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
-                res += disc_factor;
             }
         }
 
@@ -86,7 +77,7 @@ impl PricerTrait for BondPricer {
 
         let mut disc_factor: Real;
         
-        let cashflow = instrument.get_coupon_cashflow(
+        let cashflow = instrument.get_cashflows(
             Some(&pricing_date),
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
@@ -101,14 +92,6 @@ impl PricerTrait for BondPricer {
             if pricing_date.date() <= payment_date.date () {
                 coupon_amounts.insert(i as usize, (payment_date.clone(), *amount));
                 coupon_payment_probability.insert(i, (payment_date.clone(), 1.0));
-            }
-        }
-
-        if !instrument.is_coupon_strip()? {
-            let maturity = instrument.get_maturity().unwrap();
-            if maturity.date() > pricing_date.date() {
-                disc_factor = self.discount_curve.borrow().get_discount_factor_at_date(maturity)?;
-                npv += disc_factor;
             }
         }
 
@@ -234,7 +217,7 @@ mod tests {
             bond_code.to_string(),
         )?;
 
-        let cashflows = bond.get_coupon_cashflow(
+        let cashflows = bond.get_cashflows(
             Some(&bond_pricing_date),
             None,
             None,

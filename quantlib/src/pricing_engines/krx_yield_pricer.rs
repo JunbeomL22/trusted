@@ -134,7 +134,7 @@ impl PricerTrait for KrxYieldPricer {
         let daycounter = self.daycount;
         let maturity = bond.get_maturity().unwrap();
 
-        let cashflow = bond.get_coupon_cashflow(
+        let cashflow = bond.get_cashflows(
             Some(&pricing_date),
             self.forward_curve.clone(),
             self.past_fixing_data.clone()
@@ -161,17 +161,6 @@ impl PricerTrait for KrxYieldPricer {
                     &daycounter)?;
                 disc_factor = 1.0 / (1.0 + effective_yield).powf(diff * freq);
                 res += amount * disc_factor;
-            }
-        }
-
-        if !bond.is_coupon_strip()? {
-            if maturity.date() > pricing_date.date() {
-                diff = cal.year_fraction(
-                    &min_cashflow_date, &maturity, &daycounter
-                )?;
-
-                disc_factor = 1.0 / (1.0 + effective_yield).powf(diff * freq);
-                res += disc_factor;
             }
         }
         

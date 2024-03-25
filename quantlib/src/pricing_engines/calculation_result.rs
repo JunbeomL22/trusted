@@ -221,8 +221,8 @@ impl CalculationResult {
         self.evaluation_date.as_ref()
     }
 
-    pub fn get_fx_exposure(&self) -> Option<Real> {
-        self.fx_exposure
+    pub fn get_fx_exposure(&self) -> Option<&HashMap<Currency, Real>> {
+        self.fx_exposure.as_ref()
     }
 
     pub fn get_delta(&self) -> Option<&HashMap<String, Real>> {

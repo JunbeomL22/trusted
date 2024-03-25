@@ -131,14 +131,25 @@ impl RateIndex {
             },
             Some(comp_tenor) => {//some means it is an ovenight type index
                 let fixing_date = base_schedule.get_fixing_date();
-                if fixing_date >= pricing_date {// if the fixing date is after the evaluation date, the rate is calculated by the forward curve
+                if fixing_date >= pricing_date {
+                    // if the fixing date is after the evaluation date, the rate is calculated by the forward curve
+                    // the value is taken as the average of the first and last fixing for performance
                     let curve_end_date = add_period(fixing_date, &self.curve_tenor.as_str());
                         
-                    let rate = forward_curve.borrow().get_forward_rate_between_dates(
+                    let first_rate = forward_curve.borrow().get_forward_rate_between_dates(
                         &fixing_date,
                         &curve_end_date,
                         Compounding::Simple,
                     )?;
+
+                    let last_fixing_date = base_schedule.get_calc_end_date().clone() - Duration::days(fixing_days);
+                    let last_rate = forward_curve.borrow().get_forward_rate_between_dates(
+                        &last_fixing_date,
+                        &add_period(&last_fixing_date, &self.curve_tenor.as_str()),
+                        Compounding::Simple,
+                    )?;
+
+                    let rate = (first_rate + last_rate) / 2.0;
 
                     let frac = calendar.year_fraction(
                         base_schedule.get_calc_start_date(),

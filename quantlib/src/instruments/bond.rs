@@ -296,7 +296,7 @@ impl InstrumentTrait for Bond {
         Ok(self.is_coupon_strip)
     }
 
-    fn get_coupon_cashflow(&self,
+    fn get_cashflows(&self,
         pricing_date: Option<&OffsetDateTime>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_data: Option<Rc<CloseData>>,
@@ -351,6 +351,11 @@ impl InstrumentTrait for Bond {
                 }, // where the given amount is None
             } // end of branch of optional given amount
         }
+
+        if !self.is_coupon_strip()? && self.maturity.date() >= pricing_date.unwrap().date() {
+            res.insert(self.maturity.clone(), 1.0);
+        }
+
         Ok(res)
     }
 }

@@ -1,4 +1,7 @@
-use crate::assets::stock::Stock;
+use crate::assets::{
+    stock::Stock,
+    fx::{FX, FxCode},
+};
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
@@ -25,7 +28,7 @@ use anyhow::{Result, anyhow};
 
 pub struct PricerFactory {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<String, Rc<RefCell<Real>>>,
+    fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
     stocks: HashMap<String, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
@@ -36,7 +39,7 @@ pub struct PricerFactory {
 impl PricerFactory {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        fxs: HashMap<String, Rc<RefCell<Real>>>,
+        fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
         stocks: HashMap<String, Rc<RefCell<Stock>>>,
         zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
         dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,

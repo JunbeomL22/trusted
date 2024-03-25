@@ -10,6 +10,7 @@ pub enum BusinessDayConvention {
     ModifiedFollowing,
     Preceding,
     ModifiedPreceding,
+    Dummy,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
@@ -20,6 +21,7 @@ pub enum DayCountConvention {
     Thirty360,
     ActActIsda,
     StreetConvention, // 30/360 but with EOM
+    Dummy,
 }
 
 /// Interest payment frequency/year enumeration.
@@ -34,7 +36,8 @@ pub enum PaymentFrequency {
     Quarterly = 4,
     TriAnnually = 3,
     SemiAnnually = 2,
-    Annually = 1
+    Annually = 1,
+    None = 0,
 }
 
 impl PaymentFrequency {
@@ -56,6 +59,7 @@ impl ToString for PaymentFrequency {
             PaymentFrequency::TriAnnually => "4M".to_string(),
             PaymentFrequency::SemiAnnually => "6M".to_string(),
             PaymentFrequency::Annually => "1Y".to_string(),
+            PaymentFrequency::None => "None".to_string(),
         }
     }
 }

@@ -9,6 +9,7 @@ pub enum Currency {
     EUR,
     JPY,
     CNY,
+    CNH,
     GBP,
     AUD,
     CAD,
@@ -51,6 +52,62 @@ pub enum Currency {
     ZMW
 }
 
+//implment from<&str> for Currency
+impl From<&str> for Currency {
+    fn from(s: &str) -> Self {
+        match s {
+            "NIL" => Currency::NIL,
+            "KRW" => Currency::KRW,
+            "USD" => Currency::USD,
+            "EUR" => Currency::EUR,
+            "JPY" => Currency::JPY,
+            "CNY" => Currency::CNY,
+            "CNH" => Currency::CNH,
+            "GBP" => Currency::GBP,
+            "AUD" => Currency::AUD,
+            "CAD" => Currency::CAD,
+            "CHF" => Currency::CHF,
+            "NZD" => Currency::NZD,
+            "SEK" => Currency::SEK,
+            "NOK" => Currency::NOK,
+            "MXN" => Currency::MXN,
+            "ZAR" => Currency::ZAR,
+            "BRL" => Currency::BRL,
+            "INR" => Currency::INR,
+            "RUB" => Currency::RUB,
+            "TRY" => Currency::TRY,
+            "HKD" => Currency::HKD,
+            "SGD" => Currency::SGD,
+            "TWD" => Currency::TWD,
+            "THB" => Currency::THB,
+            "IDR" => Currency::IDR,
+            "MYR" => Currency::MYR,
+            "PHP" => Currency::PHP,
+            "VND" => Currency::VND,
+            "PKR" => Currency::PKR,
+            "LKR" => Currency::LKR,
+            "BDT" => Currency::BDT,
+            "NPR" => Currency::NPR,
+            "KZT" => Currency::KZT,
+            "UZS" => Currency::UZS,
+            "KGS" => Currency::KGS,
+            "TJS" => Currency::TJS,
+            "MNT" => Currency::MNT,
+            "AED" => Currency::AED,
+            "SAR" => Currency::SAR,
+            "QAR" => Currency::QAR,
+            "OMR" => Currency::OMR,
+            "KWD" => Currency::KWD,
+            "BHD" => Currency::BHD,
+            "JOD" => Currency::JOD,
+            "ILS" => Currency::ILS,
+            "EGP" => Currency::EGP,
+            "ZMW" => Currency::ZMW,
+            _ => Currency::NIL
+        }
+    }
+}
+
 impl Currency {
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -60,6 +117,7 @@ impl Currency {
             Currency::EUR => "EUR",
             Currency::JPY => "JPY",
             Currency::CNY => "CNY",
+            Currency::CNH => "CNH",
             Currency::GBP => "GBP",
             Currency::AUD => "AUD",
             Currency::CAD => "CAD",

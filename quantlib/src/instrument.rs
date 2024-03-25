@@ -2,7 +2,7 @@ use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
     stock_futures::StockFutures,
-    irs::IRS,
+    plain_swap::PlainSwap,
     bond_futures::BondFutures,
     ktbf::KTBF,
 };
@@ -70,7 +70,7 @@ pub trait InstrumentTrait{
         Err(anyhow!("({}:{}) not supported instrument type on get_rate_index", file!(), line!()))
     }
     
-    fn get_coupon_cashflow(
+    fn get_cashflows(
         &self, 
         _pricing_date: Option<&OffsetDateTime>,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
@@ -110,6 +110,15 @@ pub trait InstrumentTrait{
     fn get_schedule(&self) -> Result<&Schedule> {
         Err(anyhow!("not supported instrument type on get_schedule"))
     }
+
+    fn get_fixed_leg_currency(&self) -> Result<&Currency> {
+        Err(anyhow!("not supported instrument type on get_fixed_leg_currency"))
+    }
+
+    fn get_floating_leg_currency(&self) -> Result<&Currency> {
+        Err(anyhow!("not supported instrument type on get_floating_leg_currency"))
+    }
+
 }
 
 #[enum_dispatch(InstrumentTrait)]
@@ -118,8 +127,8 @@ pub enum Instrument {
     StockFutures(StockFutures),
     Bond(Bond),
     BondFutures(BondFutures),
-    IRS(IRS),
     KTBF(KTBF),
+    PlainSwap(PlainSwap),
 }
 
 /// calculation groups for calculation optimization, 
@@ -485,7 +494,7 @@ mod tests {
     use super::*;
     use crate::assets::currency::Currency;
     use crate::instruments::stock_futures::StockFutures;
-    use crate::instruments::irs::IRS;
+    use crate::instruments::plain_swap::PlainSwap;
     use time::macros::datetime;
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;

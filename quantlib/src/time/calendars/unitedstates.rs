@@ -222,7 +222,6 @@ impl Holidays for UnitedStatesType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnitedStates {
     name: String,
-    summer_time: bool,
     utc_offset: UtcOffset,
     specific_type: UnitedStatesType,
     holiday_adder: Vec<Date>,
@@ -231,19 +230,15 @@ pub struct UnitedStates {
 
 
 impl UnitedStates {
-    pub fn new(specific_type: UnitedStatesType, summer_time: bool) -> Self {
+    pub fn new(specific_type: UnitedStatesType) -> Self {
         let name = format!("United States ({:?})", specific_type);
 
-        let utc_offset = match summer_time {
-            true => UtcOffset::from_hms(-4, 0, 0).unwrap(),
-            false => UtcOffset::from_hms(-5, 0, 0).unwrap(),
-        };
+        let utc_offset = UtcOffset::from_hms(-5, 0, 0).unwrap();
 
         let holiday_adder = vec![];
         let holiday_remover = vec![];
         UnitedStates {
             name,
-            summer_time,
             utc_offset,
             specific_type,
             holiday_adder,

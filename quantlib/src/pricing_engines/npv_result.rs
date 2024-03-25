@@ -12,28 +12,28 @@ use std::ops::{Add, Sub, Mul, Div};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NpvResult {
     npv: Real,
-    coupon_amounts: HashMap<usize, (OffsetDateTime, Real)>,
-    coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)>,
+    cashflow_amounts: HashMap<usize, (OffsetDateTime, Real)>,
+    cashflow_probabilities: HashMap<usize, (OffsetDateTime, Real)>,
 }
 
 impl NpvResult {
     pub fn new_from_npv(npv: Real) -> NpvResult {
         NpvResult {
             npv,
-            coupon_amounts: HashMap::new(),
-            coupon_payment_probability: HashMap::new(),
+            cashflow_amounts: HashMap::new(),
+            cashflow_probabilities: HashMap::new(),
         }
     }
 
     pub fn new(
         npv: Real,
-        coupon_amounts: HashMap<usize, (OffsetDateTime, Real)>,
-        coupon_payment_probability: HashMap<usize, (OffsetDateTime, Real)>,
+        cashflow_amounts: HashMap<usize, (OffsetDateTime, Real)>,
+        cashflow_probabilities: HashMap<usize, (OffsetDateTime, Real)>,
     ) -> NpvResult {
         NpvResult {
             npv,
-            coupon_amounts,
-            coupon_payment_probability,
+            cashflow_amounts,
+            cashflow_probabilities,
         }
     }
 
@@ -43,8 +43,8 @@ impl NpvResult {
 
     pub fn get_expected_coupon_amount(&self) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
-        for (id, (datetime, amount)) in self.coupon_amounts.iter() {
-            let prob = self.coupon_payment_probability.get(id)
+        for (id, (datetime, amount)) in self.cashflow_amounts.iter() {
+            let prob = self.cashflow_probabilities.get(id)
                 .ok_or_else(||
                     anyhow::anyhow!("No probability found for coupon id {}", id)
             )?;
@@ -59,8 +59,8 @@ impl Default for NpvResult {
     fn default() -> NpvResult {
         NpvResult {
             npv: 0.0,
-            coupon_amounts: HashMap::new(),
-            coupon_payment_probability: HashMap::new(),
+            cashflow_amounts: HashMap::new(),
+            cashflow_probabilities: HashMap::new(),
         }
     }
 }

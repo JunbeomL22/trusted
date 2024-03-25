@@ -12,4 +12,4 @@ pub mod bond_pricer;
 pub mod krx_yield_pricer;
 pub mod pricer_factory;
 pub mod ktbf_pricer;
-pub mod irs_pricer;
+pub mod plain_swap_pricer;

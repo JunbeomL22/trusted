@@ -1,6 +1,10 @@
-use crate::{enums::RateIndexCode, instrument::Instrument, instrument::InstrumentTrait};
+use crate::instrument::{self, Instrument, InstrumentTrait};
 use crate::assets::currency::Currency;
-use crate::enums::{CreditRating, IssuerType};
+use crate::enums::{
+    CreditRating, 
+    IssuerType,
+    RateIndexCode,
+};
 //
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
@@ -75,6 +79,38 @@ impl MatchParameter {
         }
     }
 
+    pub fn get_crs_fixed_curve(&self, instrument: &Instrument) -> Result<String> {
+        match instrument {
+            Instrument::PlainSwap(instrument) => {
+                let fixed_currency = instrument.get_fixed_leg_currency()?;
+
+                let res = format!("{}{}", fixed_currency.as_str(), "CRS");
+                Ok(res)
+            },
+            _ => {
+                return Err(anyhow!(
+                    "({}:{}) get_crs_curve is not implemented for {} ({})",
+                    file!(), line!(), instrument.get_name(), instrument.get_code(),
+                ));
+            }
+        }
+    }
+
+    pub fn get_crs_floating_curve(&self, instrument: &Instrument) -> Result<String> {
+        match instrument {
+            Instrument::PlainSwap(instrument) => {
+                let floating_currency = instrument.get_floating_leg_currency()?;
+                let res = format!("{}{}", floating_currency.as_str(), "CRS");
+                Ok(res)
+            },
+            _ => {
+                return Err(anyhow!(
+                    "({}:{}) get_crs_curve is not implemented for {} ({})",
+                    file!(), line!(), instrument.get_name(), instrument.get_code()
+                ));
+            }
+        }
+    }
     pub fn get_discount_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
             Instrument::Bond(instrument) => {
@@ -101,7 +137,7 @@ impl MatchParameter {
                 }
             }
             // IRS (or OIS) uses rate index forward curve as discount curve
-            Instrument::IRS(instrument) => {
+            Instrument::PlainSwap(instrument) => {
                 let rate_index = instrument.get_rate_index()
                     .context("Rate index is not found").unwrap();
                     
@@ -174,7 +210,7 @@ impl MatchParameter {
                 };
                 res
             },
-            Instrument::IRS(instrument) => {
+            Instrument::PlainSwap(instrument) => {
                 let rate_index = instrument.get_rate_index()?;
                 let res = match rate_index {
                     None => Err(anyhow!("Rate index is not found for IRS {} ({})", instrument.get_name(), instrument.get_code())),   
@@ -197,7 +233,7 @@ impl MatchParameter {
 mod tests {
     use super::*;
     use crate::instruments::stock_futures::StockFutures;
-    use crate::instruments::irs::IRS;
+    use crate::instruments::plain_swap::PlainSwap;
     use crate::assets::currency::Currency;
     use crate::enums::{RateIndexCode, CreditRating, IssuerType};
     use std::collections::HashMap;
@@ -251,7 +287,7 @@ mod tests {
             "CD91".to_string(),
         )?;
 
-        let irs = IRS::new_from_conventions(
+        let irs = PlainSwap::new_from_conventions(
             Currency::KRW,
             100.0,
             datetime!(2021-01-01 00:00:00 +00:00),
@@ -284,7 +320,7 @@ mod tests {
             rate_index_forward_curve_map,
         );
         let stock_futures_inst = Instrument::StockFutures(stock_futures);
-        let irs_inst = Instrument::IRS(irs);
+        let irs_inst = Instrument::PlainSwap(irs);
 
         assert_eq!(
             match_parameter.get_collateral_curve_name(

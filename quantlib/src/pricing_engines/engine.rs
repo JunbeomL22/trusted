@@ -6,7 +6,11 @@ use crate::parameters::{
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments, InstrumentTrait};
 use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
-use crate::assets::stock::Stock;
+use crate::assets::{
+    stock::Stock,
+    fx::{FX, FxCode},
+};
+
 use crate::data::{
     vector_data::VectorData,
     value_data::ValueData,
@@ -49,7 +53,7 @@ pub struct Engine {
     //dividend_data: HashMap<String, RefCell<VectorData>>,
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<String, Rc<RefCell<Real>>>,
+    fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
     stocks: HashMap<String, Rc<RefCell<Stock>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
@@ -127,12 +131,19 @@ impl Engine {
              */
         }
         // making fx Rc -> RefCell for pricing
-        let mut fxs: HashMap<String, Rc<RefCell<Real>>> = HashMap::new();
+        let mut fxs: HashMap<FxCode, Rc<RefCell<FX>>> = HashMap::new();
         fx_data
             .iter()
             .map(|(key, data)| {
-                let rc = Rc::new(RefCell::new(data.get_value()));
-                fxs.insert(key.clone(), rc)
+                let code = FxCode::from(key.as_str());
+                let rc = Rc::new(RefCell::new(
+                    FX::new(
+                        data.get_value(),
+                        code,
+                        data.get_market_datetime().clone()
+                    )
+                ));
+                fxs.insert(code, rc)
             });
 
         // making stock Rc -> RefCell for pricing
