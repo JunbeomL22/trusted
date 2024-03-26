@@ -42,7 +42,6 @@ pub struct Bond {
     issue_date: OffsetDateTime,
     effective_date: OffsetDateTime,
     pricing_date: Option<OffsetDateTime>,
-    first_coupon_date: Option<OffsetDateTime>,
     maturity: OffsetDateTime,
     //
     calendar: JointCalendar,
@@ -78,7 +77,6 @@ impl Bond {
         issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
         pricing_date: Option<OffsetDateTime>,
-        first_coupon_date: Option<OffsetDateTime>,
         maturity: OffsetDateTime,
         //
         calendar: JointCalendar,
@@ -128,7 +126,6 @@ impl Bond {
             issue_date,
             effective_date,
             pricing_date,
-            first_coupon_date,
             maturity,
             //
             calendar,
@@ -157,7 +154,6 @@ impl Bond {
         issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
         pricing_date: Option<OffsetDateTime>,
-        first_coupon_date: Option<OffsetDateTime>,
         maturity: OffsetDateTime,
         //
         fixed_coupon_rate: Option<Real>,
@@ -167,6 +163,7 @@ impl Bond {
         //
         calendar: JointCalendar,
         //
+        forward_generation: bool,
         daycounter: DayCountConvention,
         busi_convention: BusinessDayConvention,
         payment_frequency: PaymentFrequency, 
@@ -177,8 +174,8 @@ impl Bond {
         code: String,
     ) -> Result<Bond> {
         let schedule = build_schedule(
+            forward_generation,
             &effective_date,
-            first_coupon_date.as_ref(),
             &maturity,
             &calendar,
             &busi_convention,
@@ -209,7 +206,6 @@ impl Bond {
             issue_date,
             effective_date,
             pricing_date,
-            first_coupon_date,
             maturity,
             //
             calendar,
@@ -297,21 +293,22 @@ impl InstrumentTrait for Bond {
     }
 
     fn get_cashflows(&self,
-        pricing_date: Option<&OffsetDateTime>,
+        pricing_date: &OffsetDateTime,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         for base_schedule in self.schedule.iter() {
             let payment_date = base_schedule.get_payment_date();
-            if payment_date.date() < pricing_date.unwrap().date() {
+            if payment_date.date() < pricing_date.date() {
                 continue;
             }
 
             let given_amount = base_schedule.get_amount();
             match given_amount {
                 Some(amount) => {
-                    res.insert(payment_date.clone(), amount);
+                    res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+                    //res.insert(payment_date.clone(), amount);
                 },
                 None => {
                     match self.rate_index.as_ref() {
@@ -321,21 +318,15 @@ impl InstrumentTrait for Bond {
                                 self.floating_coupon_spread,
                                 forward_curve.clone().unwrap(),
                                 past_data.clone().unwrap_or(Rc::new(CloseData::default())),
-                                pricing_date.unwrap_or(
-                                    forward_curve
-                                        .clone()
-                                        .unwrap()
-                                        .borrow()
-                                        .get_evaluation_date_clone()
-                                        .borrow()
-                                        .get_date()
-                                    ),
+                                pricing_date,
                                 self.floating_compound_tenor.as_ref(),
                                 &self.calendar,
                                 &self.daycounter,
                                 self.fixing_gap_days,
                             )?;
-                            res.insert(payment_date.clone(), amount);
+                            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+                            //*res.entry(payment_date.clone()).or_insert(amount) += amount;
+                            //res.insert(payment_date.clone(), amount);
                         }, // end of the case of frn
                         //
                         None => {// begin of the case of fixed rate bond
@@ -345,15 +336,17 @@ impl InstrumentTrait for Bond {
                                 &self.daycounter,
                             )?;
                             let rate = self.fixed_coupon_rate.unwrap();
-                            res.insert(payment_date.clone(), frac * rate);
+                            let amount = frac * rate;
+                            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+
                         }, // end of the case of fixed rate bond
                     } // end of branch of bond type
                 }, // where the given amount is None
             } // end of branch of optional given amount
         }
 
-        if !self.is_coupon_strip()? && self.maturity.date() >= pricing_date.unwrap().date() {
-            res.insert(self.maturity.clone(), 1.0);
+        if !self.is_coupon_strip()? && self.maturity.date() >= pricing_date.date() {
+            res.entry(self.maturity.clone()).and_modify(|e| *e += 1.0).or_insert(1.0);
         }
 
         Ok(res)

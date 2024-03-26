@@ -237,6 +237,7 @@ mod tests {
     use crate::assets::currency::Currency;
     use crate::enums::{RateIndexCode, CreditRating, IssuerType};
     use std::collections::HashMap;
+    use time::convert::Day;
     use time::macros::datetime;
     use crate::time::conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
@@ -287,24 +288,34 @@ mod tests {
             "CD91".to_string(),
         )?;
 
+        let issue_date = datetime!(2021-01-01 00:00:00 +00:00);
+        let maturity_date = datetime!(2021-12-31 00:00:00 +00:00);
         let irs = PlainSwap::new_from_conventions(
             Currency::KRW,
-            100.0,
-            datetime!(2021-01-01 00:00:00 +00:00),
-            datetime!(2021-01-01 00:00:00 +00:00),
-            datetime!(2021-12-31 00:00:00 +00:00),
+            Currency::KRW,
+            //
+            None, None, None, None,
+            //
+            10_000_000_000.0,
+            issue_date.clone(),
+            issue_date.clone(),
+            maturity_date.clone(),
+            //
+            Some(0.02),
+            Some(cd.clone()),
             None,
-            0.01,
-            cd,
-            None,
+            //
+            true,
             DayCountConvention::Actual365Fixed,
             DayCountConvention::Actual365Fixed,
             BusinessDayConvention::ModifiedFollowing,
             BusinessDayConvention::ModifiedFollowing,
             PaymentFrequency::Quarterly,
             PaymentFrequency::Quarterly,
+            //
             1,
             0,
+            //
             joint_calendar,
             "IRS".to_string(),
             "IRS".to_string(),

@@ -1,6 +1,7 @@
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
 use crate::time::constants::{KOREAN_LUNAR_NEWYEARS, FIRST_LUNAR_NEWYEAR, LAST_LUNAR_NEWYEAR};
+//
 use anyhow::Result;
 use time::{Date, Duration, Month, OffsetDateTime, UtcOffset};
 use log::warn;
@@ -830,20 +831,38 @@ mod tests {
         let calendar = SouthKorea::new(SouthKoreaType::Krx);
         
         let test_date = datetime!(2023-12-29 0:0:0 +09:00);
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::Unadjusted), datetime!(2023-12-29 0:0:0 +09:00));
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::Unadjusted)?, 
+            datetime!(2023-12-29 0:0:0 +09:00)
+        );
 
         let test_date = datetime!(2023-12-29 0:0:0 +09:00);
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::Following), datetime!(2024-01-02 0:0:0 +09:00));
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::ModifiedFollowing), datetime!(2023-12-28 0:0:0 +09:00));
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::Following)?, 
+            datetime!(2024-01-02 0:0:0 +09:00)
+        );
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::ModifiedFollowing)?, 
+            datetime!(2023-12-28 0:0:0 +09:00)
+        );
 
         let test_date = datetime!(2024-01-01 0:0:0 +09:00);
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::Preceding), datetime!(2023-12-28 0:0:0 +09:00));
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::ModifiedPreceding), datetime!(2024-01-02 0:0:0 +09:00));
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::Preceding)?, 
+            datetime!(2023-12-28 0:0:0 +09:00)
+        );
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::ModifiedPreceding)?, 
+            datetime!(2024-01-02 0:0:0 +09:00)
+        );
 
         let calendar = SouthKorea::new(SouthKoreaType::Settlement);
 
         let test_date = datetime!(2024-01-01 0:0:0 +09:00);
-        assert_eq!(calendar.adjust(&test_date, &BusinessDayConvention::Preceding), datetime!(2023-12-29 0:0:0 +09:00));
+        assert_eq!(
+            calendar.adjust(&test_date, &BusinessDayConvention::Preceding)?, 
+            datetime!(2023-12-29 0:0:0 +09:00)
+        );
         Ok(())
     }
 }

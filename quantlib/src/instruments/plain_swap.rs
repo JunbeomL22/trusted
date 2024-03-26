@@ -75,6 +75,13 @@ pub struct PlainSwap {
 }
 
 impl PlainSwap {
+    /// By the conbination of the attributes, we can represent
+    /// 1) IRS, OIS (initial and last swap amounts are all None)
+    /// 2) CRS (initial and last swap amounts are all Some(Real))
+    /// 3) FxSwap (schedule are empty)
+    /// 4) FxForward (schedule are empty and initial swap is None but last swap is Some(Real))
+    /// 5) FxSpot (same as FxForward but effective_date <= issue_date + 2 days)
+    /// Roughly in Fx or CRS case, fixed side is mostly KRW and Floating side is mostly USD 
     pub fn new(
         fixed_legs: Schedule,
         floating_legs: Schedule,
@@ -111,7 +118,7 @@ impl PlainSwap {
         name: String,
         code: String,
     ) -> Result<PlainSwap> {
-        let mut specific_type: PlainSwapType;
+        let specific_type: PlainSwapType;
         // IRS: initial and last swap amounts are all None but rate_index and fixed_rate are Some(Real)
         if initial_fixed_side_endorsement.is_none() &&
             initial_floating_side_payment.is_none() &&
@@ -148,14 +155,14 @@ impl PlainSwap {
         // Moreover, schedules are empty and rate_index and fixed_rate are None
         else if initial_fixed_side_endorsement.is_none() &&
             initial_floating_side_payment.is_none() &&
-            last_fixed_side_payment.is_none() &&
+            last_fixed_side_payment.is_some() &&
             last_floating_side_endorsement.is_some() &&
             fixed_legs.len() == 0 &&
             floating_legs.len() == 0 &&
             rate_index.is_none() &&
             fixed_rate.is_none() &&
             fixed_leg_currency != floating_leg_currency {
-                if effective_date.date() <= issue_date.date() + Duration::days(2) {
+                if maturity.date() <= issue_date.date() + Duration::days(2) {
                     specific_type = PlainSwapType::FxSpot;
                 } else {
                     specific_type = PlainSwapType::FxForward;
@@ -163,8 +170,20 @@ impl PlainSwap {
         } 
         else {
             return Err(anyhow!(
-                "({}:{}) Invalid PlainSwap type: {}({})",
-                file!(), line!(), name, code
+                "({}:{}) Invalid PlainSwap type: {} ({})\n\
+                initial_fixed_side_endorsement: {:?}\n\
+                initial_floating_side_payment: {:?}\n\
+                last_fixed_side_payment: {:?}\n\
+                last_floating_side_endorsement: {:?}\n\
+                rate_index: {:?}\n\
+                fixed_rate: {:?}",
+                file!(), line!(), name, code,
+                initial_fixed_side_endorsement,
+                initial_floating_side_payment,
+                last_fixed_side_payment,
+                last_floating_side_endorsement,
+                rate_index,
+                fixed_rate
             ));
         }
         
@@ -209,8 +228,15 @@ impl PlainSwap {
     pub fn get_specific_type(&self) -> PlainSwapType {
         self.specific_type
     }
+    /// By the conbination of the attributes, we can represent
+    /// 1) IRS, OIS (initial and last swap amounts are all None)
+    /// 2) CRS (initial and last swap amounts are all Some(Real))
+    /// 3) FxSwap (schedule are empty)
+    /// 4) FxForward (schedule are empty and initial swap is None but last swap is Some(Real))
+    /// 5) FxSpot (same as FxForward but effective_date <= issue_date + 2 days)
+    /// Roughly in Fx or CRS case, fixed side is mostly KRW and Floating side is mostly USD 
     /// construct IRS using PaymentFrequency, BusinessDayConvention, DayCountConvention
-    /// without fixed/floating - legs given directly
+    /// without schedule given directly
     pub fn new_from_conventions(
         fixed_leg_currency: Currency,
         floating_leg_currency: Currency,
@@ -225,10 +251,11 @@ impl PlainSwap {
         effective_date: OffsetDateTime,
         maturity: OffsetDateTime,
         //
-        fixed_first_coupon_date: Option<OffsetDateTime>,
         fixed_rate: Option<Real>,
         rate_index: Option<RateIndex>,
         floating_compound_tenor: Option<String>,
+        //
+        forward_generation: bool,
         fixed_daycounter: DayCountConvention,
         floating_daycounter: DayCountConvention,
         fixed_busi_convention: BusinessDayConvention,
@@ -244,8 +271,8 @@ impl PlainSwap {
         code: String,
     ) -> Result<PlainSwap> {
         let fixed_legs = schedule::build_schedule(
+            forward_generation,
             &effective_date,
-            None,
             &maturity,
             &calendar,
             &fixed_busi_convention,
@@ -260,8 +287,8 @@ impl PlainSwap {
         )?;
 
         let floating_legs = schedule::build_schedule(
+            forward_generation,
             &effective_date,
-            fixed_first_coupon_date.as_ref(),
             &maturity,      
             &calendar,
             &floating_busi_convention,
@@ -275,7 +302,7 @@ impl PlainSwap {
                 &name, &code)
         )?;
 
-        let mut specific_type: PlainSwapType;
+        let specific_type: PlainSwapType;
         // IRS: initial and last swap amounts are all None but rate_index and fixed_rate are Some(Real)
         if initial_fixed_side_endorsement.is_none() &&
             initial_floating_side_payment.is_none() &&
@@ -312,14 +339,14 @@ impl PlainSwap {
         // Moreover, schedules are empty and rate_index and fixed_rate are None
         else if initial_fixed_side_endorsement.is_none() &&
             initial_floating_side_payment.is_none() &&
-            last_fixed_side_payment.is_none() &&
+            last_fixed_side_payment.is_some() &&
             last_floating_side_endorsement.is_some() &&
             fixed_legs.len() == 0 &&
             floating_legs.len() == 0 &&
             rate_index.is_none() &&
             fixed_rate.is_none() &&
             fixed_leg_currency != floating_leg_currency {
-                if effective_date.date() <= issue_date.date() + Duration::days(2) {
+                if maturity.date() <= issue_date.date() + Duration::days(2) {
                     specific_type = PlainSwapType::FxSpot;
                 } else {
                     specific_type = PlainSwapType::FxForward;
@@ -327,8 +354,20 @@ impl PlainSwap {
         } 
         else {
             return Err(anyhow!(
-                "({}:{}) Invalid PlainSwap type: {}({})",
-                file!(), line!(), name, code
+                "({}:{}) Invalid PlainSwap type: {} ({})\n\
+                initial_fixed_side_endorsement: {:?}\n\
+                initial_floating_side_payment: {:?}\n\
+                last_fixed_side_payment: {:?}\n\
+                last_floating_side_endorsement: {:?}\n\
+                rate_index: {:?}\n\
+                fixed_rate: {:?}",
+                file!(), line!(), name, code,
+                initial_fixed_side_endorsement,
+                initial_floating_side_payment,
+                last_fixed_side_payment,
+                last_floating_side_endorsement,
+                rate_index,
+                fixed_rate
             ));
         }
 
@@ -370,15 +409,18 @@ impl PlainSwap {
             code,
         })
     }
+}
 
+impl InstrumentTrait for PlainSwap {
     fn get_fixed_cashflows(
         &self, pricing_date: &OffsetDateTime
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
-
+        let mut initial_value = 1.0;
         if self.effective_date.date() >= pricing_date.date() &&
         self.initial_fixed_side_endorsement.is_some() {
-            res.insert(self.effective_date.clone(), self.initial_fixed_side_endorsement.unwrap());
+            initial_value = self.initial_fixed_side_endorsement.unwrap();
+            res.insert(self.effective_date.clone(), initial_value);
         }
 
         if self.maturity.date() >= pricing_date.date() &&
@@ -404,8 +446,8 @@ impl PlainSwap {
                 &self.fixed_daycounter
             )?;
 
-            let amount = fixed_rate * frac;
-            res.insert(payment_date.clone(), amount);
+            let amount = fixed_rate * frac * initial_value;
+            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
         }
 
         Ok(res)
@@ -418,13 +460,15 @@ impl PlainSwap {
         past_fixing_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
+        let mut initial_value = 1.0;
         if self.effective_date.date() >= pricing_date.date() && 
         self.initial_floating_side_payment.is_some() {
-            res.insert(self.effective_date.clone(), - self.initial_floating_side_payment.unwrap());
+            initial_value = self.initial_floating_side_payment.unwrap();
+            res.insert(self.effective_date.clone(), - initial_value);
         }
         if self.maturity.date() >= pricing_date.date() &&
         self.last_floating_side_endorsement.is_some() {
-            res.insert(self.maturity.clone(), - self.last_floating_side_endorsement.unwrap());
+            res.insert(self.maturity.clone(), self.last_floating_side_endorsement.unwrap());
         }
 
         if self.rate_index.is_none() || self.floating_legs.len() == 0 {
@@ -448,15 +492,14 @@ impl PlainSwap {
                 &self.calendar,
                 &self.floating_daycounter,
                 self.fixing_gap_days,
-            )?;
-            res.insert(payment_date.clone(), amount);
+            )? * initial_value;
+            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+            //res.insert(payment_date.clone(), amount);
         }
 
         Ok(res)
     }
-}
 
-impl InstrumentTrait for PlainSwap {
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -498,21 +541,148 @@ impl InstrumentTrait for PlainSwap {
 mod tests {
     use super::*;
     use crate::{
-        assets::currency::Currency,
-        time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
-        time::calendars::{
+        assets::currency::Currency, enums::RateIndexCode, parameters::rate_index::RateIndex, time::{calendar::Calendar, calendars::{
             southkorea::{SouthKorea, SouthKoreaType},
             unitedstates::{UnitedStates, UnitedStatesType},
-        },
-        time::calendar::Calendar,
-        time::jointcalendar::JointCalendar,
-        parameters::rate_index::RateIndex,
-        enums::RateIndexCode,
+        }, conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency}, jointcalendar::JointCalendar}
     };
-    use rand::seq::index::IndexVecIntoIter;
+    use crate::data::vector_data::VectorData;
+    use crate::parameters::zero_curve::ZeroCurve;
+    use crate::evaluation_date::EvaluationDate;
     use time::macros::datetime;
     use anyhow::Result;
+    use std::{
+        rc::Rc,
+        cell::RefCell,
+    };
+    use ndarray::array;
 
+    #[test]
+    fn test_crs() -> Result<()> {
+        let fixed_currency = Currency::KRW;
+        let floating_currency = Currency::USD;
+        let unit_notional = 10_000_000.0;
+        let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
+        let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(issue_date.clone())));
+        let effective_date = datetime!(2024-01-03 16:30:00 +09:00);
+        let maturity = datetime!(2025-01-03 16:30:00 +09:00);
+        let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
+        let us = Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Settlement));
+        let calendar = JointCalendar::new(vec![sk, us])?;
+        
+        let fixing_gap_days = 1;
+        let payment_gap_days = 0;
+
+        let fixed_rate = 0.04;
+        let fx_rate = 1_330.0;
+        let rate_index = RateIndex::new(
+            String::from("3M"),
+            Currency::USD,
+            RateIndexCode::LIBOR,
+            String::from("USD Libor 3M") // this is just a mock code
+        )?;
+
+        let initial_fixed_side_endorsement = Some(fx_rate);
+        let initial_floating_side_payment = Some(1.0);
+        let last_fixed_side_payment = Some(fx_rate);
+        let last_floating_side_endorsement = Some(1.0);
+        
+        let crs = PlainSwap::new_from_conventions(
+            fixed_currency,
+            floating_currency,
+            //
+            initial_fixed_side_endorsement,
+            initial_floating_side_payment,
+            last_fixed_side_payment,
+            last_floating_side_endorsement,
+            //
+            unit_notional,
+            issue_date.clone(),
+            effective_date.clone(),
+            maturity.clone(),
+            //
+            Some(fixed_rate),
+            Some(rate_index),
+            None,
+            //
+            true,
+            DayCountConvention::Actual365Fixed,
+            DayCountConvention::Actual360,
+            BusinessDayConvention::ModifiedFollowing,
+            BusinessDayConvention::ModifiedFollowing,
+            PaymentFrequency::Quarterly,
+            PaymentFrequency::Quarterly,
+            //
+            fixing_gap_days,
+            payment_gap_days,
+            //
+            calendar,
+            "MockCRS".to_string(),
+            "MockCode".to_string(),
+        )?;
+
+        assert_eq!(
+            crs.get_specific_type(),
+            PlainSwapType::CRS,
+        );
+
+        let usdirs_data = VectorData::new(
+            array![0.04, 0.04],
+            None,
+            Some(array![0.5, 5.0]),
+            issue_date.clone(),
+            Currency::USD,
+            "USDIRS".to_string(),
+        )?;
+        
+        let usdirs_curve = ZeroCurve::new(
+            evaluation_date.clone(),
+            &usdirs_data,
+            "USDIRS".to_string(),
+            "USD IR Curve".to_string(),
+        )?;
+
+        let floating_curve = Rc::new(RefCell::new(usdirs_curve));
+
+        let fixed_cashflows = crs.get_fixed_cashflows(&issue_date)?;
+        let floating_cashflows = crs.get_floating_cashflows(&issue_date, Some(floating_curve), None)?;
+
+        let mut fixed_keys: Vec<_> = fixed_cashflows.keys().collect();
+        fixed_keys.sort();
+        println!("crs fixed cashflows");
+        for key in fixed_keys.iter() {
+            println!("{:?}: {}", key.date(), fixed_cashflows.get(key).unwrap());
+        }
+
+        let mut floating_keys: Vec<_> = floating_cashflows.keys().collect();
+        floating_keys.sort();
+        println!("crs floating cashflows");
+        for key in floating_keys.iter() {
+            println!("{:?}: {}", key.date(), floating_cashflows.get(key).unwrap());
+        }
+
+        assert_eq!(
+            fixed_cashflows.get(fixed_keys[0]).unwrap().clone(), 
+            1_330.0 as Real,
+        );
+        
+        assert_eq!(
+            fixed_cashflows.get(fixed_keys[4]).unwrap().clone(), 
+            - 1_316.7365 as Real,
+        );
+
+        assert_eq!(
+            floating_cashflows.get(floating_keys[0]).unwrap().clone(), 
+            -1.0 as Real,
+        );
+
+        assert_eq!(
+            floating_cashflows.get(floating_keys[4]).unwrap().clone(), 
+            1.0100594 as Real,
+        );
+
+        Ok(())
+    }
     #[test]
     fn test_fx_swap() -> Result<()> {
         let fixed_currency = Currency::KRW;
@@ -520,7 +690,6 @@ mod tests {
         let unit_notional = 10_000_000.0;
         let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
         let maturity = datetime!(2025-01-02 16:30:00 +09:00);
-        let fixed_rate = 0.01;
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         let us = Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Settlement));
         let calendar = JointCalendar::new(vec![sk, us])?;
@@ -531,10 +700,10 @@ mod tests {
         let first_fx_rate = 1300.0;
         let last_fx_rate = 1280.0;
 
-        let initial_fixed_side_endorsement = Some(unit_notional * first_fx_rate);
-        let initial_floating_side_payment = Some(unit_notional);
-        let last_fixed_side_payment = Some(unit_notional * last_fx_rate);
-        let last_floating_side_endorsement = Some(unit_notional);
+        let initial_fixed_side_endorsement = Some(first_fx_rate);
+        let initial_floating_side_payment = Some(1.0);
+        let last_fixed_side_payment = Some(last_fx_rate);
+        let last_floating_side_endorsement = Some(1.0);
         
         let fx_swap = PlainSwap::new(
             Schedule::default(),
@@ -572,10 +741,131 @@ mod tests {
 
         let fixed_cashflows = fx_swap.get_fixed_cashflows(&issue_date)?;
         let floating_cashflows = fx_swap.get_floating_cashflows(&issue_date, None, None)?;
+        assert_eq!(
+            fx_swap.get_specific_type(),
+            PlainSwapType::FxSwap
+        );
 
-        println!("fixed_cashflows: {:?}", fixed_cashflows);
-        println!("floating_cashflows: {:?}", floating_cashflows);
+        let mut fixed_keys: Vec<_> = fixed_cashflows.keys().collect();
+        fixed_keys.sort();
+        println!("fixed cashflows");
+        for key in fixed_keys.iter() {
+            println!("{:?}: {}", key.date(), fixed_cashflows.get(key).unwrap());
+        }
+
+        let mut floating_keys: Vec<_> = floating_cashflows.keys().collect();
+        floating_keys.sort();
+        println!("floating cashflows");
+        for key in floating_keys.iter() {
+            println!("{:?}: {}", key.date(), floating_cashflows.get(key).unwrap());
+        }
+        assert_eq!(
+            fixed_cashflows.get(fixed_keys[0]).unwrap().clone(), 
+            1_300.0 as Real,
+        );
+
+        assert_eq!(
+            fixed_cashflows.get(fixed_keys[1]).unwrap().clone(), 
+            - 1_280.0 as Real,
+        );
+
+        assert_eq!(
+            floating_cashflows.get(floating_keys[0]).unwrap().clone(), 
+            -1.0 as Real,
+        );
+
+        assert_eq!(
+            floating_cashflows.get(floating_keys[1]).unwrap().clone(), 
+            1.0 as Real,
+        );
+        
         Ok(())
     }
 
+    #[test]
+    fn test_fx_spot() -> Result<()> {
+        let fixed_currency = Currency::KRW;
+        let floating_currency = Currency::USD;
+        let unit_notional = 10_000_000.0;
+        let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
+        let maturity = datetime!(2024-01-04 16:30:00 +09:00);
+        let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
+        let us = Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Settlement));
+        let calendar = JointCalendar::new(vec![sk, us])?;
+        
+        let fixing_gap_days = 0;
+        let payment_gap_days = 0;
+
+        let fx_rate = 1300.0;
+
+        let initial_fixed_side_endorsement = None;
+        let initial_floating_side_payment = None;
+        let last_fixed_side_payment = Some(fx_rate);
+        let last_floating_side_endorsement = Some(1.0);
+        
+        let fx_spot = PlainSwap::new(
+            Schedule::default(),
+            Schedule::default(),
+            None,
+            None,
+            None,
+            calendar,
+            1.0,
+            issue_date.clone(),
+            maturity.clone(),
+            maturity.clone(),
+            fixed_currency,
+            floating_currency,
+            initial_fixed_side_endorsement,
+            initial_floating_side_payment,
+            last_fixed_side_payment,
+            last_floating_side_endorsement,
+            //
+            DayCountConvention::Dummy,
+            DayCountConvention::Dummy,
+            //
+            BusinessDayConvention::Dummy,
+            BusinessDayConvention::Dummy,
+            //
+            PaymentFrequency::None,
+            PaymentFrequency::None,
+            //
+            fixing_gap_days,
+            payment_gap_days,
+            //
+            "MockFxSpot".to_string(),
+            "MockCode".to_string(),
+        )?;
+        assert_eq!(
+            fx_spot.get_specific_type(),
+            PlainSwapType::FxSpot
+        );
+
+        let fixed_cashflows = fx_spot.get_fixed_cashflows(&issue_date)?;
+        let floating_cashflows = fx_spot.get_floating_cashflows(&issue_date, None, None)?;
+        let mut fixed_keys: Vec<_> = fixed_cashflows.keys().collect();
+        fixed_keys.sort();
+        println!("fixed cashflows");
+        for key in fixed_keys.iter() {
+            println!("{:?}: {}", key.date(), fixed_cashflows.get(key).unwrap());
+        }
+
+        let mut floating_keys: Vec<_> = floating_cashflows.keys().collect();
+        floating_keys.sort();
+        println!("floating cashflows");
+        for key in floating_keys.iter() {
+            println!("{:?}: {}", key.date(), floating_cashflows.get(key).unwrap());
+        };
+
+        assert_eq!(
+            fixed_cashflows.get(fixed_keys[0]).unwrap().clone(), 
+            -1_300.0 as Real,
+        );
+
+        assert_eq!(
+            floating_cashflows.get(floating_keys[0]).unwrap().clone(), 
+            1.0 as Real,
+        );
+        Ok(())
+    }
 }

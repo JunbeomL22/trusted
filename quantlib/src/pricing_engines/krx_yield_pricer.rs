@@ -135,7 +135,7 @@ impl PricerTrait for KrxYieldPricer {
         let maturity = bond.get_maturity().unwrap();
 
         let cashflow = bond.get_cashflows(
-            Some(&pricing_date),
+            &pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone()
         ).with_context(|| anyhow!(
@@ -177,12 +177,6 @@ impl PricerTrait for KrxYieldPricer {
             .map(|base_schedule| base_schedule.get_payment_date())
             .max()
             .unwrap_or(bond.get_issue_date()?);
-        //let previous_date = cashflow
-        //    .keys()
-        //    .filter(|&date| date.date() <= pricing_date.date())
-        //    .max()
-        //    .unwrap_or(bond.get_issue_date()?);
-        // b = days from previous_date to the next coupon date
         let b = (min_cashflow_date.date() - previous_date.date()).whole_days();
         let frac = d as Real / b as Real;
         
@@ -242,8 +236,7 @@ mod tests {
             //
             issuedate2.clone(), 
             issuedate2.clone(),
-            Some(pricing_date),
-            None,
+            Some(pricing_date.clone()),
             maturity2,
             //
             Some(0.0425), 
@@ -253,6 +246,7 @@ mod tests {
             //
             calendar,
             //
+            true,
             DayCountConvention::StreetConvention,
             BusinessDayConvention::Unadjusted, 
             PaymentFrequency::SemiAnnually, 
@@ -262,6 +256,16 @@ mod tests {
             bond_name2.to_string(), 
             bond_code2.to_string(),
         )?;
+
+        let cashflows = bond.get_cashflows(
+            &pricing_date,
+            None,
+            None
+        )?;
+
+        for (date, amount) in cashflows.iter() {
+            println!("date: {}, amount: {}", date, amount);
+        }
 
         let inst = Instrument::Bond(bond.clone());
         let bond_yield = 0.03390;

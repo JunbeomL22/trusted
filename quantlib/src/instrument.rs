@@ -72,11 +72,27 @@ pub trait InstrumentTrait{
     
     fn get_cashflows(
         &self, 
-        _pricing_date: Option<&OffsetDateTime>,
+        _pricing_date: &OffsetDateTime,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         _past_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
+    }
+
+    fn get_floating_cashflows(
+        &self, 
+        _pricing_date: &OffsetDateTime,
+        _forward_curve: Option<Rc<RefCell<ZeroCurve>>,
+        _past_data: Option<Rc<CloseData>>,
+    ) -> Result<HashMap<OffsetDateTime, Real>> { 
+        Err(anyhow!("not supported instrument type on get_floating_cashflows"))
+    }
+
+    fn get_fixed_cashflows(
+        &self, 
+        _pricing_date: &OffsetDateTime,
+    ) -> Result<HashMap<OffsetDateTime, Real>> { 
+        Err(anyhow!("not supported instrument type on get_fixed_cashflows"))
     }
 
     fn get_pricing_date(&self) -> Result<Option<&OffsetDateTime>, anyhow::Error> {
@@ -552,24 +568,34 @@ mod tests {
         let sk = Calendar::SouthKorea(sk);
         let joint_calendar = JointCalendar::new(vec![sk])?;
 
-        let irs = IRS::new_from_conventions(
+        let issue_date = datetime!(2021-01-01 09:00:00 UTC);
+        let maturity_date = datetime!(2021-12-31 09:00:00 UTC);
+        let irs = PlainSwap::new_from_conventions(
             Currency::KRW,
+            Currency::KRW,
+            //
+            None, None, None, None,
+            //
             10_000_000_000.0,
-            datetime!(2022-12-01 09:00:00 UTC),
-            datetime!(2022-12-01 09:00:00 UTC),
-            datetime!(2022-12-01 09:00:00 UTC),
+            issue_date.clone(),
+            issue_date.clone(),
+            maturity_date.clone(),
+            //
+            Some(0.02),
+            Some(rate_index.clone()),
             None,
-            0.03,
-            rate_index,
-            None,
+            //
+            true,
             DayCountConvention::Actual365Fixed,
             DayCountConvention::Actual365Fixed,
             BusinessDayConvention::ModifiedFollowing,
             BusinessDayConvention::ModifiedFollowing,
             PaymentFrequency::Quarterly,
             PaymentFrequency::Quarterly,
+            //
             1,
             0,
+            //
             joint_calendar,
             "KRW IRS".to_string(),
             "KRW IRS code".to_string(),
@@ -579,7 +605,7 @@ mod tests {
         let instruments = Instruments::new(vec![
             Rc::new(Instrument::StockFutures(fut1.clone())),
             Rc::new(Instrument::StockFutures(fut2.clone())),
-            Rc::new(Instrument::IRS(irs.clone())),
+            Rc::new(Instrument::PlainSwap(irs.clone())),
         ]);
 
         // make MatchParameter
@@ -649,7 +675,7 @@ mod tests {
         assert_eq!(fut1.get_code(), instruments_with_stock_futures[0].get_code());
         assert_eq!(fut2.get_code(), instruments_with_stock_futures[1].get_code());
 
-        let instruments_with_irs = instruments.instruments_with_type("IRS");
+        let instruments_with_irs = instruments.instruments_with_type("PlainSwap");
         assert_eq!(irs.get_code(), instruments_with_irs[0].get_code());
 
         // test instruments_with_maturity_upto

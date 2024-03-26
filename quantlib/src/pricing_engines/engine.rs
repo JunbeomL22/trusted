@@ -131,6 +131,14 @@ impl Engine {
              */
         }
         // making fx Rc -> RefCell for pricing
+        // KRWKRW must be included for simplicity
+        if !fx_data.keys().contains(&"KRWKRW".to_string()) {
+            fx_data.insert(
+                "KRWKRW".to_string(), 
+                ValueData::new(1.0, evaluation_date.borrow().get_date_clone())
+            );
+        }
+        
         let mut fxs: HashMap<FxCode, Rc<RefCell<FX>>> = HashMap::new();
         fx_data
             .iter()
@@ -837,9 +845,8 @@ impl Engine {
         let calc_dates = calc_tenors.iter()
             .map(|tenor| add_period(
                 &self.evaluation_date.borrow().get_date_clone(), 
-                tenor.as_str()
-            ))
-            .collect::<Vec<_>>();
+                tenor.as_str(),
+            )).collect::<Vec<_>>();
         
         // instrument code (String) -> npv (Real)
         let mut npvs_up: HashMap::<String, Real>;

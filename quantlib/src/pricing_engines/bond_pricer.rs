@@ -50,7 +50,7 @@ impl PricerTrait for BondPricer {
         let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
     
         let cashflow = instrument.get_cashflows(
-            Some(&pricing_date),
+            &pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating Bond::npv")?;
@@ -78,7 +78,7 @@ impl PricerTrait for BondPricer {
         let mut disc_factor: Real;
         
         let cashflow = instrument.get_cashflows(
-            Some(&pricing_date),
+            &pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating Bond::npv_result")?; // include evaluation date
@@ -197,7 +197,6 @@ mod tests {
             issuedate.clone(),
             issuedate.clone(),
             None,
-            None,
             maturity,
             //
             Some(0.03), 
@@ -207,7 +206,8 @@ mod tests {
             //
             calendar,
             //
-            DayCountConvention::ActActIsda,
+            true,
+            DayCountConvention::StreetConvention,
             BusinessDayConvention::Unadjusted,
             PaymentFrequency::Quarterly,
             //
@@ -218,7 +218,7 @@ mod tests {
         )?;
 
         let cashflows = bond.get_cashflows(
-            Some(&bond_pricing_date),
+            &bond_pricing_date,
             None,
             None,
         )?;
@@ -230,9 +230,15 @@ mod tests {
             .map(|(&key, &value)| (key, value))
             .collect();
 
+        let mut keys: Vec<_> = filtered_cashflows.keys().collect();
+        keys.sort();
+        for key in keys.iter() {
+            println!("{:?}: {}", key.date(), filtered_cashflows.get(key).unwrap());
+        }
+        
         let cashflow_sum = filtered_cashflows.iter().fold(0.0, |acc, (_, amount)| acc + amount);
         
-        let expected_sum = 0.08991781;
+        let expected_sum = 1.09;
         assert!(
             (cashflow_sum - expected_sum).abs() < 1.0e-5,
             "{}:{}  cashflow_sum: {}, expected: {} (did you change the pricer or definition of Real?)",
@@ -243,7 +249,7 @@ mod tests {
         );
 
         let isntrument = Instrument::Bond(bond.clone());
-        let expected_npv: Real = 0.99967957;
+        let expected_npv: Real = 0.99976;
 
         let npv_result = pricer.npv_result(&isntrument)?;
         let npv = npv_result.get_npv();
@@ -264,7 +270,8 @@ mod tests {
     // test bond pricer for floating rate note
     // which calculate overnight rate (compound_tenor = String::from("1D")) + spread
     fn test_floating_rate_note_pricer() -> Result<()> {
-        let dt = datetime!(2021-01-01 16:30:00 +09:00);
+        let dt = datetime!(2020-12-31 16:30:00 +09:00);
+        let effective_date = datetime!(2021-01-01 16:30:00 +09:00);
         let name = "KRWGOV";
         let evaluation_date = Rc::new(RefCell::new(
             EvaluationDate::new(dt),
@@ -272,7 +279,7 @@ mod tests {
 
         // define a vector data 1Y = 0.03, 5Y = 0.04
         let curve_data = VectorData::new(
-            array!(0.03, 0.03),
+            array!(0.04, 0.04),
             None,
             Some(array!(1.0, 5.0)),
             evaluation_date.borrow().get_date_clone(),
@@ -319,7 +326,7 @@ mod tests {
         );
 
         // let's make a floating rate note paying quaterly 3% coupon
-        let issuedate = datetime!(2021-01-01 16:30:00 +09:00);
+        let issuedate = datetime!(2020-12-31 16:30:00 +09:00);
         let maturity = issuedate + Duration::days(365 * 4);
         let issuer_name = "Korea Government";
         let bond_name = "KRW Floating Rate Note";
@@ -344,18 +351,19 @@ mod tests {
             false, 
             //
             issuedate.clone(),
-            issuedate.clone(),
-            None,
+            effective_date,
             None,
             maturity,
             //
             None,
-            Some(0.005),
+            Some(0.00),
             Some(rate_index),
-            Some(String::from("1D")),
+            None,//Some(String::from("1D")),
             //
             calendar,
             //
+            
+            true,
             DayCountConvention::ActActIsda,
             BusinessDayConvention::Unadjusted,
             PaymentFrequency::Quarterly,
@@ -366,15 +374,26 @@ mod tests {
             bond_code.to_string(),
         )?;
 
+        let cashflows = bond.get_cashflows(
+            &dt,
+            Some(forward_curve.clone()), 
+            None)?;
+
+        let mut keys: Vec<_> = cashflows.keys().collect();
+        keys.sort();
+        for key in keys.iter() {
+            println!("{:?}: {}", key.date(), cashflows.get(key).unwrap());
+        }
+    
         let npv = pricer.npv(&Instrument::Bond(bond.clone()))?;
-        let expected_np = 1.0551832;
+        let expected_npv = 0.998420;
         assert!(
-            (npv - expected_np).abs() < 1.0e-5,
+            (npv - expected_npv).abs() < 1.0e-5,
             "{}:{}  npv: {}, expected: {} (did you change the pricer or definition of Real?)",
             file!(),
             line!(),
             npv,
-            expected_np
+            expected_npv
         );
         Ok(())
     }

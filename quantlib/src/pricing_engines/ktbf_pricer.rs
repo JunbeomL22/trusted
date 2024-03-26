@@ -165,7 +165,6 @@ mod tests {
             issue_date.clone(),
             issue_date.clone(),
             Some(ktbf_maturity.clone()),
-            None,
             maturity,
             //
             Some(0.03),
@@ -175,6 +174,7 @@ mod tests {
             //
             calendar.clone(),
             //
+            true,
             DayCountConvention::StreetConvention,
             BusinessDayConvention::Unadjusted,
             PaymentFrequency::SemiAnnually,
@@ -199,7 +199,6 @@ mod tests {
             issue_date.clone(),
             issue_date.clone(),
             Some(ktbf_maturity.clone()),
-            None,
             maturity,
             //
             Some(0.03),
@@ -209,6 +208,7 @@ mod tests {
             //
             calendar.clone(),
             //
+            true,
             DayCountConvention::StreetConvention,
             BusinessDayConvention::Unadjusted,
             PaymentFrequency::SemiAnnually,

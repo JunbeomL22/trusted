@@ -178,7 +178,7 @@ impl RateIndex {
                     fixing_date = calendar.adjust(
                         &(calc_start_date - Duration::days(fixing_days)),
                         &BusinessDayConvention::Preceding,
-                    );
+                    )?;
 
                     next_calc_date = add_period(&calc_start_date, &comp_tenor.as_str());
                     next_calc_date = min_offsetdatetime(&next_calc_date, &calc_end_date);
@@ -263,7 +263,7 @@ mod tests {
         let fixing_days = 7;
         let calendar = JointCalendar::new(
             vec![
-                Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Sofr, false)),
+                Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Sofr)),
                 ]
             )?;
         let currency = Currency::USD;
@@ -296,7 +296,7 @@ mod tests {
 
         let calc_end_date = dt + Duration::days(90);
         let base_schedule = BaseSchedule::new(
-            calendar.adjust(&(dt.clone() - Duration::days(7)), &BusinessDayConvention::Preceding),
+            calendar.adjust(&(dt.clone() - Duration::days(7)), &BusinessDayConvention::Preceding)?,
             dt.clone(),
             calc_end_date.clone(),
             calc_end_date.clone(),

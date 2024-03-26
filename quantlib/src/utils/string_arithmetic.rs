@@ -1,6 +1,7 @@
-use crate::definitions::Time;
+use crate::{definitions::Time, time::calendar_trait::CalendarTrait};
+use crate::time::calendars::nullcalendar::NullCalendar;
 //
-use time::{OffsetDateTime, Duration, Month};
+use time::{OffsetDateTime, Duration, Month, Date};
 use regex;
 use anyhow::{anyhow, Result};
 
@@ -99,7 +100,17 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
         match unit {
             "Y" => {
                 let new_year = new_datetime.year() + value as i32;
-                new_datetime = new_datetime.replace_year(new_year).unwrap();
+                let new_month = new_datetime.month();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_datetime.day() > eom_new {
+                    true => eom_new,
+                    false => new_datetime.day(),
+                };
+                new_datetime = OffsetDateTime::new_in_offset(
+                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    datetime.time(),
+                    datetime.offset(),
+                );
             },
             "M" => {
                 assert!(
@@ -109,9 +120,18 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
                 );
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
-                let new_month = from_i32_to_month((month_i32 + value as i32) % 12);
+                let new_month = from_i32_to_month((month_i32 + value as i32) % 12);      
                 let new_year = year + (month_i32 + value as i32) / 12;
-                new_datetime = new_datetime.replace_month(new_month).unwrap().replace_year(new_year).unwrap();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_datetime.day() > eom_new {
+                    true => eom_new,
+                    false => new_datetime.day(),
+                };
+                new_datetime = OffsetDateTime::new_in_offset(
+                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    datetime.time(),
+                    datetime.offset(),
+                );
             },
             "W" => new_datetime = new_datetime + Duration::weeks(value),
             "D" => new_datetime = new_datetime + Duration::days(value),
@@ -148,20 +168,39 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
         match unit {
             "Y" => {
                 let new_year = new_datetime.year() - value as i32;
-                new_datetime = new_datetime.replace_year(new_year).unwrap();
+                let new_month = new_datetime.month();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_datetime.day() > eom_new {
+                    true => eom_new,
+                    false => new_datetime.day(),
+                };
+
+                new_datetime = OffsetDateTime::new_in_offset(
+                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    datetime.time(),
+                    datetime.offset(),
+                );
             },
             "M" => {
                 assert!(
                     1 <= value && value <= 12, 
-                    "(sub_period) Month value must be less than 12. \ndatetime: {}, duration: {}, value: {}",
+                    "(add_period) Month value must be less than 12. \ndatetime: {}, duration: {}, value: {}",
                     datetime, duration, value
                 );
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
-                
                 let new_month = from_i32_to_month((month_i32 - value as i32 + 12) % 12);
                 let new_year = year - 1 + (month_i32 - value as i32 + 12) / 12;
-                new_datetime = new_datetime.replace_month(new_month).unwrap().replace_year(new_year).unwrap();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_datetime.day() > eom_new {
+                    true => eom_new,
+                    false => new_datetime.day(),
+                };
+                new_datetime = OffsetDateTime::new_in_offset(
+                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    datetime.time(),
+                    datetime.offset(),
+                );   
             },
             "W" => new_datetime = new_datetime - Duration::weeks(value),
             "D" => new_datetime = new_datetime - Duration::days(value),
@@ -241,36 +280,36 @@ mod tests {
 
     #[test]
     fn test_add_period() {
-        let x = datetime!(2021-01-01 00:00:00 UTC);
+        let x = datetime!(2021-01-31 00:00:00 UTC);
         let y = add_period(&x, "1Y1M1D1h1min1sec");
-        assert_eq!(y, datetime!(2022-02-02 01:01:01 UTC));
+        assert_eq!(y, datetime!(2022-03-01 01:01:01 UTC));
 
         let mut y = add_period(&x, "1M");
-        assert_eq!(y, datetime!(2021-02-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-02-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-03-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-03-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-04-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-04-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-05-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-05-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-06-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-06-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-07-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-07-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-08-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-08-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-09-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-09-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-10-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-10-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-11-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-11-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2021-12-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2021-12-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2022-01-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2022-01-28 00:00:00 UTC));
         y = add_period(&y, "1M");
-        assert_eq!(y, datetime!(2022-02-01 00:00:00 UTC));
+        assert_eq!(y, datetime!(2022-02-28 00:00:00 UTC));
     }
 
     #[test]

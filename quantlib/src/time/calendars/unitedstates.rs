@@ -304,13 +304,13 @@ mod tests {
 
     #[test]
     fn test_united_states_name() {
-        let us = UnitedStates::new(UnitedStatesType::Settlement, false);
+        let us = UnitedStates::new(UnitedStatesType::Settlement);
         assert_eq!(us.calendar_name(), "United States (Settlement)");
         
-        let us = UnitedStates::new(UnitedStatesType::Nyse, false);
+        let us = UnitedStates::new(UnitedStatesType::Nyse);
         assert_eq!(us.calendar_name(), "United States (Nyse)");
 
-        let us = UnitedStates::new(UnitedStatesType::GovernmentBond, false);
+        let us = UnitedStates::new(UnitedStatesType::GovernmentBond);
         assert_eq!(us.calendar_name(), "United States (GovernmentBond)");
     }
 
@@ -318,7 +318,7 @@ mod tests {
     fn test_united_states_holidays() {
         use time::macros::datetime;
         
-        let us = UnitedStates::new(UnitedStatesType::Settlement, false);
+        let us = UnitedStates::new(UnitedStatesType::Settlement);
         let date = datetime!(2022-1-1 00:00:00 -5:00);
 
         assert_eq!(us.is_base_holiday(&date), true);

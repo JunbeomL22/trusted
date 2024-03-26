@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn test_joint_calendar() -> Result<()> {
         let summer_time = false;
-        let us = UnitedStates::new(UnitedStatesType::Settlement, summer_time);
+        let us = UnitedStates::new(UnitedStatesType::Settlement);
         let us_cal = Calendar::UnitedStates(us);
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
         let sk_cal = Calendar::SouthKorea(sk);

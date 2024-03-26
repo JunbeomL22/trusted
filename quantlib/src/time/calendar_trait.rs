@@ -134,13 +134,14 @@ pub trait CalendarTrait {
         }
     }
 
-    fn adjust(&self, date: &OffsetDateTime, convention: &BusinessDayConvention) -> OffsetDateTime {
+    fn adjust(&self, date: &OffsetDateTime, convention: &BusinessDayConvention) -> Result<OffsetDateTime> {
         match convention {
-            BusinessDayConvention::Unadjusted => *date,
-            BusinessDayConvention::Following => self.adjust_following(&date),
-            BusinessDayConvention::Preceding => self.adjust_preceding(&date),
-            BusinessDayConvention::ModifiedPreceding => self.adjust_modified_preceding(&date),
-            BusinessDayConvention::ModifiedFollowing => self.adjust_modified_following(&date),
+            BusinessDayConvention::Unadjusted => Ok(*date),
+            BusinessDayConvention::Following => Ok(self.adjust_following(&date)),
+            BusinessDayConvention::Preceding => Ok(self.adjust_preceding(&date)),
+            BusinessDayConvention::ModifiedPreceding => Ok(self.adjust_modified_preceding(&date)),
+            BusinessDayConvention::ModifiedFollowing => Ok(self.adjust_modified_following(&date)),
+            BusinessDayConvention::Dummy => Err(anyhow!("Dummy business day convention is not supported")),
         }
     }
 
@@ -229,6 +230,9 @@ pub trait CalendarTrait {
                     }
                 }
                 days as Time / 360.0
+                },
+            DayCountConvention::Dummy => {
+                return Err(anyhow!("Dummy day count convention is not supported"));
                 },
             };
         Ok(res)

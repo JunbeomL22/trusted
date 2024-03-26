@@ -219,9 +219,10 @@ mod tests {
 
         let instrument = Instrument::StockFutures(futures.clone());
         let res = pricer.npv(&instrument).expect("failed to calculate npv");
-        let fx_exposure = pricer.fx_exposure(&instrument, res)
-            .expect("failed to calculate fx exposure")
-            /futures.get_unit_notional();
+        let fx_exposure = pricer.fx_exposure(&instrument, res)?
+            .get(&Currency::KRW)
+            .unwrap()
+            / futures.get_unit_notional();
 
 
         println!();
