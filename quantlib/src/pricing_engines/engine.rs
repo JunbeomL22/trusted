@@ -9,6 +9,7 @@ use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT,
 use crate::assets::{
     stock::Stock,
     fx::{FX, FxCode},
+    currency::Currency,
 };
 
 use crate::data::{
@@ -30,6 +31,7 @@ use crate::time::{
     calendar_trait::CalendarTrait,
     calendars::nullcalendar::NullCalendar,
 };
+use std::borrow::BorrowMut;
 use std::{
     collections::HashMap,
     rc::Rc,
@@ -130,15 +132,6 @@ impl Engine {
             dividend_data_refcell.insert(key.to_string(), ref_cell);
              */
         }
-        // making fx Rc -> RefCell for pricing
-        // KRWKRW must be included for simplicity
-        if !fx_data.keys().contains(&"KRWKRW".to_string()) {
-            fx_data.insert(
-                "KRWKRW".to_string(), 
-                ValueData::new(1.0, evaluation_date.borrow().get_date_clone())
-            );
-        }
-        
         let mut fxs: HashMap<FxCode, Rc<RefCell<FX>>> = HashMap::new();
         fx_data
             .iter()
@@ -153,7 +146,20 @@ impl Engine {
                 ));
                 fxs.insert(code, rc)
             });
-
+        
+        let krwkrw_code = FxCode::new(Currency::KRW, Currency::KRW);
+        if !fxs.contains_key(&krwkrw_code) {
+            fxs.insert(
+                krwkrw_code.clone(),
+                Rc::new(RefCell::new(
+                    FX::new(
+                        1.0,
+                        krwkrw_code,
+                        evaluation_date.borrow().get_date_clone(),
+                    )
+                ))
+            );
+        }
         // making stock Rc -> RefCell for pricing
         let mut stocks = HashMap::new();
         for (key, data) in stock_data.iter() {
@@ -341,7 +347,8 @@ impl Engine {
         for inst in inst_vec.iter() {
             let pricer = pricer_factory.create_pricer(inst)
                 .with_context(|| anyhow!(
-                    "failed to create pricer for {} ({})\n{}",
+                    "({}:{}) failed to create pricer for {} ({})\n{}",
+                    file!(), line!(),
                     inst.get_code(),
                     inst.get_type_name(),
                     self.err_tag,
@@ -362,11 +369,18 @@ impl Engine {
         for inst in &self.instruments_in_action {
             let inst_code = inst.get_code();
             let pricer = self.pricers.get(inst_code)
-                .with_context(|| anyhow!("(Egnine::get_npvs) failed to get pricer for {}\n{}", inst_code, self.err_tag))?;
+                .with_context(|| anyhow!(
+                    "({}:{}) <Egnine::get_npvs> failed to get pricer for {}\n{}", 
+                    file!(), line!(),
+                    inst_code, self.err_tag))?;
 
             let npv = pricer
                 .npv(inst)
-                .with_context(|| anyhow!("(Egnine::get_npvs) failed to get npv for {}\n{}", inst_code, self.err_tag))?;
+                .with_context(|| anyhow!(
+                    "({}:{}) <Egnine::get_npvs> failed to get npv for {}\n{}", 
+                    file!(), line!(),
+                    inst_code, self.err_tag
+                ))?;
     
             npvs.insert(inst_code.clone(), npv);
         }
@@ -379,7 +393,8 @@ impl Engine {
             let inst_code = inst.get_code();
             let pricer = self.pricers.get(inst_code)
                 .with_context(|| anyhow!(
-                    "(Engine::get_npv_results) failed to get pricer for {}\n{}",
+                    "({}:{}) <Engine::get_npv_results> failed to get pricer for {}\n{}",
+                    file!(), line!(), 
                     inst_code,
                     self.err_tag,
                 ))?;
@@ -403,7 +418,7 @@ impl Engine {
     }
 
     pub fn set_cashflow_inbetween(&mut self) -> Result<()> {
-        for (code, result) in self.calculation_results.iter_mut() {
+        for (code, result) in self.calculation_results.iter() {
             let npv_res = result.borrow().get_npv_result()
                 .ok_or_else(|| anyhow!(
                     "npv_result is not set for {}\n{}", code, self.err_tag,
@@ -413,7 +428,7 @@ impl Engine {
                 .with_context(|| anyhow!(
                     "failed to get expected coupon amount for {}", code
                 ))?;
-            result.borrow_mut().set_cashflows(cashflow);
+            (*result).borrow_mut().set_cashflows(cashflow);
         }
         Ok(())
     }
@@ -438,8 +453,8 @@ impl Engine {
             fx_exposures.insert(inst.get_code(), fx_exposure);
         }
         
-        for (code, result) in self.calculation_results.iter_mut() {
-            result.borrow_mut().set_fx_exposure(
+        for (code, result) in self.calculation_results.iter() {
+            (*result).borrow_mut().set_fx_exposure(
                 fx_exposures.get(code)
                 .ok_or_else(|| anyhow!("fx exposure is not set"))?.clone()
             );
@@ -449,8 +464,8 @@ impl Engine {
 
     /// Set the value of the instruments which means npv * unit_notional
     pub fn set_values(&mut self) -> Result<()> {
-        for (_code, result) in self.calculation_results.iter_mut() {
-            result.borrow_mut().set_value()?;
+        for (_code, result) in self.calculation_results.iter() {
+            (*result).borrow_mut().set_value()?;
         }
         Ok(())
     }
@@ -487,19 +502,25 @@ impl Engine {
                 .instruments_with_underlying(und_code);
 
             {
-                let mut stock = self.stocks
+                let mut stock = (*self.stocks
                     .get(*und_code)
-                    .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
-                    .borrow_mut();
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) there is no stock {}", 
+                        file!(), line!(),
+                        und_code
+                    ))?).as_ref().borrow_mut();
+
                 *stock *= up_bump;
             }
 
             delta_up_map = self.get_npvs().context("failed to get npvs")?;
             {
-                let mut stock = self.stocks
+                let mut stock = (*self.stocks
                     .get(*und_code)
-                    .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
-                    .borrow_mut();
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) there is no stock {}", 
+                        file!(), line!(),
+                        und_code))?).as_ref().borrow_mut();
 
                 stock.set_price(original_price);
                 *stock *= down_bump;
@@ -521,9 +542,12 @@ impl Engine {
 
                 delta = (delta_up - delta_down) / (2.0 * delta_bump_ratio) * DELTA_PNL_UNIT;
 
-                self.calculation_results
-                    .get_mut(inst_code)
-                    .ok_or_else(|| anyhow!("result is not set"))?
+                (*self.calculation_results
+                    .get(inst_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) result is not set for {}",
+                        file!(), line!(), inst_code,
+                    ))?)
                     .borrow_mut()
                     .set_single_delta(&und_code, delta * unitamt);
 
@@ -539,20 +563,26 @@ impl Engine {
                 gamma *= DELTA_PNL_UNIT / delta_bump_ratio;
                 gamma *= 0.5 * (DELTA_PNL_UNIT / delta_bump_ratio);
 
-                self.calculation_results
-                    .get_mut(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set"))?
+                (*self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) result is not set for {}",
+                        file!(), line!(), inst.get_code(),
+                    ))?)
                     .borrow_mut()
                     .set_single_gamma(&und_code, gamma * unitamt);
             }
 
             {
-                let mut stock = self.stocks
+                (*self.stocks
                     .get(*und_code)
-                    .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
-                    .borrow_mut();
-
-                stock.set_price(original_price);
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) there is no stock {}", 
+                        file!(), line!(), und_code
+                    ))?)
+                    .as_ref()
+                    .borrow_mut()
+                    .set_price(original_price);
             }
         }
         Ok(())
@@ -569,10 +599,14 @@ impl Engine {
 
             // bump the curve but limit the scope that the zero_curve ismutably borrowed
             {
-                self.zero_curves.get(curve_name)
-                    .with_context(|| anyhow!("no zero curve: {}\n{}", curve_name, self.err_tag,))?
-                    .borrow_mut()
-                    .bump_time_interval(None, None, bump_val)?;
+                (*self.zero_curves.get(curve_name)
+                    .with_context(|| anyhow!(
+                        "({}:{}) no zero curve: {}\n{}", 
+                        file!(), line!(),
+                        curve_name, self.err_tag,))?)
+                        .as_ref()
+                        .borrow_mut()
+                        .bump_time_interval(None, None, bump_val)?;
             }
 
             npvs_up = self.get_npvs().context("failed to get npvs")?;
@@ -591,16 +625,23 @@ impl Engine {
                     .get_npv();
 
                 let rho = (npv_up - npv) / bump_val * RHO_PNL_UNIT * unitamt;
-                self.calculation_results
-                    .get_mut(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set"))?
+                (*self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) result is not set for {}",
+                        file!(), line!(), inst.get_code(),
+                    ))?)
                     .borrow_mut()
                     .set_single_rho(curve_name, rho);
             }
             // put back the bump value
             {
-                self.zero_curves.get(curve_name)
-                    .with_context(|| anyhow!("no zero curve: {}\n{}", curve_name, self.err_tag,))?
+                (*self.zero_curves.get(curve_name)
+                    .with_context(|| anyhow!(
+                        "({}:{}) no zero curve: {}\n{}", 
+                        file!(), line!(),
+                        curve_name, self.err_tag,))?)
+                    .as_ref()
                     .borrow_mut()
                     .bump_time_interval(None, None, -bump_val)?;
             }
@@ -618,11 +659,15 @@ impl Engine {
 
             // bump dividend but limit the scope that is mutably borrowed
             {
-                self.dividends
+                (*self.dividends
                     .get(div_code)
                     .ok_or_else(|| anyhow::anyhow!(
-                        "dividend {} is not set\ntag:\n{}", div_code, self.err_tag
-                    ))?.borrow_mut()
+                        "({}:{}) dividend {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        div_code, self.err_tag
+                    ))?)
+                    .as_ref()
+                    .borrow_mut()
                     .bump_date_interval(None, None, bump_val)?;
             }
 
@@ -647,19 +692,21 @@ impl Engine {
 
 
                 let div_delta = (npv_up - npv) / bump_val * DIV_PNL_UNIT * unitamt;
-                self.calculation_results
-                    .get_mut(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set"))?
+                (*self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!("result is not set for {}", inst.get_code()))?)
                     .borrow_mut()
                     .set_single_div_delta(div_code, div_delta);
             }
             // put back the bump
             {
-                self.dividends
+                (*self.dividends
                     .get(div_code)
-                    .ok_or_else(|| anyhow::anyhow!(
-                        "dividend {} is not set\ntag:\n{}", div_code, self.err_tag
-                    ))?.borrow_mut()
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) dividend {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        div_code, self.err_tag
+                    ))?).as_ref().borrow_mut()
                     .bump_date_interval(None, None, -bump_val)?;
             }
         }
@@ -688,7 +735,7 @@ impl Engine {
 
         // limit the scope that the attribute is mutably borrowed
         
-        { self.evaluation_date.borrow_mut().set_date(bumped_date.clone()); }
+        { (*self.evaluation_date).borrow_mut().set_date(bumped_date.clone()); }
 
         let npvs_theta = self.get_npvs()
             .context("failed to get npvs")?;
@@ -743,7 +790,8 @@ impl Engine {
             result.borrow_mut().set_theta(theta);
         }
         // put back
-        { self.evaluation_date.borrow_mut().set_date(original_evaluation_date); }
+        { (*self.evaluation_date).borrow_mut().set_date(original_evaluation_date); }
+
         Ok(())
     }
 
@@ -787,10 +835,14 @@ impl Engine {
                 
                 // bump the curve with the limit of the scope of mutable borrow
                 {
-                    self.zero_curves.get(curve_code)
-                        .with_context(|| anyhow!("no zero curve: {}\n{}", curve_code, self.err_tag,))?
-                        .borrow_mut()
-                        .bump_time_interval(bump_start, bump_end, bump_val)?;
+                    (*self.zero_curves.get(curve_code)
+                        .with_context(|| anyhow!(
+                            "({}:{}) no zero curve: {}\n{}", 
+                            file!(), line!(),
+                            curve_code, self.err_tag,))?)
+                            .as_ref()
+                            .borrow_mut()
+                            .bump_time_interval(bump_start, bump_end, bump_val)?;
                 }
                 
                 // 
@@ -810,10 +862,14 @@ impl Engine {
                 }
                 // put back
                 {
-                    self.zero_curves.get(curve_code)
-                        .with_context(|| anyhow!("no zero curve: {}\n{}", curve_code, self.err_tag,))?
-                        .borrow_mut()
-                        .bump_time_interval(bump_start, bump_end, -bump_val)?;
+                    (*self.zero_curves.get(curve_code)
+                        .with_context(|| anyhow!(
+                            "({}:{}) no zero curve: {}\n{}", 
+                            file!(), line!(),
+                            curve_code, self.err_tag,))?)
+                            .as_ref()
+                            .borrow_mut()
+                            .bump_time_interval(bump_start, bump_end, -bump_val)?;
                 }
 
                 // if there is no instrument over the calc_tenors, we do not need to calculate the next bump
@@ -828,10 +884,14 @@ impl Engine {
             }
 
             for (inst_code, rho_structure) in single_rho_structure.iter() {
-                self.calculation_results.get_mut(inst_code)
-                    .context("failed to get result")?
-                    .borrow_mut()
-                    .set_single_rho_structure(curve_code, rho_structure.clone());
+                (*self.calculation_results
+                    .get(inst_code)
+                    .with_context(|| anyhow!(
+                        "({}:{}) failed to get result of {}",
+                        file!(), line!(), inst_code,
+                    ))?
+                ).borrow_mut()
+                .set_single_rho_structure(curve_code, rho_structure.clone());
             }
         }
         Ok(())
@@ -875,11 +935,15 @@ impl Engine {
                 };
                 let bump_end = Some(&calc_dates[i]);
                 {            
-                    self.dividends
+                    (*self.dividends
                         .get(div_code)
                         .ok_or_else(|| anyhow::anyhow!(
-                            "dividend {} is not set\ntag:\n{}", div_code, self.err_tag
-                        ))?.borrow_mut()
+                            "({}:{}) dividend {} is not set\ntag:\n{}", 
+                            file!(), line!(),
+                            div_code, self.err_tag
+                        ))?)
+                        .as_ref()
+                        .borrow_mut()
                         .bump_date_interval(bump_start, bump_end, bump_val)?;
                 }
                 
@@ -898,12 +962,17 @@ impl Engine {
                     single_div_structure.get_mut(inst_code)
                         .context("failed to get single_div_structure")?[i] = val;
                 }
+
                 {            
-                    self.dividends
+                    (*self.dividends
                         .get(div_code)
-                        .ok_or_else(|| anyhow::anyhow!(
-                            "dividend {} is not set\ntag:\n{}", div_code, self.err_tag
-                        ))?.borrow_mut()
+                        .with_context(|| anyhow!(
+                            "({}:{}) dividend {} is not set\ntag:\n{}", 
+                            file!(), line!(),
+                            div_code, self.err_tag
+                        ))?)
+                        .as_ref()
+                        .borrow_mut()
                         .bump_date_interval(bump_start, bump_end, -bump_val)?;
                 }
 
@@ -917,7 +986,7 @@ impl Engine {
                 }
             }
             for (inst_code, div_structure) in single_div_structure.iter() {
-                self.calculation_results.get_mut(inst_code)
+                self.calculation_results.get(inst_code)
                     .context("failed to get result")?
                     .borrow_mut()
                     .set_single_div_structure(div_code, div_structure.clone());

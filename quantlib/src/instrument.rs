@@ -82,7 +82,7 @@ pub trait InstrumentTrait{
     fn get_floating_cashflows(
         &self, 
         _pricing_date: &OffsetDateTime,
-        _forward_curve: Option<Rc<RefCell<ZeroCurve>>,
+        _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         _past_data: Option<Rc<CloseData>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_floating_cashflows"))

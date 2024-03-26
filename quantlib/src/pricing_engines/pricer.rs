@@ -38,5 +38,6 @@ pub enum Pricer {
     BondPricer(BondPricer),
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),
+    PlainSwapPricer(PlainSwapPricer),
     //IrsPricer(IrsPricer),
 }

@@ -12,6 +12,23 @@ pub struct FxCode {
     currency2: Currency,
 }
 
+impl FxCode {
+    pub fn new(currency1: Currency, currency2: Currency) -> FxCode {
+        FxCode {
+            currency1,
+            currency2,
+        }
+    }
+
+    pub fn get_currency1(&self) -> &Currency {
+        &self.currency1
+    }
+
+    pub fn get_currency2(&self) -> &Currency {
+        &self.currency2
+    }
+}
+
 impl From<&str> for FxCode {
     fn from(code: &str) -> FxCode {
         let currency1 = Currency::from(&code[0..3]);
