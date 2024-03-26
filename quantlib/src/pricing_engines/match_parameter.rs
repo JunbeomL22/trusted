@@ -213,7 +213,7 @@ impl MatchParameter {
             Instrument::PlainSwap(instrument) => {
                 let rate_index = instrument.get_rate_index()?;
                 let res = match rate_index {
-                    None => Err(anyhow!("Rate index is not found for IRS {} ({})", instrument.get_name(), instrument.get_code())),   
+                    None => Ok(&self.dummy_string),
                     Some(rate_index) => {
                         self.rate_index_forward_curve_map.get(rate_index.get_code())
                         .ok_or_else(|| anyhow!(
