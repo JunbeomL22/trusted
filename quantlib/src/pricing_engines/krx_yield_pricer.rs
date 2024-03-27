@@ -24,8 +24,8 @@ use argmin::solver::linesearch::MoreThuenteLineSearch;
 /// https://law.kofia.or.kr/service/law/lawFullScreenContent.do?seq=136&historySeq=263
 #[derive(Debug, Clone)]
 pub struct KrxYieldPricer {
-    bond_yield: Real,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
+    bond_yield: Real,
     daycount: DayCountConvention,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     past_fixing_data: Option<Rc<CloseData>>,
@@ -33,14 +33,14 @@ pub struct KrxYieldPricer {
 
 impl KrxYieldPricer {
     pub fn new(
-        bond_yield: Real, 
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        bond_yield: Real, 
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<CloseData>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
-            bond_yield,
             evaluation_date,
+            bond_yield,
             daycount: DayCountConvention::StreetConvention,
             forward_curve,
             past_fixing_data,
@@ -271,8 +271,8 @@ mod tests {
         let bond_yield = 0.03390;
         
         let pricer = KrxYieldPricer::new(
-            bond_yield, 
             eval_date_rc.clone(),
+            bond_yield, 
             None,
             None,
         );

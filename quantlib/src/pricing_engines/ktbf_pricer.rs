@@ -21,20 +21,19 @@ use std::{
 };
 
 pub struct KtbfPricer {
-    discount_curve: Rc<RefCell<ZeroCurve>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
+    discount_curve: Rc<RefCell<ZeroCurve>>,
     //time_calculator: NullCalendar,
 }
 
 impl KtbfPricer {
     pub fn new(
-        discount_curve: Rc<RefCell<ZeroCurve>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        discount_curve: Rc<RefCell<ZeroCurve>>,
     ) -> KtbfPricer {
         KtbfPricer {
-            discount_curve,
             evaluation_date,
-            //time_calculator: NullCalendar::new(),
+            discount_curve,
         }
     }
 }
@@ -47,8 +46,8 @@ impl PricerTrait for KtbfPricer {
         //let pricing_date = instrument.get_maturity().unwrap();
         
         let bond_pricer = BondPricer::new(
-            self.discount_curve.clone(),
             self.evaluation_date.clone(),
+            self.discount_curve.clone(),
             None,
             None,
         );
@@ -58,8 +57,8 @@ impl PricerTrait for KtbfPricer {
         let underlying_bonds = instrument.get_underlying_bonds()?;
 
         let krx_yield_pricer = KrxYieldPricer::new(
-            0.0,
             self.evaluation_date.clone(),
+            0.0,
             None,
             None,
         );
@@ -239,8 +238,8 @@ mod tests {
         )?;
 
         let ktbf_pricer = KtbfPricer::new(
-            Rc::new(RefCell::new(discount_curve)),
             evaluation_date.clone(),
+            Rc::new(RefCell::new(discount_curve)),
         );
 
         let pricer = Pricer::KtbfPricer(ktbf_pricer);

@@ -13,3 +13,4 @@ pub mod krx_yield_pricer;
 pub mod pricer_factory;
 pub mod ktbf_pricer;
 pub mod plain_swap_pricer;
+pub mod fx_futures_pricer;

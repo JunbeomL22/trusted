@@ -19,24 +19,24 @@ use std::{
 };
 
 pub struct StockFuturesPricer {
+    evaluation_date: Rc<RefCell<EvaluationDate>>,
     stock: Rc<RefCell<Stock>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
-    evaluation_date: Rc<RefCell<EvaluationDate>>,
 }
 
 impl StockFuturesPricer {
     pub fn new(
+        evaluation_date: Rc<RefCell<EvaluationDate>>,
         stock: Rc<RefCell<Stock>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
-        evaluation_date: Rc<RefCell<EvaluationDate>>,
         ) -> StockFuturesPricer {
         StockFuturesPricer {
+            evaluation_date,
             stock,
             collateral_curve,
             borrowing_curve,
-            evaluation_date,
         }
     }
 
@@ -211,10 +211,10 @@ mod tests {
         );
 
         let pricer = StockFuturesPricer::new(
+            evaluation_date.clone(),
             stock.clone(),
             ksd_curve.clone(),
             dummy_curve.clone(),
-            evaluation_date.clone(),
         );
 
         let instrument = Instrument::StockFutures(futures.clone());

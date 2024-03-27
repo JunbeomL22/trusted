@@ -20,22 +20,22 @@ use time::OffsetDateTime;
 /// forward_curve (Optional<Rc<RefCell<ZeroCurve>>>): forward curve for floating rate bond, so it is optional
 /// past_fixing_data (Optional<Rc<CloseData>>): past fixing data for floating rate bond, so it is optional
 pub struct BondPricer {
-    discount_curve: Rc<RefCell<ZeroCurve>>,
     evaluation_date: Rc<RefCell<EvaluationDate>>,
+    discount_curve: Rc<RefCell<ZeroCurve>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     past_fixing_data: Option<Rc<CloseData>>,
 }
 
 impl BondPricer {
     pub fn new(
-        discount_curve: Rc<RefCell<ZeroCurve>>,
         evaluation_date: Rc<RefCell<EvaluationDate>>,
+        discount_curve: Rc<RefCell<ZeroCurve>>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<CloseData>>,
     ) -> BondPricer {
         BondPricer {
-            discount_curve,
             evaluation_date,
+            discount_curve,
             forward_curve,
             past_fixing_data,
         }
@@ -168,8 +168,8 @@ mod tests {
         
         // make a pricer
         let pricer = BondPricer::new(
-            discount_curve.clone(),
             evaluation_date.clone(),
+            discount_curve.clone(),
             None,
             None,
         );
@@ -319,8 +319,8 @@ mod tests {
         
         // make a pricer
         let pricer = BondPricer::new(
-            discount_curve.clone(),
             evaluation_date.clone(),
+            discount_curve.clone(),
             Some(forward_curve.clone()),
             None,
         );

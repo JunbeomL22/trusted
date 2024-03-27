@@ -5,3 +5,4 @@ pub mod ktbf;
 pub mod bond;
 pub mod schedule;
 pub mod bond_futures;
+pub mod fx_futures;

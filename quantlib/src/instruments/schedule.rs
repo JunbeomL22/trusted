@@ -8,7 +8,10 @@ use crate::definitions::Real;
 use anyhow::{Result, anyhow};
 use time::{OffsetDateTime, Duration};
 use serde::{Serialize, Deserialize};
-use std::ops::Index;
+use std::{
+    ops::Index,
+    collections::VecDeque,
+};
 
 /// if the amount is None, the pricer calculate the coupon amount. 
 /// Otherwise, the amount is used as the coupon amount. 
@@ -125,23 +128,23 @@ pub fn build_schedule(
         return Err(anyhow!(msg));
     }
     
-    let mut raw_start_date_vec: Vec<OffsetDateTime> = vec![];
+    let mut raw_start_date_vec: VecDeque<OffsetDateTime> = VecDeque::new();
     
     match forward_generation {
         true => {
             let mut raw_start_date = effective_date.clone();
-            raw_start_date_vec.push(raw_start_date);
+            raw_start_date_vec.push_back(raw_start_date);
             while &raw_start_date < maturity {
                 raw_start_date = add_period(&raw_start_date, freq.to_string().as_str());
-                raw_start_date_vec.push(raw_start_date);
+                raw_start_date_vec.push_back(raw_start_date);
             }
         },
         false => {
             let mut raw_end_date = maturity.clone();
-            raw_start_date_vec.push(raw_end_date);
+            raw_start_date_vec.push_front(raw_end_date);
             while &raw_end_date > effective_date {
                 raw_end_date = sub_period(&raw_end_date, freq.to_string().as_str());
-                raw_start_date_vec.push(raw_end_date);
+                raw_start_date_vec.push_front(raw_end_date);
             }
         }
     }
@@ -190,6 +193,21 @@ pub fn build_schedule(
             )?;
         }
 
+        if calc_end_date <= calc_start_date {
+            return Err(anyhow!(
+                "({}:{}) {:?} <= {:?} in build_schedule\n\
+                effective_date: {:?}\n\
+                maturity: {:?}\n\
+                calendar: {:?}\n\
+                conv: {:?}\n\
+                freq: {:?}\n\
+                fixing_days: {:?}\n\
+                payment_days: {:?}\n",
+                file!(), line!(), calc_end_date.date(), calc_start_date.date(),
+                effective_date, maturity, calendar, conv, freq, fixing_gap_days, payment_gap_days
+            ));
+        }
+
         base_schedule_vec.push(
             BaseSchedule::new(fixing_date, calc_start_date, calc_end_date, payment_date, None)
         );
@@ -215,7 +233,7 @@ mod tests {
     // maturity = date!(2024-02-05 16:00:00 +09:00)
     // conv = ModifiedFollowing
     #[test]
-    fn test_build_schedule() -> Result<()> {
+    fn test_build_forward_schedule() -> Result<()> {
         let effective_date = datetime!(2023-01-31 16:30:00 +09:00);
         let maturity = datetime!(2024-07-31 16:30:00 +09:00);
         let cal = SouthKorea::new(SouthKoreaType::Settlement);
@@ -257,5 +275,65 @@ mod tests {
         Ok(())
     }
     
+    #[test]
+    fn test_build_backward_test() -> Result<()> {
+        let effective_date = datetime!(2023-01-31 16:30:00 +09:00);
+        let maturity = datetime!(2024-07-31 16:30:00 +09:00);
+        let cal = SouthKorea::new(SouthKoreaType::Settlement);
+        let calendar = Calendar::SouthKorea(cal);
+        let joint_calendar = JointCalendar::new(vec![calendar])?;
+        let schedule = build_schedule(
+            false,
+            &effective_date, 
+            &maturity, 
+            &joint_calendar,
+            &BusinessDayConvention::ModifiedFollowing,
+            &PaymentFrequency::Quarterly,            
+            1, 
+            0
+        ).expect("Failed to build schedule");
+
+        for base_schedule in schedule.iter() {
+            println!(
+                "start = {:?}, end = {:?}" , 
+                base_schedule.get_calc_start_date().date(), base_schedule.get_calc_end_date().date()
+            );
+        }
+        // start = 2023-01-31, end = 2023-04-28
+        // start = 2023-04-28, end = 2023-07-31
+        // start = 2023-07-31, end = 2023-10-30
+        // start = 2023-10-30, end = 2024-01-30
+        // start = 2024-01-30, end = 2024-04-30
+        // start = 2024-04-30, end = 2024-07-31
+        assert_eq!(
+            schedule[0].get_calc_start_date().date(),
+            date!(2023-01-31),
+        );
+        assert_eq!(
+            schedule[1].get_calc_start_date().date(),
+            date!(2023-04-28),
+        );
+        assert_eq!(
+            schedule[2].get_calc_start_date().date(),
+            date!(2023-07-31),
+        );
+        assert_eq!(
+            schedule[3].get_calc_start_date().date(),
+            date!(2023-10-30),
+        );
+        assert_eq!(
+            schedule[4].get_calc_start_date().date(),
+            date!(2024-01-30),
+        );
+        assert_eq!(
+            schedule[5].get_calc_start_date().date(),
+            date!(2024-04-30),
+        );
+        assert_eq!(
+            schedule[5].get_calc_end_date().date(),
+            date!(2024-07-31),
+        );
+        Ok(())
+    }
     
 }

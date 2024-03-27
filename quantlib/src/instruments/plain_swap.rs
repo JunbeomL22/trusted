@@ -125,7 +125,8 @@ impl PlainSwap {
             last_fixed_side_payment.is_none() &&
             last_floating_side_endorsement.is_none() &&
             rate_index.is_some() &&
-            fixed_rate.is_some() {                
+            fixed_rate.is_some() &&
+            fixed_leg_currency == floating_leg_currency {                
                 specific_type = PlainSwapType::IRS;
         } 
         // CRS: initial, last swap amounts, rate_index, and fixed_rate are all Some(Real)
@@ -416,10 +417,13 @@ impl InstrumentTrait for PlainSwap {
         &self, pricing_date: &OffsetDateTime
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
-        let mut initial_value = 1.0;
+        let initial_value = match self.initial_fixed_side_endorsement {
+            Some(val) => val,
+            None => 1.0,
+        };
+
         if self.effective_date.date() >= pricing_date.date() &&
         self.initial_fixed_side_endorsement.is_some() {
-            initial_value = self.initial_fixed_side_endorsement.unwrap();
             res.insert(self.effective_date.clone(), initial_value);
         }
 
@@ -446,7 +450,9 @@ impl InstrumentTrait for PlainSwap {
                 &self.fixed_daycounter
             )?;
 
-            let amount = fixed_rate * frac * initial_value;
+            // an initial amount for fixed_leg is initially endorsed so it is a payment
+            let amount = - fixed_rate * frac * initial_value;
+
             res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
         }
 
@@ -493,6 +499,7 @@ impl InstrumentTrait for PlainSwap {
                 &self.floating_daycounter,
                 self.fixing_gap_days,
             )? * initial_value;
+            
             res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
             //res.insert(payment_date.clone(), amount);
         }
@@ -668,7 +675,7 @@ mod tests {
         
         assert_eq!(
             fixed_cashflows.get(fixed_keys[4]).unwrap().clone(), 
-            - 1_316.7365 as Real,
+            - 1_343.2635 as Real,
         );
 
         assert_eq!(

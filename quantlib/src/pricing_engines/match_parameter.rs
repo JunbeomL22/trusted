@@ -30,6 +30,8 @@ pub struct MatchParameter {
     ), String>,
     // index code: RateIndexCode -> String
     rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
+    // Currency::XXX -> String::from("XXXCRS")
+    crs_curve_map: HashMap<Currency, String>,
     //
     dummy_string: String,
 }
@@ -46,6 +48,8 @@ impl Default for MatchParameter {
             CreditRating, 
             Currency
         ), String> = HashMap::new();
+
+        let crs_curve_map: HashMap<Currency, String> = HashMap::new();
         
         let rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
         MatchParameter {
@@ -53,6 +57,7 @@ impl Default for MatchParameter {
             borrowing_curve_map,
             bond_discount_curve_map,
             rate_index_forward_curve_map,
+            crs_curve_map,
             dummy_string: String::from("Dummy"),
         }
     }
@@ -68,6 +73,7 @@ impl MatchParameter {
             CreditRating, 
             Currency
         ), String>,
+        crs_curve_map: HashMap<Currency, String>,
         rate_index_forward_curve_map: HashMap<RateIndexCode, String>
     ) -> MatchParameter {
         MatchParameter {
@@ -75,40 +81,54 @@ impl MatchParameter {
             borrowing_curve_map,
             bond_discount_curve_map,
             rate_index_forward_curve_map,
+            crs_curve_map,
             dummy_string: String::from("Dummy"),
         }
     }
 
-    pub fn get_crs_fixed_curve(&self, instrument: &Instrument) -> Result<String> {
+    pub fn get_crs_curve(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
-            Instrument::PlainSwap(instrument) => {
-                let fixed_currency = instrument.get_fixed_leg_currency()?;
-
-                let res = format!("{}{}", fixed_currency.as_str(), "CRS");
+            Instrument::PlainSwap(instrument) |
+            Instrument::FxFutures(instrument)=> {
+                let fixed_currency = instrument.get_currency();
+                let res = self.crs_curve_map.get(fixed_currency)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) {} ({}) has {}, but it is not found in MatchParameter.crs_curve_map",
+                        file!(), line!(),
+                        instrument.get_name(), instrument.get_code(),
+                        fixed_currency.as_str()
+                    ))?;                
                 Ok(res)
             },
-            _ => {
-                return Err(anyhow!(
-                    "({}:{}) get_crs_curve is not implemented for {} ({})",
-                    file!(), line!(), instrument.get_name(), instrument.get_code(),
-                ));
-            }
+            _ => Ok(&self.dummy_string),
         }
     }
 
-    pub fn get_crs_floating_curve(&self, instrument: &Instrument) -> Result<String> {
+    pub fn get_floating_crs_curve(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
             Instrument::PlainSwap(instrument) => {
                 let floating_currency = instrument.get_floating_leg_currency()?;
-                let res = format!("{}{}", floating_currency.as_str(), "CRS");
+                let res = self.crs_curve_map.get(floating_currency)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) {} ({}) has {}, but it is not found in MatchParameter.crs_curve_map",
+                        file!(), line!(),
+                        instrument.get_name(), instrument.get_code(),
+                        floating_currency.as_str()
+                    ))?;
                 Ok(res)
             },
-            _ => {
-                return Err(anyhow!(
-                    "({}:{}) get_crs_curve is not implemented for {} ({})",
-                    file!(), line!(), instrument.get_name(), instrument.get_code()
-                ));
-            }
+            Instrument::FxFutures(instrument) => {
+                let underlying_currency = instrument.get_underlying_currency()?;
+                let res = self.crs_curve_map.get(underlying_currency)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) {} ({}) has {}, but it is not found in MatchParameter.crs_curve_map",
+                        file!(), line!(),
+                        instrument.get_name(), instrument.get_code(),
+                        underlying_currency.as_str()
+                    ))?;
+                Ok(res)
+            },
+            _ => Ok(&self.dummy_string),
         }
     }
     pub fn get_discount_curve_name(&self, instrument: &Instrument) -> Result<&String> {
@@ -159,7 +179,10 @@ impl MatchParameter {
             // these are indestruments that do not need to be discounted
             Instrument::StockFutures(_) |
             Instrument::BondFutures(_) |
-            Instrument::KTBF(_) => Ok(&self.dummy_string),
+            Instrument::KTBF(_) |
+            Instrument::FxFutures(_) => {
+                Ok(&self.dummy_string)
+            },
         }
     }
     /// Curve name for underlying asset

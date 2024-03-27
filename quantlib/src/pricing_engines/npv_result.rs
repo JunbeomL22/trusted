@@ -52,6 +52,10 @@ impl NpvResult {
         }
         Ok(res)
     }
+
+    pub fn get_cashflow_amounts(&self) -> &HashMap<usize, (OffsetDateTime, Real)> {
+        &self.cashflow_amounts
+    }
 }
 
 

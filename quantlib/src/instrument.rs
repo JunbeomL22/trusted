@@ -5,6 +5,7 @@ use crate::instruments::{
     plain_swap::PlainSwap,
     bond_futures::BondFutures,
     ktbf::KTBF,
+    fx_futures::FxFutures,
 };
 use crate::definitions::Real;
 use crate::assets::currency::Currency;
@@ -135,6 +136,10 @@ pub trait InstrumentTrait{
         Err(anyhow!("not supported instrument type on get_floating_leg_currency"))
     }
 
+    fn get_underlying_currency(&self) -> Result<&Currency> {
+        Err(anyhow!("not supported instrument type on get_underlying_currency"))
+    }
+
 }
 
 #[enum_dispatch(InstrumentTrait)]
@@ -145,6 +150,7 @@ pub enum Instrument {
     BondFutures(BondFutures),
     KTBF(KTBF),
     PlainSwap(PlainSwap),
+    FxFutures(FxFutures),
 }
 
 /// calculation groups for calculation optimization, 

@@ -123,8 +123,8 @@ impl PricerFactory {
         }; // the end of the past fixing data construction which is optional
         
         let core = BondPricer::new(
-            discount_curve,
             self.evaluation_date.clone(),
+            discount_curve,
             forward_curve,
             past_fixing_data,    
         );
@@ -137,6 +137,7 @@ impl PricerFactory {
         let collatral_curve_name = self.match_parameter.get_collateral_curve_names(instrument)?[0];
         let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(instrument)?[0];
         let core = StockFuturesPricer::new(
+            self.evaluation_date.clone(),
             stock,
             self.zero_curves.get(collatral_curve_name)
             .ok_or_else(|| anyhow::anyhow!(
@@ -150,7 +151,6 @@ impl PricerFactory {
                 instrument.get_code(),
                 borrowing_curve_name,
             ))?.clone(),
-            self.evaluation_date.clone(),
         );
         Ok(Pricer::StockFuturesPricer(core))
     }

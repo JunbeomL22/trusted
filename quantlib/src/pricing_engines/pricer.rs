@@ -11,6 +11,7 @@ use crate::pricing_engines::{
     ktbf_pricer::KtbfPricer,
     krx_yield_pricer::KrxYieldPricer,
     plain_swap_pricer::PlainSwapPricer,
+    fx_futures_pricer::FxFuturesPricer,
 };
 //
 use anyhow::Result;
@@ -39,5 +40,5 @@ pub enum Pricer {
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),
     PlainSwapPricer(PlainSwapPricer),
-    //IrsPricer(IrsPricer),
+    FxFuturesPricer(FxFuturesPricer),
 }
