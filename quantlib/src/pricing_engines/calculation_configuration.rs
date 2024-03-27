@@ -14,6 +14,12 @@ pub enum LocalVolatilityInterplator {
     Dupire,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum VanillaOptionCalculationMethod {
+    MonteCarlo = 0,
+    FiniteDifference = 1,
+    Analytic = 2,
+}
 /// CalculationConfiguration is a struct that holds the configuration of the calculation.
 /// stickyness_type: StickynessType
 /// StickynessType is an enum that represents the stickyness of the calculation.
@@ -45,7 +51,8 @@ pub struct CalculationConfiguration {
     rho_structure_tenors: Vec<String>,
     vega_structure_tenors: Vec<String>,
     div_structure_tenors: Vec<String>,
-
+    // 
+    vanilla_option_calculation_method: VanillaOptionCalculationMethod,
 }
 
 impl Default for CalculationConfiguration {
@@ -110,6 +117,7 @@ impl Default for CalculationConfiguration {
             rho_structure_tenors: rho_tenors,
             vega_structure_tenors: vega_tenors,
             div_structure_tenors: div_tenors,
+            vanilla_option_calculation_method: VanillaOptionCalculationMethod::Analytic,
         }
     }
 }
@@ -138,6 +146,8 @@ impl CalculationConfiguration {
         rho_structure_tenors: Vec<String>,
         vega_structure_tenors: Vec<String>,
         div_structure_tenors: Vec<String>,
+        //
+        vanilla_option_calculation_method: VanillaOptionCalculationMethod,
     ) -> Result<CalculationConfiguration> {
         if delta != gamma {
             return Err(anyhow!("delta and gamma must be both true or both false"));
@@ -184,6 +194,8 @@ impl CalculationConfiguration {
             rho_structure_tenors,
             vega_structure_tenors,
             div_structure_tenors,
+            //
+            vanilla_option_calculation_method,
         })
     }
 
@@ -275,6 +287,18 @@ impl CalculationConfiguration {
     pub fn with_div_structure_tenors(mut self, div_structure_tenors: Vec<String>) -> CalculationConfiguration {
         self.div_structure_tenors = div_structure_tenors;
         self
+    }
+
+    pub fn with_vanilla_option_calculation_method(
+        mut self, 
+        vanilla_option_calculation_method: VanillaOptionCalculationMethod
+    ) -> CalculationConfiguration {
+        self.vanilla_option_calculation_method = vanilla_option_calculation_method;
+        self
+    }
+
+    pub fn get_vanilla_option_calculation_method(&self) -> VanillaOptionCalculationMethod {
+        self.vanilla_option_calculation_method
     }
 
     pub fn get_div_structure_tenors(&self) -> &Vec<String> {
