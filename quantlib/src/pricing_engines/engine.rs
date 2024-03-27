@@ -230,7 +230,7 @@ impl Engine {
 
         self.instruments = Instruments::new(instrument_vec);
         let all_types = self.instruments.get_all_type_names();
-        let curr_str: Vec<&str> = self.instruments.get_all_currencies().iter().map(|c| c.as_str()).collect();
+        let curr_str: Vec<&str> = self.instruments.get_all_currencies()?.iter().map(|c| c.as_str()).collect();
         let all_und_codes: Vec<&str> = self.instruments.get_all_underlying_codes().iter().map(|c| c.as_str()).collect();
         self.err_tag = format!(
             "<TAG>\n\

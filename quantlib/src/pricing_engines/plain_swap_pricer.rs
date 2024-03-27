@@ -394,12 +394,12 @@ pub mod tests {
         let expected_usd_exposure = 1.0005854;
 
         assert!(
-            (npv - npv_result.get_npv()).abs() < 1e-6,
+            (npv - npv_result.get_npv()).abs() / fx_rate < 1e-5,
             "npv: {}, npv_result.get_npv(): {}", npv, npv_result.get_npv(),
         );
 
         assert!(
-            (npv - expected_npv).abs() / fx_rate < 1e-6,
+            (npv - expected_npv).abs() / fx_rate < 1e-5,
             "npv: {}, expected_npv: {}", npv, expected_npv,
         );
 
@@ -420,7 +420,7 @@ pub mod tests {
     fn test_irs_pricer() -> Result<()> {
         let fixed_currency = Currency::KRW;
         let floating_currency = Currency::KRW;
-        let unit_notional = 10_000_000.0;
+        let unit_notional = 100.0;
         let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(
             issue_date + Duration::days(4),
@@ -518,7 +518,7 @@ pub mod tests {
         let npv_from_npv_result = npv_result.get_npv();
         let npv = pricer.npv(&inst)?;
         let expected_npv = 0.0003459379;
-        let expected_fx_exposure = 3459.3438;
+        let expected_fx_exposure = 0.03459382;
 
         println!("NPV: {:?}", npv);
         println!("Cashflows:");

@@ -21,7 +21,7 @@ use crate::time::{
 };
 use crate::data::history_data::CloseData;
 // 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use enum_dispatch::enum_dispatch;
 use std::{
     rc::Rc,
@@ -226,15 +226,44 @@ impl Instruments {
         type_names
     }
 
-    pub fn get_all_currencies(&self) -> Vec<&Currency> {
+    pub fn get_all_currencies(&self) -> Result<Vec<&Currency>> {
         let mut currencies = Vec::<&Currency>::new();
         for instrument in self.instruments.iter() {
             let currency = instrument.get_currency();
             if !currencies.contains(&currency) {
                 currencies.push(currency);
             }
+            
+            match instrument.get_type_name() {
+                "StockFutures" |
+                "FxFutures" => {
+                    let currency = instrument.get_underlying_currency()
+                        .with_context(|| anyhow!(
+                            "({}:{}) get_underlying_currency failed for {} ({})", 
+                            file!(), line!(),
+                            instrument.get_name(),
+                            instrument.get_code(),
+                        ))?;
+                    if !currencies.contains(&currency) {
+                        currencies.push(currency);
+                    }
+                },
+                "PlainSwap" => {
+                    let currency = instrument.get_floating_leg_currency()
+                        .with_context(|| anyhow!(
+                            "({}:{}) get_floating_leg_currency failed for {} ({})", 
+                            file!(), line!(),
+                            instrument.get_name(),
+                            instrument.get_code(),
+                        ))?;
+                    if !currencies.contains(&currency) {
+                        currencies.push(currency);
+                    }
+                },
+                _ => {},
+            }
         }
-        currencies
+        Ok(currencies)
     }
     
     pub fn instruments_with_underlying(
@@ -294,6 +323,14 @@ impl Instruments {
             if match_parameter.get_rate_index_curve_name(instrument)? == curve_name {
                 res.push(instrument.clone());
             }
+            // 4) crs curve
+            if match_parameter.get_crs_curve_name(instrument)? == curve_name {
+                res.push(instrument.clone());
+            }
+            // 5) floating crs curve
+            if match_parameter.get_floating_crs_curve_name(instrument)? == curve_name {
+                res.push(instrument.clone());
+            }
         }
         Ok(res)
     }
@@ -301,20 +338,29 @@ impl Instruments {
     // all curve names including discount, collateral, and rate index forward curves
     pub fn get_all_curve_names<'a>(&'a self, match_parameter: &'a MatchParameter) -> Result<Vec<&String>> {
         let mut res = Vec::<&String>::new();
+        let dummy = String::from("Dummy");
         for instrument in self.instruments.iter() {
             let discount_curve_name = match_parameter.get_discount_curve_name(instrument)?;
-            if !res.contains(&discount_curve_name) && discount_curve_name != "Dummy" {
+            if !res.contains(&discount_curve_name) && discount_curve_name != &dummy {
                 res.push(discount_curve_name);
             }
             let collateral_curve_names = match_parameter.get_collateral_curve_names(instrument)?;
             for name in collateral_curve_names.iter() {
-                if !res.contains(name) && *name != "Dummy"{
+                if !res.contains(name) && *name != &dummy {
                     res.push(name);
                 }
             }
             let rate_index_curve_name = match_parameter.get_rate_index_curve_name(instrument)?;
-            if !res.contains(&rate_index_curve_name) && rate_index_curve_name != "Dummy" {
+            if !res.contains(&rate_index_curve_name) && rate_index_curve_name != &dummy {
                 res.push(rate_index_curve_name);
+            }
+            let crs_curve_name = match_parameter.get_crs_curve_name(instrument)?;
+            if !res.contains(&crs_curve_name) && crs_curve_name != &dummy {
+                res.push(crs_curve_name);
+            }
+            let floating_crs_curve_name = match_parameter.get_floating_crs_curve_name(instrument)?;
+            if !res.contains(&floating_crs_curve_name) && floating_crs_curve_name != &dummy {
+                res.push(floating_crs_curve_name);
             }
         }
         Ok(res)
@@ -517,7 +563,6 @@ mod tests {
     use crate::assets::currency::Currency;
     use crate::instruments::stock_futures::StockFutures;
     use crate::instruments::plain_swap::PlainSwap;
-    use time::macros::datetime;
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
@@ -526,7 +571,9 @@ mod tests {
         calendars::southkorea::{SouthKorea, SouthKoreaType},
         calendar::Calendar,
     };
+    use crate::assets::fx::FxCode;
     use anyhow::Result;
+    use time::macros::datetime;
     
     #[test]
     fn test_instruments() -> Result<()> {
@@ -625,17 +672,28 @@ mod tests {
             Currency
         ), String>::new();
 
+        let mut crs_curve_map = HashMap::<Currency, String>::new();
         // "KOSPI2" -> "KRWGOV"
         // "SPX" -> "USGOV"
         // RateIndexCode::CD -> "KRWIRS"
         collateral_curve_map.insert("KOSPI2".to_string(), "KRWGOV".to_string());
         collateral_curve_map.insert("SPX".to_string(), "USGOV".to_string());
         rate_index_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
+        crs_curve_map.insert(
+            Currency::KRW,
+            "KRWCRS".to_string(),
+        );
+        crs_curve_map.insert(
+            Currency::USD,
+            "USDOIS".to_string(),
+        );
+        
 
         let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_curve_map,
+            HashMap::new(),
             rate_index_curve_map,
         );
 

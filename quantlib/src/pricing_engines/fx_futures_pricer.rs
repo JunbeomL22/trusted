@@ -87,7 +87,7 @@ impl PricerTrait for FxFuturesPricer {
 
         let mut res: HashMap<Currency, Real> = HashMap::new();
         res.insert(futures_currency, - futures_discount * average_trade_price);
-        res.insert(underlying_currency, - underlying_discount);
+        res.insert(underlying_currency, underlying_discount);
 
         Ok(res)
     }
@@ -100,6 +100,7 @@ mod tests {
         fx::FX,
         currency::Currency,
     };
+    use crate::data::vector_data::VectorData;
     use crate::definitions::Real;
     use crate::instruments::fx_futures::FxFutures;
     use crate::parameters::zero_curve::ZeroCurve;
@@ -111,40 +112,110 @@ mod tests {
     use crate::pricing_engines::npv_result::NpvResult;
     use std::rc::Rc;
     use std::cell::RefCell;
-    use time::OffsetDateTime;
+    use time::{
+        OffsetDateTime,
+        macros::datetime,
+    };
     use anyhow::Result;
     use std::collections::HashMap;
+    use ndarray::array;
 
     #[test]
     fn test_fx_futures_pricer() -> Result<()> {
-        let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(OffsetDateTime::unix_epoch())));
-        let fx = Rc::new(RefCell::new(FX::new("USD/KRW".to_string(), 1100.0)));
-        let underlying_currency_curve = Rc::new(RefCell::new(ZeroCurve::new("USD".to_string(), 0.02)));
-        let futures_currency_curve = Rc::new(RefCell::new(ZeroCurve::new("KRW".to_string(), 0.03)));
+        let eval_date = datetime!(2024-01-02 00:00:00 UTC);
+        let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_date.clone())));
+        let fx = Rc::new(RefCell::new(FX::new_from_str(
+            1_300.0, 
+            "USDKRW", 
+            datetime!(2021-01-01 00:00:00 UTC),
+        )?));
+        
+        let underlying_curve_data = VectorData::new(
+            array![0.04, 0.04],
+            None,
+            Some(array![0.5, 5.0]),
+            eval_date.clone(),
+            Currency::KRW,
+            "USDOIS".to_string(),
+        )?;
+
+        let usdois_curve = Rc::new(RefCell::new(
+            ZeroCurve::new(
+                evaluation_date.clone(),
+                &underlying_curve_data,
+                "USDOIS".to_string(),
+                "USDOIS".to_string(),
+            )?
+        ));
+        
+        let futures_curve_data = VectorData::new(
+            array![0.04, 0.04],
+            None,
+            Some(array![0.5, 5.0]),
+            eval_date.clone(),
+            Currency::KRW,
+            "KRWCRS".to_string(),
+        )?;
+
+        let krwcrs_curve = Rc::new(RefCell::new(
+            ZeroCurve::new(
+                evaluation_date.clone(),
+                &futures_curve_data,
+                "KRWCRS".to_string(),
+                "KRWCRS".to_string(),
+            )?
+        ));
 
         let pricer = FxFuturesPricer::new(
             evaluation_date.clone(),
             fx.clone(),
-            underlying_currency_curve.clone(),
-            futures_currency_curve.clone(),
+            usdois_curve.clone(),
+            krwcrs_curve.clone(),
         );
 
+        let issue_date = datetime!(2023-12-15 00:00:00 UTC);
+        let last_trade_date = datetime!(2024-12-15 00:00:00 UTC);
         let fxfutures = FxFutures::new(
-            1100.0,
-            OffsetDateTime::unix_epoch(),
-            OffsetDateTime::unix_epoch(),
-            OffsetDateTime::unix_epoch(),
-            OffsetDateTime::unix_epoch(),
-            1000000.0,
-            Currency::USD,
+            1_300.0,
+            issue_date.clone(),
+            last_trade_date.clone(),
+            last_trade_date.clone(),
+            last_trade_date.clone(),
+            10_000.0,
             Currency::KRW,
-            "USD/KRW".to_string(),
-            "USD/KRW".to_string(),
+            Currency::USD,
+            "USDKRW Futures".to_string(),
+            "USDKRW Futures".to_string(),
         );
 
         let inst = Instrument::FxFutures(fxfutures);
-        let npv = pricer.npv(&inst)?;
-        println!("npv: {}", npv);
+        let npv = pricer.npv_result(&inst)?;
+        let fx_exporsure = pricer.fx_exposure(&inst, npv.get_npv())?;
+
+        println!("npv result {:?}", npv);
+        println!("fx exposure {:?}", fx_exporsure);
+
+        let expected_npv = 1_300.0;
+        assert!(
+            (npv.get_npv() - expected_npv).abs() < 1e-6,
+            "npv is not correct: expected {}, got {}",
+            expected_npv, npv.get_npv(),
+        );
+
+        let expected_krw_fx_exposure = -1251.4957;
+        assert!(
+            (fx_exporsure.get(&Currency::KRW).unwrap() - expected_krw_fx_exposure).abs() < 1e-6,
+            "KRW fx exposure is not correct: expected {}, got {}",
+            expected_krw_fx_exposure, fx_exporsure.get(&Currency::KRW).unwrap(),
+        );
+
+        let expected_usd_fx_exposure = 0.96268904;
+        assert!(
+            (fx_exporsure.get(&Currency::USD).unwrap() - expected_usd_fx_exposure).abs() < 1e-6,
+            "USD fx exposure is not correct: expected {}, got {}",
+            expected_usd_fx_exposure, fx_exporsure.get(&Currency::USD).unwrap(),
+        );
+        Ok(())
     }
 }
 

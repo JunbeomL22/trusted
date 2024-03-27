@@ -5,6 +5,7 @@ use quantlib::definitions::Real;
 use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
+use std::hash::Hash;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -246,6 +247,7 @@ fn main() -> Result<()> {
         collateral_curve_map,
         borrowing_curve_map,
         bond_discount_curve_map,
+        HashMap::new(),
         rate_index_curve_map,
     );
 

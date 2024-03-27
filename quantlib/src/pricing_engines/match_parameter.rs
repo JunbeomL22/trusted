@@ -5,6 +5,7 @@ use crate::enums::{
     IssuerType,
     RateIndexCode,
 };
+use crate::instruments::plain_swap::PlainSwapType;
 //
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
@@ -31,6 +32,7 @@ pub struct MatchParameter {
     // index code: RateIndexCode -> String
     rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
     // Currency::XXX -> String::from("XXXCRS")
+    // But if XXX == USD, then it is String::from("USDOIS")
     crs_curve_map: HashMap<Currency, String>,
     //
     dummy_string: String,
@@ -86,27 +88,45 @@ impl MatchParameter {
         }
     }
 
-    pub fn get_crs_curve(&self, instrument: &Instrument) -> Result<&String> {
+    pub fn get_crs_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
-            Instrument::PlainSwap(instrument) |
-            Instrument::FxFutures(instrument)=> {
-                let fixed_currency = instrument.get_currency();
+            Instrument::PlainSwap(instrument) => {
+                if instrument.get_specific_type() == PlainSwapType::IRS {
+                    return Ok(&self.dummy_string);
+                }
+
+                let fixed_currency = instrument.get_fixed_leg_currency()?;
                 let res = self.crs_curve_map.get(fixed_currency)
                     .ok_or_else(|| anyhow!(
-                        "({}:{}) {} ({}) has {}, but it is not found in MatchParameter.crs_curve_map",
+                        "({}:{}) {} ({}) has {}, but its crs curve is not found in MatchParameter.crs_curve_map",
                         file!(), line!(),
                         instrument.get_name(), instrument.get_code(),
-                        fixed_currency.as_str()
+                        fixed_currency.as_str(), 
                     ))?;                
+                Ok(res)
+            },
+            Instrument::FxFutures(instrument) => {
+                let currency = instrument.get_currency();
+                let res = self.crs_curve_map.get(currency)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) {} ({}) has {}, but its crs curve is not found in MatchParameter.crs_curve_map",
+                        file!(), line!(),
+                        instrument.get_name(), instrument.get_code(),
+                        currency.as_str()
+                    ))?;
                 Ok(res)
             },
             _ => Ok(&self.dummy_string),
         }
     }
 
-    pub fn get_floating_crs_curve(&self, instrument: &Instrument) -> Result<&String> {
+    pub fn get_floating_crs_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
             Instrument::PlainSwap(instrument) => {
+                if instrument.get_specific_type() == PlainSwapType::IRS {
+                    return Ok(&self.dummy_string);
+                }
+                
                 let floating_currency = instrument.get_floating_leg_currency()?;
                 let res = self.crs_curve_map.get(floating_currency)
                     .ok_or_else(|| anyhow!(
@@ -351,6 +371,7 @@ mod tests {
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
+            HashMap::new(),
             rate_index_forward_curve_map,
         );
         let stock_futures_inst = Instrument::StockFutures(stock_futures);

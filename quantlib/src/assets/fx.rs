@@ -27,6 +27,17 @@ impl FxCode {
     pub fn get_currency2(&self) -> &Currency {
         &self.currency2
     }
+    
+    pub fn reciprocal(self) -> Self {
+        FxCode {
+            currency1: self.currency2,
+            currency2: self.currency1,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        format!("{}{}", self.currency1.as_str(), self.currency2.as_str())
+    }
 }
 
 impl From<&str> for FxCode {
@@ -78,6 +89,14 @@ impl FX {
     
     pub fn get_code(&self) -> &FxCode {
         &self.code
+    }
+
+    pub fn reciprocal(self) -> Self {
+        FX {
+            rate: 1.0 / self.rate,
+            market_datetime: self.market_datetime.clone(),
+            code: self.code.reciprocal(),
+        }
     }
 }
 
