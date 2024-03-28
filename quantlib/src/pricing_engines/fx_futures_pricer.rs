@@ -67,7 +67,7 @@ impl PricerTrait for FxFuturesPricer {
         Ok(NpvResult::new_from_npv(npv))
     }
 
-    fn fx_exposure(&self, instrument: &Instrument, npv: Real) -> Result<HashMap<Currency, Real>> {
+    fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         let average_trade_price = instrument.get_average_trade_price();
         let futures_currency = instrument.get_currency().clone();
         let underlying_currency = instrument.get_underlying_currency()?.clone();

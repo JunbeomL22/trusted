@@ -93,7 +93,7 @@ impl PricerFactory {
             None => { // the case of fixed coupon bond
                 None
             },
-            Some(rate_index) => {
+            Some(_) => {
                 let forward_curve_name = self.match_parameter.get_rate_index_curve_name(instrument)?;
                 let res = self.zero_curves.get(forward_curve_name)
                     .ok_or_else(

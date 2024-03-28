@@ -10,9 +10,9 @@ use std::cell::RefCell;
 use anyhow::Result;
 
 /// an observer of evaluation_date 
-/// when ever calculating theta the Stock price mut be deducted by the dividend
+/// when ever calculating theta the Equity price mut be deducted by the dividend
 #[derive(Debug, Clone)]
-pub struct Stock {
+pub struct Equity {
     last_price: Real,
     market_datetime: OffsetDateTime,
     dividend: Option<Rc<RefCell<DiscreteRatioDividend>>>,
@@ -21,7 +21,7 @@ pub struct Stock {
     code: String,
 }
 
-impl Stock {
+impl Equity {
     /// new(
     /// last_price: Real, 
     /// market_datetime: OffsetDateTime,
@@ -37,8 +37,8 @@ impl Stock {
         currency: Currency,
         name: String,
         code: String,
-    ) -> Stock {
-        Stock {
+    ) -> Equity {
+        Equity {
             last_price,
             market_datetime,
             dividend,
@@ -88,32 +88,32 @@ impl Stock {
 
 /// implments arithmetic for Real
 /// This operates only on the last_price
-impl AddAssign<Real> for Stock {
+impl AddAssign<Real> for Equity {
     fn add_assign(&mut self, rhs: Real) {
         self.last_price += rhs;
     }
 }
 
-impl SubAssign<Real> for Stock {
+impl SubAssign<Real> for Equity {
     fn sub_assign(&mut self, rhs: Real) {
         self.last_price -= rhs;
     }
 }
 
-impl MulAssign<Real> for Stock {
+impl MulAssign<Real> for Equity {
     fn mul_assign(&mut self, rhs: Real) {
         self.last_price *= rhs;
     }
 }
 
-impl DivAssign<Real> for Stock {
+impl DivAssign<Real> for Equity {
     fn div_assign(&mut self, rhs: Real) {
         self.last_price /= rhs;
     }
 }
 
 
-impl Parameter for Stock {
+impl Parameter for Equity {
     /// the stock price must be deducted by the dividend
     /// the amount is the sum of the dividend amount 
     /// between the market_datetime and the EvaluationDate
@@ -140,7 +140,7 @@ impl Parameter for Stock {
     }
 
     fn get_type_name(&self) -> &'static str {
-        "Stock"
+        "Equity"
     }
 
     fn get_name(&self) -> &String {
@@ -200,16 +200,16 @@ mod tests {
             evaluation_date.clone(),
             &data,
             spot,
-            "MockStock".to_string(),
+            "MockEquity".to_string(),
         ).expect("failed to create DiscreteRatioDividend");
 
         let stock = Rc::new(RefCell::new(
-            Stock::new(
+            Equity::new(
                 spot,
                 eval_dt.clone(),
                 Some(Rc::new(RefCell::new(dividend))),
                 Currency::KRW,
-                "MockStock".to_string(),
+                "MockEquity".to_string(),
                 "MockCode".to_string(),
             )
         ));

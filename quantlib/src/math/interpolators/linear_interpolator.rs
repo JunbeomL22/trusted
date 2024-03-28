@@ -68,14 +68,17 @@ impl InterpolatorReal1D for LinearInterpolator1D
                     return Ok(self.value[0] + self.derivatives[0] * (x - self.domain[0]));
                 }
                 else {
-                    return Err(anyhow!("{}: extrapolation has not been implemented yet", self.extrapolation_type));
+                    return Err(anyhow!(
+                        "({}:{}) {}: extrapolation has not been implemented yet", 
+                        file!(), line!(),
+                        self.extrapolation_type));
                 }
             } else {
                 return Err(anyhow!(
-                        "x (={}) is out of range where\n\
+                        "({}:{}) x (={}) is out of range where\n\
                         domain: Array1<Real> = {:?}", 
-                        x,
-                        self.domain
+                        file!(), line!(),
+                        x, self.domain
                     )
                 );
             }
@@ -89,11 +92,18 @@ impl InterpolatorReal1D for LinearInterpolator1D
                     return Ok(self.value[n-1] + self.derivatives[n-2] * (x - self.domain[n-1]));
                 }
                 else {
-                    return Err(anyhow!("{}: extrapolation has not been implemented yet", self.extrapolation_type));
+                    return Err(anyhow!(
+                        "({}:{}) {}: extrapolation has not been implemented yet", 
+                        file!(), line!(),
+                        self.extrapolation_type));
                 }
             } 
             else {
-                return Err(anyhow!("x (= {}) is out of range", x));
+                return Err(anyhow!(
+                    "({}:{}) x (= {}) is out of range", 
+                    file!(), line!(),
+                    x
+                ));
             }
         }
         
@@ -119,10 +129,18 @@ impl InterpolatorReal1D for LinearInterpolator1D
                         result[i] = self.value[0] + self.derivatives[0] * (x[i] - self.domain[0]);
                     }
                     else {
-                        return Err(anyhow!("{}: extrapolation has not been implemented yet", self.extrapolation_type));
+                        return Err(anyhow!(
+                            "({}:{}) {}: extrapolation has not been implemented yet", 
+                            file!(), line!(),
+                            self.extrapolation_type
+                        ));
                     }
                 } else {
-                    return Err(anyhow!("x[{}] (={}) is out of range", i, x[i]));
+                    return Err(anyhow!(
+                        "({}:{}) x[{}] (={}) is out of range", 
+                        file!(), line!(),
+                        i, x[i]
+                    ));
                 }
             }
             else if x[i] >= self.domain[domain_n - 1] {
@@ -134,11 +152,18 @@ impl InterpolatorReal1D for LinearInterpolator1D
                         result[i] = self.value[domain_n-1] + self.derivatives[domain_n-2] * (x[i] - self.domain[domain_n-1]);
                     }
                     else {
-                        return Err(anyhow!("{}: extrapolation has not been implemented yet", self.extrapolation_type));
+                        return Err(anyhow!(
+                            "({}:{}) {}: extrapolation has not been implemented yet", 
+                            file!(), line!(),
+                            self.extrapolation_type
+                        ));
                     }
                 } 
                 else {
-                    return Err(anyhow!("x[{}] (= {}) is out of range", i, x[i]));
+                    return Err(anyhow!(
+                        "({}:{}) x[{}] (= {}) is out of range", 
+                        file!(), line!(),
+                        i, x[i]));
                 }
             } 
             else 
