@@ -1,7 +1,7 @@
 use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
-    stock_futures::StockFutures,
+    equity_futures::EquityFutures,
     plain_swap::PlainSwap,
     bond_futures::BondFutures,
     ktbf::KTBF,
@@ -14,7 +14,7 @@ use crate::parameters::{
     rate_index::RateIndex,
     zero_curve::ZeroCurve,
 };
-use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel};
+use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel, OptionType};
 use crate::time::{
     conventions::PaymentFrequency,
     jointcalendar::JointCalendar,
@@ -140,12 +140,20 @@ pub trait InstrumentTrait{
         Err(anyhow!("not supported instrument type on get_underlying_currency"))
     }
 
+    fn get_strike(&self) -> Result<Real> {
+        Err(anyhow!("not supported instrument type on get_strike"))
+    }
+
+    fn get_option_type(&self) -> Result<&OptionType> {
+        Err(anyhow!("not supported instrument type on get_option_type"))
+    }
+
 }
 
 #[enum_dispatch(InstrumentTrait)]
 #[derive(Clone, Debug)]
 pub enum Instrument {
-    StockFutures(StockFutures),
+    EquityFutures(EquityFutures),
     Bond(Bond),
     BondFutures(BondFutures),
     KTBF(KTBF),
@@ -561,7 +569,7 @@ mod tests {
 
     use super::*;
     use crate::assets::currency::Currency;
-    use crate::instruments::stock_futures::StockFutures;
+    use crate::instruments::equity_futures::StockFutures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;

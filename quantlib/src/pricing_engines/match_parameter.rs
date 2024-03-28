@@ -197,7 +197,7 @@ impl MatchParameter {
                 }
             },
             // these are indestruments that do not need to be discounted
-            Instrument::StockFutures(_) |
+            Instrument::EquityFutures(_) |
             Instrument::BondFutures(_) |
             Instrument::KTBF(_) |
             Instrument::FxFutures(_) => {
@@ -275,7 +275,7 @@ impl MatchParameter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instruments::stock_futures::StockFutures;
+    use crate::instruments::equity_futures::StockFutures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::assets::currency::Currency;
     use crate::enums::{RateIndexCode, CreditRating, IssuerType};

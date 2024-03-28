@@ -1,18 +1,12 @@
 use crate::assets::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
+use crate::enums::OptionType;
 //
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 //
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub enum VanillaOptionType {
-    Call,
-    Put,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct VanillaOption {
     strike: Real,
@@ -24,7 +18,7 @@ pub struct VanillaOption {
     underlying_codes: Vec<String>,
     underlying_currency: Currency,
     currency: Currency,
-    option_type: VanillaOptionType,
+    option_type: OptionType,
     name: String,
     code: String,
 }
@@ -41,7 +35,7 @@ impl Default for VanillaOption {
             underlying_codes: vec![],
             underlying_currency: Currency::KRW,
             currency: Currency::KRW,
-            option_type: VanillaOptionType::Call,
+            option_type: OptionType::Call,
             name: String::from(""),
             code: String::from(""),
         }
@@ -59,7 +53,7 @@ impl VanillaOption {
         underlying_codes: Vec<String>,
         underlying_currency: Currency,
         currency: Currency,
-        option_type: VanillaOptionType,
+        option_type: OptionType,
         name: String,
         code: String,
     ) -> VanillaOption {
@@ -91,8 +85,8 @@ impl InstrumentTrait for VanillaOption {
     
     fn get_type_name(&self) -> &'static str {
         match self.option_type {
-            VanillaOptionType::Call => "VanillaCall",
-            VanillaOptionType::Put => "VanillaPut"
+            OptionType::Call => "VanillaCall",
+            OptionType::Put => "VanillaPut"
         }
     }
 

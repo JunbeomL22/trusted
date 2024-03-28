@@ -36,6 +36,7 @@ pub struct CalculationResult {
     rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
     cashflows: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
+    representation_currency: Option<Currency>,
 }
 
 impl Default for CalculationResult {
@@ -57,13 +58,18 @@ impl Default for CalculationResult {
             rho_structure: None,
             theta_day: None,
             cashflows: None,
+            representation_currency: None,
         }
     }
 }
 
 
 impl CalculationResult {
-    pub fn new(instrument_info: InstrumentInfo, evaluation_date: OffsetDateTime) -> CalculationResult {
+    pub fn new(
+        instrument_info: InstrumentInfo, 
+        evaluation_date: OffsetDateTime
+    ) -> CalculationResult {
+        let representation_currency = instrument_info.get_currency();
         CalculationResult {
             instrument_info: Some(instrument_info),
             evaluation_date: Some(evaluation_date),
@@ -81,6 +87,7 @@ impl CalculationResult {
             rho_structure: None,
             theta_day: None,
             cashflows: None,
+            representation_currency: Some(representation_currency),
         }
     }
 
@@ -260,6 +267,10 @@ impl CalculationResult {
     pub fn get_div_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
         self.div_structure.as_ref()
     }
+
+    pub fn set_representation_currency(&mut self, currency: Currency) {
+        self.representation_currency = Some(currency);
+    }
 }
 
 #[cfg(test)]
@@ -270,7 +281,7 @@ mod tests {
         instrument::Instrument,
         instruments::{
             instrument_info::InstrumentInfo, 
-            stock_futures::StockFutures
+            equity_futures::Equityutures
         },
     };
     use time::macros::datetime;

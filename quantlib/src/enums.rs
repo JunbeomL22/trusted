@@ -91,3 +91,18 @@ pub enum AccountingLevel {
     Level2 = 2,
     Level3 = 3,
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub enum OptionType {
+    Call,
+    Put,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub enum OptionExerciseType {
+    European,
+    American,
+    Bermudan,
+}

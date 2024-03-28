@@ -1,6 +1,8 @@
 use crate::parameters::volatilities::volatility::VolatilityTrait;
 use crate::definitions::{Real, Time};
-
+use serde::{Serialize, Deserialize};
+//
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstantVolatility {
     value: Real,
     name: String,
@@ -8,11 +10,11 @@ pub struct ConstantVolatility {
 }
 
 impl ConstantVolatility {
-    pub fn new(value: Real, name: &str, code: &str) -> ConstantVolatility {
+    pub fn new(value: Real, name: String, code: String) -> ConstantVolatility {
         ConstantVolatility {
             value,
-            name: name.to_string(),
-            code: code.to_string(),
+            name,
+            code,
         }
     }
 }

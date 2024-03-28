@@ -2,12 +2,15 @@ use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
+    quanto::Quanto,
+    volatilities::volatility::Volatility,
+    volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments, InstrumentTrait};
 use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
 use crate::assets::{
-    stock::Stock,
+    equity::Equity,
     fx::{FX, FxCode},
     currency::Currency,
 };
@@ -32,12 +35,12 @@ use crate::time::{
     calendars::nullcalendar::NullCalendar,
 };
 use std::borrow::BorrowMut;
+use std::hash::Hash;
 use std::{
     collections::HashMap,
     rc::Rc,
     cell::RefCell,
 };
-//
 use anyhow::{Result, Context, anyhow, bail};
 use time::{OffsetDateTime, Duration};
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
@@ -49,16 +52,14 @@ pub struct Engine {
     //
     calculation_results: HashMap<String, RefCell<CalculationResult>>,
     calculation_configuration: CalculationConfiguration, // this should be cloned
-    //stock_data: HashMap<String, ValueData>,
-    //fx_data: HashMap<String, ValueData>,
-    //curve_data: HashMap<String, RefCell<VectorData>>,
-    //dividend_data: HashMap<String, RefCell<VectorData>>,
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-    stocks: HashMap<String, Rc<RefCell<Stock>>>,
+    equities: HashMap<String, Rc<RefCell<Equity>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
+    equity_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
+    quanto: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
     past_close_data: HashMap<String, Rc<CloseData>>,
     // instruments
     instruments: Instruments, // all instruments
@@ -79,6 +80,9 @@ impl Engine {
         stock_data: HashMap<String, ValueData>,
         curve_data: HashMap<String, VectorData>,
         dividend_data: HashMap<String, VectorData>,
+        equity_constant_volatility_data: HashMap<String, ValueData>,
+        fx_constant_volatility_data: HashMap<FxCode, ValueData>,
+        quanto_correlation_data: HashMap<(String, FxCode), ValueData>,
         past_close_data: HashMap<String, Rc<CloseData>>,
         //
         match_parameter: Rc<MatchParameter>,
@@ -160,8 +164,36 @@ impl Engine {
                 ))
             );
         }
+
+        let mut fx_volatilities = HashMap::new();
+        for (fx_code, data) in fx_constant_volatility_data.iter() {
+            let rc = Rc::new(RefCell::new(
+                Volatility::ConstantVolatility(ConstantVolatility::new(
+                    data.get_value(),
+                    fx_code.to_string(),
+                    fx_code.to_string(),
+                )
+            )));
+            fx_volatilities.insert(fx_code.clone(), rc);
+        }
+        //quanto
+        let mut quantos = HashMap::new();
+        for ((equity_code, fx_code), data) in quanto_correlation_data.iter() {
+            let rc = Rc::new(RefCell::new(
+                Quanto::new(
+                    fx_volatilities.get(fx_code)
+                        .with_context(|| anyhow!(
+                            "failed to get fx volatility for {:?}", fx_code))?
+                        .clone(),
+                    data.get_value(),
+                    fx_code.clone(),
+                    equity_code.clone(),
+                )
+            ));
+            quantos.insert((equity_code.clone(), fx_code.clone()), rc);
+        }
         // making stock Rc -> RefCell for pricing
-        let mut stocks = HashMap::new();
+        let mut equities = HashMap::new();
         for (key, data) in stock_data.iter() {
             let div = match dividends.get(key) {
                 Some(div) => Some(div.clone()),
@@ -169,7 +201,7 @@ impl Engine {
             };
 
             let rc = Rc::new(RefCell::new(
-                Stock::new(
+                Equity::new(
                     data.get_value(),
                     data.get_market_datetime().clone(),
                     div,
@@ -178,10 +210,20 @@ impl Engine {
                     key.to_string(),
                 )
             ));
-            stocks.insert(key.clone(), rc);
+            equities.insert(key.clone(), rc);
             }
         
-        
+        let mut equity_volatilities = HashMap::new();
+        for (key, data) in equity_constant_volatility_data.iter() {
+            let rc = Rc::new(RefCell::new(
+                ConstantVolatility::new(
+                    data.get_value(),
+                    data.get_name().clone(),
+                    key.clone(),
+                )
+            ));
+            equity_volatilities.insert(key.clone(), rc);
+        }
         Ok(Engine {
             engine_id: engine_id,
             err_tag : "".to_string(),
@@ -195,9 +237,10 @@ impl Engine {
             //
             evaluation_date,
             fxs,
-            stocks,
+            equities,
             zero_curves,
             dividends,
+            equity_volatilities,
             past_close_data,
             //
             instruments: Instruments::default(),
@@ -337,7 +380,7 @@ impl Engine {
         let pricer_factory = PricerFactory::new(
             self.evaluation_date.clone(),
             self.fxs.clone(),
-            self.stocks.clone(),
+            self.equities.clone(),
             self.zero_curves.clone(),
             self.dividends.clone(),
             self.past_close_data.clone(),
@@ -491,7 +534,7 @@ impl Engine {
         let down_bump = 1.0 - delta_bump_ratio;
         
         for und_code in all_underlying_codes.iter() {
-            original_price = self.stocks
+            original_price = self.equities
                 .get(*und_code)
                 .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
                 .borrow()
@@ -502,7 +545,7 @@ impl Engine {
                 .instruments_with_underlying(und_code);
 
             {
-                let mut stock = (*self.stocks
+                let mut stock = (*self.equities
                     .get(*und_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) there is no stock {}", 
@@ -515,7 +558,7 @@ impl Engine {
 
             delta_up_map = self.get_npvs().context("failed to get npvs")?;
             {
-                let mut stock = (*self.stocks
+                let mut stock = (*self.equities
                     .get(*und_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) there is no stock {}", 
@@ -574,7 +617,7 @@ impl Engine {
             }
 
             {
-                (*self.stocks
+                (*self.equities
                     .get(*und_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) there is no stock {}", 

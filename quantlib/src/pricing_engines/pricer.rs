@@ -7,7 +7,7 @@ use crate::definitions::Real;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::pricing_engines::{
     bond_pricer::BondPricer,
-    stock_futures_pricer::StockFuturesPricer,
+    equity_futures_pricer::EquityFuturesPricer,
     ktbf_pricer::KtbfPricer,
     krx_yield_pricer::KrxYieldPricer,
     plain_swap_pricer::PlainSwapPricer,
@@ -35,7 +35,7 @@ pub trait PricerTrait {
 
 #[enum_dispatch(PricerTrait)]
 pub enum Pricer {
-    StockFuturesPricer(StockFuturesPricer),
+    EquityFuturesPricer(EquityFuturesPricer),
     BondPricer(BondPricer),
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),

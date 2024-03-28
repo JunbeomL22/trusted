@@ -1,5 +1,5 @@
 use crate::assets::{
-    stock::Stock,
+    equity::Equity,
     fx::{FX, FxCode},
 };
 use crate::parameters::{
@@ -14,7 +14,7 @@ use crate::instrument::{Instrument, InstrumentTrait};
 use crate::pricing_engines::{
     match_parameter::MatchParameter,
     pricer::Pricer,
-    stock_futures_pricer::StockFuturesPricer,
+    equity_futures_pricer::EquityFuturesPricer,
     bond_pricer::BondPricer,
 };
 //
@@ -29,7 +29,7 @@ use anyhow::{Result, anyhow};
 pub struct PricerFactory {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-    stocks: HashMap<String, Rc<RefCell<Stock>>>,
+    equities: HashMap<String, Rc<RefCell<Equity>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     past_close_data: HashMap<String, Rc<CloseData>>,
@@ -40,7 +40,7 @@ impl PricerFactory {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-        stocks: HashMap<String, Rc<RefCell<Stock>>>,
+        equities: HashMap<String, Rc<RefCell<Equity>>>,
         zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
         dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
         past_close_data: HashMap<String, Rc<CloseData>>,
@@ -49,7 +49,7 @@ impl PricerFactory {
         PricerFactory {
             evaluation_date,
             fxs,
-            stocks,
+            equities,
             zero_curves,
             dividends,
             past_close_data,
@@ -59,7 +59,7 @@ impl PricerFactory {
 
     pub fn create_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let pricer = match Rc::as_ref(instrument) {
-            Instrument::StockFutures(_) => self.get_stock_futures_pricer(instrument)?,
+            Instrument::EquityFutures(_) => self.get_stock_futures_pricer(instrument)?,
             Instrument::Bond(_) => self.get_bond_pricer(instrument)?,
             //
             //
@@ -133,10 +133,10 @@ impl PricerFactory {
     }
     fn get_stock_futures_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let underlying_codes = instrument.get_underlying_codes();
-        let stock = self.stocks.get(underlying_codes[0]).unwrap().clone();
+        let stock = self.equities.get(underlying_codes[0]).unwrap().clone();
         let collatral_curve_name = self.match_parameter.get_collateral_curve_names(instrument)?[0];
         let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(instrument)?[0];
-        let core = StockFuturesPricer::new(
+        let core = EquityFuturesPricer::new(
             self.evaluation_date.clone(),
             stock,
             self.zero_curves.get(collatral_curve_name)
@@ -152,6 +152,6 @@ impl PricerFactory {
                 borrowing_curve_name,
             ))?.clone(),
         );
-        Ok(Pricer::StockFuturesPricer(core))
+        Ok(Pricer::EquityFuturesPricer(core))
     }
 }

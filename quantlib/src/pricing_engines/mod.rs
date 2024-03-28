@@ -1,4 +1,4 @@
-pub mod stock_futures_pricer;
+pub mod option_analytic_pricer;
 pub mod engine;
 pub mod calculation_result;
 pub mod pricer;
@@ -15,3 +15,4 @@ pub mod ktbf_pricer;
 pub mod plain_swap_pricer;
 pub mod fx_futures_pricer;
 pub mod engine_factory;
+pub mod equity_futures_pricer;
