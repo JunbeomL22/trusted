@@ -93,16 +93,26 @@ pub enum AccountingLevel {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum OptionType {
     Call,
     Put,
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum OptionExerciseType {
     European,
     American,
     Bermudan,
+}
+
+/// option daily settlement type.
+/// HKEX settles the amount of option MtM on a daily basis, as in Futures.
+/// KRX, Eurex, CME, and OKX does not settle the amount of option MtM on a daily basis.
+/// If it is settled, the option value does not need to be discounted, again as in Futures.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
+pub enum OptionDailySettlementType {
+    Settled,
+    NotSettled,
 }

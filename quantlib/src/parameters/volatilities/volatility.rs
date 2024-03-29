@@ -1,19 +1,55 @@
 use crate::parameters::volatilities::constant_volatility::ConstantVolatility;
 use crate::definitions::{Real, Time};
-use enum_dispatch::enum_dispatch;
-use serde::{Serialize, Deserialize};
 
-#[enum_dispatch]
 pub trait VolatilityTrait {
-    fn value(&self, t: Time, forward_moneyness: Real) -> Real;
-    fn name(&self) -> &String;
-    fn code(&self) -> &String;
+    fn get_value(&self, t: Time, forward_moneyness: Real) -> Real;
+    fn get_name(&self) -> &String;
+    fn get_code(&self) -> &String;
     fn total_variance(&self, t: Time, forward_moneyness: Real) -> Real;
     fn total_deviation(&self, t: Time, forward_moneyness: Real) -> Real;
+    fn bump_volatility(
+        &mut self, 
+        time1: Option<Time>,
+        time2: Option<Time>,
+        left_spot_moneyness: Option<Real>,
+        right_spot_moneyness: Option<Real>,
+        bump: Real
+    );
 }
 
 #[derive(Debug, Clone)]
-#[enum_dispatch(VolatilityTrait)]
 pub enum Volatility {
     ConstantVolatility(ConstantVolatility),
+}
+
+impl Volatility {
+    pub fn get_name(&self) -> &String {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.get_name(),
+        }
+    }
+
+    pub fn get_code(&self) -> &String {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.get_code(),
+        }
+    }
+
+    pub fn get_value(&self, t: Time, forward_moneyness: Real) -> Real {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.get_value(t, forward_moneyness),
+        }
+    }
+
+    pub fn total_variance(&self, t: Time, forward_moneyness: Real) -> Real {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.total_variance(t, forward_moneyness),
+        }
+    }
+
+    pub fn total_deviation(&self, t: Time, forward_moneyness: Real) -> Real {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.total_deviation(t, forward_moneyness),
+        }
+    }
 }

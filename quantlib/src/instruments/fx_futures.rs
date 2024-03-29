@@ -1,4 +1,4 @@
-use crate::definitions::Real;
+use crate::{assets::fx::FxCode, definitions::Real};
 use crate::assets::currency::Currency;
 use crate::instrument::InstrumentTrait;
 //
@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FxFutures {
     average_trade_price: Real,
     first_trade_date: OffsetDateTime,
@@ -16,6 +16,7 @@ pub struct FxFutures {
     unit_notional: Real,
     underlying_currency: Currency,
     currency: Currency,
+    fx_code: FxCode,
     name: String,
     code: String,
 }
@@ -33,6 +34,7 @@ impl Default for FxFutures {
             currency: Currency::KRW,
             name: String::from(""),
             code: String::from(""),
+            fx_code: FxCode::default(),
         }
     }
 }
@@ -50,6 +52,10 @@ impl FxFutures {
         name: String,
         code: String,
     ) -> FxFutures {
+        let fx_code = FxCode::new(
+            underlying_currency.clone(),
+            currency.clone(),
+        );
         FxFutures {
             average_trade_price,
             first_trade_date,
@@ -59,6 +65,7 @@ impl FxFutures {
             unit_notional,
             currency,
             underlying_currency,
+            fx_code,
             name,
             code,
         }
@@ -96,6 +103,10 @@ impl InstrumentTrait for FxFutures {
 
     fn get_average_trade_price(&self) -> Real {
         self.average_trade_price
+    }
+
+    fn get_fx_code(&self) -> Result<&FxCode> {
+        Ok(&self.fx_code)
     }
 
 }

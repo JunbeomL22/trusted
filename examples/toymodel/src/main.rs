@@ -1,5 +1,5 @@
 use quantlib::assets::currency::Currency;
-use quantlib::instruments::stock_futures::StockFutures;
+use quantlib::instruments::equity_futures::EquityFutures;
 use quantlib::instrument::Instrument;
 use quantlib::definitions::Real;
 use time::{macros::datetime, Duration};
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     
     // make two stock futures of two maturities with the same other specs
     // then make a Instruments object with the two stock futures
-    let stock_futures1 = StockFutures::new(
+    let stock_futures1 = EquityFutures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
         datetime!(2021-01-11 00:00:00 +09:00),
@@ -114,7 +114,7 @@ fn main() -> Result<()> {
         "165XXX1".to_string(),
     );
 
-    let stock_futures2 = StockFutures::new(
+    let stock_futures2 = EquityFutures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
         datetime!(2021-01-01 00:00:00 +09:00),
@@ -206,8 +206,8 @@ fn main() -> Result<()> {
         bond_code2.to_string(),
     )?;
 
-    let inst1 = Instrument::StockFutures(stock_futures1);
-    let inst2 = Instrument::StockFutures(stock_futures2);
+    let inst1 = Instrument::EquityFutures(stock_futures1);
+    let inst2 = Instrument::EquityFutures(stock_futures2);
     let inst3: Instrument = Instrument::Bond(bond);
     let inst4: Instrument = Instrument::Bond(bond2);
 
@@ -243,12 +243,19 @@ fn main() -> Result<()> {
 
     let rate_index_curve_map = HashMap::new();
 
+    let mut crs_curve_map = HashMap::new();
+    crs_curve_map.insert(Currency::KRW, "KRWCRS".to_string());
+    crs_curve_map.insert(Currency::USD, "USDOIS".to_string());
+
+    let mut risk_free_rate_on_currency_map = HashMap::new();
+
     let match_parameter = MatchParameter::new(
         collateral_curve_map,
         borrowing_curve_map,
         bond_discount_curve_map,
-        HashMap::new(),
+        crs_curve_map,
         rate_index_curve_map,
+        risk_free_rate_on_currency_map,        
     );
 
     // make an engine

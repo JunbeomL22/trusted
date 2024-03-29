@@ -34,8 +34,7 @@ use crate::time::{
     calendar_trait::CalendarTrait,
     calendars::nullcalendar::NullCalendar,
 };
-use std::borrow::BorrowMut;
-use std::hash::Hash;
+
 use std::{
     collections::HashMap,
     rc::Rc,
@@ -58,8 +57,8 @@ pub struct Engine {
     equities: HashMap<String, Rc<RefCell<Equity>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
-    equity_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
-    quanto: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
+    underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
+    quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
     past_close_data: HashMap<String, Rc<CloseData>>,
     // instruments
     instruments: Instruments, // all instruments
@@ -213,16 +212,18 @@ impl Engine {
             equities.insert(key.clone(), rc);
             }
         
-        let mut equity_volatilities = HashMap::new();
+        let mut underlying_volatilities = HashMap::new();
         for (key, data) in equity_constant_volatility_data.iter() {
             let rc = Rc::new(RefCell::new(
-                ConstantVolatility::new(
-                    data.get_value(),
-                    data.get_name().clone(),
-                    key.clone(),
+                Volatility::ConstantVolatility(
+                    ConstantVolatility::new(
+                        data.get_value(),
+                        data.get_name().clone(),
+                        key.clone(),
+                    )
                 )
             ));
-            equity_volatilities.insert(key.clone(), rc);
+            underlying_volatilities.insert(key.clone(), rc);
         }
         Ok(Engine {
             engine_id: engine_id,
@@ -240,7 +241,8 @@ impl Engine {
             equities,
             zero_curves,
             dividends,
-            equity_volatilities,
+            underlying_volatilities,
+            quantos,
             past_close_data,
             //
             instruments: Instruments::default(),
@@ -383,6 +385,8 @@ impl Engine {
             self.equities.clone(),
             self.zero_curves.clone(),
             self.dividends.clone(),
+            self.underlying_volatilities.clone(),
+            self.quantos.clone(),
             self.past_close_data.clone(),
             self.match_parameter.clone(),
         );
@@ -687,6 +691,73 @@ impl Engine {
                     .as_ref()
                     .borrow_mut()
                     .bump_time_interval(None, None, -bump_val)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn set_vega(&mut self) -> Result<()> {
+        let mut npvs_up: HashMap::<String, Real>;
+        let all_underlying_codes = self.instruments.get_all_underlying_codes();
+        let bump_val = self.calculation_configuration.get_vega_bump_value();
+        let mut npv: Real;
+
+        for vol_code in all_underlying_codes {
+            // bump the volatility but limit the scope that is mutably borrowed
+            {
+                (*self.underlying_volatilities
+                    .get(vol_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) volatility {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        vol_code, self.err_tag
+                    ))?)
+                    .as_ref()
+                    .borrow_mut()
+                    .bump_volatility(None, None, bump_val)?;
+            }
+
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying(vol_code);
+
+            npvs_up = self.get_npvs().context("failed to get npvs")?; // instrument code (String) -> npv (Real
+
+            for inst in &self.instruments_in_action {
+                let inst_code = inst.get_code();
+                let unitamt = inst.get_unit_notional();
+                let npv_up = npvs_up.get(inst_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) npv_up is not set for {}", file!(), line!(), inst_code))?;
+
+                npv = self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) result is not set for {}", file!(), line!(), inst_code))?
+                    .borrow()
+                    .get_npv_result()
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) npv is not set for {}", file!(), line!(), inst_code))?
+                    .get_npv();
+
+                let vega = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
+                (*self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) result is not set for {}", file!(), line!(), inst.get_code()))?
+                    )
+                    .borrow_mut()
+                    .set_single_vega(vol_code, vega);
+            }
+            // put back the bump
+            {
+                (*self.underlying_volatilities
+                    .get(vol_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) volatility {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        vol_code, self.err_tag
+                    ))?).as_ref().borrow_mut()
+                    .bump_volatility(None, None, -bump_val)?;
             }
         }
         Ok(())
@@ -1139,11 +1210,11 @@ impl Engine {
             );
         }
 
-        if self.calculation_configuration.get_rho_structure_calculation() {
+        if self.calculation_configuration.get_vega_calculation() {
             timer = std::time::Instant::now();
-            self.set_rho_structure()?;
+            self.set_vega()?;
             println!(
-                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                "* vega calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64())
@@ -1158,6 +1229,17 @@ impl Engine {
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
+            );
+        }
+
+        if self.calculation_configuration.get_rho_structure_calculation() {
+            timer = std::time::Instant::now();
+            self.set_rho_structure()?;
+            println!(
+                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
             );
         }
 

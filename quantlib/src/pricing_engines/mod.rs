@@ -1,4 +1,4 @@
-pub mod option_analytic_pricer;
+pub mod equity_option_analytic_pricer;
 pub mod engine;
 pub mod calculation_result;
 pub mod pricer;

@@ -40,6 +40,14 @@ impl FxCode {
     }
 }
 
+impl Default for FxCode {
+    fn default() -> FxCode {
+        FxCode {
+            currency1: Currency::NIL,
+            currency2: Currency::NIL,
+        }
+    }
+}
 impl From<&str> for FxCode {
     fn from(code: &str) -> FxCode {
         let currency1 = Currency::from(&code[0..3]);

@@ -8,6 +8,7 @@ use crate::pricing_engines::npv_result::NpvResult;
 use crate::pricing_engines::{
     bond_pricer::BondPricer,
     equity_futures_pricer::EquityFuturesPricer,
+    equity_option_analytic_pricer::EquityOptionAnalyticPricer,
     ktbf_pricer::KtbfPricer,
     krx_yield_pricer::KrxYieldPricer,
     plain_swap_pricer::PlainSwapPricer,
@@ -36,6 +37,7 @@ pub trait PricerTrait {
 #[enum_dispatch(PricerTrait)]
 pub enum Pricer {
     EquityFuturesPricer(EquityFuturesPricer),
+    EquityOptionAnalyticPricer(EquityOptionAnalyticPricer),
     BondPricer(BondPricer),
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),

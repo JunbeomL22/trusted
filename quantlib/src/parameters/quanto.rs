@@ -1,9 +1,12 @@
 use crate::assets::fx::FxCode;
-use crate::parameters::volatilities::volatility::{
-    Volatility,
-    VolatilityTrait,
+use crate::parameters::volatilities::{
+    volatility::{
+        Volatility,
+        VolatilityTrait,
+    },
+    constant_volatility::ConstantVolatility,
 };
-use crate::definitions::Real;
+use crate::definitions::{Time, Real};
 use serde::{forward_to_deserialize_any, Deserialize, Serialize};
 use std::{
     rc::Rc,
@@ -38,10 +41,10 @@ impl Quanto {
 
     pub fn quanto_adjust(
         &self, 
-        t: Real,
+        t: Time,
         forward_moneyness: Real,
     ) -> Real {
-        self.fx_volatility.value(t, forward_moneyness) * self.correlation
+        self.fx_volatility.borrow().get_value(t, forward_moneyness) * self.correlation
     }
 
     pub fn get_underlying_code(&self) -> &String {
@@ -53,3 +56,15 @@ impl Quanto {
     }
 }
 
+impl Default for Quanto {
+    fn default() -> Quanto {
+        Quanto {
+            fx_volatility: Rc::new(RefCell::new(
+                Volatility::ConstantVolatility(ConstantVolatility::default())
+            )),
+            correlation: 0.0,
+            fx_code: FxCode::default(),
+            underlying_code: "".to_string(),
+        }
+    }
+}

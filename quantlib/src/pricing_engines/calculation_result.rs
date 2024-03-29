@@ -147,7 +147,19 @@ impl CalculationResult {
             },
         }
     }
-
+    pub fn set_single_vega(&mut self, und_code: &String, v: Real) {
+        match &mut self.vega {
+            None => {
+                let mut vega = HashMap::new();
+                vega.insert(und_code.clone(), v);
+                self.vega = Some(vega);
+            },
+            Some(vega) => {
+                vega.insert(und_code.clone(), v);
+            },
+        }
+    }
+    
     pub fn set_single_rho(&mut self, curve_code: &String, v: Real) {
         match &mut self.rho {
             None => {

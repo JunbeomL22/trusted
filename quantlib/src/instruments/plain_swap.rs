@@ -226,9 +226,6 @@ impl PlainSwap {
             code,
         })
     }
-    pub fn get_specific_type(&self) -> PlainSwapType {
-        self.specific_type
-    }
     /// By the conbination of the attributes, we can represent
     /// 1) IRS, OIS (initial and last swap amounts are all None)
     /// 2) CRS (initial and last swap amounts are all Some(Real))
@@ -541,6 +538,10 @@ impl InstrumentTrait for PlainSwap {
 
     fn get_floating_leg_currency(&self) -> Result<&Currency> {
         Ok(&self.floating_leg_currency)
+    }
+
+    fn get_specific_plain_swap_type(&self) -> Result<PlainSwapType> {
+        Ok(self.specific_type)
     }
 }
 

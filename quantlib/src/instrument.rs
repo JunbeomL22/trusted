@@ -2,19 +2,30 @@ use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
     equity_futures::EquityFutures,
-    plain_swap::PlainSwap,
+    plain_swap::{PlainSwap, PlainSwapType},
     bond_futures::BondFutures,
     ktbf::KTBF,
     fx_futures::FxFutures,
+    equity_vanilla_option::EquityVanillaOption,
 };
 use crate::definitions::Real;
-use crate::assets::currency::Currency;
+use crate::assets::{
+    currency::Currency,
+    fx::FxCode,
+};
 use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::{
     rate_index::RateIndex,
     zero_curve::ZeroCurve,
 };
-use crate::enums::{IssuerType, CreditRating, RankType, AccountingLevel, OptionType};
+use crate::enums::{
+    AccountingLevel, 
+    CreditRating, 
+    IssuerType, 
+    OptionDailySettlementType, 
+    OptionType, 
+    RankType
+};
 use crate::time::{
     conventions::PaymentFrequency,
     jointcalendar::JointCalendar,
@@ -144,10 +155,21 @@ pub trait InstrumentTrait{
         Err(anyhow!("not supported instrument type on get_strike"))
     }
 
-    fn get_option_type(&self) -> Result<&OptionType> {
+    fn get_option_type(&self) -> Result<OptionType> {
         Err(anyhow!("not supported instrument type on get_option_type"))
     }
 
+    fn get_option_daily_settlement_type(&self) -> Result<OptionDailySettlementType> {
+        Err(anyhow!("not supported instrument type on get_option_daily_settlement_type"))
+    }
+
+    fn get_fx_code(&self) -> Result<&FxCode> {
+        Err(anyhow!("not supported instrument type on get_fx_code"))
+    }
+
+    fn get_specific_plain_swap_type(&self) -> Result<PlainSwapType> {
+        Err(anyhow!("not supported instrument type on get_specific_plain_swap_type"))
+    }
 }
 
 #[enum_dispatch(InstrumentTrait)]
@@ -159,6 +181,7 @@ pub enum Instrument {
     KTBF(KTBF),
     PlainSwap(PlainSwap),
     FxFutures(FxFutures),
+    EquityVanillaOption(EquityVanillaOption),   
 }
 
 /// calculation groups for calculation optimization, 

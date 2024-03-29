@@ -26,33 +26,34 @@ use crate::enums::OptionType;
 //
 use time::OffsetDateTime;
 use anyhow::{anyhow, Context, Result};
+use core::borrow;
 use std::{
     rc::Rc,
     cell::RefCell,
     collections::HashMap,
 };
-use statrs::distribution::Normal;
+use statrs::distribution::{Normal, ContinuousCDF};
 
-pub struct OptionAnalyticPricer {
+pub struct EquityOptionAnalyticPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     equity: Rc<RefCell<Equity>>,   
-    volatility: Rc<RefCell<Volatility>>,
     futures_helper: EquityFuturesPricer,
     discount_curve: Rc<RefCell<ZeroCurve>>,
+    volatility: Rc<RefCell<Volatility>>,
     quanto: Option<Rc<RefCell<Quanto>>>,
     time_calculator: NullCalendar,
 }
 
-impl OptionAnalyticPricer {
+impl EquityOptionAnalyticPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         equity: Rc<RefCell<Equity>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>, 
-        volatility: Rc<RefCell<Volatility>>,
         discount_curve: Rc<RefCell<ZeroCurve>>,
+        volatility: Rc<RefCell<Volatility>>,
         quanto: Option<Rc<RefCell<Quanto>>>,
-    ) -> OptionAnalyticPricer {
+    ) -> EquityOptionAnalyticPricer {
         let futures_helper = EquityFuturesPricer::new(
             evaluation_date.clone(),
             equity.clone(),
@@ -60,32 +61,38 @@ impl OptionAnalyticPricer {
             borrowing_curve.clone(),
         );
 
-        OptionAnalyticPricer {
+        EquityOptionAnalyticPricer {
             evaluation_date,
             equity,
             futures_helper,
-            volatility,
             discount_curve,
+            volatility,
             quanto,
             time_calculator: NullCalendar::new(),
         }
     }
 }
 
-impl PricerTrait for OptionAnalyticPricer {
+impl PricerTrait for EquityOptionAnalyticPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        let maturity = instrument.get_maturity();
+        let maturity = instrument.get_maturity()
+            .context("(OptionAnalyticPricer:npv) Failed to get maturity")?;
         let fwd = self.futures_helper.fair_forward(&maturity)?;
-        let strike = instrument.get_strike();
+        let strike = instrument.get_strike()?;
         let forward_moneyness = strike / fwd;
         let t = self.time_calculator.get_time_difference(
             self.evaluation_date.borrow().get_date(),
             &maturity,
         );
-        let total_variance = self.volatility.borrow().total_variance(t, forward_moneyness);
-        let total_deviation = self.volatility.borrow().total_deviation(t, forward_moneyness);
+        
+        let total_variance = self.volatility
+            .borrow()
+            .total_variance(t, forward_moneyness);
+        let total_deviation = self.volatility
+            .borrow()
+            .total_deviation(t, forward_moneyness);
 
-        if instrument.get_currency() != instrument.get_underlying_currency() &&
+        if instrument.get_currency() != instrument.get_underlying_currency()? &&
         self.quanto.is_none() 
         {
             return Err(anyhow!(
@@ -95,16 +102,17 @@ impl PricerTrait for OptionAnalyticPricer {
             ));
         }
 
-        let vol = self.volatility.borrow().value(t, forward_moneyness);
+        let vol = self.volatility.borrow()
+            .get_value(t, forward_moneyness);
         let quanto_adjustment = match &self.quanto {
             Some(quanto) => {
-                vol * t * quanto.borrow().quanto_adjust()
+                vol * t * quanto.borrow().quanto_adjust(t, forward_moneyness)
             }
             None => 0.0,
         };
 
         let y = forward_moneyness.ln();
-        let option_type = instrument.get_option_type();
+        let option_type = instrument.get_option_type()?;
 
         let dsc = self.discount_curve.borrow().get_discount_factor(t)?;
 
@@ -112,8 +120,8 @@ impl PricerTrait for OptionAnalyticPricer {
         let d2 = d1 - total_deviation;
 
         let normal = Normal::new(0.0, 1.0).unwrap(); 
-        let nd1 = normal.cdf(d1);
-        let nd2 = normal.cdf(d2);
+        let nd1 = normal.cdf(d1 as f64) as Real;
+        let nd2 = normal.cdf(d2 as f64) as Real;
 
         match option_type {
             OptionType::Call => {

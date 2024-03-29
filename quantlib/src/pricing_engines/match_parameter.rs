@@ -4,6 +4,7 @@ use crate::enums::{
     CreditRating, 
     IssuerType,
     RateIndexCode,
+    OptionDailySettlementType,
 };
 use crate::instruments::plain_swap::PlainSwapType;
 //
@@ -35,6 +36,8 @@ pub struct MatchParameter {
     // But if XXX == USD, then it is String::from("USDOIS")
     crs_curve_map: HashMap<Currency, String>,
     //
+    risk_free_rate_on_currency_map: HashMap<Currency, String>,
+    //
     dummy_string: String,
 }
 
@@ -52,7 +55,7 @@ impl Default for MatchParameter {
         ), String> = HashMap::new();
 
         let crs_curve_map: HashMap<Currency, String> = HashMap::new();
-        
+        let risk_free_rate_on_currency_map: HashMap<Currency, String> = HashMap::new();
         let rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
         MatchParameter {
             collateral_curve_map,
@@ -60,6 +63,7 @@ impl Default for MatchParameter {
             bond_discount_curve_map,
             rate_index_forward_curve_map,
             crs_curve_map,
+            risk_free_rate_on_currency_map,
             dummy_string: String::from("Dummy"),
         }
     }
@@ -76,7 +80,8 @@ impl MatchParameter {
             Currency
         ), String>,
         crs_curve_map: HashMap<Currency, String>,
-        rate_index_forward_curve_map: HashMap<RateIndexCode, String>
+        rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
+        risk_free_rate_on_currency_map: HashMap<Currency, String>,
     ) -> MatchParameter {
         MatchParameter {
             collateral_curve_map,
@@ -84,14 +89,17 @@ impl MatchParameter {
             bond_discount_curve_map,
             rate_index_forward_curve_map,
             crs_curve_map,
+            risk_free_rate_on_currency_map,
             dummy_string: String::from("Dummy"),
         }
     }
 
+    /// In the cases of crs, fx products, etc, this means the base_curve
+    /// For example, if the undrlying fx is usdkrw, then crs_curve is krwcrs
     pub fn get_crs_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
             Instrument::PlainSwap(instrument) => {
-                if instrument.get_specific_type() == PlainSwapType::IRS {
+                if instrument.get_specific_plain_swap_type()? == PlainSwapType::IRS {
                     return Ok(&self.dummy_string);
                 }
 
@@ -123,7 +131,7 @@ impl MatchParameter {
     pub fn get_floating_crs_curve_name(&self, instrument: &Instrument) -> Result<&String> {
         match instrument {
             Instrument::PlainSwap(instrument) => {
-                if instrument.get_specific_type() == PlainSwapType::IRS {
+                if instrument.get_specific_plain_swap_type()? == PlainSwapType::IRS {
                     return Ok(&self.dummy_string);
                 }
                 
@@ -190,6 +198,25 @@ impl MatchParameter {
                                 Err(anyhow!(
                                     "Rate index forward curve is not found for {}",
                                     rate_index.get_code()
+                                ))
+                            }
+                        }
+                    }
+                }
+            },
+            Instrument::EquityVanillaOption(instrument) => {
+                match instrument.get_option_daily_settlement_type()? {
+                    OptionDailySettlementType::Settled => {
+                        Ok(&self.dummy_string)
+                    },
+                    OptionDailySettlementType::NotSettled => {
+                        match self.risk_free_rate_on_currency_map.get(instrument.get_currency()) {
+                            Some(curve_name) => Ok(curve_name),
+                            None => {
+                                Err(anyhow!(
+                                    "({}:{}) Risk free rate curve is not found for {} ({}).\n\
+                                    The Option's currency is {:?} but it is not found in MatchParameter.risk_free_rate_on_currency",
+                                    file!(), line!(), instrument.get_name(), instrument.get_code(), instrument.get_currency(),
                                 ))
                             }
                         }
@@ -275,7 +302,7 @@ impl MatchParameter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instruments::equity_futures::StockFutures;
+    use crate::instruments::equity_futures::EquityFutures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::assets::currency::Currency;
     use crate::enums::{RateIndexCode, CreditRating, IssuerType};
@@ -302,7 +329,7 @@ mod tests {
         ), String> = HashMap::new();
         let mut rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
 
-        let stock_futures = StockFutures::new(
+        let stock_futures = EquityFutures::new(
             100.0,
             datetime!(2021-01-01 00:00:00 +00:00),
             datetime!(2021-12-31 00:00:00 +00:00),
@@ -374,7 +401,7 @@ mod tests {
             HashMap::new(),
             rate_index_forward_curve_map,
         );
-        let stock_futures_inst = Instrument::StockFutures(stock_futures);
+        let stock_futures_inst = Instrument::EquityFutures(stock_futures);
         let irs_inst = Instrument::PlainSwap(irs);
 
         assert_eq!(
@@ -383,7 +410,7 @@ mod tests {
                 &String::from("AAPL")
             )?.clone(),
             String::from("USDGOV"),
-            "StockFutures has underlying code AAPL but it returns a curve name: {}",
+            "EquityFutures has underlying code AAPL but it returns a curve name: {}",
             match_parameter.get_collateral_curve_name(
                 &stock_futures_inst,
                 &String::from("AAPL")
@@ -393,14 +420,14 @@ mod tests {
         assert_eq!(
             match_parameter.get_discount_curve_name(&stock_futures_inst)?.clone(), 
             String::from("Dummy"),
-            "StockFutures does not need to be discounted but it returns a curve name: {}",
+            "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_discount_curve_name(&stock_futures_inst)?
         );
 
         assert_eq!(
             match_parameter.get_rate_index_curve_name(&stock_futures_inst)?.clone(), 
             String::from("Dummy"),
-            "StockFutures does not need to be discounted but it returns a curve name: {}",
+            "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_name(&stock_futures_inst)?
         );
 

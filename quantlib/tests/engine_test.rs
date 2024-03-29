@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use quantlib::instruments::stock_futures::StockFutures;
+    use quantlib::instruments::equity_futures::StockFutures;
     use quantlib::instrument::Instrument;
     use quantlib::definitions::Real;
     use quantlib::data::vector_data::VectorData;
