@@ -17,7 +17,7 @@ use crate::pricing_engines::{
 };
 use crate::parameters::{
     zero_curve::ZeroCurve,
-    volatilities::volatility::Volatility,
+    volatility::Volatility,
     quanto::Quanto,
 };
 use crate::pricing_engines::npv_result::NpvResult;

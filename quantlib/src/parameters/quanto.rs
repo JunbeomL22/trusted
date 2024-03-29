@@ -1,10 +1,10 @@
 use crate::assets::fx::FxCode;
-use crate::parameters::volatilities::{
+use crate::parameters::{
     volatility::{
         Volatility,
         VolatilityTrait,
     },
-    constant_volatility::ConstantVolatility,
+    volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::definitions::{Time, Real};
 use serde::{forward_to_deserialize_any, Deserialize, Serialize};

@@ -115,7 +115,6 @@ impl InstrumentTrait for EquityVanillaOption {
         Some(&self.maturity)
     }
 
-
     fn get_underlying_codes(&self) -> Vec<&String> {
         vec![&self.underlying_codes[0]]
     }
@@ -126,6 +125,10 @@ impl InstrumentTrait for EquityVanillaOption {
 
     fn get_option_daily_settlement_type(&self) -> Result<OptionDailySettlementType> {
         Ok(self.daily_settlement_type)
+    }
+
+    fn get_strike(&self) -> Result<Real> {
+        Ok(self.strike)
     }
     
 }

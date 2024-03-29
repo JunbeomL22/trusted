@@ -36,7 +36,7 @@ pub struct MatchParameter {
     // But if XXX == USD, then it is String::from("USDOIS")
     crs_curve_map: HashMap<Currency, String>,
     //
-    risk_free_rate_on_currency_map: HashMap<Currency, String>,
+    funding_cost_map: HashMap<Currency, String>,
     //
     dummy_string: String,
 }
@@ -55,7 +55,7 @@ impl Default for MatchParameter {
         ), String> = HashMap::new();
 
         let crs_curve_map: HashMap<Currency, String> = HashMap::new();
-        let risk_free_rate_on_currency_map: HashMap<Currency, String> = HashMap::new();
+        let funding_cost_map: HashMap<Currency, String> = HashMap::new();
         let rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
         MatchParameter {
             collateral_curve_map,
@@ -63,7 +63,7 @@ impl Default for MatchParameter {
             bond_discount_curve_map,
             rate_index_forward_curve_map,
             crs_curve_map,
-            risk_free_rate_on_currency_map,
+            funding_cost_map,
             dummy_string: String::from("Dummy"),
         }
     }
@@ -81,7 +81,7 @@ impl MatchParameter {
         ), String>,
         crs_curve_map: HashMap<Currency, String>,
         rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
-        risk_free_rate_on_currency_map: HashMap<Currency, String>,
+        funding_cost_map: HashMap<Currency, String>,
     ) -> MatchParameter {
         MatchParameter {
             collateral_curve_map,
@@ -89,7 +89,7 @@ impl MatchParameter {
             bond_discount_curve_map,
             rate_index_forward_curve_map,
             crs_curve_map,
-            risk_free_rate_on_currency_map,
+            funding_cost_map,
             dummy_string: String::from("Dummy"),
         }
     }
@@ -210,12 +210,12 @@ impl MatchParameter {
                         Ok(&self.dummy_string)
                     },
                     OptionDailySettlementType::NotSettled => {
-                        match self.risk_free_rate_on_currency_map.get(instrument.get_currency()) {
+                        match self.funding_cost_map.get(instrument.get_currency()) {
                             Some(curve_name) => Ok(curve_name),
                             None => {
                                 Err(anyhow!(
                                     "({}:{}) Risk free rate curve is not found for {} ({}).\n\
-                                    The Option's currency is {:?} but it is not found in MatchParameter.risk_free_rate_on_currency",
+                                    The Option's currency is {:?} but its curve is not found in MatchParameter.funding_cost",
                                     file!(), line!(), instrument.get_name(), instrument.get_code(), instrument.get_currency(),
                                 ))
                             }

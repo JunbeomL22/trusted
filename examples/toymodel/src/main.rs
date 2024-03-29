@@ -1,11 +1,23 @@
+use quantlib::enums::{
+    OptionDailySettlementType,
+    OptionType,
+};
 use quantlib::assets::currency::Currency;
-use quantlib::instruments::equity_futures::EquityFutures;
+use quantlib::instruments::{
+    equity_futures::EquityFutures,
+    bond::Bond,
+    equity_vanilla_option::EquityVanillaOption,
+};
 use quantlib::instrument::Instrument;
 use quantlib::definitions::Real;
 use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
-use std::hash::Hash;
+use quantlib::parameters::{
+    volatility::Volatility,
+    volatilities::constant_volatility::ConstantVolatility,
+};
+use quantlib::assets::fx::FxCode;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -14,7 +26,6 @@ use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
-use quantlib::instruments::bond::Bond;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
 use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
 use quantlib::time::calendar::Calendar;
@@ -59,6 +70,16 @@ fn main() -> Result<()> {
         zero_curve2.clone(),
     ).expect("Failed to create VectorData for KRWGOV");
 
+    let funding_curve1 = "Discount(KRW)".to_string();
+    let funding_curve_data1 = VectorData::new(
+        array![0.04, 0.04],
+        Some(dates.clone()),
+        None,
+        market_datetime.clone(),
+        Currency::KRW,
+        funding_curve1.clone(),
+    ).expect("failed to make a vector data for funding curve");
+
     // the borrowing fee curve which amounts to 0.005
     let borrowing_curve_data = VectorData::new(
         array![0.005, 0.005],
@@ -69,10 +90,36 @@ fn main() -> Result<()> {
         "KOSPI2".to_string(),
     ).expect("failed to make a vector data for borrowing fee");
 
+    //
+    // mapping construction
     let mut zero_curve_map = HashMap::new();
     zero_curve_map.insert(zero_curve1, zero_curve_data1);
     zero_curve_map.insert(zero_curve2, zero_curve_data2);
     zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
+    zero_curve_map.insert(funding_curve1.clone(), funding_curve_data1);
+
+    let equity_constant_vol1 = ValueData::new(
+        0.2,
+        market_datetime.clone(),
+        Currency::KRW,
+        "KOSPI2".to_string(),
+    ).expect("failed to make a value data for equity volatility");
+
+    let mut equity_vol_map = HashMap::new();
+    equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
+
+    let fx_str1 = "USDKRW";
+    let fx_code1 = FxCode::from(fx_str1);
+    let fx1 = ValueData::new(
+        1300.0,
+        market_datetime.clone(),
+        Currency::KRW,
+        fx_str1.to_string(),
+    ).expect("failed to make a value data for fx rate");
+    let mut fx_data_map = HashMap::new();
+    
+    fx_data_map.insert(fx_code1, fx1);
+
     
     // make a vector data for dividend ratio
     let dividend_data = VectorData::new(
@@ -206,16 +253,35 @@ fn main() -> Result<()> {
         bond_code2.to_string(),
     )?;
 
+    // option
+    let option1 = EquityVanillaOption::new(
+        285.0,
+        250_000.0,
+        datetime!(2021-01-01 00:00:00 +09:00),
+        datetime!(2024-09-14 00:00:00 +09:00),
+        datetime!(2024-09-14 00:00:00 +09:00),
+        datetime!(2024-09-14 00:00:00 +09:00),
+        vec![String::from("KOSPI2")],
+        Currency::KRW,
+        Currency::KRW,
+        OptionType::Put,
+        OptionDailySettlementType::NotSettled,
+        "KOSPI2 Call Sep21".to_string(),
+        "165XXX3".to_string(),
+    );
+
     let inst1 = Instrument::EquityFutures(stock_futures1);
     let inst2 = Instrument::EquityFutures(stock_futures2);
     let inst3: Instrument = Instrument::Bond(bond);
     let inst4: Instrument = Instrument::Bond(bond2);
+    let inst5 = Instrument::EquityVanillaOption(option1);
 
     let inst_vec = vec![
         Rc::new(inst1), 
         Rc::new(inst2), 
         Rc::new(inst3),
         Rc::new(inst4),
+        Rc::new(inst5),
         ];
 
     // make a calculation configuration
@@ -223,6 +289,7 @@ fn main() -> Result<()> {
         .with_delta_calculation(true)
         .with_gamma_calculation(true)
         .with_rho_calculation(true)
+        .with_vega_calculation(true)
         .with_div_delta_calculation(true)
         .with_rho_structure_calculation(true)
         .with_theta_calculation(true)
@@ -247,7 +314,8 @@ fn main() -> Result<()> {
     crs_curve_map.insert(Currency::KRW, "KRWCRS".to_string());
     crs_curve_map.insert(Currency::USD, "USDOIS".to_string());
 
-    let mut risk_free_rate_on_currency_map = HashMap::new();
+    let mut funding_cost_map = HashMap::new();
+    funding_cost_map.insert(Currency::KRW, funding_curve1.clone());
 
     let match_parameter = MatchParameter::new(
         collateral_curve_map,
@@ -255,7 +323,7 @@ fn main() -> Result<()> {
         bond_discount_curve_map,
         crs_curve_map,
         rate_index_curve_map,
-        risk_free_rate_on_currency_map,        
+        funding_cost_map,        
     );
 
     // make an engine
@@ -264,10 +332,13 @@ fn main() -> Result<()> {
         calculation_configuration.clone(),
         evaluation_date.clone(),
         //
-        HashMap::new(),
+        fx_data_map,
         stock_data_map,
         zero_curve_map,
         dividend_data_map,
+        equity_vol_map,
+        HashMap::new(),
+        HashMap::new(),
         HashMap::new(),
         //
         Rc::new(match_parameter),
@@ -276,11 +347,24 @@ fn main() -> Result<()> {
     engine.initialize(inst_vec)?;
     engine.calculate().context("Failed to calculate")?;
 
+    /*
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
     let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
     let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
+    //let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
     
+    println!("result1 {:?}\n", result1.borrow());
+    println!("result2 {:?}\n", result2.borrow());
+    println!("result3 {:?}\n", result3.borrow());
+    println!("result4 {:?}\n", result4.borrow());
+    //println!("result5 {:?}\n", result5.borrow());
+    */
+    let results = engine.get_calculation_result();
+    for (key, value) in results.iter() {
+        println!("{}: {:?}\n\n", key, value.borrow());
+    }
+    /*
     println!("\n165XXX1");
     println!("result1 value: {:?}", result1.borrow().get_value());
     println!("result1 delta: {:?}", result1.borrow().get_delta());
@@ -325,5 +409,6 @@ fn main() -> Result<()> {
     //println!("\n\n{:?}", result1);
     // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
     // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
+    */
     Ok(())
 }

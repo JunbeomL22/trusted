@@ -1,5 +1,6 @@
 use crate::parameters::volatilities::constant_volatility::ConstantVolatility;
 use crate::definitions::{Real, Time};
+use anyhow::Result;
 
 pub trait VolatilityTrait {
     fn get_value(&self, t: Time, forward_moneyness: Real) -> Real;
@@ -14,7 +15,7 @@ pub trait VolatilityTrait {
         left_spot_moneyness: Option<Real>,
         right_spot_moneyness: Option<Real>,
         bump: Real
-    );
+    ) -> Result<()>;
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +51,19 @@ impl Volatility {
     pub fn total_deviation(&self, t: Time, forward_moneyness: Real) -> Real {
         match self {
             Volatility::ConstantVolatility(volatility) => volatility.total_deviation(t, forward_moneyness),
+        }
+    }
+
+    pub fn bump_volatility(
+        &mut self, 
+        time1: Option<Time>,
+        time2: Option<Time>,
+        left_spot_moneyness: Option<Real>,
+        right_spot_moneyness: Option<Real>,
+        bump: Real,
+    ) -> Result<()> {
+        match self {
+            Volatility::ConstantVolatility(volatility) => volatility.bump_volatility(time1, time2, left_spot_moneyness, right_spot_moneyness, bump),
         }
     }
 }

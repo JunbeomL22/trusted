@@ -8,7 +8,6 @@ use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::parameters::{
     zero_curve::ZeroCurve,
-    volatilities::volatility::Volatility,
 };
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::InstrumentTrait;

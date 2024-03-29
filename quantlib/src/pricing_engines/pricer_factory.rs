@@ -7,7 +7,7 @@ use crate::parameters::{
     zero_curve::ZeroCurve,
     rate_index::RateIndex,
     quanto::Quanto,
-    volatilities::volatility::Volatility,
+    volatility::Volatility,
 };
 use crate::data::history_data::CloseData;
 use crate::definitions::Real;

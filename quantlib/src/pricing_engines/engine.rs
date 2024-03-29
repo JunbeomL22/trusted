@@ -3,12 +3,15 @@ use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
     quanto::Quanto,
-    volatilities::volatility::Volatility,
+    volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments, InstrumentTrait};
-use crate::definitions::{Real, Time, DELTA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT};
+use crate::definitions::{
+    Real, Time, 
+    DELTA_PNL_UNIT, VEGA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT,
+};
 use crate::assets::{
     equity::Equity,
     fx::{FX, FxCode},
@@ -75,7 +78,7 @@ impl Engine {
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
         //
-        fx_data: HashMap<String, ValueData>,
+        fx_data: HashMap<FxCode, ValueData>,
         stock_data: HashMap<String, ValueData>,
         curve_data: HashMap<String, VectorData>,
         dividend_data: HashMap<String, VectorData>,
@@ -139,15 +142,14 @@ impl Engine {
         fx_data
             .iter()
             .map(|(key, data)| {
-                let code = FxCode::from(key.as_str());
                 let rc = Rc::new(RefCell::new(
                     FX::new(
                         data.get_value(),
-                        code,
+                        key.clone(),
                         data.get_market_datetime().clone()
                     )
                 ));
-                fxs.insert(code, rc)
+                fxs.insert(key.clone(), rc)
             });
         
         let krwkrw_code = FxCode::new(Currency::KRW, Currency::KRW);
@@ -714,7 +716,12 @@ impl Engine {
                     ))?)
                     .as_ref()
                     .borrow_mut()
-                    .bump_volatility(None, None, bump_val)?;
+                    .bump_volatility(
+                        None, 
+                        None, 
+                        None,
+                        None,
+                        bump_val)?;
             }
 
             self.instruments_in_action = self.instruments
@@ -757,7 +764,13 @@ impl Engine {
                         file!(), line!(),
                         vol_code, self.err_tag
                     ))?).as_ref().borrow_mut()
-                    .bump_volatility(None, None, -bump_val)?;
+                    .bump_volatility(
+                        None, 
+                        None, 
+                        None,
+                        None,
+                        -bump_val
+                    )?;
             }
         }
         Ok(())
