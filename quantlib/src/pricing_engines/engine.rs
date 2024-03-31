@@ -102,7 +102,9 @@ impl Engine {
                     &data,
                     String::from(&key),
                     String::from(&key),
-                ).with_context(|| anyhow!("failed to create zero curve {}", key))?
+                ).with_context(|| anyhow!(
+                "({}:{}) failed to create zero curve {}", 
+                file!(), line!(), key))?
             ));
             zero_curves.insert(key.to_string(), zero_curve.clone());
 
@@ -118,7 +120,8 @@ impl Engine {
         for (key, data) in dividend_data.into_iter() {
             let spot = stock_data.get(&key)
                 .with_context(|| anyhow!(
-                    "failed to get dividend to match stock data for {}", key))?
+                    "({}:{}) failed to get dividend to match stock data for {}", 
+                    file!(), line!(), key))?
                 .get_value();
 
             let dividend = Rc::new(RefCell::new(

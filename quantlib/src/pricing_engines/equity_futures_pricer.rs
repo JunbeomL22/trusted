@@ -6,9 +6,7 @@ use crate::assets::{
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
-use crate::parameters::{
-    zero_curve::ZeroCurve,
-};
+use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::InstrumentTrait;
 //
@@ -20,6 +18,7 @@ use std::{
     collections::HashMap,
 };
 
+#[derive(Debug, Clone)]
 pub struct EquityFuturesPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     equity: Rc<RefCell<Equity>>,

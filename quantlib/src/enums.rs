@@ -116,3 +116,23 @@ pub enum OptionDailySettlementType {
     Settled,
     NotSettled,
 }
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum StickynessType {
+    StickyToMoneyness,
+    StickyToStrike,
+}
+
+impl Default for StickynessType {
+    fn default() -> StickynessType {
+        StickynessType::StickyToMoneyness
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum VanillaOptionCalculationMethod {
+    MonteCarlo = 0,
+    FiniteDifference = 1,
+    Analytic = 2,
+}

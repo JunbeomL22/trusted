@@ -73,17 +73,21 @@ impl ZeroCurve {
         
         if rate_times.len() != zero_rates.len() {
             let error = anyhow!(
-                "input data length mismatch\n\
+                "({}:{}) input data length mismatch\n\
                 name = {}\n\
                 data = {:?}\n\
                 zero_rates = {:?}\n\
                 rate_times = {:?}", 
+                file!(), line!(),
                 name, data, zero_rates, rate_times);
             return Err(error)
         }
         
         if zero_rates.len() < 1 {
-            let error = anyhow!("name = {} zero_rates = {:?} data = {:?}", name, zero_rates, data);
+            let error = anyhow!(
+                "({}:{}) name = {} zero_rates = {:?} data = {:?}", 
+                file!(), line!(),
+                name, zero_rates, data);
             return Err(error)
         }
 

@@ -52,6 +52,12 @@ pub enum Currency {
     ZMW
 }
 
+impl std::fmt::Display for Currency {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Implement the formatting logic for Currency here
+        write!(f, "{}", self.as_str())
+    }
+}
 //implment from<&str> for Currency
 impl From<&str> for Currency {
     fn from(s: &str) -> Self {

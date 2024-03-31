@@ -18,7 +18,7 @@ pub struct VectorData {
     value: Array1<Real>,
     dates: Option<Vec<OffsetDateTime>>,
     times: Array1<Time>,
-    market_datetime: OffsetDateTime,
+    market_datetime: Option<OffsetDateTime>,
     #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     currency: Currency,
@@ -71,7 +71,7 @@ impl VectorData {
         value: Array1<Real>, 
         dates: Option<Vec<OffsetDateTime>>, 
         times: Option<Array1<Time>>,
-        market_datetime: OffsetDateTime, 
+        market_datetime: Option<OffsetDateTime>, 
         currency: Currency,
         name: String
     ) -> Result<VectorData> {
@@ -165,9 +165,9 @@ impl VectorData {
         market_datetime: Option<OffsetDateTime>
     ) -> Result<()> {
         self.value = value;
-        if let Some(market_datetime) = market_datetime {
-            self.market_datetime = market_datetime;
-        }
+        
+        self.market_datetime = market_datetime;
+        
 
         if let Some(times) = times {
             self.times = times;
@@ -245,6 +245,20 @@ impl VectorData {
         self.notify_observers();
         Ok(())
     }
+}
+
+#[macro_export]
+macro_rules! vectordata {
+    ($value:expr, $currency:expr, $name:expr) => {
+        VectorData::new(
+            Array1::from(vec![$value]),
+            None,
+            Some(Array1::from(vec![1.0])),
+            None,
+            $currency,
+            String::from($name),
+        )
+    };
 }
 
 impl AddAssign<Real> for VectorData {

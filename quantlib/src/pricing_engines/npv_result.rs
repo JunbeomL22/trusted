@@ -4,16 +4,48 @@ use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 use std::ops::{Add, Sub, Mul, Div};
-
+use crate::utils::number_format::write_number_with_commas;
 /// NPV result
 /// npv: Real
 /// coupon_amounts: id -> (datetimes, amount)
 /// coupon_paymeent_probability: id -> (datetime, probability)
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct NpvResult {
     npv: Real,
     cashflow_amounts: HashMap<usize, (OffsetDateTime, Real)>,
     cashflow_probabilities: HashMap<usize, (OffsetDateTime, Real)>,
+}
+
+impl std::fmt::Debug for NpvResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "")?;
+        write!(f, "    npv: ")?;
+        write_number_with_commas(f, self.npv)?;
+        writeln!(f)?;
+        
+        let mut keys = self.cashflow_amounts.keys().collect::<Vec<&usize>>();
+        keys.sort();
+        writeln!(f, "    cashflow_amounts: ")?;
+        for key in keys.iter() {
+            let (datetime, amount) = self.cashflow_amounts.get(key).unwrap();
+            write!(f, "        {}: ({:?}, ", key, datetime.date())?;
+            write_number_with_commas(f, *amount)?;
+            writeln!(f, ")")?;
+        }
+        writeln!(f, "")?;
+        
+        let mut keys = self.cashflow_probabilities.keys().collect::<Vec<&usize>>();
+        keys.sort();
+        writeln!(f, "    cashflow_probabilities: ")?;
+        for key in keys.iter() {
+            let (datetime, probability) = self.cashflow_probabilities.get(key).unwrap();
+            write!(f, "        {}: ({:?}, ", key, datetime.date())?;
+            write_number_with_commas(f, *probability)?;
+            writeln!(f, ")")?;
+        }
+        write!(f, "")
+        //writeln!(f, "}}")
+    }
 }
 
 impl NpvResult {

@@ -43,12 +43,12 @@ impl VolatilityTrait for ConstantVolatility {
         &self.code
     }
 
-    fn total_variance(&self, t: Time, _x: Real) -> Real {
-        self.value * self.value * t
+    fn total_variance(&self, t: Time, _x: Real) -> Result<Real> {
+        Ok(self.value * self.value * t)
     }
 
-    fn total_deviation(&self, t: Time, _x: Real) -> Real {
-        self.value * t.sqrt()
+    fn total_deviation(&self, t: Time, _x: Real) -> Result<Real> {
+        Ok(self.value * t.sqrt())
     }
 
     fn bump_volatility(

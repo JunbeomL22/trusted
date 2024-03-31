@@ -17,6 +17,18 @@ pub struct BilinearInterpolator
     t_domain_extrapolation_type: ExtraPolationType,
 }
 
+impl Default for BilinearInterpolator
+{
+    fn default() -> BilinearInterpolator {
+        BilinearInterpolator {
+            t_domain: Array1::default(0),
+            x_interpolator: Vec::new(),
+            t_domain_allow_extrapolation: false,
+            t_domain_extrapolation_type: ExtraPolationType::Flat,
+        }
+    }
+}
+
 impl BilinearInterpolator {
     pub fn new(
         t_domain: Array1<Real>,

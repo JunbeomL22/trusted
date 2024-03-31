@@ -1,25 +1,8 @@
 use crate::definitions::{Real, Integer};
+use crate::enums::{StickynessType, VanillaOptionCalculationMethod};
 use serde::{Serialize, Deserialize};
 use anyhow::{anyhow, Result};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum StickynessType {
-    StickyToMoneyness,
-    StickyToStrike,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum LocalVolatilityInterplator {
-    AndreasenHuge,
-    Dupire,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
-pub enum VanillaOptionCalculationMethod {
-    MonteCarlo = 0,
-    FiniteDifference = 1,
-    Analytic = 2,
-}
+use ndarray::Array1;
 /// CalculationConfiguration is a struct that holds the configuration of the calculation.
 /// stickyness_type: StickynessType
 /// StickynessType is an enum that represents the stickyness of the calculation.
@@ -28,22 +11,25 @@ pub enum VanillaOptionCalculationMethod {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CalculationConfiguration {
     npv: bool,
+    fx_exposure: bool,
     delta: bool,
     gamma: bool,
     vega: bool,
-    vega_strucure: bool,
-    theta: bool,
     rho: bool,
-    rho_structure: bool,
     div_delta: bool,
+    theta: bool,
+    vega_strucure: bool,
+    rho_structure: bool,
     div_structure: bool,
-    fx_exposure: bool,
+    vega_matrix: bool,
     //
     stickyness_type: StickynessType,
     //
     delta_bump_ratio: Real,
     gamma_bump_ratio: Real,
     vega_bump_value: Real,
+    vega_structure_bump_value: Real,
+    vega_matrix_bump_value: Real,
     rho_bump_value: Real,
     div_bump_value: Real,
     theta_day: Integer,
@@ -51,6 +37,7 @@ pub struct CalculationConfiguration {
     rho_structure_tenors: Vec<String>,
     vega_structure_tenors: Vec<String>,
     div_structure_tenors: Vec<String>,
+    vega_matrix_spot_moneyness: Array1<Real>,
     // 
     vanilla_option_calculation_method: VanillaOptionCalculationMethod,
 }
@@ -95,28 +82,33 @@ impl Default for CalculationConfiguration {
             "2Y".to_string(),
             "3Y".to_string(),
             ];
+        let vega_matrix_spot_moneyness = Array1::linspace(0.6, 1.4, 17)
         CalculationConfiguration {
             npv: true,
+            fx_exposure: true,
             delta: false,
             gamma: false,
             vega: false,
-            vega_strucure: false,
-            theta: false,
             rho: false,
-            rho_structure: false,
             div_delta: false,
+            theta: false,
+            vega_strucure: false,
+            rho_structure: false,
             div_structure: false,
-            fx_exposure: true,
+            vega_matrix: false,
             stickyness_type: StickynessType::StickyToMoneyness,
             delta_bump_ratio: 0.01,
             gamma_bump_ratio: 0.01,
             vega_bump_value: 0.01,
+            vega_structure_bump_value: 0.01,
+            vega_matrix_bump_value: 0.001,
             rho_bump_value: 0.0001,
             div_bump_value: 0.0001,
             theta_day: 1,
             rho_structure_tenors: rho_tenors,
             vega_structure_tenors: vega_tenors,
             div_structure_tenors: div_tenors,
+            vega_matrix_spot_moneyness,
             vanilla_option_calculation_method: VanillaOptionCalculationMethod::Analytic,
         }
     }
@@ -125,27 +117,31 @@ impl Default for CalculationConfiguration {
 impl CalculationConfiguration {
     pub fn new(
         npv: bool,
+        fx_exposure: bool,
         delta: bool,
         gamma: bool,
         vega: bool,
-        vega_strucure: bool,
-        theta: bool,
         rho: bool,
-        rho_structure: bool,
         div_delta: bool,
+        theta: bool,
+        vega_strucure: bool,
+        rho_structure: bool,
         div_structure: bool,
-        fx_exposure: bool,
+        vega_matrix: bool,
         theta_day: Integer,
         stickyness_type: StickynessType,
         delta_bump_ratio: Real,
         gamma_bump_ratio: Real,
         vega_bump_value: Real,
+        vega_structure_bump_value: Real,
+        vega_matrix_bump_value: Real,
         rho_bump_value: Real,
         div_bump_value: Real,
         //
         rho_structure_tenors: Vec<String>,
         vega_structure_tenors: Vec<String>,
         div_structure_tenors: Vec<String>,
+        vega_matrix_spot_moneyness: Array1<Real>,
         //
         vanilla_option_calculation_method: VanillaOptionCalculationMethod,
     ) -> Result<CalculationConfiguration> {
@@ -164,6 +160,15 @@ impl CalculationConfiguration {
         if vega_bump_value <= 0.0 {
             return Err(anyhow!("vega_bump must be > 0.0, got {}", vega_bump_value));
         }
+
+        if vega_structure_bump_value <= 0.0 {
+            return Err(anyhow!("vega_structure_bump_value must be > 0.0, got {}", vega_structure_bump_value));
+        }
+
+        if vega_matrix_bump_value <= 0.0 {
+            return Err(anyhow!("vega_matrix_bump_value must be > 0.0, got {}", vega_matrix_bump_value));
+        }
+
         if theta_day <= 0 {
             return Err(anyhow!("theta_day must be > 0, got {}", theta_day));
         }
@@ -174,26 +179,30 @@ impl CalculationConfiguration {
         
         Ok(CalculationConfiguration {
             npv,
+            fx_exposure,
             delta,
             gamma,
             vega,
-            vega_strucure,
-            theta,
             rho,
             div_delta, 
+            theta,
+            vega_strucure,
             div_structure,
             rho_structure,
-            fx_exposure,
+            vega_matrix,
             stickyness_type,
             delta_bump_ratio,
             gamma_bump_ratio,
             vega_bump_value,
+            vega_structure_bump_value,
+            vega_matrix_bump_value,
             rho_bump_value,
             div_bump_value,
             theta_day,
             rho_structure_tenors,
             vega_structure_tenors,
             div_structure_tenors,
+            vega_matrix_spot_moneyness,
             //
             vanilla_option_calculation_method,
         })
@@ -221,6 +230,11 @@ impl CalculationConfiguration {
 
     pub fn with_vega_structure_calculation(mut self, vega_structure: bool) -> CalculationConfiguration {
         self.vega_strucure = vega_structure;
+        self
+    }
+
+    pub fn with_vega_matrix_calculation(mut self, vega_matrix: bool) -> CalculationConfiguration {
+        self.vega_matrix = vega_matrix;
         self
     }
 
@@ -269,6 +283,16 @@ impl CalculationConfiguration {
         self
     }
 
+    pub fn with_vega_structure_bump_value(mut self, vega_structure_bump_value: Real) -> CalculationConfiguration {
+        self.vega_structure_bump_value = vega_structure_bump_value;
+        self
+    }
+
+    pub fn with_vega_matrix_bump_value(mut self, vega_matrix_bump_value: Real) -> CalculationConfiguration {
+        self.vega_matrix_bump_value = vega_matrix_bump_value;
+        self
+    }
+    
     pub fn with_rho_bump_value(mut self, rho_bump_value: Real) -> CalculationConfiguration {
         self.rho_bump_value = rho_bump_value;
         self
@@ -286,6 +310,11 @@ impl CalculationConfiguration {
 
     pub fn with_div_structure_tenors(mut self, div_structure_tenors: Vec<String>) -> CalculationConfiguration {
         self.div_structure_tenors = div_structure_tenors;
+        self
+    }
+
+    pub fn with_vega_matrix_spot_moneyness(mut self, vega_matrix_spot_moneyness: Array1<Real>) -> CalculationConfiguration {
+        self.vega_matrix_spot_moneyness = vega_matrix_spot_moneyness;
         self
     }
 

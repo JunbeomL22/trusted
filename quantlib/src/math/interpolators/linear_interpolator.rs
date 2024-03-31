@@ -15,6 +15,19 @@ pub struct LinearInterpolator1D
     allow_extrapolation: bool,
 }
 
+impl Default for LinearInterpolator1D
+{
+    fn default() -> LinearInterpolator1D {
+        LinearInterpolator1D {
+            domain: Array1::default(0),
+            value: Array1::default(0),
+            derivatives: Array1::default(0),
+            extrapolation_type: ExtraPolationType::Flat,
+            allow_extrapolation: false,
+        }
+    }
+}
+
 impl LinearInterpolator1D
 {
     pub fn new(

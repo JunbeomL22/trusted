@@ -2,10 +2,12 @@ use crate::instruments::instrument_info::InstrumentInfo;
 use crate::assets::currency::Currency;
 use crate::definitions::{Real, Integer};
 use crate::pricing_engines::npv_result::NpvResult;
+use crate::utils::number_format::write_number_with_commas;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
 /// instrument: InstrumentInfo
@@ -18,7 +20,7 @@ use time::OffsetDateTime;
 /// mostly pnl -> value_2 - value_1 +cashflow_inbetween
 /// all greeks are calculated based on value not the npv in other words, considering unit_notional
 /// fx_exposure: Option<Real>:
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct CalculationResult {
     instrument_info: Option<InstrumentInfo>,
     evaluation_date: Option<OffsetDateTime>,
@@ -60,6 +62,131 @@ impl Default for CalculationResult {
             cashflows: None,
             representation_currency: None,
         }
+    }
+}
+
+
+impl std::fmt::Debug for CalculationResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f,"")?;
+        if let Some(ref info) = self.instrument_info {
+            writeln!(f, " * instrument  {:?}", info)?;
+        }
+        if let Some(ref date) = self.evaluation_date {
+            writeln!(f, " * evaluation_date: {:?}\n", date.date())?;
+        }
+        if let Some(ref result) = self.npv_result {
+            writeln!(f, " * npv_result: {:?}", result)?;
+        }
+        if let Some(value) = self.value {
+            write!(f, " * value: ")?;
+            write_number_with_commas(f, value)?;
+            writeln!(f, "\n")?;
+        }
+        if let Some(ref exposure) = self.fx_exposure {
+            writeln!(f, " * fx_exposure: ")?;
+            for (currency, value) in exposure {
+                write!(f, "        {}: ", currency)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+        if let Some(ref delta) = self.delta {
+            writeln!(f, " * delta: ")?;
+            for (key, value) in delta {
+                write!(f, "        {}: ", key)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+        // Similar formatting for gamma, vega, vega_structure, theta, div_delta, div_structure, rho, rho_structure
+        if let Some(ref gamma) = self.gamma {
+            writeln!(f, " * gamma: ")?;
+            for (key, value) in gamma {
+                write!(f, "        {}: ", key)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(ref vega) = self.vega {
+            writeln!(f, " * vega: ")?;
+            for (key, value) in vega {
+                write!(f, "        {}: ", key)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(ref theta) = self.theta {
+            write!(f, " * theta: ")?;
+            write_number_with_commas(f, *theta)?;
+            writeln!(f, "")?;
+        }
+        writeln!(f, "")?;
+
+        if let Some(ref rho) = self.rho {
+            writeln!(f, " * rho: ")?;
+            for (key, value) in rho {
+                write!(f, "        {}: ", key)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(ref rho_structure) = self.rho_structure {
+            writeln!(f, " * rho_structure: ")?;
+            for (key, value) in rho_structure {
+                let vector_sum = value.iter().sum::<Real>();
+                write!(f, "        {} (sum = ", key)?;
+                write_number_with_commas(f, vector_sum)?;
+                write!(f, "): ")?;
+
+                for v in value {
+                    write_number_with_commas(f, *v)?;
+                    write!(f, " ")?;
+                }
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(div_delta) = self.div_delta.as_ref() {
+            writeln!(f, " * div_delta: ")?;
+            for (key, value) in div_delta {
+                write!(f, "        {}: ", key)?;
+                write_number_with_commas(f, *value)?;
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(div_structure) = self.div_structure.as_ref() {
+            writeln!(f, " * div_structure: ")?;
+            for (key, value) in div_structure {
+                let vector_sum = value.iter().sum::<Real>();
+                write!(f, "        {} (sum = ", key)?;
+                write_number_with_commas(f, vector_sum)?;
+                write!(f, "): ")?;
+
+                for v in value {
+                    write_number_with_commas(f, *v)?;
+                    write!(f, " ")?;
+                }
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
+        if let Some(ref currency) = self.representation_currency {
+            writeln!(f, " * representation_currency: {:?}", currency)?;
+        }
+        writeln!(f, "===========================================================")
     }
 }
 

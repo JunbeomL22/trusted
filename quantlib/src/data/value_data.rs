@@ -16,7 +16,7 @@ use anyhow::Result;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ValueData {
     value: Real,
-    market_datetime: OffsetDateTime,
+    market_datetime: Option<OffsetDateTime>,
     #[serde(skip)]
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     currency: Currency,
@@ -58,7 +58,7 @@ impl Observable for ValueData {
 impl ValueData {
     pub fn new(
         value: Real, 
-        market_datetime: OffsetDateTime, 
+        market_datetime: Option<OffsetDateTime>, 
         currency: Currency,
         name: String
     ) -> Result<ValueData> {
@@ -71,7 +71,7 @@ impl ValueData {
         })
     }
 
-    fn reset_data(&mut self, value: Real, market_datetime: OffsetDateTime) {
+    fn reset_data(&mut self, value: Real, market_datetime: Option<OffsetDateTime>) {
         self.value = value;
         self.market_datetime = market_datetime;
         self.notify_observers();
@@ -81,7 +81,7 @@ impl ValueData {
         self.value
     }
 
-    pub fn get_market_datetime(&self) -> &OffsetDateTime {
+    pub fn get_market_datetime(&self) -> &Option<OffsetDateTime> {
         &self.market_datetime
     }
 
@@ -101,6 +101,13 @@ impl Add<Real> for ValueData {
         self.notify_observers();
         self
     }
+}
+
+#[macro_export]
+macro_rules! valuedata {
+    ($value:expr, $currency:expr, $name:expr) => {
+        ValueData::new($value, None, $currency, $name.to_string())
+    };
 }
 
 impl Sub<Real> for ValueData {

@@ -1,10 +1,11 @@
-use std::fmt::Debug;
 use crate::assets::currency::Currency;
+use crate::definitions::Real;
+use crate::utils::number_format::write_number_with_commas;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use crate::definitions::Real;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstrumentInfo {
     name: String,
     code: String,
@@ -23,6 +24,24 @@ impl Default for InstrumentInfo {
             currency: Currency::NIL,
             unit_notional: 1.0,
             maturity: None,
+        }
+    }
+}
+
+impl std::fmt::Debug for InstrumentInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "")?;
+        writeln!(f, "    name: {:?},", self.name)?;
+        writeln!(f, "    code: {:?},", self.code)?;
+        writeln!(f, "    instrument_type: {:?},", self.instrument_type)?;
+        writeln!(f, "    currency: {:?},", self.currency)?;
+        write!(f, "    unit_notional: ")?;
+        write_number_with_commas(f, self.unit_notional)?;
+        writeln!(f)?;
+        if let Some(maturity) = self.maturity {
+            writeln!(f, "    maturity: {:?}", maturity.date())
+        } else {
+            writeln!(f, "    maturity: None")
         }
     }
 }
