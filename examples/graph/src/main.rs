@@ -63,7 +63,7 @@ fn main() -> Result<()> {
         array![0.02, 0.025, 0.03, 0.035, 0.04],
         Some(dates.clone()), 
         None, 
-        param_dt, 
+        Some(param_dt), 
         Currency::KRW,
         "vector data in test_zero_curve".to_string(),
     ).with_context(|| "Failed to create VectorData.")?;

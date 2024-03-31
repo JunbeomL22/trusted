@@ -630,7 +630,7 @@ mod tests {
         )?;
 
         assert_eq!(
-            crs.get_specific_type(),
+            crs.get_specific_plain_swap_type()?,
             PlainSwapType::CRS,
         );
 
@@ -638,7 +638,7 @@ mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            issue_date.clone(),
+            Some(issue_date.clone()),
             Currency::USD,
             "USDIRS".to_string(),
         )?;
@@ -750,7 +750,7 @@ mod tests {
         let fixed_cashflows = fx_swap.get_fixed_cashflows(&issue_date)?;
         let floating_cashflows = fx_swap.get_floating_cashflows(&issue_date, None, None)?;
         assert_eq!(
-            fx_swap.get_specific_type(),
+            fx_swap.get_specific_plain_swap_type()?,
             PlainSwapType::FxSwap
         );
 
@@ -845,7 +845,7 @@ mod tests {
             "MockCode".to_string(),
         )?;
         assert_eq!(
-            fx_spot.get_specific_type(),
+            fx_spot.get_specific_plain_swap_type()?,
             PlainSwapType::FxSpot
         );
 

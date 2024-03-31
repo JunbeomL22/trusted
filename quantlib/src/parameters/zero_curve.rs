@@ -249,7 +249,7 @@ impl ZeroCurve {
             array![0.0],
             Some(vec![datetime!(2080-01-01 00:00:00 UTC)]), // dummy date
             None, 
-            evaluation_date.borrow().get_date_clone(), 
+            Some(evaluation_date.borrow().get_date_clone()),
             Currency::NIL,
             "dummy curve in ZeroCurve::null_curve".to_string()
         ).with_context(|| "error in ZeroCurve::dummy_curve")?;
@@ -512,7 +512,7 @@ mod tests {
             array![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
             Some(dates.clone()), 
             None, 
-            param_dt, 
+            Some(param_dt), 
             Currency::NIL,
             "vector data in test_zero_curve".to_string()
         ).expect("error in test_zero_curve");

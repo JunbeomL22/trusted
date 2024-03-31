@@ -420,7 +420,7 @@ mod tests {
         instrument::Instrument,
         instruments::{
             instrument_info::InstrumentInfo, 
-            equity_futures::Equityutures
+            equity_futures::EquityFutures
         },
     };
     use time::macros::datetime;
@@ -439,7 +439,7 @@ mod tests {
 
     #[test] // test serialization
     fn test_calculation_result_serialization() {
-        let stock_futures = StockFutures::new(
+        let equity_futures = EquityFutures::new(
             300.0,
             datetime!(2021-01-01 09:00:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
@@ -453,7 +453,7 @@ mod tests {
             "KOSPI200".to_string(),
         );
 
-        let inst = Instrument::StockFutures(stock_futures);
+        let inst = Instrument::EquityFutures(equity_futures);
 
         let fut_trait = inst;
         let name = fut_trait.get_name();

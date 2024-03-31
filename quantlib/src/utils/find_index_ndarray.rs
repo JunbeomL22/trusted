@@ -68,6 +68,10 @@ mod tests {
         let arr = Array1::from(vec![1.0, 2.0, 6.0, 9.0, 11.0]);
         let index = binary_search_index_ndarray(&arr, 10.0);
         assert_eq!(index, 3);
+        let index = binary_search_index_ndarray(&arr, 0.0);
+        assert_eq!(index, 0);
+        let index = binary_search_index_ndarray(&arr, 1.2);
+        assert_eq!(index, 0);
     }
 
     #[test]

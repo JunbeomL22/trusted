@@ -55,7 +55,7 @@ fn main() -> Result<()> {
         &value - 0.0005, 
         Some(dates.clone()), 
         times.clone(), 
-        market_datetime, 
+        Some(market_datetime), 
         Currency::KRW,
         zero_curve1.clone(),
     ).expect("Failed to create VectorData for KSD");
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
         value,
         Some(dates.clone()), 
         times, 
-        market_datetime, 
+        Some(market_datetime), 
         Currency::KRW,
         zero_curve2.clone(),
     ).expect("Failed to create VectorData for KRWGOV");
@@ -75,7 +75,7 @@ fn main() -> Result<()> {
         array![0.04, 0.04],
         Some(dates.clone()),
         None,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         funding_curve1.clone(),
     ).expect("failed to make a vector data for funding curve");
@@ -85,7 +85,7 @@ fn main() -> Result<()> {
         array![0.005, 0.005],
         Some(dates.clone()),
         None,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         "KOSPI2".to_string(),
     ).expect("failed to make a vector data for borrowing fee");
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
 
     let equity_constant_vol1 = ValueData::new(
         0.2,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         "KOSPI2".to_string(),
     ).expect("failed to make a value data for equity volatility");
@@ -112,7 +112,7 @@ fn main() -> Result<()> {
     let fx_code1 = FxCode::from(fx_str1);
     let fx1 = ValueData::new(
         1300.0,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         fx_str1.to_string(),
     ).expect("failed to make a value data for fx rate");
@@ -126,7 +126,7 @@ fn main() -> Result<()> {
         Array1::from(vec![3.0, 3.0]),
         Some(vec![datetime!(2024-06-01 00:00:00 +09:00), datetime!(2025-01-01 00:00:00 +09:00)]),
         None,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         "KOSPI2".to_string(),
     ).expect("failed to make a vector data for dividend ratio");
@@ -137,7 +137,7 @@ fn main() -> Result<()> {
     // make a stock data
     let stock_data = ValueData::new(
         spot,
-        market_datetime.clone(),
+        Some(market_datetime),
         Currency::KRW,
         "KOSPI2".to_string(),
     ).expect("failed to make a stock data");

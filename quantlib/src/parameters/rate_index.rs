@@ -280,7 +280,7 @@ mod tests {
             array![0.03, 0.03],
             None,
             Some(array![0.1, 0.2]),
-            dt.clone(),
+            Some(dt.clone()),
             Currency::USD,
             "USDOIS".to_string(),
         )?;

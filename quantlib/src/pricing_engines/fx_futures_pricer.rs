@@ -134,7 +134,7 @@ mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            eval_date.clone(),
+            Some(eval_date),
             Currency::KRW,
             "USDOIS".to_string(),
         )?;
@@ -152,7 +152,7 @@ mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            eval_date.clone(),
+            Some(eval_date),
             Currency::KRW,
             "KRWCRS".to_string(),
         )?;

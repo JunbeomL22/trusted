@@ -47,7 +47,7 @@ mod tests {
             value, 
             Some(dates), 
             times, 
-            market_datetime, 
+            Some(market_datetime), 
             Currency::KRW,
             name
         ).expect("Failed to create VectorData for zero curve");
@@ -77,7 +77,7 @@ mod tests {
             value, 
             Some(dates.clone()), 
             times, 
-            market_datetime, 
+            Some(market_datetime), 
             Currency::KRW,
             name
         ).expect("Failed to create VectorData for dividend amount");

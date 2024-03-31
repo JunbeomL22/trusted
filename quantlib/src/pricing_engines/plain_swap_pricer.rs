@@ -313,8 +313,10 @@ pub mod tests {
             "MockCode".to_string(),
         )?;
 
+        let inst = Instrument::PlainSwap(crs);
+
         assert_eq!(
-            crs.get_specific_type(),
+            inst.get_specific_plain_swap_type()?,
             PlainSwapType::CRS,
         );
 
@@ -322,7 +324,7 @@ pub mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            issue_date.clone(),
+            None,//issue_date.clone(),
             Currency::USD,
             "USDIRS".to_string(),
         )?;
@@ -340,7 +342,7 @@ pub mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            issue_date.clone(),
+            None,
             Currency::KRW,
             "KRWCRS".to_string(),
         )?;
@@ -371,7 +373,7 @@ pub mod tests {
             Some(floating_to_fixed_fx.clone()),
         )?;
 
-        let inst = Instrument::PlainSwap(crs);
+
         let npv_result = pricer.npv_result(&inst)?;
         let npv = pricer.npv(&inst)?;
         let fx_exposure = pricer.fx_exposure(
@@ -485,7 +487,7 @@ pub mod tests {
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            issue_date.clone(),
+            None,
             Currency::KRW,
             "KRWIRS".to_string(),
         )?;

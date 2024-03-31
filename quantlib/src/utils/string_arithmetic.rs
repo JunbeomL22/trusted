@@ -22,13 +22,13 @@ pub fn from_period_string_to_float(period: &str) -> Result<Time> {
         let value = cap[1].parse::<Time>().unwrap();
         let unit = &cap[2];
         match unit {
-            "Y" => result += value * 365.0 * 24.0 * 60.0 * 60.0,
-            "M" => result += value * 30.5 * 24.0 * 60.0 * 60.0,
-            "W" => result += value * 7.0 * 24.0 * 60.0 * 60.0,
-            "D" => result += value * 24.0 * 60.0 * 60.0,
-            "h" => result += value * 60.0 * 60.0,
-            "min" => result += value * 60.0,
-            "sec" => result += value,
+            "Y" => result += value,
+            "M" => result += value * 30.5 / 365.25,
+            "W" => result += value * 7.0 / 365.25,
+            "D" => result += value / 365.25,
+            "h" => result += value / (365.25 * 24.0),
+            "min" => result += value / (365.25 * 24.0 * 60.0),
+            "sec" => result += value / (365.25 * 24.0 * 60.0 * 60.0),
             _ => {
                 return Err(anyhow!(
                             "{}:{} (from_period_string_to_float) Invalid unit", 

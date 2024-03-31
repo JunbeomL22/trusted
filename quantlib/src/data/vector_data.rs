@@ -93,6 +93,16 @@ impl VectorData {
                 ));
             }
             
+            let market_datetime = match market_datetime {
+                Some(market_datetime) => market_datetime,
+                None => {
+                    return Err(anyhow!(
+                        "({}:{}) the dates in VectorData of {} is not None, but market_datetime is None\n\
+                        Thus, it is vague to calculate the time difference between market_datetime and dates",
+                        file!(), line!(), name
+                    ));
+                }
+            };
             let time_calculator = NullCalendar::default();
             let times: Array1<Time> = dates
             .iter()
@@ -103,7 +113,7 @@ impl VectorData {
                 value,
                 dates: Some(dates.to_vec()),
                 times: times,
-                market_datetime: market_datetime,
+                market_datetime: Some(market_datetime),
                 observers: Vec::new(),
                 currency: currency,
                 name: name,
@@ -172,10 +182,21 @@ impl VectorData {
         if let Some(times) = times {
             self.times = times;
         } else if let Some(dates) = dates {
+            let market_datetime = match market_datetime {
+                Some(market_datetime) => market_datetime,
+                None => {
+                    return Err(anyhow!(
+                        "({}:{}) the dates in VectorData of {} is not None, but market_datetime is None\n\
+                        Thus, it is vague to calculate the time difference between market_datetime and dates",
+                        file!(), line!(), self.name
+                    ));
+                }
+            };
+
             let time_calculator = NullCalendar::default();
             self.times = (&dates)
             .iter()
-            .map(|date| time_calculator.get_time_difference(&self.market_datetime, &date))
+            .map(|date| time_calculator.get_time_difference(&market_datetime, &date))
             .collect();
         }
 
@@ -245,20 +266,6 @@ impl VectorData {
         self.notify_observers();
         Ok(())
     }
-}
-
-#[macro_export]
-macro_rules! vectordata {
-    ($value:expr, $currency:expr, $name:expr) => {
-        VectorData::new(
-            Array1::from(vec![$value]),
-            None,
-            Some(Array1::from(vec![1.0])),
-            None,
-            $currency,
-            String::from($name),
-        )
-    };
 }
 
 impl AddAssign<Real> for VectorData {
@@ -380,7 +387,7 @@ mod tests {
             array![1.0, 2.0, 3.0, 4.0, 5.0], 
             None, 
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
-            datetime!(2020-01-01 00:00:00 UTC), 
+            None,//datetime!(2020-01-01 00:00:00 UTC), 
             Currency::KRW,
             "test_vector_data_serialization".to_string()
         ).expect("failed to create VectorData");
@@ -403,7 +410,7 @@ mod tests {
             array![0.0, 1.0, 2.0, 3.0, 4.0],
             None, 
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
-            datetime!(2020-01-01 00:00:00 UTC), 
+            Some(datetime!(2020-01-01 00:00:00 UTC)), 
             Currency::KRW,
             "test_bump_value_time_interval".to_string()
         ).expect("failed to create VectorData");

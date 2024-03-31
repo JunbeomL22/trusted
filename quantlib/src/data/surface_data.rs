@@ -1,13 +1,5 @@
-use crate::definitions::{Real, Time};
-use crate::parameter::Parameter;
-use crate::time::{
-    calendar_trait::CalendarTrait,
-    calendars::nullcalendar::NullCalendar,
-};
+use crate::definitions::Real;
 use crate::assets::currency::Currency;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::any::Any;use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use ndarray::{Array1, Array2};

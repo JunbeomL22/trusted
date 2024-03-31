@@ -87,10 +87,10 @@ impl PricerTrait for EquityOptionAnalyticPricer {
         
         let total_variance = self.volatility
             .borrow()
-            .total_variance(t, forward_moneyness);
+            .total_variance(t, forward_moneyness)?;
         let total_deviation = self.volatility
             .borrow()
-            .total_deviation(t, forward_moneyness);
+            .total_deviation(t, forward_moneyness)?;
 
         if instrument.get_currency() != instrument.get_underlying_currency()? &&
         self.quanto.is_none() 

@@ -103,13 +103,6 @@ impl Add<Real> for ValueData {
     }
 }
 
-#[macro_export]
-macro_rules! valuedata {
-    ($value:expr, $currency:expr, $name:expr) => {
-        ValueData::new($value, None, $currency, $name.to_string())
-    };
-}
-
 impl Sub<Real> for ValueData {
     type Output = Self;
 
@@ -181,7 +174,7 @@ mod tests {
     fn test_add() {
         let mut value_data = ValueData::new(
             1.0, 
-            OffsetDateTime::now_utc(),
+            None,//OffsetDateTime::now_utc(),
             Currency::NIL,
             "test".to_string()).expect("Failed to create ValueData");
         let mock_parameter = MockParameter { value: 1.0, name: "test".to_string() };
@@ -197,14 +190,14 @@ mod tests {
     fn test_reset_data() {
         let mut value_data = ValueData::new(
             1.0, 
-            OffsetDateTime::now_utc(),
+            None,//OffsetDateTime::now_utc(),
             Currency::NIL,
             "test".to_string()
         ).expect("Failed to create ValueData");
         
         let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0, name: "test".to_string()}));
         value_data.add_observer(mock_parameter.clone());
-        value_data.reset_data(2.0, OffsetDateTime::now_utc());
+        value_data.reset_data(2.0, Some(OffsetDateTime::now_utc()));
         assert_eq!(value_data.get_value(), 2.0);
         assert_eq!(mock_parameter.borrow().get_value(), 2.0);
     }

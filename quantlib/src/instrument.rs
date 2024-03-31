@@ -592,7 +592,7 @@ mod tests {
 
     use super::*;
     use crate::assets::currency::Currency;
-    use crate::instruments::equity_futures::StockFutures;
+    use crate::instruments::equity_futures::EquityFutures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;
@@ -608,7 +608,7 @@ mod tests {
     
     #[test]
     fn test_instruments() -> Result<()> {
-        let fut1 = StockFutures::new(
+        let fut1 = EquityFutures::new(
             340.0,
             datetime!(2022-01-01 09:00:00 UTC),
             datetime!(2022-12-01 09:00:00 UTC),
@@ -622,7 +622,7 @@ mod tests {
             "165XXX".to_string(),
         );
 
-        let fut2 = StockFutures::new(
+        let fut2 = EquityFutures::new(
             5000.0,
             datetime!(2022-12-01 09:00:00 UTC),
             datetime!(2024-03-01 09:00:00 UTC),
@@ -687,8 +687,8 @@ mod tests {
 
         // make Instrument using fut1, fut2, irs
         let instruments = Instruments::new(vec![
-            Rc::new(Instrument::StockFutures(fut1.clone())),
-            Rc::new(Instrument::StockFutures(fut2.clone())),
+            Rc::new(Instrument::EquityFutures(fut1.clone())),
+            Rc::new(Instrument::EquityFutures(fut2.clone())),
             Rc::new(Instrument::PlainSwap(irs.clone())),
         ]);
 
@@ -720,12 +720,15 @@ mod tests {
         );
         
 
+        let funding_cost_map = HashMap::<Currency, String>::new();
+        let crs_curve_map = HashMap::<Currency, String>::new();
         let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_curve_map,
-            HashMap::new(),
+            crs_curve_map,
             rate_index_curve_map,
+            funding_cost_map,
         );
 
         // test get_all_underlying_codes
@@ -766,9 +769,9 @@ mod tests {
         assert_eq!(irs.get_code(), instruments_with_krw[1].get_code());
 
         // test instruments_with_type
-        let instruments_with_stock_futures = instruments.instruments_with_type("StockFutures");
-        assert_eq!(fut1.get_code(), instruments_with_stock_futures[0].get_code());
-        assert_eq!(fut2.get_code(), instruments_with_stock_futures[1].get_code());
+        let instruments_with_equity_futures = instruments.instruments_with_type("EquityFutures");
+        assert_eq!(fut1.get_code(), instruments_with_equity_futures[0].get_code());
+        assert_eq!(fut2.get_code(), instruments_with_equity_futures[1].get_code());
 
         let instruments_with_irs = instruments.instruments_with_type("PlainSwap");
         assert_eq!(irs.get_code(), instruments_with_irs[0].get_code());

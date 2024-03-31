@@ -151,7 +151,7 @@ mod tests {
             array!(0.03, 0.03),
             None,
             Some(array!(1.0, 5.0)),
-            evaluation_date.borrow().get_date_clone(),
+            None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
             name.to_string(),
         )?;
@@ -282,7 +282,7 @@ mod tests {
             array!(0.04, 0.04),
             None,
             Some(array!(1.0, 5.0)),
-            evaluation_date.borrow().get_date_clone(),
+            None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
             name.to_string(),
         )?;
@@ -302,7 +302,7 @@ mod tests {
             array!(0.04, 0.04),
             None,
             Some(array!(1.0, 5.0)),
-            evaluation_date.borrow().get_date_clone(),
+            None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
             name.to_string(),
         )?;

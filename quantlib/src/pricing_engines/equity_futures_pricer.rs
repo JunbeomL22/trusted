@@ -141,7 +141,7 @@ mod tests {
             Array1::from(vec![3.0, 3.0]),
             Some(vec![datetime!(2024-01-15 00:00:00 +09:00), datetime!(2024-02-15 00:00:00 +09:00)]),
             None,
-            market_datetime.clone(),
+            Some(market_datetime),
             Currency::KRW,
             "KOSPI2".to_string(),
         ).expect("failed to make a vector data for dividend ratio");
@@ -172,7 +172,7 @@ mod tests {
             Array1::from(vec![0.0345, 0.0345]),
             Some(vec![datetime!(2021-01-02 16:00:00 +09:00), datetime!(2022-01-01 00:00:00 +09:00)]),
             None,
-            market_datetime.clone(),
+            Some(market_datetime),
             Currency::KRW,
             "KSD".to_string(),
         ).expect("failed to make a vector data for KSD curve");

@@ -19,6 +19,10 @@ pub trait VolatilityTrait {
         right_spot_moneyness: Option<Real>,
         bump: Real
     ) -> Result<()>;
+    
+    fn get_local_volatility(&self, t: Time, forward_moneyness: Real) -> Real {
+        self.get_value(t, forward_moneyness)
+    }
 }
 
 #[derive(Debug, Clone)]

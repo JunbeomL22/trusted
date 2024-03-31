@@ -133,7 +133,7 @@ mod tests {
             array![0.030, 0.040],
             None,
             Some(array![0.5, 5.0]),
-            eval_date.clone(),
+            None,//eval_date.clone(),
             Currency::KRW,
             "KRWGOV".to_string(),
         )?;

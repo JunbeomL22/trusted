@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use quantlib::instruments::equity_futures::StockFutures;
+    use quantlib::instruments::equity_futures::EquityFutures;
     use quantlib::instrument::Instrument;
     use quantlib::definitions::Real;
     use quantlib::data::vector_data::VectorData;
@@ -9,7 +9,6 @@ mod tests {
     use time::macros::datetime;
     use ndarray::array;
     use ndarray::Array1;
-    use std::hash::Hash;
     use std::rc::Rc;
     use quantlib::evaluation_date::EvaluationDate;
     use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -39,7 +38,7 @@ mod tests {
             value, 
             Some(dates), 
             times, 
-            market_datetime, 
+            Some(market_datetime), 
             Currency::KRW,
             name.clone(),
         ).expect("Failed to create VectorData for zero curve");
@@ -49,7 +48,7 @@ mod tests {
             array![0.005, 0.005],
             Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-12-01 00:00:00 +09:00)]),
             None,
-            market_datetime.clone(),
+            Some(market_datetime.clone()),
             Currency::KRW,
             "KOSPI2".to_string(),
         ).expect("failed to make a vector data for borrowing fee");
@@ -63,7 +62,7 @@ mod tests {
             Array1::from(vec![3.0, 3.0]),
             Some(vec![datetime!(2021-03-01 00:00:00 +09:00), datetime!(2021-06-01 00:00:00 +09:00)]),
             None,
-            market_datetime.clone(),
+            Some(market_datetime.clone()),
             Currency::KRW,
             "KOSPI2".to_string(),
         ).expect("failed to make a vector data for dividend ratio");
@@ -74,7 +73,7 @@ mod tests {
         // make a stock data
         let stock_data = ValueData::new(
             spot,
-            market_datetime.clone(),
+            Some(market_datetime.clone()),
             Currency::KRW,
             "KOSPI2".to_string(),
         ).expect("failed to make a stock data");
@@ -84,7 +83,7 @@ mod tests {
         
         // make two stock futures of two maturities with the same other specs
         // then make a Instruments object with the two stock futures
-        let stock_futures1 = StockFutures::new(
+        let stock_futures1 = EquityFutures::new(
             350.0,
             datetime!(2021-01-01 00:00:00 +09:00),
             datetime!(2021-03-14 00:00:00 +09:00),
@@ -98,7 +97,7 @@ mod tests {
             "165XXX1".to_string(),
         );
 
-        let stock_futures2 = StockFutures::new(
+        let stock_futures2 = EquityFutures::new(
             350.0,
             datetime!(2021-01-01 00:00:00 +09:00),
             datetime!(2022-06-14 00:00:00 +09:00),
@@ -112,8 +111,8 @@ mod tests {
             "165XXX2".to_string(),
         );
 
-        let inst1 = Instrument::StockFutures(stock_futures1);
-        let inst2 = Instrument::StockFutures(stock_futures2);
+        let inst1 = Instrument::EquityFutures(stock_futures1);
+        let inst2 = Instrument::EquityFutures(stock_futures2);
         let inst_vec = vec![Rc::new(inst1), Rc::new(inst2)];
 
         // make a calculation configuration
@@ -135,13 +134,15 @@ mod tests {
 
         let bond_discount_curve_map = HashMap::new();
         let rate_index_curve_map = HashMap::new();
-
+        let crs_curve_map = HashMap::new();
+        let funding_cost_map = HashMap::new();
         let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
-            HashMap::new(),
+            crs_curve_map,
             rate_index_curve_map,
+            funding_cost_map,
         );
 
         // make an engine
@@ -154,6 +155,9 @@ mod tests {
             stock_data_map,
             zero_curve_map,
             dividend_data_map,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
             HashMap::new(),
             //
             Rc::new(match_parameter.clone()),

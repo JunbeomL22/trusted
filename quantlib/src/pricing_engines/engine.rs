@@ -149,7 +149,8 @@ impl Engine {
                     FX::new(
                         data.get_value(),
                         key.clone(),
-                        data.get_market_datetime().clone()
+                        data.get_market_datetime().unwrap_or(
+                            evaluation_date.borrow().get_date_clone()),
                     )
                 ));
                 fxs.insert(key.clone(), rc)
@@ -207,7 +208,8 @@ impl Engine {
             let rc = Rc::new(RefCell::new(
                 Equity::new(
                     data.get_value(),
-                    data.get_market_datetime().clone(),
+                    data.get_market_datetime().unwrap_or(
+                        evaluation_date.borrow().get_date_clone()),
                     div,
                     data.get_currency().clone(),  
                     data.get_name().clone(),

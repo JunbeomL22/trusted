@@ -191,7 +191,7 @@ mod tests {
             Array1::from_vec(div_amounts.clone()),
             Some(div_dates.clone()),
             None,
-            eval_dt.clone(),
+            Some(eval_dt),
             Currency::NIL,
             "dividend vecto data".to_string(),
         ).expect("failed to create VectorData");

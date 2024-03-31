@@ -382,7 +382,7 @@ mod tests {
             values,
             Some(dates), 
             times, 
-            datetime!(2021-01-01 17:30:00 +09:00),
+            Some(datetime!(2021-01-01 17:30:00 +09:00)),
             Currency::KRW,
             "test".to_string()
         ).expect("Failed to create VectorData");

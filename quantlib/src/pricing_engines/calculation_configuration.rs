@@ -82,7 +82,7 @@ impl Default for CalculationConfiguration {
             "2Y".to_string(),
             "3Y".to_string(),
             ];
-        let vega_matrix_spot_moneyness = Array1::linspace(0.6, 1.4, 17)
+        let vega_matrix_spot_moneyness = Array1::linspace(0.6, 1.4, 17);
         CalculationConfiguration {
             npv: true,
             fx_exposure: true,
