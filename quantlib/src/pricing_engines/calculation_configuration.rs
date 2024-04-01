@@ -339,10 +339,6 @@ impl CalculationConfiguration {
         self
     }
 
-    pub fn with_stickyness_type(mut self, stickyness_type: StickynessType) -> CalculationConfiguration {
-        self.stickyness_type = stickyness_type;
-        self
-    }
 
     pub fn get_vanilla_option_calculation_method(&self) -> VanillaOptionCalculationMethod {
         self.vanilla_option_calculation_method

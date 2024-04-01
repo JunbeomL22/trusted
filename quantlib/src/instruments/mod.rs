@@ -8,3 +8,4 @@ pub mod bond_futures;
 pub mod fx_futures;
 pub mod vanilla_option;
 pub mod cash;
+pub mod stock;

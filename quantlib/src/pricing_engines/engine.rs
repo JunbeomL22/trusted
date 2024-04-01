@@ -1,3 +1,4 @@
+use crate::enums::StickynessType;
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
@@ -265,14 +266,23 @@ impl Engine {
                     "({}:{}) failed to get borrowing curve for {}", 
                     file!(), line!(), key))?.clone();
                 
+            let stickyness = calculation_configuration.get_stickyness_type();
+            let lv_interpolator = calculation_configuration.get_lv_interpolator();
+
             let lv = LocalVolatilitySurface::initialize(
                 evaluation_date.clone(),
-                data,
                 market_price,
                 collateral_curve,
                 borrowing_curve,
+                stickyness,
+                lv_interpolator,
+                key.clone(),
                 key.clone(),
             );
+
+            let rc = Rc::new(RefCell::new(
+                Volatility::LocalVolatilitySurface(lv)
+            ));
 
             volatilities.insert(key.clone(), rc);
         }
@@ -281,11 +291,6 @@ impl Engine {
             err_tag : "".to_string(),
             calculation_results: HashMap::new(),
             calculation_configuration,
-            //
-            // stock_data,
-            // fx_data,
-            // curve_data: curve_data_refcell,
-            // dividend_data: dividend_data_refcell,
             //
             evaluation_date,
             fxs,
@@ -323,7 +328,6 @@ impl Engine {
                 anyhow!("no instruments are given to initialize")
             );
         }
-
         self.instruments = Instruments::new(instrument_vec);
         let all_types = self.instruments.get_all_type_names();
         let curr_str: Vec<&str> = self.instruments.get_all_currencies()?.iter().map(|c| c.as_str()).collect();
@@ -436,7 +440,7 @@ impl Engine {
             self.equities.clone(),
             self.zero_curves.clone(),
             self.dividends.clone(),
-            self.underlying_volatilities.clone(),
+            self.volatilities.clone(),
             self.quantos.clone(),
             self.past_close_data.clone(),
             self.match_parameter.clone(),

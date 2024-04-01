@@ -297,26 +297,13 @@ impl Instruments {
     pub fn instruments_with_underlying(
         &self, 
         und_code: &String,
-    ) -> Vec<Rc<Instrument>> {
-        let mut res = Vec::<Rc<Instrument>>::new();
-        for instrument in self.instruments.iter() {
-            let names = instrument.get_underlying_codes();
-            if names.contains(&und_code) {
-                res.push(instrument.clone());
-            }
-        }
-        res
-    }
-
-    pub fn instruments_with_underlying_for_vega(
-        &self, 
-        und_code: &String,
+        exlude_type: Vec<&str>,
     ) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.get_underlying_codes();
             let type_name = instrument.get_type_name();
-            if names.contains(&und_code) && type_name != "Futures" {
+            if names.contains(&und_code) && !exlude_type.contains(&type_name) {
                 res.push(instrument.clone());
             }
         }

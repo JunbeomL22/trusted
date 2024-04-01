@@ -159,6 +159,7 @@ mod tests {
             HashMap::new(),
             HashMap::new(),
             HashMap::new(),
+            HashMap::new(),
             //
             Rc::new(match_parameter.clone()),
         ).expect("Failed to create an engine");
