@@ -200,7 +200,7 @@ mod tests {
     use crate::time::{calendar::Calendar, jointcalendar::JointCalendar};
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use crate::enums::{IssuerType, CreditRating, RankType};
     use time::Duration;
 

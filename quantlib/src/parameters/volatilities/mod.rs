@@ -1,4 +1,3 @@
 pub mod constant_volatility;
-pub mod equity_local_volatility;
-pub mod equity_implied_volatility;
+pub mod local_volatility_surface;
 pub mod volatiltiy_interpolator;

@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::{Integer, Real};
 use crate::instruments::bond::Bond;
 use crate::time::conventions::PaymentFrequency;

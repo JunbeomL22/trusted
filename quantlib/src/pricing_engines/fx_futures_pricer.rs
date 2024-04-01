@@ -1,17 +1,14 @@
 use crate::evaluation_date::EvaluationDate;
-use crate::assets::{
-    fx::FX,
-    currency::Currency,
-};
+use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::instrument::Instrument;
+use crate::market_price::MarketPrice;
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::instrument::InstrumentTrait;
 //
-use time::OffsetDateTime;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use std::{
     rc::Rc,
     cell::RefCell,
@@ -20,7 +17,7 @@ use std::{
 
 pub struct FxFuturesPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fx: Rc<RefCell<FX>>, // floationg to fixed fx as in PlainSwapPricer. 
+    fx: Rc<RefCell<MarketPrice>>, // floationg to fixed fx as in PlainSwapPricer. 
     underlying_currency_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     futures_currency_curve: Rc<RefCell<ZeroCurve>>, // or repo
 }
@@ -28,7 +25,7 @@ pub struct FxFuturesPricer {
 impl FxFuturesPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        fx: Rc<RefCell<FX>>,
+        fx: Rc<RefCell<MarketPrice>>,
         underlying_currency_curve: Rc<RefCell<ZeroCurve>>,
         futures_currency_curve: Rc<RefCell<ZeroCurve>>,
     ) -> Self {
@@ -43,7 +40,7 @@ impl FxFuturesPricer {
 
 impl PricerTrait for FxFuturesPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        let fx_rate = self.fx.borrow().get_rate();
+        let fx_rate = self.fx.borrow().get_value();
         let maturity = match instrument.get_maturity() {
             Some(maturity) => maturity,
             None => return Err(anyhow!(
@@ -96,10 +93,7 @@ impl PricerTrait for FxFuturesPricer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::assets::{
-        fx::FX,
-        currency::Currency,
-    };
+    use crate::currency::{Currency, FxCode};
     use crate::data::vector_data::VectorData;
     use crate::definitions::Real;
     use crate::instruments::fx_futures::FxFutures;
@@ -124,11 +118,16 @@ mod tests {
     fn test_fx_futures_pricer() -> Result<()> {
         let eval_date = datetime!(2024-01-02 00:00:00 UTC);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_date.clone())));
-        let fx = Rc::new(RefCell::new(FX::new_from_str(
-            1_300.0, 
-            "USDKRW", 
-            datetime!(2021-01-01 00:00:00 UTC),
-        )?));
+        let fx = Rc::new(RefCell::new(
+            MarketPrice::new(
+                1300.0,
+                eval_date.clone(),
+                None,
+                Currency::KRW,
+                "USDKRW".to_string(),
+                "USDKRW".to_string(),
+            )
+        ));
         
         let underlying_curve_data = VectorData::new(
             array![0.04, 0.04],

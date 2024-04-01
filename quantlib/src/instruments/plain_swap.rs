@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::{Integer, Real};
 use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
@@ -549,7 +549,7 @@ impl InstrumentTrait for PlainSwap {
 mod tests {
     use super::*;
     use crate::{
-        assets::currency::Currency, enums::RateIndexCode, parameters::rate_index::RateIndex, time::{calendar::Calendar, calendars::{
+        currency::Currency, enums::RateIndexCode, parameters::rate_index::RateIndex, time::{calendar::Calendar, calendars::{
             southkorea::{SouthKorea, SouthKoreaType},
             unitedstates::{UnitedStates, UnitedStatesType},
         }, conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency}, jointcalendar::JointCalendar}

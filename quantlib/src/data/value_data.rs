@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::any::Any;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use anyhow::Result;
 
 /// value: Real, market_datetime: OffsetDateTime, name: String
@@ -142,7 +142,7 @@ mod tests {
     use crate::definitions::Real;
     use std::rc::Rc;
     use std::cell::RefCell; 
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use anyhow::Result;
 
     struct MockParameter {

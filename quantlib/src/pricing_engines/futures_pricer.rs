@@ -1,8 +1,6 @@
 use crate::evaluation_date::EvaluationDate;
-use crate::assets::{
-    equity::Equity,
-    currency::Currency,
-};
+use crate::currency::Currency;
+use crate::market_price::MarketPrice;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
@@ -19,21 +17,21 @@ use std::{
 };
 
 #[derive(Debug, Clone)]
-pub struct EquityFuturesPricer {
+pub struct FuturesPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    equity: Rc<RefCell<Equity>>,
+    equity: Rc<RefCell<MarketPrice>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
 }
 
-impl EquityFuturesPricer {
+impl FuturesPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        equity: Rc<RefCell<Equity>>,
+        equity: Rc<RefCell<MarketPrice>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
-        ) -> EquityFuturesPricer {
-        EquityFuturesPricer {
+        ) -> FuturesPricer {
+        FuturesPricer {
             evaluation_date,
             equity,
             collateral_curve,
@@ -45,19 +43,19 @@ impl EquityFuturesPricer {
         &self, 
         datetime: &OffsetDateTime
     ) -> Result<Real> {
-        let equity_price = self.equity.borrow().get_last_price();
+        let equity_price = self.equity.borrow().get_value();
         let collateral_discount = self.collateral_curve
             .borrow()
             .get_discount_factor_at_date(datetime)
-            .context("(EquityFuturesPricer::fair_forward) failed to get collateral discount factor at date")?;
+            .context("(FuturesPricer::fair_forward) failed to get collateral discount factor at date")?;
         let borrowing_discount = self.borrowing_curve
             .borrow()
             .get_discount_factor_at_date(datetime)
-            .context("(EquityFuturesPricer::fair_forward) failed to get borrowing discount factor at date")?;
+            .context("(FuturesPricer::fair_forward) failed to get borrowing discount factor at date")?;
         let dividend_deduction_ratio = self.equity
             .borrow()
             .get_dividend_deduction_ratio(datetime)
-            .context("(EquityFuturesPricer::fair_forward) failed to get dividend deduction ratio at date")?;
+            .context("(FuturesPricer::fair_forward) failed to get dividend deduction ratio at date")?;
 
         let fwd: Real = equity_price * borrowing_discount / collateral_discount * dividend_deduction_ratio;
         Ok(fwd)
@@ -65,16 +63,16 @@ impl EquityFuturesPricer {
 
 }
 
-impl PricerTrait for EquityFuturesPricer {
+impl PricerTrait for FuturesPricer {
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let res = match instrument {
-            Instrument::EquityFutures(equity_futures) => {
+            Instrument::Futures(equity_futures) => {
                 let maturity = equity_futures.get_maturity().unwrap();
                 let res = NpvResult::new_from_npv(self.fair_forward(&maturity)?);
                 Ok(res)
             }
             _ => Err(anyhow!(
-                "EquityFuturesPricer::npv: not supported instrument type: {}", 
+                "FuturesPricer::npv: not supported instrument type: {}", 
                 instrument.get_type_name().to_string()))
         };
         res
@@ -82,12 +80,12 @@ impl PricerTrait for EquityFuturesPricer {
 
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
         let res = match instrument {
-            Instrument::EquityFutures(equity_futures) => {
+            Instrument::Futures(equity_futures) => {
                 let maturity = equity_futures.get_maturity().unwrap();
                 self.fair_forward(&maturity)
             }
             _ => Err(anyhow!(
-                "EquityFuturesPricer::npv: not supported instrument type: {}", 
+                "FuturesPricer::npv: not supported instrument type: {}", 
                 instrument.get_type_name().to_string()))
         };
         res
@@ -95,9 +93,9 @@ impl PricerTrait for EquityFuturesPricer {
 
     fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         match instrument {
-            Instrument::EquityFutures(equity_futures) => {
+            Instrument::Futures(equity_futures) => {
                 let npv = self.npv(instrument)
-                    .expect("EquityFuturesPricer::fx_exposure: failed to calculate npv.");
+                    .expect("FuturesPricer::fx_exposure: failed to calculate npv.");
                         
                 let average_trade_price = equity_futures.get_average_trade_price();
                 let unit_notional = equity_futures.get_unit_notional();
@@ -107,7 +105,7 @@ impl PricerTrait for EquityFuturesPricer {
                 Ok(res)
             },
             _ => Err(anyhow!(
-                "EquityFuturesPricer::fx_exposure: not supported instrument type: {}", 
+                "FuturesPricer::fx_exposure: not supported instrument type: {}", 
                 instrument.get_type_name().to_string()
             ))
         }
@@ -120,7 +118,7 @@ mod tests {
     use super::*;
     use crate::data::observable::Observable;
     use crate::instrument::InstrumentTrait;
-    use crate::{assets::currency::Currency, instruments::equity_futures::EquityFutures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
+    use crate::{currency::Currency, instruments::futures::Futures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
     use time::macros::datetime;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
@@ -156,7 +154,7 @@ mod tests {
         // make a equity
         let equity = Rc::new(
             RefCell::new(
-                Equity::new(
+                MarketPrice::new(
                     spot,
                     market_datetime.clone(),
                     Some(Rc::new(RefCell::new(dividend))),
@@ -197,7 +195,7 @@ mod tests {
         // make a equity futures with maturity 2024-03-14
         let average_trade_price = 320.0;
         let futures_maturity = datetime!(2024-03-14 13:40:00 +09:00);
-        let futures = EquityFutures::new(
+        let futures = Futures::new(
             average_trade_price,
             datetime!(2023-01-15 09:00:00 +09:00),
             futures_maturity.clone(),
@@ -211,14 +209,14 @@ mod tests {
             "165XXXX".to_string(),
         );
 
-        let pricer = EquityFuturesPricer::new(
+        let pricer = FuturesPricer::new(
             evaluation_date.clone(),
             equity.clone(),
             ksd_curve.clone(),
             dummy_curve.clone(),
         );
 
-        let instrument = Instrument::EquityFutures(futures.clone());
+        let instrument = Instrument::Futures(futures.clone());
         let res = pricer.npv(&instrument).expect("failed to calculate npv");
         let fx_exposure = pricer.fx_exposure(&instrument, res)?
             .get(&Currency::KRW)

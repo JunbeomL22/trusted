@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use time::{OffsetDateTime, macros::datetime};
 use crate::enums::Compounding;
 use crate::evaluation_date::EvaluationDate;
@@ -117,15 +117,14 @@ impl ZeroCurve {
             ];
 
         let eval_date = evaluation_date.clone();
-        let discount_times: Array1<Time> = period_leteral
-        .iter()
-        .map(
-            |&period| time_calculator.get_time_difference(
-            &eval_date.borrow().get_date_clone(), 
-            &add_period(&eval_date.borrow().get_date_clone(), period)
-            )
-        )
-        .collect();
+        let mut discount_times: Array1<Time> = Array1::zeros(period_leteral.len());
+        //discount_times[0] = - 0.0001;
+        for (i, period) in period_leteral.iter().enumerate() {
+            discount_times[i] = time_calculator.get_time_difference(
+                &eval_date.borrow().get_date_clone(), 
+                &add_period(&eval_date.borrow().get_date_clone(), period)
+            );
+        };
 
         let interpolated_rates = match &rate_interpolator {
             ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&discount_times)?, 

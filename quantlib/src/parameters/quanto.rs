@@ -1,4 +1,4 @@
-use crate::assets::fx::FxCode;
+use crate::currency::FxCode;
 use crate::parameters::{
     volatility::{
         Volatility,
@@ -7,7 +7,6 @@ use crate::parameters::{
     volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::definitions::{Time, Real};
-use serde::{forward_to_deserialize_any, Deserialize, Serialize};
 use std::{
     rc::Rc,
     cell::RefCell,

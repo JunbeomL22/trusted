@@ -5,7 +5,7 @@ use crate::instruments::schedule::BaseSchedule;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::data::history_data::CloseData;
 use crate::definitions::Real;
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::time::jointcalendar::JointCalendar;
 use crate::utils::string_arithmetic::add_period;
 use crate::enums::Compounding;
@@ -232,7 +232,7 @@ mod tests {
         calendar_trait::CalendarTrait,
     };
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use crate::enums::RateIndexCode;
     use crate::parameters::zero_curve::ZeroCurve;
     use crate::data::{

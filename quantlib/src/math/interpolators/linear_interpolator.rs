@@ -72,7 +72,7 @@ impl InterpolatorReal1D for LinearInterpolator1D
     fn interpolate(&self, x: Real) -> Result<Real>
     {
         let n = self.domain.len();
-        if x <= self.domain[0] {
+        if x < self.domain[0] {
             if self.allow_extrapolation {
                 if self.extrapolation_type == ExtraPolationType::Flat {
                     return Ok(self.value[0]);
@@ -104,6 +104,7 @@ impl InterpolatorReal1D for LinearInterpolator1D
                 else if self.extrapolation_type == ExtraPolationType::Linear {
                     return Ok(self.value[n-1] + self.derivatives[n-2] * (x - self.domain[n-1]));
                 }
+
                 else {
                     return Err(anyhow!(
                         "({}:{}) {}: extrapolation has not been implemented yet", 

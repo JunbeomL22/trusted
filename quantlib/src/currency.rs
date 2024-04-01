@@ -168,6 +168,60 @@ impl Currency {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Copy)]
+pub struct FxCode {
+    currency1: Currency,
+    currency2: Currency,
+}
+
+impl FxCode {
+    pub fn new(currency1: Currency, currency2: Currency) -> FxCode {
+        FxCode {
+            currency1,
+            currency2,
+        }
+    }
+
+    pub fn get_currency1(&self) -> &Currency {
+        &self.currency1
+    }
+
+    pub fn get_currency2(&self) -> &Currency {
+        &self.currency2
+    }
+    
+    pub fn reciprocal(self) -> Self {
+        FxCode {
+            currency1: self.currency2,
+            currency2: self.currency1,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        format!("{}{}", self.currency1.as_str(), self.currency2.as_str())
+    }
+}
+
+impl Default for FxCode {
+    fn default() -> FxCode {
+        FxCode {
+            currency1: Currency::NIL,
+            currency2: Currency::NIL,
+        }
+    }
+}
+impl From<&str> for FxCode {
+    fn from(code: &str) -> FxCode {
+        let currency1 = Currency::from(&code[0..3]);
+        let currency2 = Currency::from(&code[3..6]);
+
+        FxCode {
+            currency1,
+            currency2,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

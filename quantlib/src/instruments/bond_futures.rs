@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::Real;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;

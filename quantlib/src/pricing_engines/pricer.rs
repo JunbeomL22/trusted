@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::instrument::{
     Instrument,
     InstrumentTrait,
@@ -7,8 +7,8 @@ use crate::definitions::Real;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::pricing_engines::{
     bond_pricer::BondPricer,
-    equity_futures_pricer::EquityFuturesPricer,
-    equity_option_analytic_pricer::EquityOptionAnalyticPricer,
+    futures_pricer::FuturesPricer,
+    option_analytic_pricer::OptionAnalyticPricer,
     ktbf_pricer::KtbfPricer,
     krx_yield_pricer::KrxYieldPricer,
     plain_swap_pricer::PlainSwapPricer,
@@ -36,8 +36,8 @@ pub trait PricerTrait {
 
 #[enum_dispatch(PricerTrait)]
 pub enum Pricer {
-    EquityFuturesPricer(EquityFuturesPricer),
-    EquityOptionAnalyticPricer(EquityOptionAnalyticPricer),
+    FuturesPricer(FuturesPricer),
+    OptionAnalyticPricer(OptionAnalyticPricer),
     BondPricer(BondPricer),
     KtbfPricer(KtbfPricer),
     KrxYieldPricer(KrxYieldPricer),

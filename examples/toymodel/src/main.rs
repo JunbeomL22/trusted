@@ -1,12 +1,13 @@
 use quantlib::enums::{
     OptionDailySettlementType,
     OptionType,
+    OptionExerciseType,
 };
-use quantlib::assets::currency::Currency;
+use quantlib::currency::{Currency, FxCode};
 use quantlib::instruments::{
-    equity_futures::EquityFutures,
+    futures::Futures,
     bond::Bond,
-    equity_vanilla_option::EquityVanillaOption,
+    vanilla_option::VanillaOption,
 };
 use quantlib::instrument::Instrument;
 use quantlib::definitions::Real;
@@ -17,7 +18,6 @@ use quantlib::parameters::{
     volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
 };
-use quantlib::assets::fx::FxCode;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -147,7 +147,7 @@ fn main() -> Result<()> {
     
     // make two stock futures of two maturities with the same other specs
     // then make a Instruments object with the two stock futures
-    let stock_futures1 = EquityFutures::new(
+    let stock_futures1 = Futures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
         datetime!(2021-01-11 00:00:00 +09:00),
@@ -161,7 +161,7 @@ fn main() -> Result<()> {
         "165XXX1".to_string(),
     );
 
-    let stock_futures2 = EquityFutures::new(
+    let stock_futures2 = Futures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
         datetime!(2021-01-01 00:00:00 +09:00),
@@ -254,7 +254,7 @@ fn main() -> Result<()> {
     )?;
 
     // option
-    let option1 = EquityVanillaOption::new(
+    let option1 = VanillaOption::new(
         285.0,
         250_000.0,
         datetime!(2021-01-01 00:00:00 +09:00),
@@ -265,16 +265,17 @@ fn main() -> Result<()> {
         Currency::KRW,
         Currency::KRW,
         OptionType::Put,
+        OptionExerciseType::European,
         OptionDailySettlementType::NotSettled,
         "KOSPI2 Call Sep21".to_string(),
         "165XXX3".to_string(),
     );
 
-    let inst1 = Instrument::EquityFutures(stock_futures1);
-    let inst2 = Instrument::EquityFutures(stock_futures2);
+    let inst1 = Instrument::Futures(stock_futures1);
+    let inst2 = Instrument::Futures(stock_futures2);
     let inst3: Instrument = Instrument::Bond(bond);
     let inst4: Instrument = Instrument::Bond(bond2);
-    let inst5 = Instrument::EquityVanillaOption(option1);
+    let inst5 = Instrument::VanillaOption(option1);
 
     let inst_vec = vec![
         Rc::new(inst1), 

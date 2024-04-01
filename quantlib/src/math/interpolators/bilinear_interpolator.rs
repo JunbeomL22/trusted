@@ -99,12 +99,15 @@ impl BilinearInterpolator {
         }
         let mut x_interpolator: Vec<LinearInterpolator1D> = Vec::new();
         for i in 0..n {
+            /*
             println!(
                 "({}:{}) x_domain: {:?} \nvalues.row(i): {:?}\n", 
                 file!(), line!(),
                 x_domain.clone(),
                 values.row(i).to_owned());
-            //let x_values = values.row(i); //Array1::from_vec(values.row(i).to_vec());
+            
+            let x_values = values.row(i); //Array1::from_vec(values.row(i).to_vec());
+             */
             let x_interpolator_i = LinearInterpolator1D::new(
                 x_domain.clone(),
                 values.row(i).to_owned(),
@@ -123,7 +126,7 @@ impl BilinearInterpolator {
 
     pub fn interpolate(&self, t: Real, x: Real) -> Result<Real> {
         let n = self.t_domain.len();
-        if t <= self.t_domain[0] {
+        if t < self.t_domain[0] {
             if self.t_domain_allow_extrapolation {
                 match self.t_domain_extrapolation_type {
                     ExtraPolationType::Flat => return Ok(self.x_interpolator[0].interpolate(x)?),

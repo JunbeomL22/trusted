@@ -171,6 +171,13 @@ impl DiscreteRatioDividend {
         .map(|(date, yield_value)| (*date, self.spot * (*yield_value))).collect()
     }
 
+    pub fn get_dividend_ratio(&self) -> Vec<(OffsetDateTime, Real)> {
+        self.ex_dividend_dates
+        .iter()
+        .zip(self.dividend_yields.iter())
+        .map(|(date, yield_value)| (*date, *yield_value)).collect()
+    }
+
     /// bump dividend amount by bump_val where the dividend in the interval: date1 < div_date <= date2
     /// update dividend_yields and deduction_interpolator
     pub fn bump_date_interval(
@@ -353,7 +360,7 @@ mod tests {
     use time::macros::{date, datetime};
     use time::UtcOffset;
     use ndarray::array;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
 
     #[test]
     fn test_deduction_ratio() -> Result<()> {

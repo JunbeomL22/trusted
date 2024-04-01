@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameter::Parameter;
@@ -10,10 +10,10 @@ use std::cell::RefCell;
 use anyhow::Result;
 
 /// an observer of evaluation_date 
-/// when ever calculating theta the Equity price mut be deducted by the dividend
+/// when ever calculating theta the MarketPrice price mut be deducted by the dividend
 #[derive(Debug, Clone)]
-pub struct Equity {
-    last_price: Real,
+pub struct MarketPrice {
+    value: Real,
     market_datetime: OffsetDateTime,
     dividend: Option<Rc<RefCell<DiscreteRatioDividend>>>,
     currency: Currency,
@@ -21,7 +21,7 @@ pub struct Equity {
     code: String,
 }
 
-impl Equity {
+impl MarketPrice {
     /// new(
     /// last_price: Real, 
     /// market_datetime: OffsetDateTime,
@@ -31,15 +31,15 @@ impl Equity {
     /// code: String,
     /// )
     pub fn new(
-        last_price: Real, 
+        value: Real, 
         market_datetime: OffsetDateTime,
         dividend: Option<Rc<RefCell<DiscreteRatioDividend>>>,
         currency: Currency,
         name: String,
         code: String,
-    ) -> Equity {
-        Equity {
-            last_price,
+    ) -> MarketPrice {
+        MarketPrice {
+            value,
             market_datetime,
             dividend,
             currency,
@@ -49,15 +49,15 @@ impl Equity {
     }
 
     pub fn set_price(&mut self, price: Real) {
-        self.last_price = price;
+        self.value = price;
     }
 
     pub fn get_code(&self) -> &String {
         &self.code
     }
 
-    pub fn get_last_price(&self) -> Real {
-        self.last_price
+    pub fn get_value(&self) -> Real {
+        self.value
     }
 
     pub fn get_market_datetime(&self) -> &OffsetDateTime {
@@ -88,32 +88,31 @@ impl Equity {
 
 /// implments arithmetic for Real
 /// This operates only on the last_price
-impl AddAssign<Real> for Equity {
+impl AddAssign<Real> for MarketPrice {
     fn add_assign(&mut self, rhs: Real) {
-        self.last_price += rhs;
+        self.value += rhs;
     }
 }
 
-impl SubAssign<Real> for Equity {
+impl SubAssign<Real> for MarketPrice {
     fn sub_assign(&mut self, rhs: Real) {
-        self.last_price -= rhs;
+        self.value -= rhs;
     }
 }
 
-impl MulAssign<Real> for Equity {
+impl MulAssign<Real> for MarketPrice {
     fn mul_assign(&mut self, rhs: Real) {
-        self.last_price *= rhs;
+        self.value *= rhs;
     }
 }
 
-impl DivAssign<Real> for Equity {
+impl DivAssign<Real> for MarketPrice {
     fn div_assign(&mut self, rhs: Real) {
-        self.last_price /= rhs;
+        self.value /= rhs;
     }
 }
 
-
-impl Parameter for Equity {
+impl Parameter for MarketPrice {
     /// the stock price must be deducted by the dividend
     /// the amount is the sum of the dividend amount 
     /// between the market_datetime and the EvaluationDate
@@ -121,26 +120,25 @@ impl Parameter for Equity {
         if let Some(dividend) = &self.dividend {
             let eval_dt = data.get_date_clone();
             if self.market_datetime < eval_dt {   
-                for (date, div) in dividend.borrow().get_dividend().iter() {
+                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > self.market_datetime) && (*date <= eval_dt) {
-                        self.last_price -= div;
+                        self.value *= 1.0 - div;
                     }
                 }
                 self.market_datetime = eval_dt;   
             } else {
-                for (date, div) in dividend.borrow().get_dividend().iter() {
+                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > eval_dt) && (*date <= self.market_datetime) {
-                        self.last_price += div;
+                        self.value /= 1.0 - div;
                     }
                 }
             }
-            
         }        
         Ok(())
     }
 
     fn get_type_name(&self) -> &'static str {
-        "Equity"
+        "MarketPrice"
     }
 
     fn get_name(&self) -> &String {
@@ -161,10 +159,10 @@ mod tests {
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
     use crate::data::observable::Observable;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
 
     #[test]
-    fn test_stock_update_evaluation_date() {
+    fn test_equity_update_evaluation_date() {
         let (h, m, s) = SEOUL_OFFSET;
         let offset = time::UtcOffset::from_hms(h, m, s).unwrap();
         let eval_dt = OffsetDateTime::new_in_offset(
@@ -187,6 +185,7 @@ mod tests {
 
         let spot = 100.0;
         let div_amounts = vec![1.0, 1.0, 1.0];
+        let div_yields = div_amounts.iter().map(|x| x / spot).collect::<Vec<Real>>();
         let data = VectorData::new(
             Array1::from_vec(div_amounts.clone()),
             Some(div_dates.clone()),
@@ -200,39 +199,41 @@ mod tests {
             evaluation_date.clone(),
             &data,
             spot,
-            "MockEquity".to_string(),
+            "MockMarketPrice".to_string(),
         ).expect("failed to create DiscreteRatioDividend");
 
         let stock = Rc::new(RefCell::new(
-            Equity::new(
+            MarketPrice::new(
                 spot,
                 eval_dt.clone(),
                 Some(Rc::new(RefCell::new(dividend))),
                 Currency::KRW,
-                "MockEquity".to_string(),
+                "MockMarketPrice".to_string(),
                 "MockCode".to_string(),
             )
         ));
 
         evaluation_date.borrow_mut().add_observer(stock.clone());
 
-        for i in 1..div_dates.len() {
+        let mut test_spot = spot;
+        for i in 1..div_yields.len() {
             *evaluation_date.borrow_mut() += "1D";
-            let price = stock.borrow().get_last_price();
+            let price = stock.borrow().get_value();
+            test_spot *= 1.0 - div_yields[i];
             assert!(
-                (price - (spot - i as Real)).abs() < 1.0e-10,
-                "stock: {}, (spot - i): {}",
+                (price - (test_spot as Real)).abs() < 1.0e-10,
+                "stock: {}, test_spot at i: {}",
                 price,
-                spot - i as Real
+                test_spot as Real
             );  
         }
 
         // get back the evaluation_date to the original
         *evaluation_date.borrow_mut() -= "3D";
         assert!(
-            (stock.borrow().get_last_price() - spot).abs() < 1.0e-10,
+            (stock.borrow().get_value() - spot).abs() < 1.0e-10,
             "stock: {}",
-            stock.borrow().get_last_price()
+            stock.borrow().get_value()
         );    
     }
 }

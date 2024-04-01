@@ -1,5 +1,5 @@
-use crate::{assets::fx::FxCode, definitions::Real};
-use crate::assets::currency::Currency;
+use crate::definitions::Real;
+use crate::currency::{Currency, FxCode};
 use crate::instrument::InstrumentTrait;
 //
 use time::OffsetDateTime;

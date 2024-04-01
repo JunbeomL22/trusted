@@ -4,7 +4,7 @@ use quantlib::evaluation_date::EvaluationDate;
 use quantlib::parameters::zero_curve::ZeroCurve;
 use quantlib::data::vector_data::VectorData;
 use time::macros::datetime;
-use quantlib::assets::currency::Currency;
+use quantlib::currency::Currency;
 use quantlib::definitions::{Time, Real};
 use std::rc::Rc;
 use std::cell::RefCell;

@@ -1,18 +1,15 @@
 use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
-    equity_futures::EquityFutures,
+    futures::Futures,
     plain_swap::{PlainSwap, PlainSwapType},
     bond_futures::BondFutures,
     ktbf::KTBF,
     fx_futures::FxFutures,
-    equity_vanilla_option::EquityVanillaOption,
+    vanilla_option::VanillaOption,
 };
 use crate::definitions::Real;
-use crate::assets::{
-    currency::Currency,
-    fx::FxCode,
-};
+use crate::currency::{Currency, FxCode};
 use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::{
     rate_index::RateIndex,
@@ -175,13 +172,13 @@ pub trait InstrumentTrait{
 #[enum_dispatch(InstrumentTrait)]
 #[derive(Clone, Debug)]
 pub enum Instrument {
-    EquityFutures(EquityFutures),
+    Futures(Futures),
     Bond(Bond),
     BondFutures(BondFutures),
     KTBF(KTBF),
     PlainSwap(PlainSwap),
     FxFutures(FxFutures),
-    EquityVanillaOption(EquityVanillaOption),   
+    VanillaOption(VanillaOption),   
 }
 
 /// calculation groups for calculation optimization, 
@@ -591,8 +588,8 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
-    use crate::assets::currency::Currency;
-    use crate::instruments::equity_futures::EquityFutures;
+    use crate::currency::{Currency, FxCode};
+    use crate::instruments::futures::Futures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::parameters::rate_index::RateIndex;
     use crate::enums::RateIndexCode;
@@ -602,13 +599,12 @@ mod tests {
         calendars::southkorea::{SouthKorea, SouthKoreaType},
         calendar::Calendar,
     };
-    use crate::assets::fx::FxCode;
     use anyhow::Result;
     use time::macros::datetime;
     
     #[test]
     fn test_instruments() -> Result<()> {
-        let fut1 = EquityFutures::new(
+        let fut1 = Futures::new(
             340.0,
             datetime!(2022-01-01 09:00:00 UTC),
             datetime!(2022-12-01 09:00:00 UTC),
@@ -622,7 +618,7 @@ mod tests {
             "165XXX".to_string(),
         );
 
-        let fut2 = EquityFutures::new(
+        let fut2 = Futures::new(
             5000.0,
             datetime!(2022-12-01 09:00:00 UTC),
             datetime!(2024-03-01 09:00:00 UTC),
@@ -687,8 +683,8 @@ mod tests {
 
         // make Instrument using fut1, fut2, irs
         let instruments = Instruments::new(vec![
-            Rc::new(Instrument::EquityFutures(fut1.clone())),
-            Rc::new(Instrument::EquityFutures(fut2.clone())),
+            Rc::new(Instrument::Futures(fut1.clone())),
+            Rc::new(Instrument::Futures(fut2.clone())),
             Rc::new(Instrument::PlainSwap(irs.clone())),
         ]);
 

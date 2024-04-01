@@ -1,5 +1,5 @@
 use crate::instrument::{self, Instrument, InstrumentTrait};
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::enums::{
     CreditRating, 
     IssuerType,
@@ -204,7 +204,7 @@ impl MatchParameter {
                     }
                 }
             },
-            Instrument::EquityVanillaOption(instrument) => {
+            Instrument::VanillaOption(instrument) => {
                 match instrument.get_option_daily_settlement_type()? {
                     OptionDailySettlementType::Settled => {
                         Ok(&self.dummy_string)
@@ -224,7 +224,7 @@ impl MatchParameter {
                 }
             },
             // these are indestruments that do not need to be discounted
-            Instrument::EquityFutures(_) |
+            Instrument::Futures(_) |
             Instrument::BondFutures(_) |
             Instrument::KTBF(_) |
             Instrument::FxFutures(_) => {
@@ -302,12 +302,11 @@ impl MatchParameter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instruments::equity_futures::EquityFutures;
+    use crate::instruments::futures::Futures;
     use crate::instruments::plain_swap::PlainSwap;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use crate::enums::{RateIndexCode, CreditRating, IssuerType};
     use std::collections::HashMap;
-    use time::convert::Day;
     use time::macros::datetime;
     use crate::time::conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
@@ -329,7 +328,7 @@ mod tests {
         ), String> = HashMap::new();
         let mut rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
 
-        let stock_futures = EquityFutures::new(
+        let stock_futures = Futures::new(
             100.0,
             datetime!(2021-01-01 00:00:00 +00:00),
             datetime!(2021-12-31 00:00:00 +00:00),
@@ -404,7 +403,7 @@ mod tests {
             funcing_cost_map,
         );
         
-        let stock_futures_inst = Instrument::EquityFutures(stock_futures);
+        let stock_futures_inst = Instrument::Futures(stock_futures);
         let irs_inst = Instrument::PlainSwap(irs);
 
         assert_eq!(

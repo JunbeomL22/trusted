@@ -11,7 +11,7 @@ mod tests {
     use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
     use quantlib::data::vector_data::VectorData;
     use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
-    use quantlib::assets::currency::Currency;
+    use quantlib::currency::Currency;
     use anyhow::Result;
 
     #[test]

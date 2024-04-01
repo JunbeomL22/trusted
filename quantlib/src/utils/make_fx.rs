@@ -1,7 +1,4 @@
-use crate::assets::{
-    currency::Currency,
-    fx::FxCode,
-};
+use crate::currency::{Currency, FxCode};
 
 fn currencies_to_fx_codes(
     currencies: Vec<Currency>,
@@ -32,7 +29,7 @@ fn currencies_to_fx_codes(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use anyhow::Result;
     #[test]
     fn test_currencies_to_fx_codes() -> Result<()> {

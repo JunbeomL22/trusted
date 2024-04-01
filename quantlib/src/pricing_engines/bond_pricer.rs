@@ -122,7 +122,7 @@ mod tests {
     use crate::data::vector_data::VectorData;
     use crate::time::conventions::{DayCountConvention, BusinessDayConvention, PaymentFrequency};
     use crate::instruments::bond::Bond;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use crate::enums::{CreditRating, IssuerType, RankType};
     use crate::time::{
         calendars::southkorea::{SouthKorea, SouthKoreaType},

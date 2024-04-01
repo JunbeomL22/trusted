@@ -12,11 +12,8 @@ use crate::definitions::{
     Real, Time, 
     DELTA_PNL_UNIT, VEGA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT,
 };
-use crate::assets::{
-    equity::Equity,
-    fx::{FX, FxCode},
-    currency::Currency,
-};
+use crate::market_price::MarketPrice;
+use crate::currency::{Currency, FxCode};
 
 use crate::data::{
     vector_data::VectorData,
@@ -56,8 +53,8 @@ pub struct Engine {
     calculation_configuration: CalculationConfiguration, // this should be cloned
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-    equities: HashMap<String, Rc<RefCell<Equity>>>,
+    fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
+    equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
@@ -141,16 +138,19 @@ impl Engine {
             dividend_data_refcell.insert(key.to_string(), ref_cell);
              */
         }
-        let mut fxs: HashMap<FxCode, Rc<RefCell<FX>>> = HashMap::new();
+        let mut fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>> = HashMap::new();
         fx_data
             .iter()
             .map(|(key, data)| {
                 let rc = Rc::new(RefCell::new(
-                    FX::new(
+                    MarketPrice::new(
                         data.get_value(),
-                        key.clone(),
                         data.get_market_datetime().unwrap_or(
                             evaluation_date.borrow().get_date_clone()),
+                        None,
+                        key.get_currency2().clone(),
+                        key.to_string(),
+                        key.to_string(),
                     )
                 ));
                 fxs.insert(key.clone(), rc)
@@ -161,10 +161,13 @@ impl Engine {
             fxs.insert(
                 krwkrw_code.clone(),
                 Rc::new(RefCell::new(
-                    FX::new(
+                    MarketPrice::new(
                         1.0,
-                        krwkrw_code,
                         evaluation_date.borrow().get_date_clone(),
+                        None,
+                        Currency::KRW,
+                        "KRWKRW".to_string(),
+                        "KRWKRW".to_string(),
                     )
                 ))
             );
@@ -206,7 +209,7 @@ impl Engine {
             };
 
             let rc = Rc::new(RefCell::new(
-                Equity::new(
+                MarketPrice::new(
                     data.get_value(),
                     data.get_market_datetime().unwrap_or(
                         evaluation_date.borrow().get_date_clone()),
@@ -549,7 +552,7 @@ impl Engine {
                 .get(*und_code)
                 .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
                 .borrow()
-                .get_last_price();
+                .get_value();
 
             // set instruments that needs to be calculated
             self.instruments_in_action = self.instruments

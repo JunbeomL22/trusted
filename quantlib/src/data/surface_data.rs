@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use ndarray::{Array1, Array2};

@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::{Real, Time};
 use crate::time::{calendars::nullcalendar::NullCalendar, calendar_trait::CalendarTrait};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};

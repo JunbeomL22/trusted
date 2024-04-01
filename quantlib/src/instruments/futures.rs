@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::instrument::InstrumentTrait;
 //
 use time::OffsetDateTime;
@@ -8,7 +8,7 @@ use anyhow::Result;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct EquityFutures {
+pub struct Futures {
     average_trade_price: Real,
     first_trade_date: OffsetDateTime,
     last_trade_date: OffsetDateTime,
@@ -22,9 +22,9 @@ pub struct EquityFutures {
     code: String,
 }
 
-impl Default for EquityFutures {
-    fn default() -> EquityFutures {
-        EquityFutures {
+impl Default for Futures {
+    fn default() -> Futures {
+        Futures {
             average_trade_price: 0.0,
             first_trade_date: OffsetDateTime::now_utc(),
             last_trade_date: OffsetDateTime::now_utc(),
@@ -40,7 +40,7 @@ impl Default for EquityFutures {
     }
 }
 
-impl EquityFutures {
+impl Futures {
     pub fn new(
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,
@@ -53,8 +53,8 @@ impl EquityFutures {
         underlying_code: String,
         name: String,
         code: String,
-    ) -> EquityFutures {
-        EquityFutures {
+    ) -> Futures {
+        Futures {
             average_trade_price,
             first_trade_date,
             last_trade_date,
@@ -71,7 +71,7 @@ impl EquityFutures {
 
 }
 
-impl InstrumentTrait for EquityFutures {
+impl InstrumentTrait for Futures {
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -97,7 +97,7 @@ impl InstrumentTrait for EquityFutures {
     }
 
     fn get_type_name(&self) -> &'static str {
-        "EquityFutures"
+        "Futures"
     }
 
     fn get_underlying_codes(&self) -> Vec<&String> {
@@ -117,7 +117,7 @@ mod tests {
     use time::macros::datetime;
     #[test]
     fn test_stock_futures_serialization() {
-        let stock_futures = EquityFutures::new(
+        let stock_futures = Futures::new(
             100.0,
             datetime!(2021-01-01 09:00:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
@@ -132,7 +132,7 @@ mod tests {
         );
 
         let serialized = serde_json::to_string(&stock_futures).unwrap();
-        let deserialized: EquityFutures = serde_json::from_str(&serialized).unwrap();
+        let deserialized: Futures = serde_json::from_str(&serialized).unwrap();
         assert_eq!(stock_futures, deserialized);
     }
 }

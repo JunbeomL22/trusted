@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use quantlib::instruments::equity_futures::EquityFutures;
+    use quantlib::instruments::futures::Futures;
     use quantlib::instrument::Instrument;
     use quantlib::definitions::Real;
     use quantlib::data::vector_data::VectorData;
     use quantlib::data::value_data::ValueData;
-    use quantlib::assets::currency::Currency;
+    use quantlib::currency::Currency;
     use time::macros::datetime;
     use ndarray::array;
     use ndarray::Array1;
@@ -83,7 +83,7 @@ mod tests {
         
         // make two stock futures of two maturities with the same other specs
         // then make a Instruments object with the two stock futures
-        let stock_futures1 = EquityFutures::new(
+        let stock_futures1 = Futures::new(
             350.0,
             datetime!(2021-01-01 00:00:00 +09:00),
             datetime!(2021-03-14 00:00:00 +09:00),
@@ -97,7 +97,7 @@ mod tests {
             "165XXX1".to_string(),
         );
 
-        let stock_futures2 = EquityFutures::new(
+        let stock_futures2 = Futures::new(
             350.0,
             datetime!(2021-01-01 00:00:00 +09:00),
             datetime!(2022-06-14 00:00:00 +09:00),
@@ -111,8 +111,8 @@ mod tests {
             "165XXX2".to_string(),
         );
 
-        let inst1 = Instrument::EquityFutures(stock_futures1);
-        let inst2 = Instrument::EquityFutures(stock_futures2);
+        let inst1 = Instrument::Futures(stock_futures1);
+        let inst2 = Instrument::Futures(stock_futures2);
         let inst_vec = vec![Rc::new(inst1), Rc::new(inst2)];
 
         // make a calculation configuration

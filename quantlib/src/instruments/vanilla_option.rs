@@ -1,16 +1,14 @@
-use std::option;
-
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
-use crate::enums::{OptionType, OptionDailySettlementType};
+use crate::enums::{OptionType, OptionDailySettlementType, OptionExerciseType};
 //
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct EquityVanillaOption {
+pub struct VanillaOption {
     strike: Real,
     unit_notional: Real,
     issue_date: OffsetDateTime,
@@ -21,14 +19,15 @@ pub struct EquityVanillaOption {
     underlying_currency: Currency,
     currency: Currency,
     option_type: OptionType,
+    exercise_type: OptionExerciseType,
     daily_settlement_type: OptionDailySettlementType,
     name: String,
     code: String,
 }
 
-impl Default for EquityVanillaOption {
-    fn default() -> EquityVanillaOption {
-        EquityVanillaOption {
+impl Default for VanillaOption {
+    fn default() -> VanillaOption {
+        VanillaOption {
             strike: 0.0,
             unit_notional: 0.0,
             issue_date: OffsetDateTime::now_utc(),
@@ -38,6 +37,7 @@ impl Default for EquityVanillaOption {
             underlying_codes: vec![],
             underlying_currency: Currency::KRW,
             currency: Currency::KRW,
+            exercise_type: OptionExerciseType::European,
             option_type: OptionType::Call,
             daily_settlement_type: OptionDailySettlementType::NotSettled,
             name: String::from(""),
@@ -46,7 +46,7 @@ impl Default for EquityVanillaOption {
     }
 }
 
-impl EquityVanillaOption {
+impl VanillaOption {
     pub fn new(
         strike: Real,
         unit_notional: Real,
@@ -58,11 +58,12 @@ impl EquityVanillaOption {
         underlying_currency: Currency,
         currency: Currency,
         option_type: OptionType,
+        exercise_type: OptionExerciseType,
         option_daily_settlement_type: OptionDailySettlementType,
         name: String,
         code: String,
-    ) -> EquityVanillaOption {
-        EquityVanillaOption {
+    ) -> VanillaOption {
+        VanillaOption {
             strike,
             unit_notional,
             issue_date,
@@ -73,6 +74,7 @@ impl EquityVanillaOption {
             underlying_currency,
             currency,
             option_type,
+            exercise_type,
             daily_settlement_type: option_daily_settlement_type,
             name,
             code,
@@ -84,7 +86,7 @@ impl EquityVanillaOption {
     }
 }
 
-impl InstrumentTrait for EquityVanillaOption {
+impl InstrumentTrait for VanillaOption {
     fn get_name(&self) -> &String {
         &self.name
     }

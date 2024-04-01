@@ -101,7 +101,7 @@ mod tests {
     use crate::evaluation_date::EvaluationDate;
     use crate::parameters::zero_curve::ZeroCurve;
     use crate::data::vector_data::VectorData;
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use crate::enums::{
         IssuerType,
         CreditRating,

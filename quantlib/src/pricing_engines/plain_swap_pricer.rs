@@ -1,7 +1,4 @@
-use crate::assets::{
-    currency::Currency,
-    fx::{FxCode, FX},
-};
+use crate::currency::{Currency, FxCode};
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
 use crate::data::history_data::CloseData;
@@ -13,6 +10,7 @@ use crate::instrument::{
     Instrument,
     InstrumentTrait,
 };
+use crate::market_price::MarketPrice;
 use crate::definitions::Real;
 // 
 use std::{
@@ -29,7 +27,7 @@ pub struct PlainSwapPricer {
     floating_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
     past_fixing_data: Option<Rc<CloseData>>,
-    floating_to_fixed_fx: Option<Rc<RefCell<FX>>>,
+    floating_to_fixed_fx: Option<Rc<RefCell<MarketPrice>>>,
 }
 
 impl PlainSwapPricer {
@@ -39,7 +37,7 @@ impl PlainSwapPricer {
         floating_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<CloseData>>,
-        floating_to_fixed_fx: Option<Rc<RefCell<FX>>>,
+        floating_to_fixed_fx: Option<Rc<RefCell<MarketPrice>>>,
     ) -> Result<PlainSwapPricer> {
         Ok(PlainSwapPricer {
             evaluation_date,
@@ -55,7 +53,7 @@ impl PlainSwapPricer {
 impl PricerTrait for PlainSwapPricer {
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let floating_to_fixed_fx = match self.floating_to_fixed_fx {
-            Some(ref fxf) => fxf.borrow().get_rate(),
+            Some(ref fxf) => fxf.borrow().get_value(),
             None => 1.0,
         };
     
@@ -114,7 +112,7 @@ impl PricerTrait for PlainSwapPricer {
 
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
         let floating_to_fixed_fx_rate = match self.floating_to_fixed_fx {
-            Some(ref fxf) => fxf.borrow().get_rate(),
+            Some(ref fxf) => fxf.borrow().get_value(),
             None => 1.0,
         };
         
@@ -201,10 +199,8 @@ impl PricerTrait for PlainSwapPricer {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{assets::{
-        currency::Currency,
-        fx::{FxCode, FX},
-    }, pricing_engines::pricer};
+    use crate::currency::{Currency, FxCode};
+    use crate::pricing_engines::pricer::{PricerTrait, Pricer};
     use crate::enums::RateIndexCode;
     use crate::parameters::{
         zero_curve::ZeroCurve,
@@ -360,7 +356,14 @@ pub mod tests {
         let fx_code = FxCode::new(Currency::USD, Currency::KRW);
         
         let floating_to_fixed_fx = Rc::new(RefCell::new(
-            FX::new(fx_rate, fx_code, datetime!(2024-01-02 16:30:00 +09:00))
+            MarketPrice::new(
+                fx_rate,
+                datetime!(2024-01-02 16:30:00 +09:00),
+                None,
+                fx_code.get_currency2().clone(),
+                fx_code.to_string(),
+                fx_code.to_string(),
+            )
         ));
         
 

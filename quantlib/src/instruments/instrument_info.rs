@@ -1,4 +1,4 @@
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::utils::number_format::write_number_with_commas;
 use serde::{Serialize, Deserialize};
@@ -100,7 +100,7 @@ mod tests {
     use super::*;
     use serde_json;
 
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
 
     #[test]
     fn test_instrument_info_serialization() {

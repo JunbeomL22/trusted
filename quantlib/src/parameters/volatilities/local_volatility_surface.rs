@@ -7,12 +7,11 @@ use crate::parameters::{
     volatilities::volatiltiy_interpolator::VolatilityInterplator,
     zero_curve::ZeroCurve,
 };
-use crate::evaluation_date::{self, EvaluationDate};
-use crate::math::interpolators::bilinear_interpolator::{self, BilinearInterpolator};
-use crate::assets::equity::Equity;
+use crate::evaluation_date::EvaluationDate;
+use crate::math::interpolators::bilinear_interpolator::BilinearInterpolator;
+use crate::market_price::MarketPrice;
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
-use crate::utils::string_arithmetic::from_period_string_to_float;
 use crate::utils::string_arithmetic::add_period;
 use crate::math::interpolator::ExtraPolationType;
 use std::{
@@ -24,7 +23,7 @@ use anyhow::{Result, Context, anyhow};
 use ndarray::{Array1, Array2};
 use time::OffsetDateTime;
 #[derive(Clone, Debug)]
-pub struct EquityLocalVolatilitySurface {
+pub struct LocalVolatilitySurface {
     interpolated_imvol: Array2<Real>,
     imvol_maturity_dates: Vec<OffsetDateTime>,
     imvol_maturity_times: Array1<Time>,
@@ -34,7 +33,7 @@ pub struct EquityLocalVolatilitySurface {
     forward_monenyess_imvol: BilinearInterpolator,
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    underlying_equity: Rc<RefCell<Equity>>,
+    market_price: Rc<RefCell<MarketPrice>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>,
     borrowing_curve: Rc<RefCell<ZeroCurve>>,
     //
@@ -46,19 +45,18 @@ pub struct EquityLocalVolatilitySurface {
     code: String,
 }
 
-impl EquityLocalVolatilitySurface {
+impl LocalVolatilitySurface {
     pub fn initialize(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        underlying_equity: Rc<RefCell<Equity>>,
+        market_price: Rc<RefCell<MarketPrice>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
         stickyness_type: StickynessType,
         lv_interpolator: VolatilityInterplator,
-        local_volatility: BilinearInterpolator,
         name: String,
         code: String,
-    ) -> EquityLocalVolatilitySurface {
-        EquityLocalVolatilitySurface {
+    ) -> LocalVolatilitySurface {
+        LocalVolatilitySurface {
             interpolated_imvol: Array2::default((0, 0)),
             imvol_maturity_dates: Vec::new(),
             imvol_maturity_times: Array1::default(0),
@@ -68,13 +66,13 @@ impl EquityLocalVolatilitySurface {
             imvol_spot: 0.0,
             //
             evaluation_date,
-            underlying_equity,
+            market_price,
             collateral_curve,
             borrowing_curve,
             //
             stickyness_type,
             lv_interpolator,
-            local_volatility,
+            local_volatility: BilinearInterpolator::default(),
             //
             name,
             code,
@@ -86,7 +84,7 @@ impl EquityLocalVolatilitySurface {
         market_implied_volatility_surface: &SurfaceData,
         vega_structure_tenors: Vec<String>,
         vega_matrix_spot_moneyness: Array1<Real>,
-    ) -> Result<EquityLocalVolatilitySurface> {
+    ) -> Result<LocalVolatilitySurface> {
         let given_dates = market_implied_volatility_surface.get_dates();
         let eval_date = self.evaluation_date.borrow().get_date_clone();
 
@@ -126,7 +124,6 @@ impl EquityLocalVolatilitySurface {
         let given_strikes = market_implied_volatility_surface.get_strike();
         let given_spot_moneyness = given_strikes / self.imvol_spot;
         
-        println!("({}:{}) given_spotmoneyness: {:?}\n", file!(), line!(), given_spot_moneyness);
         let bilinear_interpolator = BilinearInterpolator::new_from_rectangle_data(
             given_times,
             given_spot_moneyness,
@@ -193,7 +190,7 @@ impl EquityLocalVolatilitySurface {
                 let mut forward_vector: Vec<Real> = Vec::new();
                 for i in 0..self.imvol_maturity_dates.len() {
                     let fwd = self.get_forward(
-                        self.underlying_equity.borrow().get_last_price(),
+                        self.market_price.borrow().get_value(),
                         &self.imvol_maturity_dates[i])?;
                     forward_vector.push(fwd);
                 }
@@ -210,15 +207,9 @@ impl EquityLocalVolatilitySurface {
             forward_monenyess_array.push(&self.imvol_spot_moneyness * self.imvol_spot / fwd);
         }
         
-        let f_interpolators: Vec<LinearInterpolator1D> = Vec::new();
+        let mut f_interpolators: Vec<LinearInterpolator1D> = Vec::new();
         for i in 0..self.imvol_maturity_dates.len() {
-            println!("({}:{}) {:?}\n", 
-                file!(), line!(),
-                forward_monenyess_array[i].to_owned());
-            println!("({}:{}) {:?}\n", 
-                file!(), line!(),
-                self.interpolated_imvol.row(i).to_owned());
-            LinearInterpolator1D::new(
+            let interp = LinearInterpolator1D::new(
                 forward_monenyess_array[i].to_owned(),
                 self.interpolated_imvol.row(i).to_owned(),
                 ExtraPolationType::Flat,
@@ -231,6 +222,7 @@ impl EquityLocalVolatilitySurface {
                 forward_monenyess_array[i].to_owned(),
                 self.interpolated_imvol.row(i).to_owned()
             ))?;
+            f_interpolators.push(interp);
         }
 
 
@@ -265,7 +257,7 @@ impl EquityLocalVolatilitySurface {
                 maturity, self.name, self.code
             ))?;
             
-        let dividend_deduction_ratio = self.underlying_equity
+        let dividend_deduction_ratio = self.market_price
             .borrow()
             .get_dividend_deduction_ratio(maturity)
             .with_context(|| anyhow!(
@@ -279,9 +271,22 @@ impl EquityLocalVolatilitySurface {
 
         Ok(fwd)
     }
+
+    pub fn get_imvol_matuirty_dates(&self) -> &Vec<OffsetDateTime> {
+        &self.imvol_maturity_dates
+    }
+
+    pub fn get_imvol_maturity_times(&self) -> &Array1<Time> {
+        &self.imvol_maturity_times
+    }
+
+    pub fn get_interpolated_imvol(&self) -> &Array2<Real> {
+        &self.interpolated_imvol
+    }
+
 }
 
-impl VolatilityTrait for EquityLocalVolatilitySurface {
+impl VolatilityTrait for LocalVolatilitySurface {
     fn get_value(&self, t: Time, forward_moneyness: Real) -> Real {
         self.forward_monenyess_imvol.interpolate(t, forward_moneyness)
             .expect("Failed to interpolate implied volatility")
@@ -333,21 +338,22 @@ impl VolatilityTrait for EquityLocalVolatilitySurface {
         right_spot_moneyness: Option<Real>,
         bump: Real
     ) -> Result<()> {
-        let time1 = time1.unwrap_or(Real::MIN);
-        let time2 = time2.unwrap_or(Real::MAX);
-        let left_spot_moneyness = left_spot_moneyness.unwrap_or(Real::MIN);
-        let right_spot_moneyness = right_spot_moneyness.unwrap_or(Real::MAX);
+        let time1 = time1.unwrap_or(Time::MIN + 10.0);
+        let time2 = time2.unwrap_or(Time::MAX - 10.0);
+        let left_spot_moneyness = left_spot_moneyness.unwrap_or(Real::MIN + 10.0);
+        let right_spot_moneyness = right_spot_moneyness.unwrap_or(Real::MAX - 10.0);
 
+        let eps = 1.0e-4;
         let time_length = self.imvol_maturity_times.len();
         let spot_moneyness_length = self.imvol_spot_moneyness.len();
         for i in 0..time_length {
             let t = self.imvol_maturity_times[i];
-            if t <= time1 || t > time2 {
+            if !(time1 + eps < t && t <= time2 + eps) {
                 continue;
             }
             for j in 0..spot_moneyness_length {
                 let x = self.imvol_spot_moneyness[j];
-                if x <= left_spot_moneyness || x > right_spot_moneyness {
+                if !(left_spot_moneyness + eps < x && x <= right_spot_moneyness + eps) {
                     continue;
                 }
                 self.interpolated_imvol[[i, j]] += bump;
@@ -366,43 +372,30 @@ mod tests {
     use crate::data::{
         surface_data::SurfaceData,
         vector_data::VectorData,
-        value_data::ValueData,
     };
-    use crate::parameters::zero_curve;
     use crate::{
         vectordatasample,
-        valuedatasample,
         surfacedatasample,
     };
     use crate::parameters::volatilities::volatiltiy_interpolator::{AndreasenHuge, VolatilityInterplator};
-    use crate::math::interpolators::{
-        bilinear_interpolator::BilinearInterpolator,
-        linear_interpolator::LinearInterpolator1D,
-    };
+    use crate::math::interpolators::
+        bilinear_interpolator::BilinearInterpolator;
     use crate::parameters::{
         volatility::VolatilityTrait,
         zero_curve::ZeroCurve,
     };
     use crate::evaluation_date::EvaluationDate;
-    use crate::assets::equity::{self, Equity};
-    use crate::time::calendars::nullcalendar::NullCalendar;
+    use crate::market_price::MarketPrice;
     use crate::enums::StickynessType;
-    use crate::math::interpolator::ExtraPolationType;
-    use crate::utils::string_arithmetic::{
-        from_period_string_to_float,
-        add_period,
-    };
+    use crate::utils::string_arithmetic::add_period;
     use crate::definitions::{Time, Real};
-    use crate::assets::currency::Currency;
+    use crate::currency::Currency;
     use std::{
         rc::Rc,
         cell::RefCell,
     };
-    use ndarray::{Array1, Array2};
-    use time::{
-        OffsetDateTime,
-        macros::datetime,
-    };
+    use ndarray::{Array1, Array2, prelude::*};
+    use time::macros::datetime;
     use anyhow::Result;
     //
     #[test]
@@ -412,7 +405,7 @@ mod tests {
 
         let equity = Rc::new(
             RefCell::new(
-                Equity::new(
+                MarketPrice::new(
                     spot,
                     eval_date.clone(),
                     None,
@@ -441,22 +434,13 @@ mod tests {
         //println!("vector_data: {:?}", dummy_data);
         //println!("surface_data: {:?}", surface_data);
 
-        let vega_structure_tenors = vec![
-            String::from("1M"),
-            String::from("6M"),
-            String::from("1Y"),
-            ];
-
-        let vega_matrix_spot_moneyness = Array1::from_vec(vec![0.5, 1.0, 1.5]);
-
-        let mut local_volatiltiy_surface = EquityLocalVolatilitySurface::initialize(
+        let mut local_volatiltiy_surface = LocalVolatilitySurface::initialize(
             evaluation_date.clone(),
             equity.clone(),
             zero_curve.clone(),
             zero_curve.clone(),
             StickynessType::default(),
             VolatilityInterplator::AndreasenHuge(AndreasenHuge::default()),
-            BilinearInterpolator::default(),
             "local vol".to_string(),
             "local vol".to_string(),
         );
@@ -464,25 +448,124 @@ mod tests {
         let vega_structure_tenors = vec!["1M", "2M", "3M", "6M", "9M", "1Y", "1Y6M", "2Y", "3Y"]
             .iter().map(|tenor| tenor.to_string()).collect::<Vec<String>>();
 
-        let times = vega_structure_tenors.iter().map(|tenor| from_period_string_to_float(tenor.as_str())).collect::<Result<Vec<Time>>>()?;
+        let time_calculator = NullCalendar::new();
+        let dates = surface_data.get_dates();
+        let times: Vec<Time> = dates.iter().map(|date| time_calculator.get_time_difference(&eval_date, date))
+            .collect::<Vec<Time>>().into();
 
-        let vega_spot_moneyness: Vec<Real> = vec![0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4];
+        let vega_spot_moneyness = Array1::linspace(0.6, 1.4, 17);
 
         local_volatiltiy_surface = local_volatiltiy_surface.with_market_surface(
             &surface_data,
             vega_structure_tenors,
-            Array1::from_vec(vega_spot_moneyness.clone()),
+            vega_spot_moneyness.clone(),
         )?;
+
+        let mut calc_vol = Array2::zeros((times.len(), vega_spot_moneyness.len()));
 
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {
-                println!("time: {}, spot_moneyness: {}, value: {}", 
-                times[i], 
-                vega_spot_moneyness[j], 
-                local_volatiltiy_surface.get_value(times[i], vega_spot_moneyness[j]
-                ));
+                calc_vol[[i, j]] = local_volatiltiy_surface.get_value(
+                    times[i], 
+                    vega_spot_moneyness[j]
+                );
             }
         }
+
+        let original_value = surface_data.get_value();
+        let original_value_sliced = original_value.slice(
+            s![0..times.len(), 6..23]
+        ).to_owned();
+
+        let relative_error = &original_value_sliced - &calc_vol;
+        let max_error = relative_error.mapv(|x| x.abs())
+            .iter()
+            .fold(0.0, |acc: Real, &x| acc.max(x));
+
+        assert!(max_error < 1.0e-6, "max error: {}", max_error);
+
+        local_volatiltiy_surface.bump_volatility(
+            Some(2.0),
+            None,
+            None,
+            None,
+            0.01
+        )?;
+
+        let mut bumped_calc_vol1 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
+
+        for i in 0..times.len() {
+            for j in 0..vega_spot_moneyness.len() {
+                bumped_calc_vol1[[i, j]] = local_volatiltiy_surface.get_value(
+                    times[i], 
+                    vega_spot_moneyness[j]
+                );
+            }
+        }
+        
+        local_volatiltiy_surface.bump_volatility(
+            Some(1.5),
+            Some(2.0),
+            None,
+            Some(0.7),
+            0.01
+        )?;
+
+        let mut bumped_calc_vol2 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
+        for i in 0..times.len() {
+            for j in 0..vega_spot_moneyness.len() {
+                bumped_calc_vol2[[i, j]] = local_volatiltiy_surface.get_value(
+                    times[i], 
+                    vega_spot_moneyness[j]
+                );
+            }
+        }
+        let diff_8th = &bumped_calc_vol1.row(7) - &calc_vol.row(7);
+        assert!(diff_8th.iter().all(|&x| x.abs() < 1.0e-6), "diff_8th: {:?}", diff_8th);
+        let diff_9th = &bumped_calc_vol1.row(8) - &calc_vol.row(8);
+        assert!(diff_9th.iter().all(|&x| (x - 0.01).abs() < 1.0e-6), "diff_9th: {:?}", diff_9th);
+
+        let diff2_8th = &bumped_calc_vol2.row(7) - &calc_vol.row(7);
+        for (i, x) in diff2_8th.iter().enumerate() {
+            if i <= 2 {
+                assert!((x - 0.01).abs() < 1.0e-6, "diff2_8th: {:?}", diff2_8th);
+            } else {
+                assert!(x.abs() < 1.0e-6, "diff2_8th: {:?}", diff2_8th);
+            }
+        }
+
+        local_volatiltiy_surface.bump_volatility(
+            Some(2.0),
+            None,
+            None,
+            None,
+            -0.01
+        )?;
+
+        local_volatiltiy_surface.bump_volatility(
+            Some(1.5),
+            Some(2.0),
+            None,
+            Some(0.7),
+            -0.01
+        )?;
+
+        let mut bumped_calc_vol3 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
+        for i in 0..times.len() {
+            for j in 0..vega_spot_moneyness.len() {
+                bumped_calc_vol3[[i, j]] = local_volatiltiy_surface.get_value(
+                    times[i], 
+                    vega_spot_moneyness[j]
+                );
+            }
+        }
+
+        let diff_last = &bumped_calc_vol3 - &calc_vol;
+        let max_diff = diff_last.mapv(|x| x.abs())
+            .iter()
+            .fold(0.0, |acc: Real, &x| acc.max(x));
+
+        assert!(max_diff < 1.0e-6, "diff_last: {:?}", diff_last);   
 
         Ok(())
     }

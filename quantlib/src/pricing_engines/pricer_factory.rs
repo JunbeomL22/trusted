@@ -1,7 +1,4 @@
-use crate::assets::{
-    equity::Equity,
-    fx::{FX, FxCode},
-};
+use crate::currency::FxCode;
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
@@ -9,15 +6,15 @@ use crate::parameters::{
     quanto::Quanto,
     volatility::Volatility,
 };
+use crate::market_price::MarketPrice;
 use crate::data::history_data::CloseData;
-use crate::definitions::Real;
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, InstrumentTrait};
 use crate::pricing_engines::{
     match_parameter::MatchParameter,
     pricer::Pricer,
-    equity_futures_pricer::EquityFuturesPricer,
-    equity_option_analytic_pricer::EquityOptionAnalyticPricer,
+    futures_pricer::FuturesPricer,
+    option_analytic_pricer::OptionAnalyticPricer,
     bond_pricer::BondPricer,
     ktbf_pricer::KtbfPricer,
     fx_futures_pricer::FxFuturesPricer,
@@ -34,8 +31,8 @@ use anyhow::{Result, anyhow};
 
 pub struct PricerFactory {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-    equities: HashMap<String, Rc<RefCell<Equity>>>,
+    fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
+    equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
@@ -47,8 +44,8 @@ pub struct PricerFactory {
 impl PricerFactory {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        fxs: HashMap<FxCode, Rc<RefCell<FX>>>,
-        equities: HashMap<String, Rc<RefCell<Equity>>>,
+        fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
+        equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
         zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
         dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
         underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
@@ -71,8 +68,8 @@ impl PricerFactory {
 
     pub fn create_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let pricer = match Rc::as_ref(instrument) {
-            Instrument::EquityFutures(_) => self.get_equity_futures_pricer(instrument)?,
-            Instrument::EquityVanillaOption(_) => self.get_equity_vanilla_option_pricer(instrument)?,
+            Instrument::Futures(_) => self.get_futures_pricer(instrument)?,
+            Instrument::VanillaOption(_) => self.get_vanilla_option_pricer(instrument)?,
             Instrument::Bond(_) => self.get_bond_pricer(instrument)?,
             Instrument::KTBF(_) => self.get_ktbf_pricer(instrument)?,
             Instrument::FxFutures(_) => self.get_fx_futures_pricer(instrument)?,
@@ -146,12 +143,12 @@ impl PricerFactory {
         Ok(Pricer::BondPricer(core))
 
     }
-    fn get_equity_futures_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
+    fn get_futures_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let underlying_codes = instrument.get_underlying_codes();
         let equity = self.equities.get(underlying_codes[0]).unwrap().clone();
         let collatral_curve_name = self.match_parameter.get_collateral_curve_names(instrument)?[0];
         let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(instrument)?[0];
-        let core = EquityFuturesPricer::new(
+        let core = FuturesPricer::new(
             self.evaluation_date.clone(),
             equity,
             self.zero_curves.get(collatral_curve_name)
@@ -167,10 +164,10 @@ impl PricerFactory {
                 borrowing_curve_name,
             ))?.clone(),
         );
-        Ok(Pricer::EquityFuturesPricer(core))
+        Ok(Pricer::FuturesPricer(core))
     }
 
-    fn get_equity_vanilla_option_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
+    fn get_vanilla_option_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let equity = self.equities.get(instrument.get_underlying_codes()[0])
             .ok_or_else(|| anyhow::anyhow!(
                 "({}:{}) failed to get equity of {}.\nself.equities does not have {}",
@@ -217,7 +214,7 @@ impl PricerFactory {
             },
             true => None,
         };
-        let core = EquityOptionAnalyticPricer::new(
+        let core = OptionAnalyticPricer::new(
             self.evaluation_date.clone(),
             equity,
             collatral_curve,
@@ -226,7 +223,7 @@ impl PricerFactory {
             volatility,
             quanto,
         );
-        Ok(Pricer::EquityOptionAnalyticPricer(core))
+        Ok(Pricer::OptionAnalyticPricer(core))
     }
 
     fn get_ktbf_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {

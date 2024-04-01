@@ -1,5 +1,5 @@
 use crate::instruments::instrument_info::InstrumentInfo;
-use crate::assets::currency::Currency;
+use crate::currency::Currency;
 use crate::definitions::{Real, Integer};
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::utils::number_format::write_number_with_commas;
@@ -416,11 +416,11 @@ impl CalculationResult {
 mod tests {
     use super::*;
     use crate::{
-        assets::currency::Currency, 
+        currency::Currency, 
         instrument::Instrument,
         instruments::{
             instrument_info::InstrumentInfo, 
-            equity_futures::EquityFutures
+            futures::Futures
         },
     };
     use time::macros::datetime;
@@ -439,7 +439,7 @@ mod tests {
 
     #[test] // test serialization
     fn test_calculation_result_serialization() {
-        let equity_futures = EquityFutures::new(
+        let equity_futures = Futures::new(
             300.0,
             datetime!(2021-01-01 09:00:00 +09:00),
             datetime!(2022-01-01 15:40:00 +09:00),
@@ -453,7 +453,7 @@ mod tests {
             "KOSPI200".to_string(),
         );
 
-        let inst = Instrument::EquityFutures(equity_futures);
+        let inst = Instrument::Futures(equity_futures);
 
         let fut_trait = inst;
         let name = fut_trait.get_name();
