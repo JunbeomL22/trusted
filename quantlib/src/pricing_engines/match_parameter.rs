@@ -296,6 +296,16 @@ impl MatchParameter {
             _ => Ok(&self.dummy_string),
         }
     }
+
+    pub fn get_collateral_curve_map(&self) -> &HashMap<String, String> {
+        &self.collateral_curve_map
+    }
+
+    pub fn get_borrowing_curve_map(&self) -> &HashMap<String, String> {
+        &self.borrowing_curve_map
+    }
+
+    
 }
 
 

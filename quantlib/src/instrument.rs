@@ -308,6 +308,21 @@ impl Instruments {
         res
     }
 
+    pub fn instruments_with_underlying_for_vega(
+        &self, 
+        und_code: &String,
+    ) -> Vec<Rc<Instrument>> {
+        let mut res = Vec::<Rc<Instrument>>::new();
+        for instrument in self.instruments.iter() {
+            let names = instrument.get_underlying_codes();
+            let type_name = instrument.get_type_name();
+            if names.contains(&und_code) && type_name != "Futures" {
+                res.push(instrument.clone());
+            }
+        }
+        res
+    }
+
     pub fn instruments_with_currency(&self, currency: &Currency) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
@@ -765,7 +780,7 @@ mod tests {
         assert_eq!(irs.get_code(), instruments_with_krw[1].get_code());
 
         // test instruments_with_type
-        let instruments_with_equity_futures = instruments.instruments_with_type("EquityFutures");
+        let instruments_with_equity_futures = instruments.instruments_with_type("Futures");
         assert_eq!(fut1.get_code(), instruments_with_equity_futures[0].get_code());
         assert_eq!(fut2.get_code(), instruments_with_equity_futures[1].get_code());
 

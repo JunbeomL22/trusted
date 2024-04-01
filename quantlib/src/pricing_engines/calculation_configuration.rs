@@ -1,5 +1,6 @@
 use crate::definitions::{Real, Integer};
 use crate::enums::{StickynessType, VanillaOptionCalculationMethod};
+use crate::parameters::volatilities::volatiltiy_interpolator::VolatilityInterplator;
 use serde::{Serialize, Deserialize};
 use anyhow::{anyhow, Result};
 use ndarray::Array1;
@@ -24,6 +25,7 @@ pub struct CalculationConfiguration {
     vega_matrix: bool,
     //
     stickyness_type: StickynessType,
+    lv_interpolator: VolatilityInterplator,
     //
     delta_bump_ratio: Real,
     gamma_bump_ratio: Real,
@@ -40,6 +42,7 @@ pub struct CalculationConfiguration {
     vega_matrix_spot_moneyness: Array1<Real>,
     // 
     vanilla_option_calculation_method: VanillaOptionCalculationMethod,
+    //
 }
 
 impl Default for CalculationConfiguration {
@@ -97,6 +100,7 @@ impl Default for CalculationConfiguration {
             div_structure: false,
             vega_matrix: false,
             stickyness_type: StickynessType::StickyToMoneyness,
+            lv_interpolator: VolatilityInterplator::default(),
             delta_bump_ratio: 0.01,
             gamma_bump_ratio: 0.01,
             vega_bump_value: 0.01,
@@ -130,6 +134,7 @@ impl CalculationConfiguration {
         vega_matrix: bool,
         theta_day: Integer,
         stickyness_type: StickynessType,
+        lv_interpolator: VolatilityInterplator,
         delta_bump_ratio: Real,
         gamma_bump_ratio: Real,
         vega_bump_value: Real,
@@ -190,7 +195,10 @@ impl CalculationConfiguration {
             div_structure,
             rho_structure,
             vega_matrix,
+            //
             stickyness_type,
+            lv_interpolator,
+            //
             delta_bump_ratio,
             gamma_bump_ratio,
             vega_bump_value,
@@ -326,6 +334,16 @@ impl CalculationConfiguration {
         self
     }
 
+    pub fn with_lv_interpolator(mut self, lv_interpolator: VolatilityInterplator) -> CalculationConfiguration {
+        self.lv_interpolator = lv_interpolator;
+        self
+    }
+
+    pub fn with_stickyness_type(mut self, stickyness_type: StickynessType) -> CalculationConfiguration {
+        self.stickyness_type = stickyness_type;
+        self
+    }
+
     pub fn get_vanilla_option_calculation_method(&self) -> VanillaOptionCalculationMethod {
         self.vanilla_option_calculation_method
     }
@@ -411,6 +429,10 @@ impl CalculationConfiguration {
 
     pub fn get_fx_exposure_calculation(&self) -> bool {
         self.fx_exposure
+    }
+
+    pub fn get_lv_interpolator(&self) -> VolatilityInterplator {
+        self.lv_interpolator.clone()
     }
 
 }

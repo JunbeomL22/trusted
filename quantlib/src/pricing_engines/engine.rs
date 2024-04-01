@@ -1,4 +1,5 @@
 use crate::instruments::instrument_info::InstrumentInfo;
+use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
@@ -12,12 +13,13 @@ use crate::definitions::{
     Real, Time, 
     DELTA_PNL_UNIT, VEGA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT,
 };
-use crate::market_price::MarketPrice;
+use crate::market_price::{self, MarketPrice};
 use crate::currency::{Currency, FxCode};
 
 use crate::data::{
     vector_data::VectorData,
     value_data::ValueData,
+    surface_data::SurfaceData,
     history_data::CloseData,
 };
 use crate::util::format_duration;
@@ -41,6 +43,7 @@ use std::{
     cell::RefCell,
 };
 use anyhow::{Result, Context, anyhow, bail};
+use chrono::Local;
 use time::{OffsetDateTime, Duration};
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
@@ -57,7 +60,7 @@ pub struct Engine {
     equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
-    underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
+    volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
     quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
     past_close_data: HashMap<String, Rc<CloseData>>,
     // instruments
@@ -80,6 +83,7 @@ impl Engine {
         curve_data: HashMap<String, VectorData>,
         dividend_data: HashMap<String, VectorData>,
         equity_constant_volatility_data: HashMap<String, ValueData>,
+        equity_volatility_surface_data: HashMap<String, SurfaceData>,
         fx_constant_volatility_data: HashMap<FxCode, ValueData>,
         quanto_correlation_data: HashMap<(String, FxCode), ValueData>,
         past_close_data: HashMap<String, Rc<CloseData>>,
@@ -222,7 +226,7 @@ impl Engine {
             equities.insert(key.clone(), rc);
             }
         
-        let mut underlying_volatilities = HashMap::new();
+        let mut volatilities = HashMap::new();
         for (key, data) in equity_constant_volatility_data.iter() {
             let rc = Rc::new(RefCell::new(
                 Volatility::ConstantVolatility(
@@ -233,7 +237,44 @@ impl Engine {
                     )
                 )
             ));
-            underlying_volatilities.insert(key.clone(), rc);
+            volatilities.insert(key.clone(), rc);
+        }
+        for (key, data) in equity_volatility_surface_data.iter() {
+            let market_price = equities.get(key)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get market price for {}", 
+                    file!(), line!(), key))?.clone();
+            let collateral_curve_map = match_parameter.get_collateral_curve_map()
+                    .get(key)
+                    .with_context(|| anyhow!(
+                        "({}:{}) failed to get collateral curve map for {}", 
+                        file!(), line!(), key))?;
+
+            let collateral_curve = zero_curves.get(collateral_curve_map)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get collateral curve for {}", 
+                    file!(), line!(), key))?.clone();
+
+            let borrowing_curve_map = match_parameter.get_borrowing_curve_map()
+                .get(key)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get borrowing curve map for {}", 
+                    file!(), line!(), key))?;
+            let borrowing_curve = zero_curves.get(borrowing_curve_map)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get borrowing curve for {}", 
+                    file!(), line!(), key))?.clone();
+                
+            let lv = LocalVolatilitySurface::initialize(
+                evaluation_date.clone(),
+                data,
+                market_price,
+                collateral_curve,
+                borrowing_curve,
+                key.clone(),
+            );
+
+            volatilities.insert(key.clone(), rc);
         }
         Ok(Engine {
             engine_id: engine_id,
@@ -251,7 +292,7 @@ impl Engine {
             equities,
             zero_curves,
             dividends,
-            underlying_volatilities,
+            volatilities,
             quantos,
             past_close_data,
             //
@@ -715,7 +756,7 @@ impl Engine {
         for vol_code in all_underlying_codes {
             // bump the volatility but limit the scope that is mutably borrowed
             {
-                (*self.underlying_volatilities
+                (*self.volatilities
                     .get(vol_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
@@ -765,7 +806,86 @@ impl Engine {
             }
             // put back the bump
             {
-                (*self.underlying_volatilities
+                (*self.volatilities
+                    .get(vol_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) volatility {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        vol_code, self.err_tag
+                    ))?).as_ref().borrow_mut()
+                    .bump_volatility(
+                        None, 
+                        None, 
+                        None,
+                        None,
+                        -bump_val
+                    )?;
+            }
+        }
+        Ok(())
+    }
+
+    // set vega structure performs the bump from the tail
+    // this is for the arbitrage condition
+    // say the bumped vector is vega_structure_up, with the length N
+    // then vega_structure[i] = vege_structure_up[i] - vega_structure_up[i+1]
+    // ... for i = 0, 1, ..., N-2 and
+    // vega_structure[N-1] = vega_structure_up[N-1] - npv
+    pub fn set_vega_structure(&mut self) -> Result<()> {
+        let mut npvs_up: HashMap::<String, Real>;
+        let all_underlying_codes = self.instruments.get_all_underlying_codes();
+        let bump_val = self.calculation_configuration.get_vega_bump_value();
+        let mut npv: Real;
+
+        for vol_code in all_underlying_codes {
+            // bump the volatility but limit the scope that is mutably borrowed
+            {
+                (*self.volatilities
+                    .get(vol_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) volatility {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        vol_code, self.err_tag
+                    ))?)
+                    .as_ref()
+                    .borrow_mut()
+                    .bump_volatility(
+                        None, 
+                        None, 
+                        None,
+                        None,
+                        bump_val)?;
+            }
+
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying_for_vega(vol_code);
+
+            npvs_up = self.get_npvs().context("failed to get npvs")?; // instrument code (String) -> npv (Real
+
+            for inst in &self.instruments_in_action {
+                let inst_code = inst.get_code();
+                let unitamt = inst.get_unit_notional();
+                let npv_up = npvs_up.get(inst_code)
+                    .ok_or_else(|| anyhow!("npv_up is not set"))?;
+
+                npv = self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!("result is not set"))?
+                    .borrow()
+                    .get_npv_result()
+                    .ok_or_else(|| anyhow!("npv is not set"))?
+                    .get_npv();
+
+                let vega = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
+                (*self.calculation_results
+                    .get(inst.get_code())
+                    .ok_or_else(|| anyhow!("result is not set for {}", inst.get_code()))?)
+                    .borrow_mut()
+                    .set_single_vega(vol_code, vega);
+            }
+            // put back the bump
+            {
+                (*self.volatilities
                     .get(vol_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
