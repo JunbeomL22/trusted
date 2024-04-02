@@ -241,6 +241,8 @@ impl Engine {
             volatilities.insert(key.clone(), rc);
         }
         for (key, data) in equity_volatility_surface_data.iter() {
+            let vega_matrix_spot_moneyness = calculation_configuration.get_vega_matrix_spot_moneyness();
+            let vega_structure_tenors = calculation_configuration.get_vega_structure_tenors();
             let market_price = equities.get(key)
                 .with_context(|| anyhow!(
                     "({}:{}) failed to get market price for {}", 
@@ -269,7 +271,7 @@ impl Engine {
             let stickyness = calculation_configuration.get_stickyness_type();
             let lv_interpolator = calculation_configuration.get_lv_interpolator();
 
-            let lv = LocalVolatilitySurface::initialize(
+            let mut lv = LocalVolatilitySurface::initialize(
                 evaluation_date.clone(),
                 market_price,
                 collateral_curve,
@@ -278,7 +280,13 @@ impl Engine {
                 lv_interpolator,
                 key.clone(),
                 key.clone(),
-            );
+            ).with_market_surface(
+                &data,
+                vega_structure_tenors.clone(),
+                vega_matrix_spot_moneyness.clone(),
+            )?;
+
+            lv.build()?;
 
             let rc = Rc::new(RefCell::new(
                 Volatility::LocalVolatilitySurface(lv)
@@ -345,7 +353,7 @@ impl Engine {
         );
 
         let dt = self.evaluation_date.borrow().get_date_clone();
-        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(None, &dt);
+        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(None, &dt, None);
 
         if !insts_over_maturity.is_empty() {
             let mut inst_codes = Vec::<String>::new();
@@ -374,7 +382,11 @@ impl Engine {
             );
         }
 
-        let insts_with_very_short_maturity = self.instruments.instruments_with_maturity_upto(None, &(dt + Duration::hours(6)));
+        let insts_with_very_short_maturity = self.instruments.instruments_with_maturity_upto(
+            None, &(dt + Duration::hours(6)),
+            None,
+        );
+
         if !insts_with_very_short_maturity.is_empty() {
             let mut inst_codes = Vec::<String>::new();
             let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
@@ -572,6 +584,48 @@ impl Engine {
         Ok(())
     }
 
+    pub fn preprocess_delta_gamma(&mut self) -> Result<()> {
+        let preprocess_types = vec!["Stock", "Futures"];
+        let insts = self.instruments.instruments_with_types(&preprocess_types);
+        
+        // set delta for values * DELTA_PNL_UNIT, gamma = 0.0
+        for inst in insts {
+            let inst_code = inst.get_code();
+            let unitamt = inst.get_unit_notional();
+            let value = self.calculation_results
+                .get(inst_code)
+                .ok_or_else(|| anyhow!(
+                    "({}:{}) result is not set in {} ({})",
+                    file!(), line!(), inst_code, inst.get_type_name(),
+                ))?
+                .borrow()
+                .get_value()
+                .ok_or_else(|| anyhow!(
+                    "({}:{}) value is not set in {} ({})", 
+                    file!(), line!(), inst_code, inst.get_type_name(),
+                ))?;
+            let delta = value * DELTA_PNL_UNIT;
+            let gamma = 0.0;
+            (*self.calculation_results
+                .get(inst_code)
+                .ok_or_else(|| anyhow!(
+                    "({}:{}) result is not set in {} ({})",
+                    file!(), line!(), inst_code, inst.get_type_name(),
+                ))?)
+                .borrow_mut()
+                .set_single_delta(&inst_code, delta * unitamt);
+            (*self.calculation_results
+                .get(inst_code)
+                .ok_or_else(|| anyhow!(
+                    "({}:{}) result is not set in {} ({})",
+                    file!(), line!(), inst_code, inst.get_type_name(),
+                ))?)
+                .borrow_mut()
+                .set_single_gamma(&inst_code, gamma * unitamt);
+        }
+
+        Ok(())
+    }
     
     pub fn set_delta_gamma(&mut self) -> Result<()> {
         self.reset_instruments_in_action();
@@ -591,8 +645,18 @@ impl Engine {
 
         let up_bump = 1.0 + delta_bump_ratio;
         let down_bump = 1.0 - delta_bump_ratio;
-        
+        let exclude_type = vec!["Stock", "Futures"];
+        let exclude_type_clone = exclude_type.clone();
         for und_code in all_underlying_codes.iter() {
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying(
+                    und_code,
+                    Some(exclude_type_clone.clone()),
+                );
+            
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
             original_price = self.equities
                 .get(*und_code)
                 .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
@@ -600,9 +664,6 @@ impl Engine {
                 .get_value();
 
             // set instruments that needs to be calculated
-            self.instruments_in_action = self.instruments
-                .instruments_with_underlying(und_code);
-
             {
                 let mut stock = (*self.equities
                     .get(*und_code)
@@ -694,11 +755,19 @@ impl Engine {
         let mut npvs_up: HashMap::<String, Real>;
         let all_curve_names = self.instruments.get_all_curve_names(&self.match_parameter)?;
         let bump_val = self.calculation_configuration.get_rho_bump_value();
-
+        let exclude_type = vec!["Stock"];
+        let exclude_type_clone = exclude_type.clone();
+        
         for curve_name in all_curve_names {
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_name, &self.match_parameter)?;
-
+                .instruments_using_curve(
+                    curve_name, 
+                    &self.match_parameter,
+                    Some(exclude_type_clone.clone()),
+                )?;
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
             // bump the curve but limit the scope that the zero_curve ismutably borrowed
             {
                 (*self.zero_curves.get(curve_name)
@@ -756,8 +825,19 @@ impl Engine {
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
         let bump_val = self.calculation_configuration.get_vega_bump_value();
         let mut npv: Real;
-
+        let exclude_type = vec!["Futures", "Stock"];
+        let exclude_type_clone = exclude_type.clone();
         for vol_code in all_underlying_codes {
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying(
+                    vol_code,
+                    Some(exclude_type_clone.clone()),
+                );
+            
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
+
             // bump the volatility but limit the scope that is mutably borrowed
             {
                 (*self.volatilities
@@ -776,9 +856,6 @@ impl Engine {
                         None,
                         bump_val)?;
             }
-
-            self.instruments_in_action = self.instruments
-                .instruments_with_underlying(vol_code);
 
             npvs_up = self.get_npvs().context("failed to get npvs")?; // instrument code (String) -> npv (Real
 
@@ -836,73 +913,136 @@ impl Engine {
     // ... for i = 0, 1, ..., N-2 and
     // vega_structure[N-1] = vega_structure_up[N-1] - npv
     pub fn set_vega_structure(&mut self) -> Result<()> {
-        let mut npvs_up: HashMap::<String, Real>;
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
-        let bump_val = self.calculation_configuration.get_vega_bump_value();
+        let eval_dt = self.evaluation_date.borrow().get_date_clone();
+        let bump_val = self.calculation_configuration.get_vega_structure_bump_value();
+        let calc_tenors = self.calculation_configuration.get_vega_structure_tenors();
+        let tenor_length = calc_tenors.len();
+        let time_calculator = NullCalendar::default(); 
+        let calc_times = calc_tenors.iter()
+            .map(|tenor| add_period(&eval_dt, tenor.as_str()))
+            .map(|dt| time_calculator.get_time_difference(&eval_dt, &dt))
+            .collect::<Vec<Time>>();
+
+        // instrument code (String) -> npv (Real)
+        let mut current_npvs_up: HashMap::<String, Real>;
         let mut npv: Real;
+        let mut npv_up: Real;
+        let mut val: Real;
+        // inst code (String) -> Vec<Real>
+        let mut single_vega_structure: HashMap::<String, Vec<Real>>;
+        let exclude_type = vec!["Cash", "Stock", "Futures"];
+        let exclude_type_clone = exclude_type.clone();
 
-        for vol_code in all_underlying_codes {
-            // bump the volatility but limit the scope that is mutably borrowed
-            {
-                (*self.volatilities
-                    .get(vol_code)
-                    .ok_or_else(|| anyhow!(
-                        "({}:{}) volatility {} is not set\ntag:\n{}", 
-                        file!(), line!(),
-                        vol_code, self.err_tag
-                    ))?)
-                    .as_ref()
-                    .borrow_mut()
-                    .bump_volatility(
-                        None, 
-                        None, 
-                        None,
-                        None,
-                        bump_val)?;
-            }
-
+        for und_code in all_underlying_codes {
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying_for_vega(vol_code);
+                .instruments_with_underlying(
+                    und_code, 
+                    Some(exclude_type_clone.clone()));
+            let longest_maturity = self.instruments.get_longest_maturity(Some(&self.instruments_in_action.clone()));
+            let longest_mat_time = match longest_maturity {
+                Some(m) => time_calculator.get_time_difference(&eval_dt, &m),
+                None => 100_000_000.0
+            };
+            
 
-            npvs_up = self.get_npvs().context("failed to get npvs")?; // instrument code (String) -> npv (Real
-
-            for inst in &self.instruments_in_action {
-                let inst_code = inst.get_code();
-                let unitamt = inst.get_unit_notional();
-                let npv_up = npvs_up.get(inst_code)
-                    .ok_or_else(|| anyhow!("npv_up is not set"))?;
-
-                npv = self.calculation_results
-                    .get(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set"))?
-                    .borrow()
-                    .get_npv_result()
-                    .ok_or_else(|| anyhow!("npv is not set"))?
-                    .get_npv();
-
-                let vega = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
-                (*self.calculation_results
-                    .get(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set for {}", inst.get_code()))?)
-                    .borrow_mut()
-                    .set_single_vega(vol_code, vega);
+            if self.instruments_in_action.is_empty() { continue; }
+            let inst_codes_in_action = self.instruments.get_all_inst_code_clone(
+                Some(&self.instruments_in_action));
+            let init_vec: Vec<Vec<Real>> = vec![vec![0.0; tenor_length];inst_codes_in_action.len()];
+            single_vega_structure = inst_codes_in_action.clone()
+                .into_iter()
+                .zip(init_vec.into_iter())
+                .collect();
+            let mut prev_npvs_up: HashMap::<String, Real> = HashMap::new();
+            for inst_code in inst_codes_in_action.iter() {
+                prev_npvs_up.insert(
+                    inst_code.clone(),
+                    self.calculation_results
+                        .get(inst_code)
+                        .ok_or_else(|| anyhow!(
+                            "({}:{}) result is not set for {}",
+                            file!(), line!(), inst_code,
+                        ))?
+                        .borrow()
+                        .get_npv_result()
+                        .ok_or_else(|| anyhow!(
+                            "({}:{}) npv is not set for {}",
+                            file!(), line!(), inst_code,
+                        ))?
+                        .get_npv()
+                );
             }
-            // put back the bump
-            {
-                (*self.volatilities
-                    .get(vol_code)
-                    .ok_or_else(|| anyhow!(
-                        "({}:{}) volatility {} is not set\ntag:\n{}", 
-                        file!(), line!(),
-                        vol_code, self.err_tag
-                    ))?).as_ref().borrow_mut()
-                    .bump_volatility(
-                        None, 
-                        None, 
-                        None,
-                        None,
-                        -bump_val
-                    )?;
+
+            for i in (0..calc_times.len()).rev() {
+                let bump_start = match i {
+                    0 => None,
+                    _ => Some(calc_times[i-1]),
+                };
+                if let Some(start) = bump_start {
+                    if longest_mat_time < start {
+                        continue;
+                    }
+                }
+
+                let bump_end = Some(calc_times[i]);
+
+                {
+                    (*self.volatilities
+                        .get(und_code)
+                        .ok_or_else(|| anyhow!(
+                            "({}:{}) volatility {} is not set\ntag:\n{}", 
+                            file!(), line!(), und_code, self.err_tag
+                        ))?).as_ref()
+                        .borrow_mut()
+                        .bump_volatility(
+                            bump_start, bump_end, 
+                            None, None,
+                            bump_val)?;
+                }
+                current_npvs_up = self.get_npvs().with_context(|| anyhow!(
+                    "({}:{}) failed to get npvs in vega structure", file!(), line!()))?;
+
+                for inst in self.instruments_in_action.iter() {
+                    let inst_code = inst.get_code();
+                    let unitamt = inst.get_unit_notional();
+                    npv_up = current_npvs_up.get(inst_code)
+                        .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?.clone();
+                    npv = prev_npvs_up.get(inst_code)
+                        .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?.clone();
+                    
+                    let vega_structure = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
+                    single_vega_structure.get_mut(inst_code)
+                        .ok_or_else(|| anyhow!(
+                            "vega_structure is not set for {}", 
+                            inst_code))?[i] = vega_structure;
+                }
+                prev_npvs_up = current_npvs_up.clone();
+                // put back
+                {
+                    (*self.volatilities
+                        .get(und_code)
+                        .ok_or_else(|| anyhow!(
+                            "({}:{}) volatility {} is not set\ntag:\n{}", 
+                            file!(), line!(),
+                            und_code, self.err_tag
+                        ))?).as_ref()
+                        .borrow_mut()
+                        .bump_volatility(
+                            bump_start, bump_end, 
+                            None, None,
+                            -bump_val)?;
+                }
+                for (inst_code, vega_structure) in single_vega_structure.iter() {
+                    (*self.calculation_results
+                        .get(inst_code)
+                        .ok_or_else(|| anyhow!(
+                            "({}:{}) result is not set for {}",
+                            file!(), line!(), inst_code,
+                        ))?)
+                        .borrow_mut()
+                        .set_single_vega_structure(und_code, vega_structure.clone());
+                }
             }
         }
         Ok(())
@@ -913,9 +1053,16 @@ impl Engine {
         let all_dividend_codes = self.instruments.get_all_underlying_codes();
         let bump_val = self.calculation_configuration.get_div_bump_value();
         let mut npv: Real;
-
+        let exclude_type = vec!["Stock", "Cash"];
+        let exclude_type_clone = exclude_type.clone();
+        
         for div_code in all_dividend_codes {
+            self.instruments_in_action = self.instruments
+                .instruments_with_underlying(div_code, Some(exclude_type_clone.clone()));
 
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
             // bump dividend but limit the scope that is mutably borrowed
             {
                 (*self.dividends
@@ -929,9 +1076,6 @@ impl Engine {
                     .borrow_mut()
                     .bump_date_interval(None, None, bump_val)?;
             }
-
-            self.instruments_in_action = self.instruments
-                .instruments_with_underlying(div_code);
 
             npvs_up = self.get_npvs().context("failed to get npvs")?; // instrument code (String) -> npv (Real
 
@@ -972,6 +1116,21 @@ impl Engine {
         Ok(())
     }
 
+    pub fn preprocess_theta(&mut self, inst_type: &Vec<&str>) -> Result<()> {
+        let insts = self.instruments.instruments_with_types(inst_type);
+        for inst in insts {
+            let inst_code = inst.get_code();
+            (*self.calculation_results
+                .get(inst_code)
+                .ok_or_else(|| anyhow!(
+                    "({}:{}) result is not set for {} ({})",
+                    file!(), line!(), inst_code, inst.get_type_name(),
+                ))?)
+                .borrow_mut()
+                .set_theta(0.0);
+        }
+        Ok(())
+    }
     /// Set theta for the given instruments where the evaluation date is bumped to bumped_date. 
     /// Note that the theta result is represented per day. 
     /// Only self.set_theta has the inputs, given_instruments and bumped_dates. 
@@ -990,18 +1149,27 @@ impl Engine {
 
         let mut cash_sum: Real;
         let npvs = self.get_npvs()
-            .context("failed to get npvs")?;
+            .with_context(|| anyhow!(
+                "({}:{}) failed to get npvs",
+                file!(), line!()))?;
 
         // limit the scope that the attribute is mutably borrowed
         
         { (*self.evaluation_date).borrow_mut().set_date(bumped_date.clone()); }
 
         let npvs_theta = self.get_npvs()
-            .context("failed to get npvs")?;
+            .with_context(|| anyhow!(
+                "({}:{}) failed to get npvs",
+                file!(), line!()))?;
 
+        let continue_type = vec!["Stock", "Cash"];
         for inst in self.instruments_in_action.iter() {
             let inst_code = inst.get_code();
             let inst_type = inst.get_type_name();
+            if !continue_type.contains(&inst_type) {
+                continue;
+            };
+
             let result = self.calculation_results
                 .get(inst_code)
                 .context("result is not set")?;
@@ -1076,14 +1244,23 @@ impl Engine {
         // inst code (String) -> Vec<Real>
         let mut single_rho_structure: HashMap<String, Vec<Real>>;
         let mut val: Real;
-        
+        let exclude_type = vec!["Stock", "Cash"];
+        let exclude_type_clone = exclude_type.clone();
         for curve_code in all_curve_codes {
             self.instruments_in_action = self.instruments
-                .instruments_using_curve(curve_code, &self.match_parameter)?;
+                .instruments_using_curve(
+                    curve_code, 
+                    &self.match_parameter,
+                    Some(exclude_type_clone.clone()),
+                )?;
+            
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
+
             let inst_codes_in_action = self.instruments.get_all_inst_code_clone(Some(&self.instruments_in_action));
             let init_vec: Vec<Vec<Real>> = vec![vec![0.0; tenor_length];inst_codes_in_action.len()];
             single_rho_structure = inst_codes_in_action.into_iter().zip(init_vec.into_iter()).collect();
-
             // bump zero_curve by bump_date_interval where calc_dates[i] < date <= calc_dates[i+1]
             for i in 0..calc_times.len() {
                 let bump_start = match i {
@@ -1135,7 +1312,9 @@ impl Engine {
                 let inst_over_bump_end = self.instruments
                     .instruments_with_maturity_over(
                         Some(&self.instruments_in_action), 
-                        &calc_dates[i]);
+                        &calc_dates[i],
+                        Some(exclude_type_clone.clone()),
+                    );
                 if inst_over_bump_end.is_empty() {
                     break;
                 }
@@ -1174,12 +1353,17 @@ impl Engine {
         // inst code (String) -> Vec<Real>
         let mut single_div_structure: HashMap<String, Vec<Real>>;
         let mut val: Real;
-        
+        let exclude_type = vec!["Stock", "Cash"];
+        let exclude_type_clone = exclude_type.clone();
 
         for div_code in all_dividend_codes {
             // reset instruments
             self.instruments_in_action = self.instruments
-                .instruments_with_underlying(div_code);
+                .instruments_with_underlying(div_code, Some(exclude_type_clone.clone()));
+
+            if self.instruments_in_action.is_empty() {
+                continue;
+            }
             // initialize the single_div_structure. insert the inst code and zero vector
             let inst_codes_in_action = self.instruments.get_all_inst_code_clone(Some(&self.instruments_in_action));
 
@@ -1239,7 +1423,9 @@ impl Engine {
                 let inst_over_bump_end = self.instruments
                     .instruments_with_maturity_over(
                         Some(&self.instruments_in_action), 
-                        &calc_dates[i]);
+                        &calc_dates[i],
+                        Some(exclude_type_clone.clone()));
+
                 if inst_over_bump_end.is_empty() {
                     break;
                 }
@@ -1288,6 +1474,7 @@ impl Engine {
         
         if self.calculation_configuration.get_delta_calculation() { 
             timer = std::time::Instant::now();
+            self.preprocess_delta_gamma()?;
             self.set_delta_gamma()?;
             println!(
                 "* delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
@@ -1299,6 +1486,8 @@ impl Engine {
 
         if self.calculation_configuration.get_theta_calculation() {
             timer = std::time::Instant::now();
+            let exclude_type = vec!["Cash", "Stock"];
+            self.preprocess_theta(&exclude_type)?;
             // we separate instruments by 
             // 1) instruments whose maturity is within the evaluation_date + theta_day
             // 2) instruments whose maturity is not within the evaluation_date + theta_day
@@ -1306,10 +1495,18 @@ impl Engine {
                 + Duration::days(self.calculation_configuration.get_theta_day() as i64);
                 
             let insts_upto_bumped_day = self.instruments
-                .instruments_with_maturity_upto(None, &bumped_day);
+                .instruments_with_maturity_upto(
+                    None, 
+                    &bumped_day,
+                    Some(exclude_type.clone()),
+                );
 
             let insts_over_bumped_day = self.instruments
-                .instruments_with_maturity_over(None, &bumped_day);
+                .instruments_with_maturity_over(
+                    None, 
+                    &bumped_day,
+                    Some(exclude_type),
+                );
 
             if !insts_upto_bumped_day.is_empty() {
                 let shortest_maturity = self.instruments.get_shortest_maturity(Some(&insts_upto_bumped_day)).unwrap();

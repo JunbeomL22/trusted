@@ -8,14 +8,20 @@ use serde::{Deserialize, Serialize};
 pub struct Stock {
     name: String,
     code: String,
+    underlying_codes: Vec<String>,
     currency: Currency,
 }
 
 impl Stock {
-    pub fn new(name: String, code: String, currency: Currency) -> Stock {
+    pub fn new(
+        name: String, 
+        code: String, 
+        underlying_codes: Vec<String>,
+        currency: Currency) -> Stock {
         Stock {
             name,
             code,
+            underlying_codes,
             currency,
         }
     }
@@ -40,5 +46,9 @@ impl InstrumentTrait for Stock {
 
     fn get_unit_notional(&self) -> Real {
         1.0
+    }
+
+    fn get_underlying_codes(&self) -> Vec<&String> {
+        vec![&self.underlying_codes[0]]
     }
 }

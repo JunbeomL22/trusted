@@ -19,6 +19,7 @@ use crate::pricing_engines::{
     ktbf_pricer::KtbfPricer,
     fx_futures_pricer::FxFuturesPricer,
     plain_swap_pricer::PlainSwapPricer,
+    null_pricer::NullPricer,
 };
 //
 use std::{
@@ -65,7 +66,7 @@ impl PricerFactory {
             match_parameter,
         }
     }
-
+ 
     pub fn create_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let pricer = match Rc::as_ref(instrument) {
             Instrument::Futures(_) => self.get_futures_pricer(instrument)?,

@@ -263,7 +263,7 @@ impl Instruments {
             }
             
             match instrument.get_type_name() {
-                "StockFutures" |
+                "Futures" |
                 "FxFutures" => {
                     let currency = instrument.get_underlying_currency()
                         .with_context(|| anyhow!(
@@ -297,13 +297,17 @@ impl Instruments {
     pub fn instruments_with_underlying(
         &self, 
         und_code: &String,
-        exlude_type: Vec<&str>,
+        exclude_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
+        let exclude_type = match exclude_type {
+            Some(exlude_type) => exlude_type,
+            None => vec![],
+        };
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.get_underlying_codes();
             let type_name = instrument.get_type_name();
-            if names.contains(&und_code) && !exlude_type.contains(&type_name) {
+            if names.contains(&und_code) && !exclude_type.contains(&type_name) {
                 res.push(instrument.clone());
             }
         }
@@ -320,10 +324,11 @@ impl Instruments {
         res
     }
 
-    pub fn instruments_with_type(&self, type_name: &'static str) -> Vec<Rc<Instrument>> {
+    pub fn instruments_with_types(&self, type_names: &Vec<&str>) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
-            if instrument.get_type_name() == type_name {
+            let type_name = instrument.get_type_name();
+            if type_names.contains(&type_name) {
                 res.push(instrument.clone());
             }
         }
@@ -334,13 +339,21 @@ impl Instruments {
         &self, 
         curve_name: &String,
         match_parameter: &MatchParameter,
+        exclude_type: Option<Vec<&str>>,
     ) -> Result<Vec<Rc<Instrument>>> {
         let mut res = Vec::<Rc<Instrument>>::new();
+        let exclude_type = match exclude_type {
+            Some(exclude_type) => exclude_type,
+            None => vec![],
+        };
         // 1) discount curve
         // 2) collateral curves
         // 3) rate index forward curves
         // borrowing curve can not be hedged, so it skips
         for instrument in self.instruments.iter() {
+            if exclude_type.contains(&instrument.get_type_name()) {
+                continue;
+            }
             // 1)
             if match_parameter.get_discount_curve_name(instrument)? == curve_name {
                 res.push(instrument.clone());
@@ -399,12 +412,21 @@ impl Instruments {
     pub fn instruments_with_maturity_upto(
         &self, 
         instruments: Option<&Vec<Rc<Instrument>>>,
-        maturity: &OffsetDateTime
+        maturity: &OffsetDateTime,
+        exlucde_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
+        let exlucde_type = match exlucde_type {
+            Some(exlucde_type) => exlucde_type,
+            None => vec![],
+        };
+
         match instruments {
             Some(instruments) => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in instruments.iter() {
+                    if exlucde_type.contains(&instrument.get_type_name()) {
+                        continue;
+                    }
                     if let Some(m) = instrument.get_maturity() {
                         if m <= maturity {
                             res.push(instrument.clone());
@@ -416,6 +438,9 @@ impl Instruments {
             None => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in self.instruments.iter() {
+                    if exlucde_type.contains(&instrument.get_type_name()) {
+                        continue;
+                    }
                     if let Some(m) = instrument.get_maturity() {
                         if m <= maturity {
                             res.push(instrument.clone());
@@ -430,12 +455,22 @@ impl Instruments {
     pub fn instruments_with_maturity_over(
         &self, 
         instruments: Option<&Vec<Rc<Instrument>>>,
-        maturity: &OffsetDateTime
+        maturity: &OffsetDateTime,
+        exclude_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
+        let exclude_type = match exclude_type {
+            Some(exclude_type) => exclude_type,
+            None => vec![],
+        };
+        
         match instruments {
             Some(instruments) => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in instruments.iter() {
+                    if exclude_type.contains(&instrument.get_type_name()) {
+                        continue;
+                    }
+
                     if instrument.get_maturity() == None {
                         res.push(instrument.clone());
                     }
@@ -451,6 +486,10 @@ impl Instruments {
             None => {
                 let mut res = Vec::<Rc<Instrument>>::new();
                 for instrument in self.instruments.iter() {
+                    if exclude_type.contains(&instrument.get_type_name()) {
+                        continue;
+                    }
+
                     if instrument.get_maturity() == None {
                         res.push(instrument.clone());
                     }

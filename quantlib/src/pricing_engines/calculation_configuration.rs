@@ -355,6 +355,15 @@ impl CalculationConfiguration {
     pub fn get_vega_structure_tenors(&self) -> &Vec<String> {
         &self.vega_structure_tenors
     }
+
+    pub fn get_vega_matrix_spot_moneyness(&self) -> &Array1<Real> {
+        &self.vega_matrix_spot_moneyness
+    }
+
+    pub fn get_vega_structure_bump_value(&self) -> Real {
+        self.vega_structure_bump_value
+    }
+    
     pub fn get_delta_bump_ratio(&self) -> Real {
         self.delta_bump_ratio
     }   

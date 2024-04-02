@@ -19,7 +19,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct FuturesPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    equity: Rc<RefCell<MarketPrice>>,
+    market_price: Rc<RefCell<MarketPrice>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
 }
@@ -27,13 +27,13 @@ pub struct FuturesPricer {
 impl FuturesPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        equity: Rc<RefCell<MarketPrice>>,
+        market_price: Rc<RefCell<MarketPrice>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
         ) -> FuturesPricer {
         FuturesPricer {
             evaluation_date,
-            equity,
+            market_price,
             collateral_curve,
             borrowing_curve,
         }
@@ -43,7 +43,7 @@ impl FuturesPricer {
         &self, 
         datetime: &OffsetDateTime
     ) -> Result<Real> {
-        let equity_price = self.equity.borrow().get_value();
+        let market_price_price = self.market_price.borrow().get_value();
         let collateral_discount = self.collateral_curve
             .borrow()
             .get_discount_factor_at_date(datetime)
@@ -52,12 +52,12 @@ impl FuturesPricer {
             .borrow()
             .get_discount_factor_at_date(datetime)
             .context("(FuturesPricer::fair_forward) failed to get borrowing discount factor at date")?;
-        let dividend_deduction_ratio = self.equity
+        let dividend_deduction_ratio = self.market_price
             .borrow()
             .get_dividend_deduction_ratio(datetime)
             .context("(FuturesPricer::fair_forward) failed to get dividend deduction ratio at date")?;
 
-        let fwd: Real = equity_price * borrowing_discount / collateral_discount * dividend_deduction_ratio;
+        let fwd: Real = market_price_price * borrowing_discount / collateral_discount * dividend_deduction_ratio;
         Ok(fwd)
     }
 
@@ -66,8 +66,8 @@ impl FuturesPricer {
 impl PricerTrait for FuturesPricer {
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let res = match instrument {
-            Instrument::Futures(equity_futures) => {
-                let maturity = equity_futures.get_maturity().unwrap();
+            Instrument::Futures(futures) => {
+                let maturity = futures.get_maturity().unwrap();
                 let res = NpvResult::new_from_npv(self.fair_forward(&maturity)?);
                 Ok(res)
             }
@@ -80,8 +80,8 @@ impl PricerTrait for FuturesPricer {
 
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
         let res = match instrument {
-            Instrument::Futures(equity_futures) => {
-                let maturity = equity_futures.get_maturity().unwrap();
+            Instrument::Futures(futures) => {
+                let maturity = futures.get_maturity().unwrap();
                 self.fair_forward(&maturity)
             }
             _ => Err(anyhow!(
@@ -93,14 +93,14 @@ impl PricerTrait for FuturesPricer {
 
     fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         match instrument {
-            Instrument::Futures(equity_futures) => {
+            Instrument::Futures(futures) => {
                 let npv = self.npv(instrument)
                     .expect("FuturesPricer::fx_exposure: failed to calculate npv.");
                         
-                let average_trade_price = equity_futures.get_average_trade_price();
-                let unit_notional = equity_futures.get_unit_notional();
+                let average_trade_price = futures.get_average_trade_price();
+                let unit_notional = futures.get_unit_notional();
                 let exposure = (npv - average_trade_price) * unit_notional;
-                let currency = equity_futures.get_currency();
+                let currency = futures.get_currency();
                 let res = HashMap::from_iter(vec![(currency.clone(), exposure)]);
                 Ok(res)
             },
@@ -125,7 +125,7 @@ mod tests {
     use anyhow::Result;
 
     #[test]
-    fn test_equity_futures_engine() -> Result<()> {
+    fn test_futures_engine() -> Result<()> {
         let market_datetime = datetime!(2024-01-02 00:00:00 +09:00);
         let evaluation_date = Rc::new(
             RefCell::new(EvaluationDate::new(market_datetime.clone()))

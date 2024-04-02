@@ -274,6 +274,24 @@ impl CalculationResult {
             },
         }
     }
+
+    pub fn set_single_vega_structure(
+        &mut self, 
+        und_code: &String, 
+        vega_structure: Vec<Real>,
+    ) {
+        match &mut self.vega_strucure {
+            None => {
+                let mut vega_structure_map = HashMap::new();
+                vega_structure_map.insert(und_code.clone(), vega_structure);
+                self.vega_strucure = Some(vega_structure_map);
+            },
+            Some(vega_structure_map) => {
+                vega_structure_map.insert(und_code.clone(), vega_structure);
+            },
+        }
+    }
+    
     pub fn set_single_vega(&mut self, und_code: &String, v: Real) {
         match &mut self.vega {
             None => {

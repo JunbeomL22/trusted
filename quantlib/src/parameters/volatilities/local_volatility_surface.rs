@@ -168,12 +168,10 @@ impl LocalVolatilitySurface {
             }
         }
 
-        self.set_forward_moneyness_volatility()?;
-
         Ok(self)
     }
 
-    fn set_forward_moneyness_volatility(&mut self) -> Result<()> {
+    pub fn build(&mut self) -> Result<()> {
         let calculating_forward_vector = match self.stickyness_type {
             StickynessType::StickyToMoneyness => {
                 let mut forward_vector: Vec<Real> = Vec::new();
@@ -360,7 +358,7 @@ impl VolatilityTrait for LocalVolatilitySurface {
             }
         }
 
-        self.set_forward_moneyness_volatility()?;
+        self.build()?;
 
         Ok(())
     }
@@ -434,7 +432,7 @@ mod tests {
         //println!("vector_data: {:?}", dummy_data);
         //println!("surface_data: {:?}", surface_data);
 
-        let mut local_volatiltiy_surface = LocalVolatilitySurface::initialize(
+        let mut local_volatility_surface = LocalVolatilitySurface::initialize(
             evaluation_date.clone(),
             equity.clone(),
             zero_curve.clone(),
@@ -455,11 +453,13 @@ mod tests {
 
         let vega_spot_moneyness = Array1::linspace(0.6, 1.4, 17);
 
-        local_volatiltiy_surface = local_volatiltiy_surface.with_market_surface(
+        local_volatility_surface = local_volatiltiy_surface.with_market_surface(
             &surface_data,
             vega_structure_tenors,
             vega_spot_moneyness.clone(),
         )?;
+
+        local_volatility_surface.build()?;
 
         let mut calc_vol = Array2::zeros((times.len(), vega_spot_moneyness.len()));
 
@@ -484,7 +484,7 @@ mod tests {
 
         assert!(max_error < 1.0e-6, "max error: {}", max_error);
 
-        local_volatiltiy_surface.bump_volatility(
+        local_volatility_surface.bump_volatility(
             Some(2.0),
             None,
             None,
@@ -503,7 +503,7 @@ mod tests {
             }
         }
         
-        local_volatiltiy_surface.bump_volatility(
+        local_volatility_surface.bump_volatility(
             Some(1.5),
             Some(2.0),
             None,
@@ -534,7 +534,7 @@ mod tests {
             }
         }
 
-        local_volatiltiy_surface.bump_volatility(
+        local_volatility_surface.bump_volatility(
             Some(2.0),
             None,
             None,
@@ -542,7 +542,7 @@ mod tests {
             -0.01
         )?;
 
-        local_volatiltiy_surface.bump_volatility(
+        local_volatilitrmay_surface.bump_volatility(
             Some(1.5),
             Some(2.0),
             None,

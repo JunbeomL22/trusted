@@ -17,3 +17,4 @@ pub mod fx_futures_pricer;
 pub mod engine_factory;
 pub mod futures_pricer;
 pub mod cash_pricer;
+pub mod null_pricer;
