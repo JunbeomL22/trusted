@@ -288,6 +288,7 @@ impl VolatilityTrait for LocalVolatilitySurface {
     fn get_value(&self, t: Time, forward_moneyness: Real) -> Real {
         self.forward_monenyess_imvol.interpolate(t, forward_moneyness)
             .expect("Failed to interpolate implied volatility")
+        
     }
 
     fn get_local_volatility(&self, _t: Time, _forward_moneyness: Real) -> Real {
@@ -376,8 +377,7 @@ mod tests {
         surfacedatasample,
     };
     use crate::parameters::volatilities::volatiltiy_interpolator::{AndreasenHuge, VolatilityInterplator};
-    use crate::math::interpolators::
-        bilinear_interpolator::BilinearInterpolator;
+   
     use crate::parameters::{
         volatility::VolatilityTrait,
         zero_curve::ZeroCurve,
@@ -385,7 +385,6 @@ mod tests {
     use crate::evaluation_date::EvaluationDate;
     use crate::market_price::MarketPrice;
     use crate::enums::StickynessType;
-    use crate::utils::string_arithmetic::add_period;
     use crate::definitions::{Time, Real};
     use crate::currency::Currency;
     use std::{
@@ -453,7 +452,7 @@ mod tests {
 
         let vega_spot_moneyness = Array1::linspace(0.6, 1.4, 17);
 
-        local_volatility_surface = local_volatiltiy_surface.with_market_surface(
+        local_volatility_surface = local_volatility_surface.with_market_surface(
             &surface_data,
             vega_structure_tenors,
             vega_spot_moneyness.clone(),
@@ -465,7 +464,7 @@ mod tests {
 
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {
-                calc_vol[[i, j]] = local_volatiltiy_surface.get_value(
+                calc_vol[[i, j]] = local_volatility_surface.get_value(
                     times[i], 
                     vega_spot_moneyness[j]
                 );
@@ -496,7 +495,7 @@ mod tests {
 
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {
-                bumped_calc_vol1[[i, j]] = local_volatiltiy_surface.get_value(
+                bumped_calc_vol1[[i, j]] = local_volatility_surface.get_value(
                     times[i], 
                     vega_spot_moneyness[j]
                 );
@@ -514,7 +513,7 @@ mod tests {
         let mut bumped_calc_vol2 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {
-                bumped_calc_vol2[[i, j]] = local_volatiltiy_surface.get_value(
+                bumped_calc_vol2[[i, j]] = local_volatility_surface.get_value(
                     times[i], 
                     vega_spot_moneyness[j]
                 );
@@ -542,7 +541,7 @@ mod tests {
             -0.01
         )?;
 
-        local_volatilitrmay_surface.bump_volatility(
+        local_volatility_surface.bump_volatility(
             Some(1.5),
             Some(2.0),
             None,
@@ -553,7 +552,7 @@ mod tests {
         let mut bumped_calc_vol3 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {
-                bumped_calc_vol3[[i, j]] = local_volatiltiy_surface.get_value(
+                bumped_calc_vol3[[i, j]] = local_volatility_surface.get_value(
                     times[i], 
                     vega_spot_moneyness[j]
                 );

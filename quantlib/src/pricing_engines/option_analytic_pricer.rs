@@ -214,10 +214,13 @@ pub mod test {
             vega_structure_tenors.clone(),
             vega_matrix_spot_moneyness.clone(),
         )?;
+        
+        let vol = Volatility::LocalVolatilitySurface(local_volatility);
+        
+        let volatility = Rc::new(RefCell::new(vol));
 
-        let volatility = Rc::new(RefCell::new(
-            Volatility::LocalVolatilitySurface(local_volatility)
-        ));
+        volatility.borrow_mut().build()?;
+        
         let quanto = Rc::new(RefCell::new(
             Quanto::default()
         ));

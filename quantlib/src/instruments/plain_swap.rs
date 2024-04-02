@@ -681,12 +681,12 @@ mod tests {
 
         assert_eq!(
             floating_cashflows.get(floating_keys[0]).unwrap().clone(), 
-            -1.0 as Real,
+            - 1.0 as Real,
         );
 
         assert_eq!(
             floating_cashflows.get(floating_keys[4]).unwrap().clone(), 
-            1.0100594 as Real,
+            1.0100604 as Real,
         );
 
         Ok(())

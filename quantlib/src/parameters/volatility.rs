@@ -67,6 +67,17 @@ impl Volatility {
         }
     }
 
+    pub fn build(&mut self) -> Result<()> {
+        match self {
+            Volatility::ConstantVolatility(_volatility) => {
+                Ok(())
+            }
+            Volatility::LocalVolatilitySurface(volatility) => {
+                volatility.build()?;
+                Ok(())
+            }
+        }
+    }
     pub fn bump_volatility(
         &mut self, 
         time1: Option<Time>,

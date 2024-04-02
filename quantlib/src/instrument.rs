@@ -324,7 +324,7 @@ impl Instruments {
         res
     }
 
-    pub fn instruments_with_types(&self, type_names: &Vec<&str>) -> Vec<Rc<Instrument>> {
+    pub fn instruments_with_types(&self, type_names: Vec<&str>) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             let type_name = instrument.get_type_name();
@@ -774,6 +774,7 @@ mod tests {
         // test instruments_with_underlying
         let instruments_with_kospi2 = instruments.instruments_with_underlying(
             &"KOSPI2".to_string(),
+            None,
         );
 
         assert_eq!(fut1.get_code(), instruments_with_kospi2[0].get_code());
@@ -787,6 +788,7 @@ mod tests {
         let instruments_using_krw_gov = instruments.instruments_using_curve(
             &"KRWGOV".to_string(),
             &match_parameter,
+            None,
         )?;
 
         assert_eq!(fut1.get_code(), instruments_using_krw_gov[0].get_code());
@@ -796,6 +798,7 @@ mod tests {
         let instruments_using_krw_irs = instruments.instruments_using_curve(
             &"KRWIRS".to_string(),
             &match_parameter,
+            None,
         )?;
 
         assert_eq!(irs.get_code(), instruments_using_krw_irs[0].get_code());
@@ -806,17 +809,18 @@ mod tests {
         assert_eq!(irs.get_code(), instruments_with_krw[1].get_code());
 
         // test instruments_with_type
-        let instruments_with_equity_futures = instruments.instruments_with_type("Futures");
+        let instruments_with_equity_futures = instruments.instruments_with_types(vec!["Futures"]);
         assert_eq!(fut1.get_code(), instruments_with_equity_futures[0].get_code());
         assert_eq!(fut2.get_code(), instruments_with_equity_futures[1].get_code());
 
-        let instruments_with_irs = instruments.instruments_with_type("PlainSwap");
+        let instruments_with_irs = instruments.instruments_with_types(vec!["PlainSwap"]);
         assert_eq!(irs.get_code(), instruments_with_irs[0].get_code());
 
         // test instruments_with_maturity_upto
         let instruments_with_maturity_upto = instruments.instruments_with_maturity_upto(
             None,
-            &datetime!(2022-12-01 09:00:00 UTC)
+            &datetime!(2022-12-01 09:00:00 UTC),
+            None,
         );
         assert_eq!(fut1.get_code(), instruments_with_maturity_upto[0].get_code());
         assert_eq!(irs.get_code(), instruments_with_maturity_upto[1].get_code());

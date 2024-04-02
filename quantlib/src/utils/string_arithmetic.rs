@@ -113,11 +113,6 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
                 );
             },
             "M" => {
-                assert!(
-                    1 <= value && value <= 12, 
-                    "(add_period) Month value must be less than 12. \ndatetime: {}, duration: {}, value: {}",
-                    datetime, duration, value
-                );
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
                 let new_month = from_i32_to_month((month_i32 + value as i32) % 12);      
@@ -182,14 +177,9 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
                 );
             },
             "M" => {
-                assert!(
-                    1 <= value && value <= 12, 
-                    "(add_period) Month value must be less than 12. \ndatetime: {}, duration: {}, value: {}",
-                    datetime, duration, value
-                );
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
-                let new_month = from_i32_to_month((month_i32 - value as i32 + 12) % 12);
+                let new_month = from_i32_to_month((month_i32 - value as i32 + 120000000) % 12);
                 let new_year = year - 1 + (month_i32 - value as i32 + 12) / 12;
                 let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
                 let new_day = match new_datetime.day() > eom_new {
@@ -357,5 +347,12 @@ mod tests {
         let x = datetime!(2023-02-28 00:00:00 UTC);
         let y = add_period(&x, "1W");
         assert_eq!(y, datetime!(2023-03-07 00:00:00 UTC));
+    }
+
+    #[test]
+    fn test_add_month_over12() {
+        let x = datetime!(2021-01-31 00:00:00 UTC);
+        let y = sub_period(&x, "18M");
+        println!("{:?}", y);
     }
 }

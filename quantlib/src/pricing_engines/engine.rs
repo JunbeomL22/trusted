@@ -586,7 +586,7 @@ impl Engine {
 
     pub fn preprocess_delta_gamma(&mut self) -> Result<()> {
         let preprocess_types = vec!["Stock", "Futures"];
-        let insts = self.instruments.instruments_with_types(&preprocess_types);
+        let insts = self.instruments.instruments_with_types(preprocess_types);
         
         // set delta for values * DELTA_PNL_UNIT, gamma = 0.0
         for inst in insts {
@@ -1116,7 +1116,7 @@ impl Engine {
         Ok(())
     }
 
-    pub fn preprocess_theta(&mut self, inst_type: &Vec<&str>) -> Result<()> {
+    pub fn preprocess_theta(&mut self, inst_type: Vec<&str>) -> Result<()> {
         let insts = self.instruments.instruments_with_types(inst_type);
         for inst in insts {
             let inst_code = inst.get_code();
@@ -1487,7 +1487,8 @@ impl Engine {
         if self.calculation_configuration.get_theta_calculation() {
             timer = std::time::Instant::now();
             let exclude_type = vec!["Cash", "Stock"];
-            self.preprocess_theta(&exclude_type)?;
+            let exclude_type_clone = exclude_type.clone();
+            self.preprocess_theta(exclude_type_clone.clone())?;
             // we separate instruments by 
             // 1) instruments whose maturity is within the evaluation_date + theta_day
             // 2) instruments whose maturity is not within the evaluation_date + theta_day
@@ -1557,6 +1558,17 @@ impl Engine {
             self.set_vega()?;
             println!(
                 "* vega calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
+            );
+        }
+
+        if self.calculation_configuration.get_vega_structure_calculation() {
+            timer = std::time::Instant::now();
+            self.set_vega_structure()?;
+            println!(
+                "* vega_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64())

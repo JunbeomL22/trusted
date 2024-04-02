@@ -134,16 +134,20 @@ pub fn build_schedule(
         true => {
             let mut raw_start_date = effective_date.clone();
             raw_start_date_vec.push_back(raw_start_date);
+            let mut count = 1;
             while &raw_start_date < maturity {
-                raw_start_date = add_period(&raw_start_date, freq.to_string().as_str());
+                raw_start_date = add_period(&effective_date, &freq.to_string_with_multiple(count).as_str());
+                count += 1;
                 raw_start_date_vec.push_back(raw_start_date);
             }
         },
         false => {
             let mut raw_end_date = maturity.clone();
             raw_start_date_vec.push_front(raw_end_date);
+            let mut count = 1;
             while &raw_end_date > effective_date {
-                raw_end_date = sub_period(&raw_end_date, freq.to_string().as_str());
+                raw_end_date = sub_period(&maturity, &freq.to_string_with_multiple(count).as_str());
+                count += 1;
                 raw_start_date_vec.push_front(raw_end_date);
             }
         }
@@ -164,7 +168,7 @@ pub fn build_schedule(
             calc_end_date = calc_start_date_vec[i + 1].clone();
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
-                    conv
+                    &BusinessDayConvention::Preceding,
                 )?;
             payment_date = calendar.adjust(
                 &(calc_end_date + Duration::days(payment_gap_days)), 
@@ -176,7 +180,7 @@ pub fn build_schedule(
             calc_end_date = maturity.clone();
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
-                conv
+                &BusinessDayConvention::Preceding,
             )?;
             payment_date = maturity.clone();
         } 
@@ -185,7 +189,7 @@ pub fn build_schedule(
             calc_end_date = calc_start_date_vec[i + 1].clone();
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
-                conv
+                &BusinessDayConvention::Preceding,
             )?;
             payment_date = calendar.adjust(
                 &(calc_end_date + Duration::days(payment_gap_days)),
@@ -257,21 +261,43 @@ mod tests {
             );
         }
 
-        // start = 2024-01-30, end = 2024-04-30
-        // start = 2024-04-30, end = 2024-07-30
-        // start = 2024-07-30, end = 2024-07-31
+        // start = 2023-01-31, end = 2023-04-28
+        // start = 2023-04-28, end = 2023-07-31
+        // start = 2023-07-31, end = 2023-10-31
+        // start = 2023-10-31, end = 2024-01-31
+        // start = 2024-01-31, end = 2024-04-30
+        // start = 2024-04-30, end = 2024-07-31
+        assert_eq!(
+            schedule[0].get_calc_start_date().date(),
+            date!(2023-01-31),
+        );
+
+        assert_eq!(
+            schedule[1].get_calc_start_date().date(),
+            date!(2023-04-28),
+        );
+
+        assert_eq!(
+            schedule[2].get_calc_start_date().date(),
+            date!(2023-07-31),
+        );
+
+        assert_eq!(
+            schedule[3].get_calc_start_date().date(),
+            date!(2023-10-31),
+        );
+
         assert_eq!(
             schedule[4].get_calc_start_date().date(),
-            date!(2024-01-30),
+            date!(2024-01-31),
         );
+
         assert_eq!(
             schedule[5].get_calc_start_date().date(),
             date!(2024-04-30),
         );
-        assert_eq!(
-            schedule[6].get_calc_start_date().date(),
-            date!(2024-07-30),
-        );
+
+
         Ok(())
     }
     
@@ -301,9 +327,9 @@ mod tests {
         }
         // start = 2023-01-31, end = 2023-04-28
         // start = 2023-04-28, end = 2023-07-31
-        // start = 2023-07-31, end = 2023-10-30
-        // start = 2023-10-30, end = 2024-01-30
-        // start = 2024-01-30, end = 2024-04-30
+        // start = 2023-07-31, end = 2023-10-31
+        // start = 2023-10-31, end = 2024-01-31
+        // start = 2024-01-31, end = 2024-04-30
         // start = 2024-04-30, end = 2024-07-31
         assert_eq!(
             schedule[0].get_calc_start_date().date(),
@@ -319,11 +345,11 @@ mod tests {
         );
         assert_eq!(
             schedule[3].get_calc_start_date().date(),
-            date!(2023-10-30),
+            date!(2023-10-31),
         );
         assert_eq!(
             schedule[4].get_calc_start_date().date(),
-            date!(2024-01-30),
+            date!(2024-01-31),
         );
         assert_eq!(
             schedule[5].get_calc_start_date().date(),
@@ -335,5 +361,56 @@ mod tests {
         );
         Ok(())
     }
-    
+    #[test]
+    fn test_build_forward_test2() -> Result<()> {
+        let effective_date = datetime!(2023-11-30 16:30:00 +09:00);
+        let maturity = datetime!(2024-11-29 16:30:00 +09:00);
+        let cal = SouthKorea::new(SouthKoreaType::Settlement);
+        let calendar = Calendar::SouthKorea(cal);
+        let joint_calendar = JointCalendar::new(vec![calendar])?;
+        let schedule = build_schedule(
+            true,
+            &effective_date, 
+            &maturity, 
+            &joint_calendar,
+            &BusinessDayConvention::ModifiedFollowing,
+            &PaymentFrequency::Quarterly,            
+            1, 
+            0
+        ).expect("Failed to build schedule");
+
+        for base_schedule in schedule.iter() {
+            println!(
+                "start = {:?}, end = {:?}" , 
+                base_schedule.get_calc_start_date().date(), base_schedule.get_calc_end_date().date()
+            );
+        }
+        
+        // start = 2023-11-30, end = 2024-02-29
+        // start = 2024-02-29, end = 2024-05-30
+        // start = 2024-05-30, end = 2024-08-30
+        // start = 2024-08-30, end = 2024-11-29
+        assert_eq!(
+            schedule[0].get_calc_start_date().date(),
+            date!(2023-11-30),
+        );
+
+        assert_eq!(
+            schedule[1].get_calc_start_date().date(),
+            date!(2024-02-29),
+        );
+
+        assert_eq!(
+            schedule[2].get_calc_start_date().date(),
+            date!(2024-05-30),
+        );
+
+        assert_eq!(
+            schedule[3].get_calc_start_date().date(),
+            date!(2024-08-30),
+        );
+
+
+        Ok(())
+    }
 }

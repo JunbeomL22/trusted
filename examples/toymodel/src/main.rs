@@ -258,9 +258,9 @@ fn main() -> Result<()> {
         285.0,
         250_000.0,
         datetime!(2021-01-01 00:00:00 +09:00),
-        datetime!(2024-09-14 00:00:00 +09:00),
-        datetime!(2024-09-14 00:00:00 +09:00),
-        datetime!(2024-09-14 00:00:00 +09:00),
+        datetime!(2024-09-13 00:00:00 +09:00),
+        datetime!(2024-09-13 00:00:00 +09:00),
+        datetime!(2024-09-13 00:00:00 +09:00),
         vec![String::from("KOSPI2")],
         Currency::KRW,
         Currency::KRW,
@@ -291,6 +291,7 @@ fn main() -> Result<()> {
         .with_gamma_calculation(true)
         .with_rho_calculation(true)
         .with_vega_calculation(true)
+        .with_vega_structure_calculation(true)
         .with_div_delta_calculation(true)
         .with_rho_structure_calculation(true)
         .with_theta_calculation(true)

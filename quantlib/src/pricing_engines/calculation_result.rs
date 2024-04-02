@@ -122,6 +122,23 @@ impl std::fmt::Debug for CalculationResult {
             writeln!(f, "")?;
         }
 
+        if let Some(ref vega_structure) = self.vega_strucure {
+            writeln!(f, " * vega_structure: ")?;
+            for (key, value) in vega_structure {
+                let vector_sum = value.iter().sum::<Real>();
+                write!(f, "        {} (sum = ", key)?;
+                write_number_with_commas(f, vector_sum)?;
+                write!(f, "): ")?;
+
+                for v in value {
+                    write_number_with_commas(f, *v)?;
+                    write!(f, " | ")?;
+                }
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
+
         if let Some(ref theta) = self.theta {
             write!(f, " * theta: ")?;
             write_number_with_commas(f, *theta)?;
@@ -149,7 +166,7 @@ impl std::fmt::Debug for CalculationResult {
 
                 for v in value {
                     write_number_with_commas(f, *v)?;
-                    write!(f, " ")?;
+                    write!(f, " | ")?;
                 }
                 writeln!(f, "")?;
             }
@@ -176,7 +193,7 @@ impl std::fmt::Debug for CalculationResult {
 
                 for v in value {
                     write_number_with_commas(f, *v)?;
-                    write!(f, " ")?;
+                    write!(f, " | ")?;
                 }
                 writeln!(f, "")?;
             }
