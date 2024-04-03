@@ -151,6 +151,8 @@ pub mod test {
         surfacedatasample,
     };
     use crate::currency::Currency;
+    use crate::utils;
+    use crate::data;
     use time::macros::datetime;
     use std::{
         rc::Rc,

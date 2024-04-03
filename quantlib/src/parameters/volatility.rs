@@ -3,7 +3,14 @@ use crate::parameters::volatilities::{
     local_volatility_surface::LocalVolatilitySurface,
 };
 use crate::definitions::{Real, Time};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum VolatilityType {
+    ConstantVolatility,
+    LocalVolatilitySurface,
+}
 
 pub trait VolatilityTrait {
     fn get_value(&self, t: Time, forward_moneyness: Real) -> Real;
@@ -89,6 +96,13 @@ impl Volatility {
         match self {
             Volatility::ConstantVolatility(volatility) => volatility.bump_volatility(time1, time2, left_spot_moneyness, right_spot_moneyness, bump),
             Volatility::LocalVolatilitySurface(volatility) => volatility.bump_volatility(time1, time2, left_spot_moneyness, right_spot_moneyness, bump),
+        }
+    }
+
+    pub fn get_volatility_type(&self) -> VolatilityType {
+        match self {
+            Volatility::ConstantVolatility(volatility) => VolatilityType::ConstantVolatility,
+            Volatility::LocalVolatilitySurface(volatility) => VolatilityType::LocalVolatilitySurface,
         }
     }
 }

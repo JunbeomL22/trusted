@@ -1,7 +1,8 @@
+
 #[macro_export]
 macro_rules! vectordatasample {
     ($value:expr, $currency:expr, $name:expr) => {
-        crate::data::vector_data::VectorData::new(
+        data::vector_data::VectorData::new(
             ndarray::Array1::from(vec![$value]),
             None,
             Some(ndarray::Array1::from(vec![1.0])),
@@ -15,14 +16,14 @@ macro_rules! vectordatasample {
 #[macro_export]
 macro_rules! valuedatasample {
     ($value:expr, $currency:expr, $name:expr) => {
-        crate::data::value_data::ValueData::new($value, None, $currency, $name.to_string())
+        data::value_data::ValueData::new($value, None, $currency, $name.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! surfacedatasample {
     ($datetime:expr, $real:expr) => {
-        crate::data::surface_data::SurfaceData::new(
+        data::surface_data::SurfaceData::new(
             Some($real),
             ndarray::Array2::from_shape_vec(
                 (9, 25),
@@ -66,19 +67,19 @@ macro_rules! surfacedatasample {
                     ].into_iter().flatten().collect::<Vec<_>>()
                 )?,
             vec![
-                crate::utils::string_arithmetic::add_period($datetime, "1M"),
-                crate::utils::string_arithmetic::add_period($datetime, "2M"),
-                crate::utils::string_arithmetic::add_period($datetime, "3M"),
-                crate::utils::string_arithmetic::add_period($datetime, "6M"),
-                crate::utils::string_arithmetic::add_period($datetime, "9M"),
-                crate::utils::string_arithmetic::add_period($datetime, "1Y"),
-                crate::utils::string_arithmetic::add_period($datetime, "1Y6M"),
-                crate::utils::string_arithmetic::add_period($datetime, "2Y"),
-                crate::utils::string_arithmetic::add_period($datetime, "3Y")
+                utils::string_arithmetic::add_period($datetime, "1M"),
+                utils::string_arithmetic::add_period($datetime, "2M"),
+                utils::string_arithmetic::add_period($datetime, "3M"),
+                utils::string_arithmetic::add_period($datetime, "6M"),
+                utils::string_arithmetic::add_period($datetime, "9M"),
+                utils::string_arithmetic::add_period($datetime, "1Y"),
+                utils::string_arithmetic::add_period($datetime, "1Y6M"),
+                utils::string_arithmetic::add_period($datetime, "2Y"),
+                utils::string_arithmetic::add_period($datetime, "3Y")
             ],
             ndarray::Array1::linspace(0.3 * $real, 1.5 * $real, 25),
             None,
-            crate::currency::Currency::KRW,
+            currency::Currency::KRW,
             String::from("KOSPI2 20220414 Data"),
             String::from("KOSPI2 20220414 Data"),
         )

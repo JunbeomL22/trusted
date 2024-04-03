@@ -7,6 +7,7 @@ use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+use ndarray::Array2;
 
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
@@ -31,6 +32,7 @@ pub struct CalculationResult {
     gamma: Option<HashMap<String, Real>>,
     vega: Option<HashMap<String, Real>>,
     vega_strucure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on vega_tenor in CalculationConfiguration
+    vega_matrix: Option<HashMap<String, Array2<Real>>>, // underlying code -> Vec<Vec<Real>> vega_matrix
     theta: Option<Real>,
     div_delta: Option<HashMap<String, Real>>,
     div_structure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on div_tenor in CalculationConfiguration
@@ -53,6 +55,7 @@ impl Default for CalculationResult {
             gamma: None,
             vega: None,
             vega_strucure: None,
+            vega_matrix: None,
             theta: None,
             div_delta: None,
             div_structure: None,
@@ -112,6 +115,13 @@ impl std::fmt::Debug for CalculationResult {
             writeln!(f, "")?;
         }
 
+        if let Some(ref theta) = self.theta {
+            write!(f, " * theta: ")?;
+            write_number_with_commas(f, *theta)?;
+            writeln!(f, "")?;
+        }
+        writeln!(f, "")?;
+
         if let Some(ref vega) = self.vega {
             writeln!(f, " * vega: ")?;
             for (key, value) in vega {
@@ -138,13 +148,6 @@ impl std::fmt::Debug for CalculationResult {
             }
             writeln!(f, "")?;
         }
-
-        if let Some(ref theta) = self.theta {
-            write!(f, " * theta: ")?;
-            write_number_with_commas(f, *theta)?;
-            writeln!(f, "")?;
-        }
-        writeln!(f, "")?;
 
         if let Some(ref rho) = self.rho {
             writeln!(f, " * rho: ")?;
@@ -200,6 +203,21 @@ impl std::fmt::Debug for CalculationResult {
             writeln!(f, "")?;
         }
 
+        if let Some(ref vega_matrix) = self.vega_matrix {
+            writeln!(f, " * vega_matrix: ")?;
+            for (key, value) in vega_matrix {
+                write!(f, "        {}: ", key)?;
+                for v in value {
+                    write!(f, " | ")?;
+                    for vv in v {
+                        write_number_with_commas(f, *vv)?;
+                        write!(f, " | ")?;
+                    }
+                }
+                writeln!(f, "")?;
+            }
+            writeln!(f, "")?;
+        }
         if let Some(ref currency) = self.representation_currency {
             writeln!(f, " * representation_currency: {:?}", currency)?;
         }
@@ -224,6 +242,7 @@ impl CalculationResult {
             gamma: None,
             vega: None,
             vega_strucure: None,
+            vega_matrix: None,
             theta: None,
             div_delta: None,
             div_structure: None,
@@ -414,8 +433,16 @@ impl CalculationResult {
         self.gamma.as_ref()
     }
 
+    pub fn get_vega(&self) -> Option<&HashMap<String, Real>> {
+        self.vega.as_ref()
+    }
+
     pub fn get_vega_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
         self.vega_strucure.as_ref()
+    }
+
+    pub fn get_vega_matrix(&self) -> Option<&HashMap<String, Array2<Real>> > {
+        self.vega_matrix.as_ref()
     }
 
     pub fn get_theta(&self) -> Option<Real> {
@@ -444,6 +471,23 @@ impl CalculationResult {
 
     pub fn set_representation_currency(&mut self, currency: Currency) {
         self.representation_currency = Some(currency);
+    }
+
+    pub fn set_single_vega_matrix(
+        &mut self, 
+        und_code: &String, 
+        vega_matrix: Array2<Real>,
+    ) {
+        match &mut self.vega_matrix {
+            None => {
+                let mut vega_matrix_map = HashMap::new();
+                vega_matrix_map.insert(und_code.clone(), vega_matrix);
+                self.vega_matrix = Some(vega_matrix_map);
+            },
+            Some(vega_matrix_map) => {
+                vega_matrix_map.insert(und_code.clone(), vega_matrix);
+            },
+        }
     }
 }
 

@@ -5,6 +5,8 @@ edition = "2021"
 
 [lib]
 name = "quantlib"
+path = "src/lib.rs"
+#proc-macro = true
 
 [dependencies]
 anyhow = "1.0" 

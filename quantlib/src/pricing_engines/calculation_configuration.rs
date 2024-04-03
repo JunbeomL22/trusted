@@ -360,6 +360,10 @@ impl CalculationConfiguration {
         &self.vega_matrix_spot_moneyness
     }
 
+    pub fn get_vega_matrix_calculation(&self) -> bool {
+        self.vega_matrix
+    }
+
     pub fn get_vega_structure_bump_value(&self) -> Real {
         self.vega_structure_bump_value
     }

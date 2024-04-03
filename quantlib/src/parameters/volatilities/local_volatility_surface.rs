@@ -3,7 +3,10 @@ use crate::definitions::{Time, Real};
 use crate::data::surface_data::SurfaceData;
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::parameters::{
-    volatility::VolatilityTrait,
+    volatility::{
+        VolatilityTrait,
+        VolatilityType,
+    },
     volatilities::volatiltiy_interpolator::VolatilityInterplator,
     zero_curve::ZeroCurve,
 };
@@ -358,7 +361,6 @@ impl VolatilityTrait for LocalVolatilitySurface {
                 self.interpolated_imvol[[i, j]] += bump;
             }
         }
-
         self.build()?;
 
         Ok(())
@@ -386,7 +388,9 @@ mod tests {
     use crate::market_price::MarketPrice;
     use crate::enums::StickynessType;
     use crate::definitions::{Time, Real};
-    use crate::currency::Currency;
+    use crate::currency::{self, Currency};
+    use crate::utils;
+    use crate::data;
     use std::{
         rc::Rc,
         cell::RefCell,
@@ -483,6 +487,7 @@ mod tests {
 
         assert!(max_error < 1.0e-6, "max error: {}", max_error);
 
+        println!("local_volatility_surface.get_value(2.5, 0.65): {}", local_volatility_surface.get_value(2.5, 0.65));
         local_volatility_surface.bump_volatility(
             Some(2.0),
             None,
@@ -490,7 +495,7 @@ mod tests {
             None,
             0.01
         )?;
-
+        println!("after tail bump local_volatility_surface.get_value(2.5, 0.65): {}", local_volatility_surface.get_value(2.5, 0.65));
         let mut bumped_calc_vol1 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
 
         for i in 0..times.len() {
@@ -510,6 +515,7 @@ mod tests {
             0.01
         )?;
 
+        println!("after tail bump local_volatility_surface.get_value(2.5, 0.65): {}", local_volatility_surface.get_value(2.5, 0.65));
         let mut bumped_calc_vol2 = Array2::zeros((times.len(), vega_spot_moneyness.len()));
         for i in 0..times.len() {
             for j in 0..vega_spot_moneyness.len() {

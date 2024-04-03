@@ -1,4 +1,7 @@
-use crate::parameters::volatility::VolatilityTrait;
+use crate::parameters::volatility::{
+    VolatilityTrait,
+    VolatilityType,
+};
 use crate::definitions::{Real, Time};
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
@@ -34,6 +37,7 @@ impl VolatilityTrait for ConstantVolatility {
     fn get_value(&self, _t: Time, _x: Real) -> Real {
         self.value
     }
+
 
     fn get_name(&self) -> &String {
         &self.name

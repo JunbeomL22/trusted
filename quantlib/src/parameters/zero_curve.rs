@@ -241,6 +241,10 @@ impl ZeroCurve {
         Ok(())
     }
 
+    pub fn get_interpolated_rates(&self) -> Array1<Real> {
+        self.interpolated_rates.clone()
+    }
+
     pub fn dummy_curve() -> Result<ZeroCurve> {
         let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
         let evaluation_date = Rc::new(RefCell::new(dt));

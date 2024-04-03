@@ -3,7 +3,7 @@ use quantlib::enums::{
     OptionType,
     OptionExerciseType,
 };
-use quantlib::currency::{Currency, FxCode};
+use quantlib::currency::{self, Currency, FxCode};
 use quantlib::instruments::{
     futures::Futures,
     bond::Bond,
@@ -18,12 +18,15 @@ use quantlib::parameters::{
     volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
 };
+use quantlib::surfacedatasample;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
+use quantlib::data;
+use quantlib::utils;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
@@ -49,7 +52,7 @@ fn main() -> Result<()> {
     ];
 
     let times = None;
-    let market_datetime = datetime!(2021-01-01 00:00:00 +09:00);
+    let market_datetime = dt.clone();
     let zero_curve1 = "KSD".to_string();
     let zero_curve_data1 = VectorData::new(
         &value - 0.0005, 
@@ -98,6 +101,11 @@ fn main() -> Result<()> {
     zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
     zero_curve_map.insert(funding_curve1.clone(), funding_curve_data1);
 
+    
+    let mut equity_vol_map = HashMap::new();
+    let mut equity_surface_map = HashMap::new();
+
+    let equity_surface_data = surfacedatasample!(&market_datetime, spot);
     let equity_constant_vol1 = ValueData::new(
         0.2,
         Some(market_datetime),
@@ -105,8 +113,9 @@ fn main() -> Result<()> {
         "KOSPI2".to_string(),
     ).expect("failed to make a value data for equity volatility");
 
-    let mut equity_vol_map = HashMap::new();
-    equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
+    
+    equity_surface_map.insert("KOSPI2".to_string(), equity_surface_data);
+    //equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
 
     let fx_str1 = "USDKRW";
     let fx_code1 = FxCode::from(fx_str1);
@@ -278,10 +287,10 @@ fn main() -> Result<()> {
     let inst5 = Instrument::VanillaOption(option1);
 
     let inst_vec = vec![
-        Rc::new(inst1), 
-        Rc::new(inst2), 
-        Rc::new(inst3),
-        Rc::new(inst4),
+        //Rc::new(inst1), 
+        //Rc::new(inst2), 
+        //Rc::new(inst3),
+        //Rc::new(inst4),
         Rc::new(inst5),
         ];
 
@@ -339,7 +348,7 @@ fn main() -> Result<()> {
         zero_curve_map,
         dividend_data_map,
         equity_vol_map,
-        HashMap::new(),
+        equity_surface_map,
         HashMap::new(),
         HashMap::new(),
         HashMap::new(),
