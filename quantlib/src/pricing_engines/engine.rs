@@ -235,18 +235,62 @@ impl Engine {
             }
         
         let mut volatilities = HashMap::new();
+        
         for (key, data) in equity_constant_volatility_data.iter() {
+            let vega_matrix_spot_moneyness = calculation_configuration.get_vega_matrix_spot_moneyness();
+            let vega_structure_tenors = calculation_configuration.get_vega_structure_tenors();
+            let market_price = equities.get(key)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get market price for {}", 
+                    file!(), line!(), key))?.clone();
+            let collateral_curve_map = match_parameter.get_collateral_curve_map()
+                    .get(key)
+                    .with_context(|| anyhow!(
+                        "({}:{}) failed to get collateral curve map for {}", 
+                        file!(), line!(), key))?;
+
+            let collateral_curve = zero_curves.get(collateral_curve_map)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get collateral curve for {}", 
+                    file!(), line!(), key))?.clone();
+
+            let borrowing_curve_map = match_parameter.get_borrowing_curve_map()
+                .get(key)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get borrowing curve map for {}", 
+                    file!(), line!(), key))?;
+            let borrowing_curve = zero_curves.get(borrowing_curve_map)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to get borrowing curve for {}", 
+                    file!(), line!(), key))?.clone();
+                
+            let stickyness = calculation_configuration.get_stickyness_type();
+            let lv_interpolator = calculation_configuration.get_lv_interpolator();
+
+            let mut lv = LocalVolatilitySurface::initialize(
+                evaluation_date.clone(),
+                market_price,
+                collateral_curve,
+                borrowing_curve,
+                stickyness,
+                lv_interpolator,
+                key.clone(),
+                key.clone(),
+            ).with_constant_volatility(
+                &data,
+                vega_structure_tenors.clone(),
+                vega_matrix_spot_moneyness.clone(),
+            )?;
+
+            lv.build()?;
+
             let rc = Rc::new(RefCell::new(
-                Volatility::ConstantVolatility(
-                    ConstantVolatility::new(
-                        data.get_value(),
-                        data.get_name().clone(),
-                        key.clone(),
-                    )
-                )
+                Volatility::LocalVolatilitySurface(lv)
             ));
+
             volatilities.insert(key.clone(), rc);
         }
+        
         for (key, data) in equity_volatility_surface_data.iter() {
             let vega_matrix_spot_moneyness = calculation_configuration.get_vega_matrix_spot_moneyness();
             let vega_structure_tenors = calculation_configuration.get_vega_structure_tenors();
@@ -301,6 +345,8 @@ impl Engine {
 
             volatilities.insert(key.clone(), rc);
         }
+
+
         Ok(Engine {
             engine_id: engine_id,
             err_tag : "".to_string(),
@@ -913,127 +959,14 @@ impl Engine {
         Ok(())
     }
 
-    pub fn set_vega_structure_for_constant_vol(&mut self) -> Result<()> {
-        let all_underlying_codes = self.instruments.get_all_underlying_codes();
-        let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        let bump_val = self.calculation_configuration.get_vega_structure_bump_value();
-        let calc_tenors = self.calculation_configuration.get_vega_structure_tenors();
-        let tenor_length = calc_tenors.len();
-        let time_calculator = NullCalendar::default(); 
-        let calc_times = calc_tenors.iter()
-            .map(|tenor| add_period(&eval_dt, tenor.as_str()))
-            .map(|dt| time_calculator.get_time_difference(&eval_dt, &dt))
-            .collect::<Vec<Time>>();
 
-        let exclude_type = vec!["Cash", "Stock", "Futures"];
-        let exclude_type_clone = exclude_type.clone();
-
-        let mut npvs_up: HashMap::<String, Real> = HashMap::new();
-
-        // first calculate plain vega if not calculated
-        for und_code in all_underlying_codes {
-            if self.volatilities
-            .get(und_code)
-            .unwrap()
-            .borrow()
-            .get_volatility_type()
-            != VolatilityType::ConstantVolatility
-            {
-                continue;
-            }
-
-            self.instruments_in_action = self.instruments
-                .instruments_with_underlying(
-                    und_code, 
-                    Some(exclude_type_clone.clone()));
-
-            if self.instruments_in_action.is_empty() { continue; }
-
-            // if not calculated
-            if !self.calculation_configuration.get_vega_structure_calculation() {
-                self.volatilities
-                .get(und_code)
-                .unwrap()
-                .borrow_mut()
-                .bump_volatility(
-                    None, None, 
-                    None, None,
-                    bump_val)?;
-
-                npvs_up = self.get_npvs().context("failed to get npvs")?;
-            }
-
-            let mut vega: Real;
-            for inst in self.instruments_in_action.iter() {
-                let inst_code = inst.get_code();
-
-                if !self.calculation_configuration.get_vega_structure_calculation() {// if not calculated
-                    let npv_up = npvs_up.get(inst_code)
-                        .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?;
-                    let npv = self.calculation_results
-                        .get(inst_code).ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?
-                        .borrow().get_npv_result()
-                        .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?
-                        .get_npv();
-
-                    vega = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * inst.get_unit_notional();
-                } else {// if already calculated
-                    vega = self.calculation_results
-                        .get(inst_code)
-                        .ok_or_else(|| anyhow!("result is not set for {}", inst_code))?
-                        .borrow()
-                        .get_vega()
-                        .ok_or_else(|| anyhow!("vega is not set for {}", inst_code))?
-                        .get(und_code)
-                        .ok_or_else(|| anyhow!("vega is not set for {}", inst_code))?.clone();
-                }
-
-                let mut vega_structure = vec![0.0; tenor_length];
-
-                match inst.get_maturity() {
-                    None => {
-                        for i in 0..tenor_length {
-                            vega_structure[i] = vega / tenor_length as Real;
-                        }
-                    },
-                    Some(mat) => {
-                        let time = time_calculator.get_time_difference(&eval_dt, &mat);
-                        distribute_value_on_vector(
-                            &mut vega_structure, 
-                            vega,
-                            time,
-                            &calc_times,
-                        )?;
-                    },
-                }
-
-                (*self.calculation_results
-                    .get(inst_code)
-                    .ok_or_else(|| anyhow!("result is not set for {}", inst_code))?)
-                    .borrow_mut()
-                    .set_single_vega_structure(und_code, vega_structure);
-            }
-            if !self.calculation_configuration.get_vega_structure_calculation() {
-                self.volatilities
-                .get(und_code)
-                .unwrap()
-                .borrow_mut()
-                .bump_volatility(
-                    None, None, 
-                    None, None,
-                    -bump_val)?;
-            }
-        }
-        Ok(())
-    }
-            
     // set vega structure performs the bump from the tail
     // this is for the arbitrage condition
     // say the bumped vector is vega_structure_up, with the length N
     // then vega_structure[i] = vege_structure_up[i] - vega_structure_up[i+1]
     // ... for i = 0, 1, ..., N-2 and
     // vega_structure[N-1] = vega_structure_up[N-1] - npv
-    pub fn set_vega_structure_for_lv_surface(&mut self) -> Result<()> {
+    pub fn set_vega_structure(&mut self) -> Result<()> {
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let bump_val = self.calculation_configuration.get_vega_structure_bump_value();
@@ -1055,16 +988,6 @@ impl Engine {
         let exclude_type_clone = exclude_type.clone();
 
         for und_code in all_underlying_codes {
-            // if volatility is not surface
-            if self.volatilities
-                .get(und_code)
-                .unwrap()
-                .borrow()
-                .get_volatility_type()
-                != VolatilityType::LocalVolatilitySurface {
-                continue;
-            }
-
             self.instruments_in_action = self.instruments
                 .instruments_with_underlying(
                     und_code, 
@@ -1175,12 +1098,12 @@ impl Engine {
         Ok(())
     }
 
-    pub fn set_vega_matrix_for_lv_surface(&mut self) -> Result<()> {
+    pub fn set_vega_matrix(&mut self) -> Result<()> {
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
         let eval_dt = self.evaluation_date.borrow().get_date_clone();
         let bump_val = self.calculation_configuration.get_vega_structure_bump_value();
         let calc_tenors = self.calculation_configuration.get_vega_structure_tenors();
-        let tenor_length = calc_tenors.len();
+        
         let time_calculator = NullCalendar::default(); 
         let calc_times = calc_tenors.iter()
             .map(|tenor| add_period(&eval_dt, tenor.as_str()))
@@ -1188,27 +1111,17 @@ impl Engine {
             .collect::<Vec<Time>>();
 
         let spot_moneyness = self.calculation_configuration.get_vega_matrix_spot_moneyness().to_vec();
-        let moneyness_length = spot_moneyness.len();
+        
         // instrument code (String) -> npv (Real)
         let mut current_npvs_up: HashMap::<String, Real>;
         let mut npv: Real;
         let mut npv_up: Real;
-        // inst code (String) -> Vec<Real>
-        let mut single_vega_matrix: HashMap::<String, Vec<Vec<Real>>>;
+        // inst code (String) -> Array2<Real>
+        let mut single_vega_matrix: HashMap::<String, Array2<Real>> = HashMap::new();
         let exclude_type = vec!["Cash", "Stock", "Futures"];
         let exclude_type_clone = exclude_type.clone();
 
         for und_code in all_underlying_codes {
-            // if volatility is not surface
-            if self.volatilities
-                .get(und_code)
-                .unwrap()
-                .borrow()
-                .get_volatility_type()
-                != VolatilityType::LocalVolatilitySurface {
-                continue;
-            }
-
             self.instruments_in_action = self.instruments
                 .instruments_with_underlying(
                     und_code, 
@@ -1222,14 +1135,11 @@ impl Engine {
             if self.instruments_in_action.is_empty() { continue; }
             let inst_codes_in_action = self.instruments.get_all_inst_code_clone(
                 Some(&self.instruments_in_action));
-            let init_matrix: Vec<Array2<Real>> = vec![
-                Array2::zeros((tenor_length, moneyness_length));
-                inst_codes_in_action.len()
-                ];
-            single_vega_matrix = inst_codes_in_action.clone()
-                .into_iter()
-                .zip(init_matrix.into_iter())
-                .collect();
+
+            for inst_code in inst_codes_in_action.iter() {
+                let init = Array2::zeros((calc_times.len(), spot_moneyness.len()));
+                single_vega_matrix.insert(inst_code.clone(), init);
+            }
 
             let mut prev_npvs_up: HashMap::<String, Real> = HashMap::new();
 
@@ -1263,11 +1173,12 @@ impl Engine {
                         continue;
                     }
                 }
-                for (j, moneyness) in spot_moneyness.iter().enumerate() {
+                for j in 0..spot_moneyness.len() {
                     let bump_moneyness_start = match j {
                         0 => None,
                         _ => Some(spot_moneyness[j-1]),
                     };
+
                     let bump_moneyness_end = Some(spot_moneyness[j]);
                     {
                         (*self.volatilities
@@ -1282,9 +1193,13 @@ impl Engine {
                                 bump_moneyness_start, bump_moneyness_end,
                                 bump_val)?;
                     }
+
                     current_npvs_up = self.get_npvs().with_context(|| anyhow!(
                         "({}:{}) failed to get npvs in vega structure", file!(), line!()))?;
                     
+                    //let code = String::from("165XXX3");
+                    //println!("i: {}, j: {} current_npvs_up: {:?}", i, j, current_npvs_up.get(&code).unwrap());
+
                     for inst in self.instruments_in_action.iter() {
                         let inst_code = inst.get_code();
                         let unitamt = inst.get_unit_notional();
@@ -1297,7 +1212,7 @@ impl Engine {
                         single_vega_matrix.get_mut(inst_code)
                             .ok_or_else(|| anyhow!(
                                 "vega_matrix is not set for {}", 
-                                inst_code))?[i][j] = vega_matrix;
+                                inst_code))?[[i, j]] = vega_matrix;
                     }
                     prev_npvs_up = current_npvs_up;
                     for (inst_code, vega_matrix) in single_vega_matrix.iter() {
@@ -1311,32 +1226,25 @@ impl Engine {
                             .set_single_vega_matrix(und_code, vega_matrix.clone());
                     }
                 }
-                // put back
-                {
-                    (*self.volatilities
-                        .get(und_code)
-                        .ok_or_else(|| anyhow!(
-                            "({}:{}) volatility {} is not set\ntag:\n{}", 
-                            file!(), line!(),
-                            und_code, self.err_tag
-                        ))?).as_ref()
-                        .borrow_mut()
-                        .bump_volatility(
-                            bump_tenor_start, bump_tenor_end,
-                            None, None,
-                            -bump_val)?;
-                }
+            }
+            // put back
+            {
+                (*self.volatilities
+                    .get(und_code)
+                    .ok_or_else(|| anyhow!(
+                        "({}:{}) volatility {} is not set\ntag:\n{}", 
+                        file!(), line!(),
+                        und_code, self.err_tag
+                    ))?).as_ref()
+                    .borrow_mut()
+                    .bump_volatility(
+                        None, None,
+                        None, None,
+                        -bump_val)?;
             }
         }
         Ok(())
     }
-
-
-
-
-
-
-
 
     pub fn set_div_delta(&mut self) -> Result<()> {
         let mut npvs_up: HashMap::<String, Real>;
@@ -1832,17 +1740,6 @@ impl Engine {
             );
         }
 
-        if self.calculation_configuration.get_rho_calculation() {
-            timer = std::time::Instant::now();
-            self.set_rho()?;
-            println!(
-                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
-                self.engine_id, 
-                format_duration(timer.elapsed().as_secs_f64()),
-                format_duration(start_time.elapsed().as_secs_f64())
-            );
-        }
-
         if self.calculation_configuration.get_vega_calculation() {
             timer = std::time::Instant::now();
             self.set_vega()?;
@@ -1854,21 +1751,9 @@ impl Engine {
             );
         }
 
-        if self.calculation_configuration.get_vega_structure_calculation() {
+        if self.calculation_configuration.get_rho_calculation() {
             timer = std::time::Instant::now();
-            self.set_vega_structure_for_constant_vol()?;
-            self.set_vega_structure_for_lv_surface()?;
-            println!(
-                "* vega_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
-                self.engine_id, 
-                format_duration(timer.elapsed().as_secs_f64()),
-                format_duration(start_time.elapsed().as_secs_f64())
-            );
-        }
-
-        if self.calculation_configuration.get_rho_structure_calculation() {
-            timer = std::time::Instant::now();
-            self.set_rho_structure()?;
+            self.set_rho()?;
             println!(
                 "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
@@ -1888,6 +1773,28 @@ impl Engine {
             );
         }
 
+        if self.calculation_configuration.get_vega_structure_calculation() {
+            timer = std::time::Instant::now();
+            self.set_vega_structure()?;
+            println!(
+                "* vega_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
+            );
+        }
+
+        if self.calculation_configuration.get_rho_structure_calculation() {
+            timer = std::time::Instant::now();
+            self.set_rho_structure()?;
+            println!(
+                "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
+                format_duration(timer.elapsed().as_secs_f64()),
+                format_duration(start_time.elapsed().as_secs_f64())
+            );
+        }
+
         if self.calculation_configuration.get_div_structure_calculation() {
             timer = std::time::Instant::now();
             self.set_div_structure()?;
@@ -1901,8 +1808,7 @@ impl Engine {
 
         if self.calculation_configuration.get_vega_matrix_calculation() {
             timer = std::time::Instant::now();
-            self.set_vega_matrix_for_constant_vol()?;
-            self.set_vega_matrix_for_lv_surface()?;
+            self.set_vega_matrix()?;
             println!(
                 "* vega_matrix calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 

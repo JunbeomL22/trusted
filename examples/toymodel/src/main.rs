@@ -114,8 +114,8 @@ fn main() -> Result<()> {
     ).expect("failed to make a value data for equity volatility");
 
     
-    equity_surface_map.insert("KOSPI2".to_string(), equity_surface_data);
-    //equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
+    //equity_surface_map.insert("KOSPI2".to_string(), equity_surface_data);
+    equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
 
     let fx_str1 = "USDKRW";
     let fx_code1 = FxCode::from(fx_str1);
@@ -305,6 +305,7 @@ fn main() -> Result<()> {
         .with_rho_structure_calculation(true)
         .with_theta_calculation(true)
         .with_div_structure_calculation(true)
+        .with_vega_matrix_calculation(true)
         .with_theta_day(theta_day);
         
     // make a match parameter

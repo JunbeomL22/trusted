@@ -2,7 +2,7 @@ use crate::instruments::instrument_info::InstrumentInfo;
 use crate::currency::Currency;
 use crate::definitions::{Real, Integer};
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::utils::number_format::write_number_with_commas;
+use crate::utils::number_format::{write_number_with_commas, formatted_number};
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
@@ -203,18 +203,26 @@ impl std::fmt::Debug for CalculationResult {
             writeln!(f, "")?;
         }
 
-        if let Some(ref vega_matrix) = self.vega_matrix {
+        if let Some(vega_matrix) = self.vega_matrix.as_ref() {
             writeln!(f, " * vega_matrix: ")?;
             for (key, value) in vega_matrix {
-                write!(f, "        {}: ", key)?;
-                for v in value {
-                    write!(f, " | ")?;
-                    for vv in v {
-                        write_number_with_commas(f, *vv)?;
-                        write!(f, " | ")?;
-                    }
+                let matrix_sum: Real = value.iter().fold(0.0, |acc, &x| acc + x);
+                write!(f, "        {} (sum = ", key)?;
+                write_number_with_commas(f, matrix_sum)?;
+                write!(f, "): \n")?;
+
+
+                let under_line = "-".repeat((9+3) * 17);
+                writeln!(f, "{}", under_line)?;
+                for row in value.rows() {
+                    
+                    for element in row {
+                        let formatted_number = format!("{:9}", formatted_number(*element));
+                        write!(f, "{} | ", formatted_number)?;
+                    }       
+                    writeln!(f, "")?;
+                    writeln!(f, "{}", under_line)?;
                 }
-                writeln!(f, "")?;
             }
             writeln!(f, "")?;
         }

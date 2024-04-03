@@ -1,6 +1,9 @@
 use crate::enums::StickynessType;
 use crate::definitions::{Time, Real};
-use crate::data::surface_data::SurfaceData;
+use crate::data::{
+    surface_data::SurfaceData,
+    value_data::ValueData,
+};
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::parameters::{
     volatility::{
@@ -172,6 +175,33 @@ impl LocalVolatilitySurface {
         }
 
         Ok(self)
+    }
+
+    pub fn with_constant_volatility(
+        mut self,
+        constant_volatility: &ValueData,
+        vega_structure_tenors: Vec<String>,
+        vega_matrix_spot_moneyness: Array1<Real>,
+    ) -> Result<LocalVolatilitySurface> {
+        let eval_date = self.evaluation_date.borrow().get_date_clone();
+        let dates = vega_structure_tenors.iter()
+            .map(|tenor| add_period(&eval_date, tenor))
+            .collect::<Vec<OffsetDateTime>>();
+
+        let time_calculator = NullCalendar::new();
+        let times = dates.iter()
+            .map(|date| time_calculator.get_time_difference(&eval_date, date))
+            .collect::<Vec<Time>>().into();
+
+        self.imvol_maturity_dates = dates;
+        self.imvol_maturity_times = times;
+        self.imvol_spot_moneyness = vega_matrix_spot_moneyness;
+        self.imvol_spot = self.market_price.borrow().get_value();
+        let vol = constant_volatility.get_value();
+
+        self.interpolated_imvol = Array2::from_elem((self.imvol_maturity_times.len(), self.imvol_spot_moneyness.len()), vol);
+        Ok(self)
+
     }
 
     pub fn build(&mut self) -> Result<()> {
