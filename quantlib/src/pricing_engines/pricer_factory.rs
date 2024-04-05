@@ -75,6 +75,7 @@ impl PricerFactory {
             Instrument::KTBF(_) => self.get_ktbf_pricer(instrument)?,
             Instrument::FxFutures(_) => self.get_fx_futures_pricer(instrument)?,
             Instrument::PlainSwap(_) => self.get_plain_swap_pricer(instrument)?,
+            Instrument::Stock(_) => self.get_stock_pricer(instrument)?,
             //
             //
             _ => {
@@ -341,5 +342,15 @@ impl PricerFactory {
 
         Ok(Pricer::PlainSwapPricer(core))
 
+    }
+
+    fn get_stock_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
+        let equity = self.equities.get(instrument.get_code())
+            .ok_or_else(|| anyhow::anyhow!(
+                "({}:{}) failed to get equity of {}.\nself.equities does not have {}",
+                file!(), line!(), instrument.get_code(), instrument.get_code(),
+            ))?.clone();
+        let core = NullPricer::new(equity);
+        Ok(Pricer::NullPricer(core))
     }
 }

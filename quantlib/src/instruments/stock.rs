@@ -1,8 +1,8 @@
 use crate::currency::Currency;
 use crate::instrument::InstrumentTrait;
 use crate::definitions::Real;   
+use crate::enums::StockRankType;
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Stock {
@@ -10,6 +10,7 @@ pub struct Stock {
     code: String,
     underlying_codes: Vec<String>,
     currency: Currency,
+    rank_type: StockRankType,
 }
 
 impl Stock {
@@ -17,12 +18,16 @@ impl Stock {
         name: String, 
         code: String, 
         underlying_codes: Vec<String>,
-        currency: Currency) -> Stock {
+        currency: Currency,
+        rank_type: Option<StockRankType>,
+    ) -> Stock {
+        let rank_type = rank_type.unwrap_or(StockRankType::Undefined);
         Stock {
             name,
             code,
             underlying_codes,
             currency,
+            rank_type,
         }
     }
 }

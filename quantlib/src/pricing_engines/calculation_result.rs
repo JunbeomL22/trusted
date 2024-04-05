@@ -497,6 +497,157 @@ impl CalculationResult {
             },
         }
     }
+
+    pub fn representation_currency_conversion(&self, currency: Currency, fx_rate: Real) -> Result<CalculationResult> {
+        if currency == *self.representation_currency.as_ref().unwrap() {
+            return Ok(self.clone());
+        }
+
+        let instrument_info = self.instrument_info.clone();
+        let evaluation_date = self.evaluation_date.clone();
+        let npv_result = self.npv_result.clone();
+        let value = match self.value {
+            Some(v) => Some(v * fx_rate),
+            None => None,
+        };
+        let fx_exposure: Option<HashMap<Currency, Real>> = match self.fx_exposure {
+            Some(exposure) => {
+                let mut new_exposure = HashMap::new();
+                for (c, v) in exposure {
+                    new_exposure.insert(c, v * fx_rate);
+                }
+                Some(new_exposure)
+            },
+            None => None,
+        };
+
+        let delta = match self.delta {
+            Some(delta) => {
+                let mut new_delta = HashMap::new();
+                for (und_code, v) in delta {
+                    new_delta.insert(und_code, v * fx_rate);
+                }
+                Some(new_delta)
+            },
+            None => None,
+        };
+
+        let gamma = match self.gamma {
+            Some(gamma) => {
+                let mut new_gamma = HashMap::new();
+                for (und_code, v) in gamma {
+                    new_gamma.insert(und_code, v * fx_rate);
+                }
+                Some(new_gamma)
+            },
+            None => None,
+        };
+        
+        let vega: Option<HashMap<String, Real>> = match self.vega {
+            Some(vega) => {
+                let mut new_vega = HashMap::new();
+                for (und_code, v) in vega {
+                    new_vega.insert(und_code, v * fx_rate);
+                }
+                Some(new_vega)
+            },
+            None => None,
+        };
+        let vega_strucure: Option<HashMap<String, Vec<Real>>> = match self.vega_strucure {
+            Some(vega_structure) => {
+                let mut new_vega_structure = HashMap::new();
+                for (und_code, v) in vega_structure {
+                    let new_v = v.iter().map(|x| x * fx_rate).collect();
+                    new_vega_structure.insert(und_code, new_v);
+                }
+                Some(new_vega_structure)
+            },
+            None => None,
+        };
+        let vega_matrix: Option<HashMap<String, Array2<Real>>> = match self.vega_matrix {
+            Some(vega_matrix) => {
+                let mut new_vega_matrix = HashMap::new();
+                for (und_code, v) in vega_matrix {
+                    let new_v = v.mapv(|x| x * fx_rate);
+                    new_vega_matrix.insert(und_code, new_v);
+                }
+                Some(new_vega_matrix)
+            },
+            None => None,
+        };
+
+        let theta: Option<Real> = match self.theta {
+            Some(v) => Some(v * fx_rate),
+            None => None,
+        };
+        let div_delta: Option<HashMap<String, Real>> = match self.div_delta {
+            Some(div_delta) => {
+                let mut new_div_delta = HashMap::new();
+                for (und_code, v) in div_delta {
+                    new_div_delta.insert(und_code, v * fx_rate);
+                }
+                Some(new_div_delta)
+            },
+            None => None,
+        };
+        let div_structure: Option<HashMap<String, Vec<Real>>> = match self.div_structure {
+            Some(div_structure) => {
+                let mut new_div_structure = HashMap::new();
+                for (und_code, v) in div_structure {
+                    let new_v = v.iter().map(|x| x * fx_rate).collect();
+                    new_div_structure.insert(und_code, new_v);
+                }
+                Some(new_div_structure)
+            },
+            None => None,
+        };
+        let rho: Option<HashMap<String, Real>> = match self.rho {
+            Some(rho) => {
+                let mut new_rho = HashMap::new();
+                for (curve_code, v) in rho {
+                    new_rho.insert(curve_code, v * fx_rate);
+                }
+                Some(new_rho)
+            },
+            None => None,
+        };
+        let rho_structure: Option<HashMap<String, Vec<Real>>> = match self.rho_structure {
+            Some(rho_structure) => {
+                let mut new_rho_structure = HashMap::new();
+                for (curve_code, v) in rho_structure {
+                    let new_v = v.iter().map(|x| x * fx_rate).collect();
+                    new_rho_structure.insert(curve_code, new_v);
+                }
+                Some(new_rho_structure)
+            },
+            None => None,
+        };
+        let theta_day: Option<Integer> = self.theta_day.clone();
+        let cashflows: Option<HashMap<OffsetDateTime, Real>> = self.cashflows.clone();
+        let representation_currency: Option<Currency> = Some(currency);
+
+        let result = CalculationResult {
+            instrument_info,
+            evaluation_date,
+            npv_result,
+            value,
+            fx_exposure,
+            delta,
+            gamma,
+            vega,
+            vega_strucure,
+            vega_matrix,
+            theta,
+            div_delta,
+            div_structure,
+            rho,
+            rho_structure,
+            theta_day,
+            cashflows,
+            representation_currency,
+        };
+        Ok(result)
+    }
 }
 
 #[cfg(test)]

@@ -136,3 +136,13 @@ pub enum VanillaOptionCalculationMethod {
     FiniteDifference = 1,
     Analytic = 2,
 }
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum StockRankType {
+    Common = 0,
+    Preferred = 1,
+    Warrant = 2,
+    Convertible = 3,
+    Undefined = 4,
+}
