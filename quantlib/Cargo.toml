@@ -31,7 +31,7 @@ statrs = "0.16"
 # polars = {version = "0.38", features = ["json"]}
 
 [dev-dependencies]
-rstest = "0.18" 
+rstest = "0.19" 
 
 [[bench]]
 name = "find_index"

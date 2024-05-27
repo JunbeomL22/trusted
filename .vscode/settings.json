@@ -1,27 +1,10 @@
 {
     "rust-analyzer.linkedProjects": [
         "./quantlib/Cargo.toml",
-        ".\\trading-engine\\orderbook\\Cargo.toml",
-        ".\\trading-engine\\orderbook\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\trading-engine\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml",
-        ".\\quantlib\\Cargo.toml"
+        "./trading-engine/Cargo.toml",
+        "./examples/graph/Cargo.toml",
+        "./examples/toymodel/Cargo.toml"
     ],
-    "rust-analyzer.showUnlinkedFileNotification": false
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "rust-analyzer.trace.extension": true
 }

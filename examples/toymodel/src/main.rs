@@ -103,7 +103,7 @@ fn main() -> Result<()> {
 
     
     let mut equity_vol_map = HashMap::new();
-    let mut equity_surface_map = HashMap::new();
+    let equity_surface_map = HashMap::new();
 
     let equity_surface_data = surfacedatasample!(&market_datetime, spot);
     let equity_constant_vol1 = ValueData::new(

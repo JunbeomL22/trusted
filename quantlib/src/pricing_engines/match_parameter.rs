@@ -1,4 +1,4 @@
-use crate::instrument::{self, Instrument, InstrumentTrait};
+use crate::instrument::{Instrument, InstrumentTrait};
 use crate::currency::Currency;
 use crate::enums::{
     CreditRating, 
@@ -227,7 +227,8 @@ impl MatchParameter {
             Instrument::Futures(_) |
             Instrument::BondFutures(_) |
             Instrument::KTBF(_) |
-            Instrument::FxFutures(_) => {
+            Instrument::FxFutures(_) |
+            Instrument::Stock(_) => {
                 Ok(&self.dummy_string)
             },
         }

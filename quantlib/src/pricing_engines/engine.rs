@@ -18,7 +18,7 @@ use crate::definitions::{
     Real, Time, 
     DELTA_PNL_UNIT, VEGA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT,
 };
-use crate::market_price::{self, MarketPrice};
+use crate::market_price::MarketPrice;
 use crate::currency::{Currency, FxCode};
 
 use crate::data::{
@@ -28,10 +28,7 @@ use crate::data::{
     history_data::CloseData,
 };
 use crate::util::format_duration;
-use crate::utils::{
-    string_arithmetic::add_period,
-    distribute_value::distribute_value_on_vector,
-};
+use crate::utils::string_arithmetic::add_period;
 use crate::pricing_engines::{
     pricer::{Pricer, PricerTrait},
     match_parameter::MatchParameter,

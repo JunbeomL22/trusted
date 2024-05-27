@@ -510,66 +510,66 @@ impl CalculationResult {
             Some(v) => Some(v * fx_rate),
             None => None,
         };
-        let fx_exposure: Option<HashMap<Currency, Real>> = match self.fx_exposure {
+        let fx_exposure: Option<HashMap<Currency, Real>> = match &self.fx_exposure {
             Some(exposure) => {
                 let mut new_exposure = HashMap::new();
                 for (c, v) in exposure {
-                    new_exposure.insert(c, v * fx_rate);
+                    new_exposure.insert(*c, v * fx_rate);
                 }
                 Some(new_exposure)
             },
             None => None,
         };
 
-        let delta = match self.delta {
+        let delta: Option<HashMap<String, f32>> = match &self.delta {
             Some(delta) => {
                 let mut new_delta = HashMap::new();
                 for (und_code, v) in delta {
-                    new_delta.insert(und_code, v * fx_rate);
+                    new_delta.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_delta)
             },
             None => None,
         };
 
-        let gamma = match self.gamma {
+        let gamma: Option<HashMap<String, f32>> = match &self.gamma {
             Some(gamma) => {
                 let mut new_gamma = HashMap::new();
                 for (und_code, v) in gamma {
-                    new_gamma.insert(und_code, v * fx_rate);
+                    new_gamma.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_gamma)
             },
             None => None,
         };
         
-        let vega: Option<HashMap<String, Real>> = match self.vega {
+        let vega: Option<HashMap<String, Real>> = match &self.vega {
             Some(vega) => {
                 let mut new_vega = HashMap::new();
                 for (und_code, v) in vega {
-                    new_vega.insert(und_code, v * fx_rate);
-                }
+                    new_vega.insert(und_code.clone(), v * fx_rate);
+                } 
                 Some(new_vega)
             },
             None => None,
         };
-        let vega_strucure: Option<HashMap<String, Vec<Real>>> = match self.vega_strucure {
+        let vega_strucure: Option<HashMap<String, Vec<Real>>> = match &self.vega_strucure {
             Some(vega_structure) => {
                 let mut new_vega_structure = HashMap::new();
                 for (und_code, v) in vega_structure {
                     let new_v = v.iter().map(|x| x * fx_rate).collect();
-                    new_vega_structure.insert(und_code, new_v);
+                    new_vega_structure.insert(und_code.clone(), new_v);
                 }
                 Some(new_vega_structure)
             },
             None => None,
         };
-        let vega_matrix: Option<HashMap<String, Array2<Real>>> = match self.vega_matrix {
+        let vega_matrix: Option<HashMap<String, Array2<Real>>> = match &self.vega_matrix {
             Some(vega_matrix) => {
                 let mut new_vega_matrix = HashMap::new();
                 for (und_code, v) in vega_matrix {
                     let new_v = v.mapv(|x| x * fx_rate);
-                    new_vega_matrix.insert(und_code, new_v);
+                    new_vega_matrix.insert(und_code.clone(), new_v);
                 }
                 Some(new_vega_matrix)
             },
@@ -580,43 +580,43 @@ impl CalculationResult {
             Some(v) => Some(v * fx_rate),
             None => None,
         };
-        let div_delta: Option<HashMap<String, Real>> = match self.div_delta {
+        let div_delta: Option<HashMap<String, Real>> = match &self.div_delta {
             Some(div_delta) => {
                 let mut new_div_delta = HashMap::new();
                 for (und_code, v) in div_delta {
-                    new_div_delta.insert(und_code, v * fx_rate);
+                    new_div_delta.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_div_delta)
             },
             None => None,
         };
-        let div_structure: Option<HashMap<String, Vec<Real>>> = match self.div_structure {
+        let div_structure: Option<HashMap<String, Vec<Real>>> = match &self.div_structure {
             Some(div_structure) => {
-                let mut new_div_structure = HashMap::new();
+                let mut new_div_structure: HashMap<String, Vec<f32>> = HashMap::new();
                 for (und_code, v) in div_structure {
                     let new_v = v.iter().map(|x| x * fx_rate).collect();
-                    new_div_structure.insert(und_code, new_v);
+                    new_div_structure.insert(und_code.clone(), new_v);
                 }
                 Some(new_div_structure)
             },
             None => None,
         };
-        let rho: Option<HashMap<String, Real>> = match self.rho {
+        let rho: Option<HashMap<String, Real>> = match &self.rho {
             Some(rho) => {
                 let mut new_rho = HashMap::new();
                 for (curve_code, v) in rho {
-                    new_rho.insert(curve_code, v * fx_rate);
+                    new_rho.insert(curve_code.clone(), v * fx_rate);
                 }
                 Some(new_rho)
             },
             None => None,
         };
-        let rho_structure: Option<HashMap<String, Vec<Real>>> = match self.rho_structure {
+        let rho_structure: Option<HashMap<String, Vec<Real>>> = match &self.rho_structure {
             Some(rho_structure) => {
                 let mut new_rho_structure = HashMap::new();
                 for (curve_code, v) in rho_structure {
                     let new_v = v.iter().map(|x| x * fx_rate).collect();
-                    new_rho_structure.insert(curve_code, new_v);
+                    new_rho_structure.insert(curve_code.clone(), new_v);
                 }
                 Some(new_rho_structure)
             },

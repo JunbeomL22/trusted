@@ -7,6 +7,7 @@ use crate::instruments::{
     ktbf::KTBF,
     fx_futures::FxFutures,
     vanilla_option::VanillaOption,
+    stock::Stock,
 };
 use crate::definitions::Real;
 use crate::currency::{Currency, FxCode};
@@ -179,6 +180,7 @@ pub enum Instrument {
     PlainSwap(PlainSwap),
     FxFutures(FxFutures),
     VanillaOption(VanillaOption),   
+    Stock(Stock),
 }
 
 /// calculation groups for calculation optimization, 
