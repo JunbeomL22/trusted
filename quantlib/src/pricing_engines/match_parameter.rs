@@ -404,14 +404,14 @@ mod tests {
         collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
         rate_index_forward_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
 
-        let mut funcing_cost_map: HashMap<Currency, String> = HashMap::new();
+        let funding_cost_map: HashMap<Currency, String> = HashMap::new();
         let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
             HashMap::new(),
             rate_index_forward_curve_map,
-            funcing_cost_map,
+            funding_cost_map, 
         );
         
         let stock_futures_inst = Instrument::Futures(stock_futures);

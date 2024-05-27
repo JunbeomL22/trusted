@@ -97,7 +97,7 @@ impl Engine {
     ) -> Result<Engine> {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
-        ));
+        )); 
 
         let mut zero_curves = HashMap::new();
         //let mut curve_data_refcell = HashMap::new();
