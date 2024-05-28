@@ -12,7 +12,6 @@ use crate::instrument::{
 };
 use crate::definitions::Real;
 use crate::enums::Compounding;
-use crate::time::calendars::nullcalendar::NullCalendar;
 //
 use anyhow::Result;
 use std::{

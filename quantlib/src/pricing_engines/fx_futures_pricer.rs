@@ -1,5 +1,4 @@
-use crate::evaluation_date::EvaluationDate;
-use crate::currency::{Currency, FxCode};
+use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::market_price::MarketPrice;
@@ -15,8 +14,10 @@ use std::{
     collections::HashMap,
 };
 
+/// evaluation date is not needed for this pricer
+/// all parameters have the evaluation date (shared in the form of Rc<RefCell<EvaluationDate>>)
 pub struct FxFuturesPricer {
-    evaluation_date: Rc<RefCell<EvaluationDate>>,
+    //evaluation_date: Rc<RefCell<EvaluationDate>>, //not used
     fx: Rc<RefCell<MarketPrice>>, // floationg to fixed fx as in PlainSwapPricer. 
     underlying_currency_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     futures_currency_curve: Rc<RefCell<ZeroCurve>>, // or repo
@@ -24,13 +25,13 @@ pub struct FxFuturesPricer {
 
 impl FxFuturesPricer {
     pub fn new(
-        evaluation_date: Rc<RefCell<EvaluationDate>>,
+        //evaluation_date: Rc<RefCell<EvaluationDate>>,
         fx: Rc<RefCell<MarketPrice>>,
         underlying_currency_curve: Rc<RefCell<ZeroCurve>>,
         futures_currency_curve: Rc<RefCell<ZeroCurve>>,
     ) -> Self {
         FxFuturesPricer {
-            evaluation_date,
+            //evaluation_date,
             fx,
             underlying_currency_curve,
             futures_currency_curve,

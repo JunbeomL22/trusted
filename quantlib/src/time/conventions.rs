@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use crate::definitions::{Integer, Real};
 use serde::{Deserialize, Serialize};
-use time::Duration;
 // all takend from https://github.com/avhz/RustQuant/blob/main/src/time/conventions.rs
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]

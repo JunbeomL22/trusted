@@ -1,4 +1,4 @@
-use crate::currency::{Currency, FxCode};
+use crate::currency::Currency;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
 use crate::data::history_data::CloseData;
@@ -19,7 +19,7 @@ use std::{
     collections::HashMap,
 };
 use time::OffsetDateTime;
-use anyhow::{Context, Result, anyhow};
+use anyhow::Result;
 
 pub struct PlainSwapPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,

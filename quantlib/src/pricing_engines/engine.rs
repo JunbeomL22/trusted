@@ -1,15 +1,11 @@
-use crate::enums::StickynessType;
+//use crate::enums::StickynessType;
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
     quanto::Quanto,
-    volatility::{
-        Volatility,
-        VolatilityTrait,
-        VolatilityType,
-    },
+    volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::evaluation_date::EvaluationDate;
@@ -150,7 +146,7 @@ impl Engine {
         let mut fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>> = HashMap::new();
         fx_data
             .iter()
-            .map(|(key, data)| {
+            .for_each(|(key, data)| {
                 let rc = Rc::new(RefCell::new(
                     MarketPrice::new(
                         data.get_value(),
@@ -162,7 +158,7 @@ impl Engine {
                         key.to_string(),
                     )
                 ));
-                fxs.insert(key.clone(), rc)
+                fxs.insert(key.clone(), rc);
             });
         
         let krwkrw_code = FxCode::new(Currency::KRW, Currency::KRW);
@@ -501,7 +497,7 @@ impl Engine {
             self.fxs.clone(),
             self.equities.clone(),
             self.zero_curves.clone(),
-            self.dividends.clone(),
+            //self.dividends.clone(),
             self.volatilities.clone(),
             self.quantos.clone(),
             self.past_close_data.clone(),

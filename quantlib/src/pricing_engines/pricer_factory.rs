@@ -1,6 +1,5 @@
 use crate::currency::FxCode;
 use crate::parameters::{
-    discrete_ratio_dividend::DiscreteRatioDividend,
     zero_curve::ZeroCurve,
     rate_index::RateIndex,
     quanto::Quanto,
@@ -30,12 +29,14 @@ use std::{
 
 use anyhow::{Result, anyhow};
 
+/// dividend is not needed for this pricer factory
+/// dividend is in herent in equities
 pub struct PricerFactory {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
     equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-    dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
+    // dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
     quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>, // (underlying_code, fx_code) -> Quanto
     past_close_data: HashMap<String, Rc<CloseData>>,
@@ -48,7 +49,7 @@ impl PricerFactory {
         fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
         equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
         zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-        dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
+        //dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
         underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
         quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
         past_close_data: HashMap<String, Rc<CloseData>>,
@@ -59,7 +60,7 @@ impl PricerFactory {
             fxs,
             equities,
             zero_curves,
-            dividends,
+            //dividends,
             underlying_volatilities,
             quantos,
             past_close_data,
@@ -151,7 +152,7 @@ impl PricerFactory {
         let collatral_curve_name = self.match_parameter.get_collateral_curve_names(instrument)?[0];
         let borrowing_curve_name = self.match_parameter.get_borrowing_curve_names(instrument)?[0];
         let core = FuturesPricer::new(
-            self.evaluation_date.clone(),
+            //self.evaluation_date.clone(),
             equity,
             self.zero_curves.get(collatral_curve_name)
             .ok_or_else(|| anyhow::anyhow!(
@@ -266,7 +267,7 @@ impl PricerFactory {
             ))?.clone();
         
         let core = FxFuturesPricer::new(
-            self.evaluation_date.clone(),
+            //self.evaluation_date.clone(),
             fx,
             underlying_currency_curve,
             futures_currency_curve,
@@ -291,7 +292,7 @@ impl PricerFactory {
         
         let rate_index = instrument.get_rate_index()?;
         let forward_curve = match rate_index {
-            Some(rate_index) => {
+            Some(_) => {
                 let forward_curve_name = self.match_parameter.get_rate_index_curve_name(instrument)?;
                 let res = self.zero_curves.get(forward_curve_name)
                     .ok_or_else(|| anyhow::anyhow!(
@@ -321,7 +322,6 @@ impl PricerFactory {
             true => None,
             false => {
                 let fx_code = FxCode::new(floating_currency.clone(), fixed_currency.clone());
-                let key = (floating_currency.clone(), fixed_currency.clone());
                 let fx = self.fxs.get(&fx_code)
                     .ok_or_else(|| anyhow::anyhow!(
                         "({}:{}) failed to get FX of {}.\nself.fxs does not have {:?}",

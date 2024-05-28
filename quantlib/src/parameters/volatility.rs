@@ -3,7 +3,7 @@ use crate::parameters::volatilities::{
     local_volatility_surface::LocalVolatilitySurface,
 };
 use crate::definitions::{Real, Time};
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -101,8 +101,8 @@ impl Volatility {
 
     pub fn get_volatility_type(&self) -> VolatilityType {
         match self {
-            Volatility::ConstantVolatility(volatility) => VolatilityType::ConstantVolatility,
-            Volatility::LocalVolatilitySurface(volatility) => VolatilityType::LocalVolatilitySurface,
+            Volatility::ConstantVolatility(_) => VolatilityType::ConstantVolatility,
+            Volatility::LocalVolatilitySurface(_) => VolatilityType::LocalVolatilitySurface,
         }
     }
 }

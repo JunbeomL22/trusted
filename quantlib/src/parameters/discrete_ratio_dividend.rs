@@ -8,7 +8,6 @@ use crate::math::interpolators::stepwise_interpolatior::{StepwiseInterpolator1D,
 use crate::math::interpolator::Interpolator1D;
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::time::calendars::nullcalendar::NullCalendar;
 use crate::parameter::Parameter;
 use ndarray::Array1;
 use crate::util::to_yyyymmdd_int;
@@ -24,7 +23,7 @@ enum DividendInterpolator {
 pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,
-    time_calculator: NullCalendar,
+    //time_calculator: NullCalendar,
     date_integers: Array1<Integer>,
     dividend_amounts: Array1<Real>,
     dividend_yields: Array1<Real>,
@@ -56,7 +55,7 @@ impl DiscreteRatioDividend {
         name: String,
     ) -> Result<DiscreteRatioDividend> {
         // Begining of the function
-        let time_calculator = NullCalendar::default();
+        //let time_calculator = NullCalendar::default();
 
         let ex_dividend_dates: Vec<OffsetDateTime>;
         if let Some(dates) = data.get_dates_clone() {
@@ -126,7 +125,7 @@ impl DiscreteRatioDividend {
         let res = DiscreteRatioDividend {
             evaluation_date: evaluation_date.clone(),
             ex_dividend_dates,
-            time_calculator,
+            //time_calculator,
             date_integers,
             dividend_amounts: dividend_amount,
             dividend_yields,

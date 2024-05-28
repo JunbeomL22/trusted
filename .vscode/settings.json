@@ -5,6 +5,7 @@
         "./examples/graph/Cargo.toml",
         "./examples/toymodel/Cargo.toml"
     ],
+    "rust-analyzer.completion.autoimport.enable": false,
     "rust-analyzer.showUnlinkedFileNotification": false,
-    "rust-analyzer.trace.extension": true
+    "rust-analyzer.trace.extension": false,
 }

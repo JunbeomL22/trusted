@@ -6,10 +6,7 @@ use crate::data::{
 };
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::parameters::{
-    volatility::{
-        VolatilityTrait,
-        VolatilityType,
-    },
+    volatility::VolatilityTrait;
     volatilities::volatiltiy_interpolator::VolatilityInterplator,
     zero_curve::ZeroCurve,
 };

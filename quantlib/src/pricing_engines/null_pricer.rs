@@ -23,7 +23,7 @@ impl NullPricer {
 }
 
 impl PricerTrait for NullPricer {
-    fn npv(&self, instrument: &Instrument) -> Result<Real> {
+    fn npv(&self, _instrument: &Instrument) -> Result<Real> {
         Ok(self.market_price.borrow().get_value())
     }
 

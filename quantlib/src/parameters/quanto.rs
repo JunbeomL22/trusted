@@ -1,9 +1,6 @@
 use crate::currency::FxCode;
 use crate::parameters::{
-    volatility::{
-        Volatility,
-        VolatilityTrait,
-    },
+    volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
 };
 use crate::definitions::{Time, Real};

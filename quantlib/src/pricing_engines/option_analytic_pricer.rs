@@ -1,4 +1,3 @@
-use crate::currency;
 use crate::time::{
     calendars::nullcalendar::NullCalendar,
     calendar_trait::CalendarTrait,
@@ -25,7 +24,6 @@ use anyhow::{anyhow, Context, Result};
 use std::{
     rc::Rc,
     cell::RefCell,
-    collections::HashMap,
 };
 use statrs::distribution::{Normal, ContinuousCDF};
 
@@ -50,7 +48,7 @@ impl OptionAnalyticPricer {
         quanto: Option<Rc<RefCell<Quanto>>>,
     ) -> OptionAnalyticPricer {
         let futures_helper = FuturesPricer::new(
-            evaluation_date.clone(),
+            //evaluation_date.clone(),
             market_price.clone(),
             collateral_curve.clone(),
             borrowing_curve.clone(),

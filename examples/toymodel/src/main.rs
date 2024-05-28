@@ -3,7 +3,7 @@ use quantlib::enums::{
     OptionType,
     OptionExerciseType,
 };
-use quantlib::currency::{self, Currency, FxCode};
+use quantlib::currency::{Currency, FxCode};
 use quantlib::instruments::{
     futures::Futures,
     bond::Bond,
@@ -14,19 +14,13 @@ use quantlib::definitions::Real;
 use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
-use quantlib::parameters::{
-    volatility::Volatility,
-    volatilities::constant_volatility::ConstantVolatility,
-};
-use quantlib::surfacedatasample;
+//use quantlib::surfacedatasample;
 use std::rc::Rc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
 use quantlib::pricing_engines::engine::Engine;
-use quantlib::data;
-use quantlib::utils;
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
@@ -105,7 +99,7 @@ fn main() -> Result<()> {
     let mut equity_vol_map = HashMap::new();
     let equity_surface_map = HashMap::new();
 
-    let equity_surface_data = surfacedatasample!(&market_datetime, spot);
+    //let _equity_surface_data = surfacedatasample!(&market_datetime, spot);
     let equity_constant_vol1 = ValueData::new(
         0.2,
         Some(market_datetime),
@@ -287,10 +281,10 @@ fn main() -> Result<()> {
     let inst5 = Instrument::VanillaOption(option1);
 
     let inst_vec = vec![
-        //Rc::new(inst1), 
-        //Rc::new(inst2), 
-        //Rc::new(inst3),
-        //Rc::new(inst4),
+        Rc::new(inst1), 
+        Rc::new(inst2), 
+        Rc::new(inst3),
+        Rc::new(inst4),
         Rc::new(inst5),
         ];
 
@@ -360,19 +354,19 @@ fn main() -> Result<()> {
     engine.initialize(inst_vec)?;
     engine.calculate().context("Failed to calculate")?;
 
-    /*
+    
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
     let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
     let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
-    //let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
+    let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
     
     println!("result1 {:?}\n", result1.borrow());
     println!("result2 {:?}\n", result2.borrow());
     println!("result3 {:?}\n", result3.borrow());
     println!("result4 {:?}\n", result4.borrow());
-    //println!("result5 {:?}\n", result5.borrow());
-    */
+    println!("result5 {:?}\n", result5.borrow());
+    
     let results = engine.get_calculation_result();
     for (key, value) in results.iter() {
         println!("{}: {:?}\n\n", key, value.borrow());

@@ -1,5 +1,5 @@
 use crate::currency::Currency;
-use crate::definitions::{Integer, Real};
+use crate::definitions::Real;
 use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
 use crate::parameters::zero_curve::ZeroCurve;

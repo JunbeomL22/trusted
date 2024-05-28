@@ -1,7 +1,4 @@
-use crate::parameters::volatility::{
-    VolatilityTrait,
-    VolatilityType,
-};
+use crate::parameters::volatility::VolatilityTrait;
 use crate::definitions::{Real, Time};
 use serde::{Serialize, Deserialize};
 use anyhow::Result;

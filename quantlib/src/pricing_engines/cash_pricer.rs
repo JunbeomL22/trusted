@@ -18,7 +18,7 @@ impl PricerTrait for CashPricer {
         Ok(NpvResult::new_from_npv(npv))
     }
 
-    fn npv(&self, instrument: &Instrument) -> Result<Real> {
+    fn npv(&self, _instrument: &Instrument) -> Result<Real> {
         Ok(1.0)
     }
 }

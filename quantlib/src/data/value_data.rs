@@ -71,11 +71,13 @@ impl ValueData {
         })
     }
 
+    /*
     fn reset_data(&mut self, value: Real, market_datetime: Option<OffsetDateTime>) {
         self.value = value;
         self.market_datetime = market_datetime;
         self.notify_observers();
     }
+    */
 
     pub fn get_value(&self) -> Real {
         self.value

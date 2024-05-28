@@ -18,7 +18,7 @@ use std::{
 
 #[derive(Debug, Clone)]
 pub struct FuturesPricer {
-    evaluation_date: Rc<RefCell<EvaluationDate>>,
+    // evaluation_date: Rc<RefCell<EvaluationDate>>, not used
     market_price: Rc<RefCell<MarketPrice>>,
     collateral_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
     borrowing_curve: Rc<RefCell<ZeroCurve>>, // or repo
@@ -26,13 +26,13 @@ pub struct FuturesPricer {
 
 impl FuturesPricer {
     pub fn new(
-        evaluation_date: Rc<RefCell<EvaluationDate>>,
+        //evaluation_date: Rc<RefCell<EvaluationDate>>,
         market_price: Rc<RefCell<MarketPrice>>,
         collateral_curve: Rc<RefCell<ZeroCurve>>,
         borrowing_curve: Rc<RefCell<ZeroCurve>>,
         ) -> FuturesPricer {
         FuturesPricer {
-            evaluation_date,
+            //evaluation_date,
             market_price,
             collateral_curve,
             borrowing_curve,

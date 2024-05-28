@@ -203,6 +203,46 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     new_datetime
 }
 
+
+pub fn add_period_date(date: &Date, duration: &str) -> Date {
+    let re = regex::Regex::new(r"(\d+)(Y|M|W|D)+").unwrap();
+    if !re.is_match(duration) {
+        panic!("Invalid duration: {}", duration);
+    }
+    let mut new_date = *date;
+    for cap in re.captures_iter(duration) {
+        let value = cap[1].parse::<i32>().unwrap();
+        let unit = &cap[2];
+        match unit {
+            "Y" => {
+                let new_year = new_date.year() + value;
+                let new_month = new_date.month();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_date.day() > eom_new {
+                    true => eom_new,
+                    false => new_date.day(),
+                };
+                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
+            },
+            "M" => {
+                let month_i32 = from_month_to_i32(new_date.month());
+                let year = new_date.year();
+                let new_month = from_i32_to_month((month_i32 + value) % 12);      
+                let new_year = year + (month_i32 + value) / 12;
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_date.day() > eom_new {
+                    true => eom_new,
+                    false => new_date.day(),
+                };
+                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
+            },
+            "W" => new_date = new_date + Duration::weeks(value as i64),
+            "D" => new_date = new_date + Duration::days(value as i64),
+            _ => panic!("Invalid unit"),
+        }
+    }
+    new_date
+}
 #[cfg(test)]
 mod tests {
     use super::*;
