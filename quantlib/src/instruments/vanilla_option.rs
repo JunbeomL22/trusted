@@ -38,6 +38,7 @@ impl Default for VanillaOption {
             underlying_codes: vec![],
             underlying_currency: Currency::KRW,
             currency: Currency::KRW,
+            quanto_fx_code: None,
             exercise_type: OptionExerciseType::European,
             option_type: OptionType::Call,
             daily_settlement_type: OptionDailySettlementType::NotSettled,
@@ -64,6 +65,12 @@ impl VanillaOption {
         name: String,
         code: String,
     ) -> VanillaOption {
+        let quanto_fx_code = if currency != underlying_currency {
+            Some(FxCode::new(underlying_currency.clone(), currency.clone()))
+        } else {
+            None
+        };
+
         VanillaOption {
             strike,
             unit_notional,
@@ -73,6 +80,7 @@ impl VanillaOption {
             settlement_date,
             underlying_codes,
             underlying_currency,
+            quanto_fx_code,
             currency,
             option_type,
             exercise_type,
@@ -132,6 +140,13 @@ impl InstrumentTrait for VanillaOption {
 
     fn get_strike(&self) -> Result<Real> {
         Ok(self.strike)
+    }
+
+    fn get_quanto_fx_codes(&self) -> Vec<&FxCode> {
+        match &self.quanto_fx_code {
+            Some(fx_code) => vec![fx_code],
+            None => vec![],
+        }
     }
     
 }

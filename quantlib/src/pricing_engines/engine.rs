@@ -114,7 +114,40 @@ impl Engine {
         quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
         past_daily_value_data: Arc<HashMap<String, Rc<DailyValueData>>>,
     ) -> Result<Engine> {
-        
+        let fx_codes = self.instruments.get_all_fxcodes_for_pricing();
+        let mut fxs: HashMap<FxCode, Rc<MarketPrice>> = HashMap::new();
+        for fx_code in fx_codes {
+            if fx_codes.contains(&fx_code) {
+                let data = fx_data.get(&fx_code).unwrap();
+                let rc = Rc::new(MarketPrice::new(
+                    data.get_value(),
+                    data.get_market_datetime().unwrap_or(
+                        self.evaluation_date.borrow().get_date_clone()),
+                    None,
+                    fx_code.get_currency2().clone(),
+                    fx_code.to_string(),
+                    fx_code.to_string(),
+                ));
+                fxs.insert(fx_code, rc);
+            } else if fx_codes.contains(&fx_code.reciprocal()) {
+                let data = fx_data.get(&fx_code.reciprocal()).unwrap();
+                let rc = Rc::new(MarketPrice::new(
+                    1.0 / data.get_value(),
+                    data.get_market_datetime().unwrap_or(
+                        self.evaluation_date.borrow().get_date_clone()),
+                    None,
+                    fx_code.get_currency2().clone(),
+                    fx_code.to_string(),
+                    fx_code.to_string(),
+                ));
+                fxs.insert(fx_code.clone(), rc);
+            } else {
+                bail!(
+                    "({}:{}) failed to get fx data for {}", 
+                    file!(), line!(), fx_code
+                );
+            }
+        }
         Ok(self)
     }
     // initialize CalculationResult for each instrument
@@ -532,6 +565,12 @@ impl Engine {
             pricers: HashMap::new(),
             match_parameter: Rc::new(match_parameter),
         })
+    }
+
+    pub fn initialize(&mut self, instrument_vec: Vec<Rc<Instrument>>) -> Result<()> {
+        self.initialize_instruments(instrument_vec)?;
+        self.initialize_pricers()?;
+        Ok(())
     }
 
     pub fn initialize_instruments(

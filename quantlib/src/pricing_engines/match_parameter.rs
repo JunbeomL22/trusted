@@ -256,7 +256,12 @@ impl MatchParameter {
     /// Curve name for underlying asset
     /// This retrives the curve name from self.collateral_curve_map
     pub fn get_borrowing_curve_names(&self, instrument: &Instrument) -> Result<Vec<&String>> {
-        let und_codes = instrument.get_underlying_codes();
+        let mut und_codes = instrument.get_underlying_codes();
+        let bond_futures_collateral_tags = instrument.get_bond_futures_borrowing_curve_tags();
+        if !bond_futures_collateral_tags.is_empty() {
+            und_codes.append(&mut bond_futures_collateral_tags.clone());
+        }
+
         let res = und_codes.iter().map(|code| {
             self.borrowing_curve_map.get(*code)
             .with_context(|| anyhow!(

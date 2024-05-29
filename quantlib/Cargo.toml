@@ -28,7 +28,9 @@ serde_json = "1.0"
 argmin = "0.10"
 enum_dispatch = "0.3"
 statrs = "0.16"
-# polars = {version = "0.38", features = ["json"]}
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
 
 [dev-dependencies]
 rstest = "0.19" 

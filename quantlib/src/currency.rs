@@ -1,4 +1,5 @@
 use std::hash::Hash;
+use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -199,6 +200,11 @@ impl FxCode {
 
     pub fn to_string(&self) -> String {
         format!("{}{}", self.currency1.as_str(), self.currency2.as_str())
+    }
+}
+impl Display for FxCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}{}", self.currency1.as_str(), self.currency2.as_str())
     }
 }
 

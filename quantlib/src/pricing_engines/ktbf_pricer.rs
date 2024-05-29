@@ -22,28 +22,25 @@ use std::{
 pub struct KtbfPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     discount_curve: Rc<RefCell<ZeroCurve>>,
-    //time_calculator: NullCalendar,
+    borrowing_curve: Rc<RefCell<ZeroCurve>>,
 }
 
 impl KtbfPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         discount_curve: Rc<RefCell<ZeroCurve>>,
+        borrowing_curve: Rc<RefCell<ZeroCurve>>,
     ) -> KtbfPricer {
         KtbfPricer {
             evaluation_date,
             discount_curve,
+            borrowing_curve,
         }
     }
 }
 
 impl PricerTrait for KtbfPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
-        //let mut res: Real = 0.0;
-        //let mut disc_factor: Real;
-        //let eval_dt = self.evaluation_date.borrow().get_date_clone();
-        //let pricing_date = instrument.get_maturity().unwrap();
-        
         let bond_pricer = BondPricer::new(
             self.evaluation_date.clone(),
             self.discount_curve.clone(),
@@ -80,9 +77,16 @@ impl PricerTrait for KtbfPricer {
 
         let average_yield = bond_yields.iter().sum::<Real>() / bond_yields.len() as Real;
 
-        let ktbf_price = instrument.get_virtual_bond_npv(average_yield)?;
+        let mut ktbf_price = instrument.get_virtual_bond_npv(average_yield)?;
+
+        let borrowing_cost = self.borrowing_curve.borrow().get_discount_factor_at_date(
+            instrument.get_maturity().unwrap(),
+        )?;
+
+        ktbf_price *= borrowing_cost;
 
         Ok(ktbf_price)
+
     }
 
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
@@ -141,6 +145,21 @@ mod tests {
             &curve_data,
             "KRWGOV".to_string(),
             "KRWGOV".to_string(),
+        )?;
+
+        let borrowing_curve_data = VectorData::new(
+            array![0.003],
+            None,
+            Some(array![0.5]),
+            None,//eval_date.clone(),
+            Currency::KRW,
+            "KTBF3Y".to_string(),
+        )?;
+        let borrowing_curve = ZeroCurve::new(
+            evaluation_date.clone(),
+            &borrowing_curve_data,
+            "KTBF3Y".to_string(),
+            "KTBF3Y".to_string(),
         )?;
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         let calendar = JointCalendar::new(vec![sk])?;
@@ -232,6 +251,7 @@ mod tests {
             ktbf_maturity.clone(),
             virtual_bond,
             vec![bond1, bond2],
+            "KTBF3Y".to_string(),
             "KTBF".to_string(),
             "KTBF".to_string(),
         )?;
@@ -239,6 +259,7 @@ mod tests {
         let ktbf_pricer = KtbfPricer::new(
             evaluation_date.clone(),
             Rc::new(RefCell::new(discount_curve)),
+            Rc::new(RefCell::new(borrowing_curve)),
         );
 
         let pricer = Pricer::KtbfPricer(ktbf_pricer);

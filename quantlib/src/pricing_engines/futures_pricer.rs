@@ -1,4 +1,3 @@
-use crate::evaluation_date::EvaluationDate;
 use crate::currency::Currency;
 use crate::parameters::market_price::MarketPrice;
 use crate::definitions::Real;
@@ -116,6 +115,7 @@ impl PricerTrait for FuturesPricer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::evaluation_date::EvaluationDate;
     use crate::data::observable::Observable;
     use crate::instrument::InstrumentTrait;
     use crate::{currency::Currency, instruments::futures::Futures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};

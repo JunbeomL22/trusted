@@ -59,6 +59,8 @@ pub trait InstrumentTrait{
     // so the default action is to return an empty vector
     fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
 
+    fn get_quanto_fx_codes(&self) -> Vec<&FxCode> { vec![] }
+
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Result<&CreditRating> {
@@ -81,7 +83,9 @@ pub trait InstrumentTrait{
     fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
         Err(anyhow!("({}:{}) not supported instrument type on get_rate_index", file!(), line!()))
     }
-    
+
+    fn get_bond_futures_borrowing_curve_tags(&self) -> Vec<&String> { vec![] }
+
     fn get_cashflows(
         &self, 
         _pricing_date: &OffsetDateTime,
@@ -249,6 +253,32 @@ impl Instruments {
             }
         }
         underlying_codes
+    }
+
+    pub fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
+        let mut fxcodes = Vec::<FxCode>::new();
+        for instrument in self.instruments.iter() {
+            let codes = instrument.get_all_fxcodes_for_pricing();
+            for code in codes.iter() {
+                if !fxcodes.contains(&code) {
+                    fxcodes.push(code.clone());
+                }
+            }
+        }
+        fxcodes
+    }
+
+    pub fn get_all_quanto_fx_codes(&self) -> Vec<&FxCode> {
+        let mut fxcodes = Vec::<&FxCode>::new();
+        for instrument in self.instruments.iter() {
+            let codes = instrument.get_quanto_fx_codes();
+            for code in codes.iter() {
+                if !fxcodes.contains(&code) {
+                    fxcodes.push(code);
+                }
+            }
+        }
+        fxcodes
     }
 
     pub fn get_all_type_names(&self) -> Vec<&'static str> {

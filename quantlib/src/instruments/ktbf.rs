@@ -58,6 +58,7 @@ pub struct KTBF {
     settlement_date: OffsetDateTime,
     virtual_bond: KtbfVirtualBond,
     underlying_bonds: Vec<Bond>,
+    borrowing_curve_tag: String,
     name: String,
     code: String,
 }
@@ -71,6 +72,7 @@ impl KTBF {
         settlement_date: OffsetDateTime,
         virtual_bond: KtbfVirtualBond,
         underlying_bonds: Vec<Bond>,
+        borrowing_curve_tag: String,
         name: String,
         code: String,
     ) -> Result<KTBF> {
@@ -108,6 +110,7 @@ impl KTBF {
             settlement_date,
             virtual_bond,
             underlying_bonds,
+            borrowing_curve_tag,
             name,
             code,
         })
@@ -149,6 +152,10 @@ impl InstrumentTrait for KTBF {
 
     fn get_underlying_bonds(&self) -> Result<&Vec<Bond>> {
         Ok(&self.underlying_bonds)
+    }
+
+    fn get_bond_futures_borrowing_curve_tags(&self) -> Vec<&String> {
+        vec![&self.borrowing_curve_tag]
     }
 
 }

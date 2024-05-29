@@ -238,17 +238,23 @@ impl PricerFactory {
                 "({}:{}) failed to get discount curve of {}.\nself.zero_curves does not have {}",
                 file!(), line!(), instrument.get_code(), discount_curve_name,
             ))?.clone();
-        
+        let collateral_curve_name = self.match_parameter.get_collateral_curve_names(instrument)?[0];
+        let collateral_curve = self.zero_curves.get(collateral_curve_name)
+            .ok_or_else(|| anyhow::anyhow!(
+                "({}:{}) failed to get collateral curve of {}.\nself.zero_curves does not have {}",
+                file!(), line!(), instrument.get_code(), collateral_curve_name,
+            ))?.clone();
         let core = KtbfPricer::new(
             self.evaluation_date.clone(),
             discount_curve,
+            collateral_curve,
         );
 
         Ok(Pricer::KtbfPricer(core))
     }
     
     fn get_fx_futures_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
-        let fx_code = instrument.get_fxfutres_und_code()?;
+        let fx_code = instrument.get_fxfutres_und_fxcode()?;
 
         let fx = self.fxs.get(fx_code)
             .ok_or_else(|| anyhow::anyhow!(
