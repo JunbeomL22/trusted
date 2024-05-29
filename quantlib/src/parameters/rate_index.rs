@@ -2,8 +2,10 @@ use crate::time::calendar_trait::CalendarTrait;
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention};
 use crate::enums::RateIndexCode;
 use crate::instruments::schedule::BaseSchedule;
-use crate::parameters::zero_curve::ZeroCurve;
-use crate::data::history_data::CloseData;
+use crate::parameters::{
+    zero_curve::ZeroCurve,
+    past_price::DailyClosePrice,
+};
 use crate::definitions::Real;
 use crate::currency::Currency;
 use crate::time::jointcalendar::JointCalendar;
@@ -84,7 +86,7 @@ impl RateIndex {
         base_schedule: &BaseSchedule,
         spread: Option<Real>,
         forward_curve: Rc<RefCell<ZeroCurve>>,
-        close_data: Rc<CloseData>,
+        close_data: Rc<DailyClosePrice>,
         pricing_date: &OffsetDateTime,
         compound_tenor: Option<&String>,
         calendar: &JointCalendar,
@@ -99,7 +101,7 @@ impl RateIndex {
                     fixing_date, self.curve_tenor.as_str());
                 let res: Real;
                 if fixing_date < pricing_date {
-                    res = match close_data.get(fixing_date) {
+                    res = match close_data.get(&(fixing_date.date())) {
                         Some(rate) => *rate,
                         None => {
                             println!(
@@ -190,7 +192,7 @@ impl RateIndex {
                     )?;
 
                     if &fixing_date < pricing_date {
-                        rate = match close_data.get(&fixing_date) {
+                        rate = match close_data.get(&(fixing_date.date())) {
                             Some(rate) => *rate,
                             None => {
                                 println!(
@@ -223,7 +225,7 @@ impl RateIndex {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-
+    use crate::definitions::{CLOSING_TIME, NEW_YORK_OFFSET};
     use super::*;
     use crate::time::{
         calendars::unitedstates::{UnitedStates, UnitedStatesType},
@@ -235,16 +237,14 @@ mod tests {
     use crate::currency::Currency;
     use crate::enums::RateIndexCode;
     use crate::parameters::zero_curve::ZeroCurve;
-    use crate::data::{
-        history_data::CloseData,
-        vector_data::VectorData,
-    };
+    use crate::data::vector_data::VectorData;
     use crate::evaluation_date::EvaluationDate;
     use crate::instruments::schedule::BaseSchedule;
     //
     use time::{
-        macros::datetime,
+        macros::{date, datetime},
         Duration,
+        UtcOffset,
     };
     use anyhow::Result;
     use ndarray::array;
@@ -305,13 +305,22 @@ mod tests {
 
         let mut history_map = HashMap::new();
         //history_map.insert(datetime!(2023-12-29 16:30:00 -05:00), 0.06);
-        history_map.insert(datetime!(2023-12-29 16:30:00 -05:00), 0.03);
-        history_map.insert(datetime!(2023-12-28 16:30:00 -05:00), 0.03);
-        history_map.insert(datetime!(2023-12-27 16:30:00 -05:00), 0.03);
-        history_map.insert(datetime!(2023-12-26 16:30:00 -05:00), 0.03);
+        history_map.insert(date!(2023-12-29), 0.03);
+        history_map.insert(date!(2023-12-28), 0.03);
+        history_map.insert(date!(2023-12-27), 0.03);
+        history_map.insert(date!(2023-12-26), 0.03);
         
-        let close_data = Rc::new(CloseData::new(
+        
+        let us = UnitedStates::new(UnitedStatesType::Settlement);
+        let cal = Calendar::UnitedStates(us);
+        let close_data = Rc::new(DailyClosePrice::new(
             history_map,
+            CLOSING_TIME.clone(),
+            UtcOffset::from_hms(
+                NEW_YORK_OFFSET.0, 
+                NEW_YORK_OFFSET.1, 
+                NEW_YORK_OFFSET.2).unwrap(),
+            cal.clone(),
             "SOFR1D".to_string(),
             "SOFR1D".to_string(),
         ));

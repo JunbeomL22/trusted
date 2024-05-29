@@ -3,7 +3,7 @@ use crate::time::{
     calendar_trait::CalendarTrait,
 };
 use crate::evaluation_date::EvaluationDate;
-use crate::market_price::MarketPrice;
+use crate::parameters::market_price::MarketPrice;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;
@@ -139,7 +139,7 @@ pub mod test {
     use crate::instrument::Instrument;
     use crate::instruments::vanilla_option::VanillaOption;
     use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
-    use crate::market_price::MarketPrice;
+    use crate::parameters::market_price::MarketPrice;
     use crate::parameters::{
         quanto::Quanto,
         volatilities::volatiltiy_interpolator::VolatilityInterplator,

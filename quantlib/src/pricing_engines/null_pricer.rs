@@ -1,7 +1,7 @@
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
-use crate::market_price::MarketPrice;
+use crate::parameters::market_price::MarketPrice;
 use crate::pricing_engines::npv_result::NpvResult;
 //
 use anyhow::Result;

@@ -105,8 +105,12 @@ impl InstrumentTrait for FxFutures {
         self.average_trade_price
     }
 
-    fn get_fx_code(&self) -> Result<&FxCode> {
+    fn get_fxfutres_und_fxcode(&self) -> Result<&FxCode> {
         Ok(&self.fx_code)
+    }
+
+    fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
+        vec![self.fx_code.clone()]
     }
 
 }

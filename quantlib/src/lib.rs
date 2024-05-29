@@ -12,7 +12,6 @@ pub mod evaluation_date;
 pub mod pricing_engines;
 pub mod currency;
 pub mod enums;
-pub mod market_price;
 #[macro_use]
 pub mod macros;
 

@@ -7,6 +7,8 @@ use crate::parameters::{
     quanto::Quanto,
     volatility::Volatility,
     volatilities::constant_volatility::ConstantVolatility,
+    market_price::MarketPrice,
+    past_price::DailyClosePrice,
 };
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, Instruments, InstrumentTrait};
@@ -14,14 +16,13 @@ use crate::definitions::{
     Real, Time, 
     DELTA_PNL_UNIT, VEGA_PNL_UNIT, DIV_PNL_UNIT, RHO_PNL_UNIT, THETA_PNL_UNIT,
 };
-use crate::market_price::MarketPrice;
 use crate::currency::{Currency, FxCode};
 
 use crate::data::{
     vector_data::VectorData,
     value_data::ValueData,
     surface_data::SurfaceData,
-    history_data::CloseData,
+    daily_value_data::DailyValueData,
 };
 use crate::util::format_duration;
 use crate::utils::string_arithmetic::add_period;
@@ -43,6 +44,7 @@ use std::{
     rc::Rc,
     cell::RefCell,
 };
+use std::sync::Arc;
 use anyhow::{Result, Context, anyhow, bail};
 use ndarray::Array2;
 use time::{OffsetDateTime, Duration};
@@ -63,7 +65,7 @@ pub struct Engine {
     dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
     quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
-    past_close_data: HashMap<String, Rc<CloseData>>,
+    past_daily_close_prices: HashMap<String, Rc<DailyClosePrice>>,
     // instruments
     instruments: Instruments, // all instruments
     pricers: HashMap<String, Pricer>, // pricers for each instrument
@@ -74,22 +76,182 @@ pub struct Engine {
 }
 
 impl Engine {
+    pub fn builder(
+        engine_id: u64,
+        calculation_configuration: CalculationConfiguration,
+        evaluation_date: EvaluationDate,
+        match_parameter: MatchParameter,
+    ) -> Engine {
+        Engine {
+            engine_id,
+            err_tag: "".to_string(),
+            calculation_results: HashMap::new(),
+            calculation_configuration,
+            evaluation_date: Rc::new(RefCell::new(evaluation_date)),
+            fxs: HashMap::new(),
+            equities: HashMap::new(),
+            zero_curves: HashMap::new(),
+            dividends: HashMap::new(),
+            volatilities: HashMap::new(),
+            quantos: HashMap::new(),
+            past_daily_close_prices: HashMap::new(),
+            instruments: Instruments::default(),
+            instruments_in_action: vec![],
+            pricers: HashMap::new(),
+            match_parameter: Rc::new(match_parameter),
+        }
+    }
+
+    pub fn with_parameter_data(
+        mut self,
+        fx_data: Arc<HashMap<FxCode, ValueData>>,
+        stock_data: Arc<HashMap<String, ValueData>>,
+        curve_data: Arc<HashMap<String, VectorData>>,
+        dividend_data: Arc<HashMap<String, VectorData>>,
+        equity_constant_volatility_data: Arc<HashMap<String, ValueData>>,
+        equity_volatility_surface_data: Arc<HashMap<String, SurfaceData>>,
+        fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
+        quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
+        past_daily_value_data: Arc<HashMap<String, Rc<DailyValueData>>>,
+    ) -> Result<Engine> {
+        
+        Ok(self)
+    }
+    // initialize CalculationResult for each instrument
+    pub fn with_instruments(
+        mut self, 
+        instrument_vec: Vec<Instrument>,
+    ) -> Result<Engine> {
+        if instrument_vec.is_empty() {
+            return Err(
+                anyhow!("({}:{}) no instruments are given to initialize", file!(), line!())
+            );
+        }
+        let vec_rc_inst: Vec<Rc<Instrument>> = instrument_vec.into_iter().map(Rc::new).collect();
+        self.instruments = Instruments::new(vec_rc_inst);
+        let all_types = self.instruments.get_all_type_names();
+        let curr_str: Vec<&str> = self.instruments.get_all_currencies()?.iter().map(|c| c.as_str()).collect();
+        let all_und_codes: Vec<&str> = self.instruments.get_all_underlying_codes().iter().map(|c| c.as_str()).collect();
+        self.err_tag = format!(
+            "<TAG>\n\
+            engine-id: {}\n\
+            instrument-types: {}\n\
+            currencies: {}\n\
+            underlying-codes: {}\n",
+            self.engine_id,
+            all_types.join(" / "),
+            curr_str.join(" / "),
+            all_und_codes.join(" / "),
+        );
+
+        let dt = self.evaluation_date.borrow().get_date_clone();
+        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(None, &dt, None);
+
+        if !insts_over_maturity.is_empty() {
+            let mut inst_codes = Vec::<String>::new();
+            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
+            for inst in insts_over_maturity {
+                inst_codes.push(inst.get_code().clone());
+                let mat = inst.get_maturity();
+                match mat {
+                    Some(m) => inst_mat.push(Some(m.clone())),
+                    None => inst_mat.push(None),
+                }
+            }
+
+            let display = inst_codes.iter().zip(inst_mat.iter())
+                .map(|(code, mat)| {
+                    match mat {
+                        Some(m) => format!("{}: {:}", code, m),
+                        None => format!("{}: None", code),
+                    }
+                }).collect::<Vec<String>>().join("\n");
+            bail!(
+                "(Engine::initialize_instruments) There are instruments with maturity within the evaluation date\n\
+                evaluation date: {:?}\n\
+                {}\n",
+                dt, display
+            );
+        }
+
+        let insts_with_very_short_maturity = self.instruments.instruments_with_maturity_upto(
+            None, &(dt + Duration::hours(6)),
+            None,
+        );
+
+        if !insts_with_very_short_maturity.is_empty() {
+            let mut inst_codes = Vec::<String>::new();
+            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
+            for inst in insts_with_very_short_maturity {
+                inst_codes.push(inst.get_code().clone());
+                let mat = inst.get_maturity();
+                match mat {
+                    Some(m) => inst_mat.push(Some(m.clone())),
+                    None => inst_mat.push(None),
+                }
+            }
+
+            let display = inst_codes.iter().zip(inst_mat.iter())
+                .map(|(code, mat)| {
+                    match mat {
+                        Some(m) => format!("{}: {:}", code, m),
+                        None => format!("{}: None", code),
+                    }
+                }).collect::<Vec<String>>().join("\n");
+            
+            println!(
+                "\n(Engine::initialize_instruments) There are instruments with a very short maturity (within 6 hours) \n\
+                Note that these products may produce numerical errors.
+                <LIST>\n{}\n{}\n",
+                display,
+                self.err_tag
+            );
+        }
+
+        self.instruments_in_action = self.instruments
+            .get_instruments_clone();
+    
+        for inst in self.instruments.iter() {
+            let code = inst.get_code();
+            let inst_type = inst.get_type_name();
+            let instrument_information = InstrumentInfo::new(
+                inst.get_name().to_string(),
+                code.to_string(),
+                inst_type,
+                inst.get_currency().clone(),
+                inst.get_unit_notional(),
+                inst.get_maturity().clone(),
+            );
+
+            let init_res = CalculationResult::new(
+                instrument_information,
+                self.evaluation_date.borrow().get_date_clone(),
+            );
+
+            self.calculation_results.insert(
+                inst.get_code().clone(),
+                RefCell::new(init_res),
+            );
+        }
+        Ok(self)
+    }
+
     pub fn new (
         engine_id: u64,
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
+        match_parameter: MatchParameter,
         //
-        fx_data: HashMap<FxCode, ValueData>,
-        stock_data: HashMap<String, ValueData>,
-        curve_data: HashMap<String, VectorData>,
-        dividend_data: HashMap<String, VectorData>,
-        equity_constant_volatility_data: HashMap<String, ValueData>,
-        equity_volatility_surface_data: HashMap<String, SurfaceData>,
-        fx_constant_volatility_data: HashMap<FxCode, ValueData>,
-        quanto_correlation_data: HashMap<(String, FxCode), ValueData>,
-        past_close_data: HashMap<String, Rc<CloseData>>,
+        fx_data: Arc<HashMap<FxCode, ValueData>>,
+        stock_data: Arc<HashMap<String, ValueData>>,
+        curve_data: Arc<HashMap<String, VectorData>>,
+        dividend_data: Arc<HashMap<String, VectorData>>,
+        equity_constant_volatility_data: Arc<HashMap<String, ValueData>>,
+        equity_volatility_surface_data: Arc<HashMap<String, SurfaceData>>,
+        fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
+        quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
+        past_daily_value_data: Arc<HashMap<String, Rc<DailyValueData>>>,
         //
-        match_parameter: Rc<MatchParameter>,
     ) -> Result<Engine> {
         let evaluation_date = Rc::new(RefCell::new(
             evaluation_date
@@ -97,13 +259,13 @@ impl Engine {
 
         let mut zero_curves = HashMap::new();
         //let mut curve_data_refcell = HashMap::new();
-        for (key, data) in curve_data.into_iter() {
+        for (key, data) in curve_data.as_ref().into_iter() {
             let zero_curve = Rc::new(RefCell::new(
                 ZeroCurve::new(
                     evaluation_date.clone(),
                     &data,
-                    String::from(&key),
-                    String::from(&key),
+                    key.clone(),
+                    key.clone(),
                 ).with_context(|| anyhow!(
                 "({}:{}) failed to create zero curve {}", 
                 file!(), line!(), key))?
@@ -119,8 +281,8 @@ impl Engine {
 
         let mut dividends = HashMap::new();
         //let mut dividend_data_refcell = HashMap::new();
-        for (key, data) in dividend_data.into_iter() {
-            let spot = stock_data.get(&key)
+        for (key, data) in dividend_data.as_ref().into_iter() {
+            let spot = stock_data.get(key)
                 .with_context(|| anyhow!(
                     "({}:{}) failed to get dividend to match stock data for {}", 
                     file!(), line!(), key))?
@@ -145,6 +307,7 @@ impl Engine {
         }
         let mut fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>> = HashMap::new();
         fx_data
+            .as_ref()
             .iter()
             .for_each(|(key, data)| {
                 let rc = Rc::new(RefCell::new(
@@ -339,6 +502,15 @@ impl Engine {
             volatilities.insert(key.clone(), rc);
         }
 
+        let mut past_daily_close_prices = HashMap::new();
+        for (key, data) in past_daily_value_data.iter() {
+            let inner_data = data.as_ref();
+            let daily_close_price = DailyClosePrice::new_from_data(inner_data)
+                .with_context(|| anyhow!(
+                    "({}:{}) failed to create daily close price from data for {}", 
+                    key, file!(), line!()))?;
+            past_daily_close_prices.insert(key.clone(), Rc::new(daily_close_price));
+        }
 
         Ok(Engine {
             engine_id: engine_id,
@@ -353,24 +525,13 @@ impl Engine {
             dividends,
             volatilities,
             quantos,
-            past_close_data,
+            past_daily_close_prices,
             //
             instruments: Instruments::default(),
             instruments_in_action: vec![],
             pricers: HashMap::new(),
-            match_parameter: match_parameter,
+            match_parameter: Rc::new(match_parameter),
         })
-    }
-
-    // initialize CalculationResult for each instrument
-    pub fn initialize(
-        &mut self, 
-        instrument_vec: Vec<Rc<Instrument>>,
-    ) -> Result<()> {
-        self.initialize_instruments(instrument_vec)?;
-
-        self.initialize_pricers()?;
-        Ok(())
     }
 
     pub fn initialize_instruments(
@@ -500,7 +661,7 @@ impl Engine {
             //self.dividends.clone(),
             self.volatilities.clone(),
             self.quantos.clone(),
-            self.past_close_data.clone(),
+            self.past_daily_close_prices.clone(),
             self.match_parameter.clone(),
         );
         

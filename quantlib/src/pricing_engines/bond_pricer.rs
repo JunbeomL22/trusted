@@ -1,4 +1,4 @@
-use crate::data::history_data::CloseData;
+use crate::parameters::past_price::DailyClosePrice;
 use crate::instrument::InstrumentTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
@@ -9,12 +9,12 @@ use crate::pricing_engines::{
 use crate::instrument::Instrument;
 use crate::definitions::Real;
 //
-use anyhow::{Context, Result};
 use std::{
     rc::Rc, 
     cell::RefCell,
     collections::HashMap,
 };
+use anyhow::{Result, Context};
 use time::OffsetDateTime;
 
 /// forward_curve (Optional<Rc<RefCell<ZeroCurve>>>): forward curve for floating rate bond, so it is optional
@@ -23,7 +23,7 @@ pub struct BondPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     discount_curve: Rc<RefCell<ZeroCurve>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-    past_fixing_data: Option<Rc<CloseData>>,
+    past_fixing_data: Option<Rc<DailyClosePrice>>,
 }
 
 impl BondPricer {
@@ -31,7 +31,7 @@ impl BondPricer {
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         discount_curve: Rc<RefCell<ZeroCurve>>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_fixing_data: Option<Rc<CloseData>>,
+        past_fixing_data: Option<Rc<DailyClosePrice>>,
     ) -> BondPricer {
         BondPricer {
             evaluation_date,

@@ -1,4 +1,4 @@
-use crate::currency::Currency;
+use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
 use crate::enums::{OptionType, OptionDailySettlementType, OptionExerciseType};
@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 //
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VanillaOption {
     strike: Real,
     unit_notional: Real,
@@ -18,6 +18,7 @@ pub struct VanillaOption {
     underlying_codes: Vec<String>,
     underlying_currency: Currency,
     currency: Currency,
+    quanto_fx_code: Option<FxCode>,
     option_type: OptionType,
     exercise_type: OptionExerciseType,
     daily_settlement_type: OptionDailySettlementType,

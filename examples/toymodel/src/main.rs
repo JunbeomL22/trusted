@@ -16,6 +16,7 @@ use ndarray::array;
 use ndarray::Array1;
 //use quantlib::surfacedatasample;
 use std::rc::Rc;
+use std::sync::Arc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
 use quantlib::pricing_engines::match_parameter::MatchParameter;
@@ -337,18 +338,18 @@ fn main() -> Result<()> {
         1,
         calculation_configuration.clone(),
         evaluation_date.clone(),
+        match_parameter,
         //
-        fx_data_map,
-        stock_data_map,
-        zero_curve_map,
-        dividend_data_map,
-        equity_vol_map,
-        equity_surface_map,
-        HashMap::new(),
-        HashMap::new(),
-        HashMap::new(),
+        Arc::new(fx_data_map),
+        Arc::new(stock_data_map),
+        Arc::new(zero_curve_map),
+        Arc::new(dividend_data_map),
+        Arc::new(equity_vol_map),
+        Arc::new(equity_surface_map),
+        Arc::new(HashMap::new()),
+        Arc::new(HashMap::new()),
+        Arc::new(HashMap::new()),
         //
-        Rc::new(match_parameter),
     ).expect("Failed to create an engine");
 
     engine.initialize(inst_vec)?;

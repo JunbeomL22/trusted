@@ -1,7 +1,6 @@
 use crate::currency::Currency;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::evaluation_date::EvaluationDate;
-use crate::data::history_data::CloseData;
 use crate::pricing_engines::{
     pricer::PricerTrait,
     npv_result::NpvResult,
@@ -10,7 +9,10 @@ use crate::instrument::{
     Instrument,
     InstrumentTrait,
 };
-use crate::market_price::MarketPrice;
+use crate::parameters::{
+    market_price::MarketPrice,
+    past_price::DailyClosePrice,
+};
 use crate::definitions::Real;
 // 
 use std::{
@@ -26,7 +28,7 @@ pub struct PlainSwapPricer {
     fixed_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
     floating_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-    past_fixing_data: Option<Rc<CloseData>>,
+    past_fixing_data: Option<Rc<DailyClosePrice>>,
     floating_to_fixed_fx: Option<Rc<RefCell<MarketPrice>>>,
 }
 
@@ -36,7 +38,7 @@ impl PlainSwapPricer {
         fixed_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
         floating_leg_discount_curve: Rc<RefCell<ZeroCurve>>,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_fixing_data: Option<Rc<CloseData>>,
+        past_fixing_data: Option<Rc<DailyClosePrice>>,
         floating_to_fixed_fx: Option<Rc<RefCell<MarketPrice>>>,
     ) -> Result<PlainSwapPricer> {
         Ok(PlainSwapPricer {

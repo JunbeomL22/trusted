@@ -13,7 +13,7 @@ pub type Integer = i32;
 pub type FX = (Currency, Currency); 
 
 /// Default time. This actually changes regarding the markets and the instruments.
-pub const CLOSING_TIME: time::Time = time::macros::time!(16:30:00); 
+pub const CLOSING_TIME: time::Time = time::macros::time!(17:00:00); 
 pub const EX_DIVIDEND_TIME: time::Time = time::macros::time!(00:00:01);
 pub const COUPON_PAYMENT_TIME: time::Time = time::macros::time!(17:00:00);
 pub const OPENING_TIME: time::Time = time::macros::time!(09:00:00);
@@ -21,6 +21,7 @@ pub const MARKING_DATE: time::Date = time::macros::date!(1970-01-01); // to make
 
 /// hours, minutes, seconds
 pub const SEOUL_OFFSET: (i8, i8, i8) = (9, 0, 0);
+pub const NEW_YORK_OFFSET: (i8, i8, i8) = (-5, 0, 0);
 
 /// pnl units
 pub const DELTA_PNL_UNIT: Real = 0.01;

@@ -8,10 +8,12 @@ use crate::time::{
     conventions::DayCountConvention,
     calendar_trait::CalendarTrait,
 };
-use crate::parameters::zero_curve::ZeroCurve;
-use crate::data::history_data::CloseData;
+use crate::parameters::{
+    zero_curve::ZeroCurve,
+    past_price::DailyClosePrice,
+};
 //
-use anyhow::{Result, Context, anyhow};
+use anyhow::{Result, anyhow, Context};
 use std::{
     rc::Rc,
     cell::RefCell,
@@ -28,7 +30,7 @@ pub struct KrxYieldPricer {
     bond_yield: Real,
     daycount: DayCountConvention,
     forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-    past_fixing_data: Option<Rc<CloseData>>,
+    past_fixing_data: Option<Rc<DailyClosePrice>>,
 }
 
 impl KrxYieldPricer {
@@ -36,7 +38,7 @@ impl KrxYieldPricer {
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         bond_yield: Real, 
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_fixing_data: Option<Rc<CloseData>>,
+        past_fixing_data: Option<Rc<DailyClosePrice>>,
     ) -> KrxYieldPricer {
         KrxYieldPricer { 
             evaluation_date,

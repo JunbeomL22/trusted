@@ -75,7 +75,6 @@ impl InstrumentTrait for Futures {
     fn get_name(&self) -> &String {
         &self.name
     }
-
     fn get_code(&self) -> &String {
         &self.code
     }

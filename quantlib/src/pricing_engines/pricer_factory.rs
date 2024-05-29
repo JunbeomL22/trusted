@@ -5,8 +5,10 @@ use crate::parameters::{
     quanto::Quanto,
     volatility::Volatility,
 };
-use crate::market_price::MarketPrice;
-use crate::data::history_data::CloseData;
+use crate::parameters::{
+    market_price::MarketPrice,
+    past_price::DailyClosePrice,    
+};
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, InstrumentTrait};
 use crate::pricing_engines::{
@@ -39,7 +41,7 @@ pub struct PricerFactory {
     // dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
     quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>, // (underlying_code, fx_code) -> Quanto
-    past_close_data: HashMap<String, Rc<CloseData>>,
+    past_close_data: HashMap<String, Rc<DailyClosePrice>>,
     match_parameter: Rc<MatchParameter>,
 }
 
@@ -52,7 +54,7 @@ impl PricerFactory {
         //dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
         underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
         quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
-        past_close_data: HashMap<String, Rc<CloseData>>,
+        past_close_data: HashMap<String, Rc<DailyClosePrice>>,
         match_parameter: Rc<MatchParameter>,
     ) -> PricerFactory {
         PricerFactory {
@@ -246,7 +248,7 @@ impl PricerFactory {
     }
     
     fn get_fx_futures_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
-        let fx_code = instrument.get_fx_code()?;
+        let fx_code = instrument.get_fxfutres_und_code()?;
 
         let fx = self.fxs.get(fx_code)
             .ok_or_else(|| anyhow::anyhow!(
@@ -318,10 +320,10 @@ impl PricerFactory {
         
         let fixed_currency = instrument.get_currency();
         let floating_currency = instrument.get_underlying_currency()?;
-        let floating_to_fixed_fx = match fixed_currency == floating_currency {
-            true => None,
-            false => {
-                let fx_code = FxCode::new(floating_currency.clone(), fixed_currency.clone());
+        let fx_code = instrument.get_floating_to_fixed_fxcode()?;
+        let floating_to_fixed_fx = match fx_code {
+            None => None,
+            Some(fx_code) => {
                 let fx = self.fxs.get(&fx_code)
                     .ok_or_else(|| anyhow::anyhow!(
                         "({}:{}) failed to get FX of {}.\nself.fxs does not have {:?}",

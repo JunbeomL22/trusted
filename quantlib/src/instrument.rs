@@ -15,6 +15,7 @@ use crate::pricing_engines::match_parameter::MatchParameter;
 use crate::parameters::{
     rate_index::RateIndex,
     zero_curve::ZeroCurve,
+    past_price::DailyClosePrice,
 };
 use crate::enums::{
     AccountingLevel, 
@@ -28,7 +29,6 @@ use crate::time::{
     conventions::PaymentFrequency,
     jointcalendar::JointCalendar,
 };
-use crate::data::history_data::CloseData;
 // 
 use anyhow::{anyhow, Context, Result};
 use enum_dispatch::enum_dispatch;
@@ -58,6 +58,8 @@ pub trait InstrumentTrait{
     // There is an instrument that does not have underlying names, 
     // so the default action is to return an empty vector
     fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
+
+    fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Result<&CreditRating> {
         Err(anyhow!("({}:{}) not supported instrument type on get_credit_rating", file!(), line!()))
@@ -84,7 +86,7 @@ pub trait InstrumentTrait{
         &self, 
         _pricing_date: &OffsetDateTime,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        _past_data: Option<Rc<CloseData>>,
+        _past_data: Option<Rc<DailyClosePrice>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_coupon_cashflow"))
     }
@@ -93,7 +95,7 @@ pub trait InstrumentTrait{
         &self, 
         _pricing_date: &OffsetDateTime,
         _forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        _past_data: Option<Rc<CloseData>>,
+        _past_data: Option<Rc<DailyClosePrice>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> { 
         Err(anyhow!("not supported instrument type on get_floating_cashflows"))
     }
@@ -161,8 +163,12 @@ pub trait InstrumentTrait{
         Err(anyhow!("not supported instrument type on get_option_daily_settlement_type"))
     }
 
-    fn get_fx_code(&self) -> Result<&FxCode> {
+    fn get_fxfutres_und_fxcode(&self) -> Result<&FxCode> {
         Err(anyhow!("not supported instrument type on get_fx_code"))
+    }
+
+    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<&FxCode>> {
+        Err(anyhow!("get_floating_to_fixed_fx allowed only for PlainSwap"))
     }
 
     fn get_specific_plain_swap_type(&self) -> Result<PlainSwapType> {

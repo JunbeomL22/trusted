@@ -14,3 +14,9 @@ pub enum Calendar {
     UnitedStates(UnitedStates),
 }
 
+impl Default for Calendar {
+    fn default() -> Self {
+        Calendar::NullCalendar(NullCalendar::default())
+    }
+}
+

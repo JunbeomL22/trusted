@@ -9,8 +9,10 @@ use crate::time::{
     jointcalendar::JointCalendar,
     calendar_trait::CalendarTrait,
 };
-use crate::data::history_data::CloseData;
-use crate::parameters::rate_index::RateIndex;
+use crate::parameters::{
+    rate_index::RateIndex,
+    past_price::DailyClosePrice,
+};
 //
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
@@ -295,7 +297,7 @@ impl InstrumentTrait for Bond {
     fn get_cashflows(&self,
         pricing_date: &OffsetDateTime,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_data: Option<Rc<CloseData>>,
+        past_data: Option<Rc<DailyClosePrice>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         for base_schedule in self.schedule.iter() {
@@ -317,7 +319,7 @@ impl InstrumentTrait for Bond {
                                 &base_schedule,
                                 self.floating_coupon_spread,
                                 forward_curve.clone().unwrap(),
-                                past_data.clone().unwrap_or(Rc::new(CloseData::default())),
+                                past_data.clone().unwrap_or(Rc::new(DailyClosePrice::default())),
                                 pricing_date,
                                 self.floating_compound_tenor.as_ref(),
                                 &self.calendar,

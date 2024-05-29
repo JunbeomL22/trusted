@@ -1,4 +1,4 @@
-use crate::currency::Currency;
+use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::parameters::rate_index::RateIndex;
 use crate::instruments::schedule::{self, Schedule};
@@ -9,7 +9,7 @@ use crate::time::{
     calendar_trait::CalendarTrait,
 };
 use crate::instrument::InstrumentTrait;
-use crate::data::history_data::CloseData;
+use crate::parameters::past_price::DailyClosePrice;
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
 use time::{OffsetDateTime, Duration};
@@ -51,6 +51,7 @@ pub struct PlainSwap {
     //
     fixed_leg_currency: Currency,
     floating_leg_currency: Currency,
+    floating_to_fixed_fxcode: Option<FxCode>,
     //
     initial_fixed_side_endorsement: Option<Real>, 
     initial_floating_side_payment: Option<Real>, 
@@ -188,6 +189,11 @@ impl PlainSwap {
             ));
         }
         
+        let floating_to_fixed_fxcode = match fixed_leg_currency == floating_leg_currency {
+            true => None,
+            false => Some(FxCode::new(floating_leg_currency.clone(), fixed_leg_currency.clone())),
+        };
+
         Ok(PlainSwap {
             fixed_legs,
             floating_legs,
@@ -203,6 +209,7 @@ impl PlainSwap {
             //
             fixed_leg_currency,
             floating_leg_currency,
+            floating_to_fixed_fxcode,
             //
             initial_fixed_side_endorsement,
             initial_floating_side_payment,
@@ -369,6 +376,10 @@ impl PlainSwap {
             ));
         }
 
+        let floating_to_fixed_fxcode = match fixed_leg_currency == floating_leg_currency {
+            true => None,
+            false => Some(FxCode::new(floating_leg_currency.clone(), fixed_leg_currency.clone())),
+        };
         Ok(PlainSwap {
             fixed_legs,
             floating_legs,
@@ -384,6 +395,7 @@ impl PlainSwap {
             //
             fixed_leg_currency,
             floating_leg_currency,
+            floating_to_fixed_fxcode,
             //
             initial_fixed_side_endorsement,
             initial_floating_side_payment,
@@ -460,7 +472,7 @@ impl InstrumentTrait for PlainSwap {
         &self, 
         pricing_date: &OffsetDateTime, 
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
-        past_fixing_data: Option<Rc<CloseData>>,
+        past_fixing_data: Option<Rc<DailyClosePrice>>,
     ) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         let mut initial_value = 1.0;
@@ -489,7 +501,7 @@ impl InstrumentTrait for PlainSwap {
                 &base_schedule,
                 None,
                 forward_curve.clone().unwrap(),
-                past_fixing_data.clone().unwrap_or(Rc::new(CloseData::default())),
+                past_fixing_data.clone().unwrap_or(Rc::new(DailyClosePrice::default())),
                 pricing_date,
                 self.floating_compound_tenor.as_ref(),
                 &self.calendar,
@@ -542,6 +554,18 @@ impl InstrumentTrait for PlainSwap {
 
     fn get_specific_plain_swap_type(&self) -> Result<PlainSwapType> {
         Ok(self.specific_type)
+    }
+
+    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<&FxCode>> {
+        Ok(self.floating_to_fixed_fxcode.as_ref())
+    }
+
+    fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
+        let mut res = Vec::new();
+        if let Some(floating_to_fixed_fxcode) = self.floating_to_fixed_fxcode.as_ref() {
+            res.push(floating_to_fixed_fxcode.clone());
+        }
+        res
     }
 }
 

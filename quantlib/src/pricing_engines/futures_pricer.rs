@@ -1,6 +1,6 @@
 use crate::evaluation_date::EvaluationDate;
 use crate::currency::Currency;
-use crate::market_price::MarketPrice;
+use crate::parameters::market_price::MarketPrice;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::pricer::PricerTrait;

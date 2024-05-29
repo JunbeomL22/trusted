@@ -12,7 +12,7 @@ use crate::parameters::{
 };
 use crate::evaluation_date::EvaluationDate;
 use crate::math::interpolators::bilinear_interpolator::BilinearInterpolator;
-use crate::market_price::MarketPrice;
+use crate::parameters::market_price::MarketPrice;
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::calendars::nullcalendar::NullCalendar;
 use crate::utils::string_arithmetic::add_period;
@@ -414,7 +414,7 @@ mod tests {
         zero_curve::ZeroCurve,
     };
     use crate::evaluation_date::EvaluationDate;
-    use crate::market_price::MarketPrice;
+    use crate::parameters::market_price::MarketPrice;
     use crate::enums::StickynessType;
     use crate::definitions::{Time, Real};
     use crate::data;

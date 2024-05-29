@@ -10,6 +10,7 @@ mod tests {
     use ndarray::array;
     use ndarray::Array1;
     use std::rc::Rc;
+    use std::sync::Arc;
     use quantlib::evaluation_date::EvaluationDate;
     use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
     use quantlib::pricing_engines::match_parameter::MatchParameter;
@@ -151,17 +152,17 @@ mod tests {
             calculation_configuration.clone(),
             evaluation_date.clone(),
             //
-            HashMap::new(),
-            stock_data_map,
-            zero_curve_map,
-            dividend_data_map,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            match_parameter.clone(),
             //
-            Rc::new(match_parameter.clone()),
+            Arc::new(HashMap::new()),
+            Arc::new(stock_data_map),
+            Arc::new(zero_curve_map),
+            Arc::new(dividend_data_map),
+            Arc::new(HashMap::new()),
+            Arc::new(HashMap::new()),
+            Arc::new(HashMap::new()),
+            Arc::new(HashMap::new()),
+            Arc::new(HashMap::new()),
         ).expect("Failed to create an engine");
 
         engine.initialize(inst_vec).expect("Failed to initialize");
