@@ -6,7 +6,7 @@ use crate::data::{
 };
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::parameters::{
-    volatility::VolatilityTrait;
+    volatility::VolatilityTrait,
     volatilities::volatiltiy_interpolator::VolatilityInterplator,
     zero_curve::ZeroCurve,
 };
@@ -397,6 +397,8 @@ impl VolatilityTrait for LocalVolatilitySurface {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::currency::{self, Currency};
+    use crate::utils;
     use crate::data::{
         surface_data::SurfaceData,
         vector_data::VectorData,
@@ -415,8 +417,6 @@ mod tests {
     use crate::market_price::MarketPrice;
     use crate::enums::StickynessType;
     use crate::definitions::{Time, Real};
-    use crate::currency::{self, Currency};
-    use crate::utils;
     use crate::data;
     use std::{
         rc::Rc,

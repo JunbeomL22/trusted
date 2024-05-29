@@ -210,7 +210,7 @@ mod tests {
         );
 
         let pricer = FuturesPricer::new(
-            evaluation_date.clone(),
+            //evaluation_date.clone(),
             equity.clone(),
             ksd_curve.clone(),
             dummy_curve.clone(),

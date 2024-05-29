@@ -144,12 +144,13 @@ pub mod test {
         quanto::Quanto,
         volatilities::volatiltiy_interpolator::VolatilityInterplator,
     };
+    use crate::currency;
+    use crate::currency::Currency;
+    use crate::utils;
     use crate::{
         vectordatasample,
         surfacedatasample,
     };
-    use crate::currency::Currency;
-    use crate::utils;
     use crate::data;
     use time::macros::datetime;
     use std::{

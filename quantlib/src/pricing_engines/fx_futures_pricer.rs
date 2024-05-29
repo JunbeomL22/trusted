@@ -167,7 +167,7 @@ mod tests {
         ));
 
         let pricer = FxFuturesPricer::new(
-            evaluation_date.clone(),
+            //evaluation_date.clone(),
             fx.clone(),
             usdois_curve.clone(),
             krwcrs_curve.clone(),

@@ -83,7 +83,7 @@ pub fn from_month_to_i32(month: Month) -> i32 {
 /// use quantlib::utils::string_arithmetic::add_period;
 /// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
-/// let y = add_period(&x, "1y1m1D1h1min1sec");
+/// let y = add_period(&x, "1Y1M1D1h1min1sec");
 /// println!("{}", y); // 2022-02-02 01:01:01 UTC
 /// ```
 /// 
@@ -147,7 +147,7 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
 /// use quantlib::utils::string_arithmetic::sub_period;
 /// 
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
-/// let y = sub_period(&x, "1y1m1D1h1min1sec");
+/// let y = sub_period(&x, "1Y1M1D1h1min1sec");
 /// println!("{}", y); // 2019-11-29 22:58:59 UTC
 /// ```
 /// 
@@ -203,7 +203,7 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     new_datetime
 }
 
-
+/// similar action as add_period, but this is for Date
 pub fn add_period_date(date: &Date, duration: &str) -> Date {
     let re = regex::Regex::new(r"(\d+)(Y|M|W|D)+").unwrap();
     if !re.is_match(duration) {
@@ -243,12 +243,52 @@ pub fn add_period_date(date: &Date, duration: &str) -> Date {
     }
     new_date
 }
+
+/// similar action as sub_period, but this is for Date
+pub fn sub_period_date(date: &Date, duration: &str) -> Date {
+    let re = regex::Regex::new(r"(\d+)(Y|M|W|D)+").unwrap();
+    if !re.is_match(duration) {
+        panic!("Invalid duration: {}", duration);
+    }
+    let mut new_date = *date;
+    for cap in re.captures_iter(duration) {
+        let value = cap[1].parse::<i32>().unwrap();
+        let unit = &cap[2];
+        match unit {
+            "Y" => {
+                let new_year = new_date.year() - value;
+                let new_month = new_date.month();
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_date.day() > eom_new {
+                    true => eom_new,
+                    false => new_date.day(),
+                };
+                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
+            },
+            "M" => {
+                let month_i32 = from_month_to_i32(new_date.month());
+                let year = new_date.year();
+                let new_month = from_i32_to_month((month_i32 - value + 120000000) % 12);
+                let new_year = year - 1 + (month_i32 - value + 12) / 12;
+                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let new_day = match new_date.day() > eom_new {
+                    true => eom_new,
+                    false => new_date.day(),
+                };
+                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
+            },
+            "W" => new_date = new_date - Duration::weeks(value as i64),
+            "D" => new_date = new_date - Duration::days(value as i64),
+            _ => panic!("Invalid unit"),
+        }
+    }
+    new_date
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::macros::datetime;
-    //use rstest::rstest;
-    //use time::Month;
+    use time::macros::{datetime, date};
 
     #[test]
     fn test_month_operation() {
@@ -394,5 +434,19 @@ mod tests {
         let x = datetime!(2021-01-31 00:00:00 UTC);
         let y = sub_period(&x, "18M");
         println!("{:?}", y);
+    }
+
+    #[test]
+    fn test_add_period_date() {
+        let x = date!(2021-01-31);
+        let y = add_period_date(&x, "1Y18M");
+        assert_eq!(y, date!(2023-07-31));
+    }
+
+    #[test]
+    fn test_sub_period_date() {
+        let x = date!(2021-01-31);
+        let y = sub_period_date(&x, "1Y18M");
+        assert_eq!(y, date!(2019-07-31));
     }
 }

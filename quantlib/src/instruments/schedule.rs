@@ -5,7 +5,7 @@ use crate::utils::string_arithmetic::{add_period, sub_period};
 use crate::definitions::Real;
 //
 use anyhow::{Result, anyhow};
-use time::{Duration, Date};
+use time::{Duration, OffsetDateTime};
 use serde::{Serialize, Deserialize};
 use std::{
     ops::Index,
@@ -18,37 +18,37 @@ use std::{
 /// in the IO section, e.g., serialization, deserialization, etc.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct BaseSchedule {   
-    fixing_date: Date,
-    calc_start_date: Date,
-    calc_end_date: Date,
-    payment_date: Date,
+    fixing_date: OffsetDateTime,
+    calc_start_date: OffsetDateTime,
+    calc_end_date: OffsetDateTime,
+    payment_date: OffsetDateTime,
     amount: Option<Real>, // if None, pricer calculate the coupon amount
 }
 
 impl BaseSchedule {
     pub fn new(
-        fixing_date: Date, 
-        calc_start_date: Date, 
-        calc_end_date: Date, 
-        payment_date: Date,
+        fixing_date: OffsetDateTime, 
+        calc_start_date: OffsetDateTime, 
+        calc_end_date: OffsetDateTime, 
+        payment_date: OffsetDateTime,
         amount: Option<Real>
     ) -> Self {
         BaseSchedule { fixing_date, calc_start_date, calc_end_date, payment_date, amount }
     }
 
-    pub fn get_fixing_date(&self) -> &Date {
+    pub fn get_fixing_date(&self) -> &OffsetDateTime {
         &self.fixing_date
     }
 
-    pub fn get_calc_start_date(&self) -> &Date {
+    pub fn get_calc_start_date(&self) -> &OffsetDateTime {
         &self.calc_start_date
     }
 
-    pub fn get_calc_end_date(&self) -> &Date {
+    pub fn get_calc_end_date(&self) -> &OffsetDateTime {
         &self.calc_end_date
     }
 
-    pub fn get_payment_date(&self) -> &Date {
+    pub fn get_payment_date(&self) -> &OffsetDateTime {
         &self.payment_date
     }
 
@@ -106,8 +106,8 @@ impl Schedule {
 /// Then, the payment_dates are the calc_end_date + payment_gap adjusted by the BusinessDayConvention
 pub fn build_schedule(
     forward_generation: bool, // true => generate from effective_date to maturity, false => generate from maturity to effective_date
-    effective_date: &Date, 
-    maturity: &Date, 
+    effective_date: &OffsetDateTime, 
+    maturity: &OffsetDateTime, 
     calendar: &JointCalendar,
     conv: &BusinessDayConvention,
     freq: &PaymentFrequency, 
@@ -127,7 +127,7 @@ pub fn build_schedule(
         return Err(anyhow!(msg));
     }
     
-    let mut raw_start_date_vec: VecDeque<Date> = VecDeque::new();
+    let mut raw_start_date_vec: VecDeque<OffsetDateTime> = VecDeque::new();
     
     match forward_generation {
         true => {
@@ -152,15 +152,15 @@ pub fn build_schedule(
         }
     }
     let calc_start_date_vec = raw_start_date_vec.iter().map(
-        |x| calendar.adjust(x, conv)).collect::<Result<Vec<Date>>>()?;
+        |x| calendar.adjust(x, conv)).collect::<Result<Vec<OffsetDateTime>>>()?;
 
 
     let schedule_length = calc_start_date_vec.len() - 1;
     let mut base_schedule_vec: Vec<BaseSchedule> = vec![];
-    let mut fixing_date: Date;
-    let mut calc_start_date: Date;
-    let mut calc_end_date: Date;
-    let mut payment_date: Date;
+    let mut fixing_date: OffsetDateTime;
+    let mut calc_start_date: OffsetDateTime;
+    let mut calc_end_date: OffsetDateTime;
+    let mut payment_date: OffsetDateTime;
     for i in 0..schedule_length {
         if i == 0 {
             calc_start_date = effective_date.clone();
