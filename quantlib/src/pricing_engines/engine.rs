@@ -1,4 +1,4 @@
-use tracing::{info, Level, span};
+use tracing::{info, Level, span, warn};
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
@@ -198,6 +198,7 @@ impl Engine {
             "missing dividend data list (engine-id: {})\n", self.engine_id);
         let mut dividends = HashMap::new();
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
+        let mut no_dividends = vec![];
         for underlying_code in all_underlying_codes {
             if dividend_data.contains_key(underlying_code) {
                 let data = dividend_data.get(underlying_code).unwrap();
@@ -217,12 +218,35 @@ impl Engine {
                         file!(), line!(), underlying_code))?)));
                 dividends.insert(underlying_code.clone(), dividend.clone());
             } else {
-                no_dividend_data_msg.push_str(&format!("{}\n", underlying_code));
+                no_dividends.push(underlying_code.clone());
             }
         }
-        if !no_dividend_data_msg.is_empty() { info!("{}\n", no_dividend_data_msg); }
+        if !no_dividends.is_empty() {
+            no_dividend_data_msg.push_str(&format!(
+                "no dividend data for: {}\n", no_dividends.join(" | ")));
+            info!("{}", no_dividend_data_msg);
+        }
         //
         // borrowing curve parameter
+        let all_underlying_codes = self.instruments.get_all_underlying_codes();
+        for und_code in all_underlying_codes {
+            if curve_data.contains_key(und_code) {
+                let data = curve_data.get(und_code).unwrap();
+                let zero_curve = Rc::new(RefCell::new(
+                    ZeroCurve::new(
+                        self.evaluation_date.clone(),
+                        data,
+                        und_code.clone(),
+                        und_code.clone(),
+                    )?));
+                zero_curves.insert(und_code.clone(), zero_curve.clone());
+            } else {
+                bail!(
+                    "({}:{}) failed to get borrowing curve data for {}", 
+                    file!(), line!(), und_code
+                );
+            }
+        }
         //
         // equity parameters
         let mut equities = HashMap::new();
@@ -367,7 +391,7 @@ impl Engine {
         // 
         // fx volatility parameter
         let quanto_fx_und_pair = self.instruments.get_all_quanto_fxcode_und_pairs();
-        let unique_fxcodes: HashSet<&FxCode> = quanto_fx_und_pair.iter().map(|(_, second)| second.clone()).collect();
+        let unique_fxcodes: HashSet<FxCode> = quanto_fx_und_pair.iter().map(|(_, second)| (**second).clone()).collect();
 
         let mut fx_volatilities = HashMap::new();
         for fx_code in unique_fxcodes {
@@ -433,10 +457,9 @@ impl Engine {
 
         let elapsed = start_time.elapsed();
         info!(
-            "(id: {}) Engine::with_parameter_data elapsed time: {:?}", 
-            self.engine_id,
-            elapsed,
-        );
+            "\n(engine-id: {}) Engine::with_parameter_data elapsed time: {:?}\n", 
+            self.engine_id, elapsed,);
+
         Ok(self)
     }
     // initialize CalculationResult for each instrument
@@ -556,427 +579,6 @@ impl Engine {
             );
         }
         Ok(self)
-    }
-
-    pub fn new (
-        engine_id: u64,
-        calculation_configuration: CalculationConfiguration,
-        evaluation_date: EvaluationDate,
-        match_parameter: MatchParameter,
-        //
-        fx_data: Arc<HashMap<FxCode, ValueData>>,
-        stock_data: Arc<HashMap<String, ValueData>>,
-        curve_data: Arc<HashMap<String, VectorData>>,
-        dividend_data: Arc<HashMap<String, VectorData>>,
-        equity_constant_volatility_data: Arc<HashMap<String, ValueData>>,
-        equity_volatility_surface_data: Arc<HashMap<String, SurfaceData>>,
-        fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
-        quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
-        past_daily_value_data: Arc<HashMap<String, Rc<DailyValueData>>>,
-        //
-    ) -> Result<Engine> {
-        let evaluation_date = Rc::new(RefCell::new(
-            evaluation_date
-        )); 
-
-        let mut zero_curves = HashMap::new();
-        //let mut curve_data_refcell = HashMap::new();
-        for (key, data) in curve_data.as_ref().into_iter() {
-            let zero_curve = Rc::new(RefCell::new(
-                ZeroCurve::new(
-                    evaluation_date.clone(),
-                    &data,
-                    key.clone(),
-                    key.clone(),
-                ).with_context(|| anyhow!(
-                "({}:{}) failed to create zero curve {}", 
-                file!(), line!(), key))?
-            ));
-            zero_curves.insert(key.to_string(), zero_curve.clone());
-
-            /*
-            let ref_cell = RefCell::new(data);
-            ref_cell.borrow_mut().add_observer(zero_curve);
-            curve_data_refcell.insert(key.to_string(), ref_cell);
-             */
-        }
-
-        let mut dividends = HashMap::new();
-        //let mut dividend_data_refcell = HashMap::new();
-        for (key, data) in dividend_data.as_ref().into_iter() {
-            let spot = stock_data.get(key)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get dividend to match stock data for {}", 
-                    file!(), line!(), key))?
-                .get_value();
-
-            let dividend = Rc::new(RefCell::new(
-                DiscreteRatioDividend::new(
-                    evaluation_date.clone(),
-                    &data,
-                    spot,
-                    key.clone(),
-                ).with_context(|| anyhow!(
-                    "failed to create discrete ratio dividend: {}", key))?
-            ));
-
-            dividends.insert(key.to_string(), Some(dividend.clone()));
-            /* 
-            let ref_cell = RefCell::new(data);
-            ref_cell.borrow_mut().add_observer(dividend);
-            dividend_data_refcell.insert(key.to_string(), ref_cell);
-             */
-        }
-        let mut fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>> = HashMap::new();
-        fx_data
-            .as_ref()
-            .iter()
-            .for_each(|(key, data)| {
-                let rc = Rc::new(RefCell::new(
-                    MarketPrice::new(
-                        data.get_value(),
-                        data.get_market_datetime().unwrap_or(
-                            evaluation_date.borrow().get_date_clone()),
-                        None,
-                        key.get_currency2().clone(),
-                        key.to_string(),
-                        key.to_string(),
-                    )
-                ));
-                fxs.insert(key.clone(), rc);
-            });
-        
-        let krwkrw_code = FxCode::new(Currency::KRW, Currency::KRW);
-        if !fxs.contains_key(&krwkrw_code) {
-            fxs.insert(
-                krwkrw_code.clone(),
-                Rc::new(RefCell::new(
-                    MarketPrice::new(
-                        1.0,
-                        evaluation_date.borrow().get_date_clone(),
-                        None,
-                        Currency::KRW,
-                        "KRWKRW".to_string(),
-                        "KRWKRW".to_string(),
-                    )
-                ))
-            );
-        }
-
-        let mut fx_volatilities = HashMap::new();
-        for (fx_code, data) in fx_constant_volatility_data.iter() {
-            let rc = Rc::new(RefCell::new(
-                Volatility::ConstantVolatility(ConstantVolatility::new(
-                    data.get_value(),
-                    fx_code.to_string(),
-                    fx_code.to_string(),
-                )
-            )));
-            fx_volatilities.insert(fx_code.clone(), rc);
-        }
-        //quanto
-        let mut quantos = HashMap::new();
-        for ((equity_code, fx_code), data) in quanto_correlation_data.iter() {
-            let rc = Rc::new(RefCell::new(
-                Quanto::new(
-                    fx_volatilities.get(fx_code)
-                        .with_context(|| anyhow!(
-                            "failed to get fx volatility for {:?}", fx_code))?
-                        .clone(),
-                    data.get_value(),
-                    fx_code.clone(),
-                    equity_code.clone(),
-                )
-            ));
-            quantos.insert((equity_code.clone(), fx_code.clone()), rc);
-        }
-        // making stock Rc -> RefCell for pricing
-        let mut equities = HashMap::new();
-        for (key, data) in stock_data.iter() {
-            let div = match dividends.get(key) {
-                Some(div) => div.clone(),
-                None => None,
-            };
-
-            let rc = Rc::new(RefCell::new(
-                MarketPrice::new(
-                    data.get_value(),
-                    data.get_market_datetime().unwrap_or(
-                        evaluation_date.borrow().get_date_clone()),
-                    div,
-                    data.get_currency().clone(),  
-                    data.get_name().clone(),
-                    key.to_string(),
-                )
-            ));
-            equities.insert(key.clone(), rc);
-            }
-        
-        let mut volatilities = HashMap::new();
-        
-        for (key, data) in equity_constant_volatility_data.iter() {
-            let vega_matrix_spot_moneyness = calculation_configuration.get_vega_matrix_spot_moneyness();
-            let vega_structure_tenors = calculation_configuration.get_vega_structure_tenors();
-            let market_price = equities.get(key)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get market price for {}", 
-                    file!(), line!(), key))?.clone();
-            let collateral_curve_map = match_parameter.get_collateral_curve_map()
-                    .get(key)
-                    .with_context(|| anyhow!(
-                        "({}:{}) failed to get collateral curve map for {}", 
-                        file!(), line!(), key))?;
-
-            let collateral_curve = zero_curves.get(collateral_curve_map)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get collateral curve for {}", 
-                    file!(), line!(), key))?.clone();
-
-            let borrowing_curve_map = match_parameter.get_borrowing_curve_map()
-                .get(key)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get borrowing curve map for {}", 
-                    file!(), line!(), key))?;
-            let borrowing_curve = zero_curves.get(borrowing_curve_map)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get borrowing curve for {}", 
-                    file!(), line!(), key))?.clone();
-                
-            let stickyness = calculation_configuration.get_stickyness_type();
-            let lv_interpolator = calculation_configuration.get_lv_interpolator();
-
-            let mut lv = LocalVolatilitySurface::initialize(
-                evaluation_date.clone(),
-                market_price,
-                collateral_curve,
-                borrowing_curve,
-                stickyness,
-                lv_interpolator,
-                key.clone(),
-                key.clone(),
-            ).with_constant_volatility(
-                &data,
-                vega_structure_tenors.clone(),
-                vega_matrix_spot_moneyness.clone(),
-            )?;
-
-            lv.build()?;
-
-            let rc = Rc::new(RefCell::new(
-                Volatility::LocalVolatilitySurface(lv)
-            ));
-
-            volatilities.insert(key.clone(), rc);
-        }
-        
-        for (key, data) in equity_volatility_surface_data.iter() {
-            let vega_matrix_spot_moneyness = calculation_configuration.get_vega_matrix_spot_moneyness();
-            let vega_structure_tenors = calculation_configuration.get_vega_structure_tenors();
-            let market_price = equities.get(key)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get market price for {}", 
-                    file!(), line!(), key))?.clone();
-            let collateral_curve_map = match_parameter.get_collateral_curve_map()
-                    .get(key)
-                    .with_context(|| anyhow!(
-                        "({}:{}) failed to get collateral curve map for {}", 
-                        file!(), line!(), key))?;
-
-            let collateral_curve = zero_curves.get(collateral_curve_map)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get collateral curve for {}", 
-                    file!(), line!(), key))?.clone();
-
-            let borrowing_curve_map = match_parameter.get_borrowing_curve_map()
-                .get(key)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get borrowing curve map for {}", 
-                    file!(), line!(), key))?;
-            let borrowing_curve = zero_curves.get(borrowing_curve_map)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to get borrowing curve for {}", 
-                    file!(), line!(), key))?.clone();
-                
-            let stickyness = calculation_configuration.get_stickyness_type();
-            let lv_interpolator = calculation_configuration.get_lv_interpolator();
-
-            let mut lv = LocalVolatilitySurface::initialize(
-                evaluation_date.clone(),
-                market_price,
-                collateral_curve,
-                borrowing_curve,
-                stickyness,
-                lv_interpolator,
-                key.clone(),
-                key.clone(),
-            ).with_market_surface(
-                &data,
-                vega_structure_tenors.clone(),
-                vega_matrix_spot_moneyness.clone(),
-            )?;
-
-            lv.build()?;
-
-            let rc = Rc::new(RefCell::new(
-                Volatility::LocalVolatilitySurface(lv)
-            ));
-
-            volatilities.insert(key.clone(), rc);
-        }
-
-        let mut past_daily_close_prices = HashMap::new();
-        for (key, data) in past_daily_value_data.iter() {
-            let inner_data = data.as_ref();
-            let daily_close_price = DailyClosePrice::new_from_data(inner_data)
-                .with_context(|| anyhow!(
-                    "({}:{}) failed to create daily close price from data for {}", 
-                    key, file!(), line!()))?;
-            past_daily_close_prices.insert(key.clone(), Rc::new(daily_close_price));
-        }
-
-        Ok(Engine {
-            engine_id: engine_id,
-            err_tag : "".to_string(),
-            calculation_results: HashMap::new(),
-            calculation_configuration,
-            //
-            evaluation_date,
-            fxs,
-            equities,
-            zero_curves,
-            dividends,
-            volatilities,
-            quantos,
-            past_daily_close_prices,
-            //
-            instruments: Instruments::default(),
-            instruments_in_action: vec![],
-            pricers: HashMap::new(),
-            match_parameter: Rc::new(match_parameter),
-        })
-    }
-
-    pub fn initialize(&mut self, instrument_vec: Vec<Rc<Instrument>>) -> Result<()> {
-        self.initialize_instruments(instrument_vec)?;
-        self.initialize_pricers()?;
-        Ok(())
-    }
-
-    pub fn initialize_instruments(
-        &mut self, 
-        instrument_vec: Vec<Rc<Instrument>>,
-    ) -> Result<()> {
-        if instrument_vec.is_empty() {
-            return Err(
-                anyhow!("({}:{}) no instruments are given to initialize", file!(), line!())
-            );
-        }
-        self.instruments = Instruments::new(instrument_vec);
-        let all_types = self.instruments.get_all_type_names();
-        let curr_str: Vec<&str> = self.instruments.get_all_currencies()?.iter().map(|c| c.as_str()).collect();
-        let all_und_codes: Vec<&str> = self.instruments.get_all_underlying_codes().iter().map(|c| c.as_str()).collect();
-        self.err_tag = format!(
-            "<TAG>\n\
-            engine-id: {}\n\
-            instrument-types: {}\n\
-            currencies: {}\n\
-            underlying-codes: {}\n",
-            self.engine_id,
-            all_types.join(" / "),
-            curr_str.join(" / "),
-            all_und_codes.join(" / "),
-        );
-
-        let dt = self.evaluation_date.borrow().get_date_clone();
-        let insts_over_maturity = self.instruments.instruments_with_maturity_upto(None, &dt, None);
-
-        if !insts_over_maturity.is_empty() {
-            let mut inst_codes = Vec::<String>::new();
-            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
-            for inst in insts_over_maturity {
-                inst_codes.push(inst.get_code().clone());
-                let mat = inst.get_maturity();
-                match mat {
-                    Some(m) => inst_mat.push(Some(m.clone())),
-                    None => inst_mat.push(None),
-                }
-            }
-
-            let display = inst_codes.iter().zip(inst_mat.iter())
-                .map(|(code, mat)| {
-                    match mat {
-                        Some(m) => format!("{}: {:}", code, m),
-                        None => format!("{}: None", code),
-                    }
-                }).collect::<Vec<String>>().join("\n");
-            bail!(
-                "(Engine::initialize_instruments) There are instruments with maturity within the evaluation date\n\
-                evaluation date: {:?}\n\
-                {}\n",
-                dt, display
-            );
-        }
-
-        let insts_with_very_short_maturity = self.instruments.instruments_with_maturity_upto(
-            None, &(dt + Duration::hours(6)),
-            None,
-        );
-
-        if !insts_with_very_short_maturity.is_empty() {
-            let mut inst_codes = Vec::<String>::new();
-            let mut inst_mat = Vec::<Option<OffsetDateTime>>::new();
-            for inst in insts_with_very_short_maturity {
-                inst_codes.push(inst.get_code().clone());
-                let mat = inst.get_maturity();
-                match mat {
-                    Some(m) => inst_mat.push(Some(m.clone())),
-                    None => inst_mat.push(None),
-                }
-            }
-
-            let display = inst_codes.iter().zip(inst_mat.iter())
-                .map(|(code, mat)| {
-                    match mat {
-                        Some(m) => format!("{}: {:}", code, m),
-                        None => format!("{}: None", code),
-                    }
-                }).collect::<Vec<String>>().join("\n");
-            
-            println!(
-                "\n(Engine::initialize_instruments) There are instruments with a very short maturity (within 6 hours) \n\
-                Note that these products may produce numerical errors.
-                <LIST>\n{}\n{}\n",
-                display,
-                self.err_tag
-            );
-        }
-
-        self.instruments_in_action = self.instruments
-            .get_instruments_clone();
-    
-        for inst in self.instruments.iter() {
-            let code = inst.get_code();
-            let inst_type = inst.get_type_name();
-            let instrument_information = InstrumentInfo::new(
-                inst.get_name().to_string(),
-                code.to_string(),
-                inst_type,
-                inst.get_currency().clone(),
-                inst.get_unit_notional(),
-                inst.get_maturity().clone(),
-            );
-
-            let init_res = CalculationResult::new(
-                instrument_information,
-                self.evaluation_date.borrow().get_date_clone(),
-            );
-
-            self.calculation_results.insert(
-                inst.get_code().clone(),
-                RefCell::new(init_res),
-            );
-        }
-        Ok(())
     }
 
     pub fn initialize_pricers(&mut self) -> Result<()> {
@@ -2112,7 +1714,7 @@ impl Engine {
         let start_time = std::time::Instant::now();
 
         if self.instruments_in_action.len() < 1 {    
-            println!("* no instruments to calculate in engine-{}\n", self.engine_id);
+            warn!("* no instruments to calculate in engine-{}\n", self.engine_id);
         }
 
         if self.calculation_configuration.get_npv_calculation() {
@@ -2120,7 +1722,7 @@ impl Engine {
             self.set_values()?;
             self.set_cashflow_inbetween()?;
 
-            println!(
+            info!(
                 "* npv calculation is done (engine id: {}, time = {} whole time elapsed: {})"
                 , self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2131,7 +1733,7 @@ impl Engine {
         if self.calculation_configuration.get_fx_exposure_calculation() {
             timer = std::time::Instant::now();
             self.set_fx_exposures()?;
-            println!(
+            info!(
                 "* fx exposure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2143,7 +1745,7 @@ impl Engine {
             timer = std::time::Instant::now();
             self.preprocess_delta_gamma()?;
             self.set_delta_gamma()?;
-            println!(
+            info!(
                 "* delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2178,22 +1780,24 @@ impl Engine {
 
             if !insts_upto_bumped_day.is_empty() {
                 let shortest_maturity = self.instruments.get_shortest_maturity(Some(&insts_upto_bumped_day)).unwrap();
-                println!(
-                    "{}:{}\n\
+                let mut name_mat_pair_list: String = String::new();
+                for inst in insts_upto_bumped_day.iter() {
+                    name_mat_pair_list.push_str(&format!("{}: {}\n", inst.get_name(), inst.get_maturity().unwrap()));
+                }
+                warn!(
+                    "\n{}:{}\n\
+                    {}\n\
                     (Engine::calculate -> theta calculation)\n\
                     There are instruments whose maturity is within the evaluation_date + theta_day (= {:?}) \n\
-                    {}",
-                    file!(), line!(), &bumped_day, self.err_tag
-                );
-                // print the instruments' name and maturity
-                for inst in insts_upto_bumped_day.iter() {
-                    println!("{}: {}", inst.get_name(), inst.get_maturity().unwrap());
-                }
-                println!(
-                    "For the theta calculation for the above instruments, \n\
+                    \n\
+                    The instruments are as follows:\n\
+                    {}\n\
+                    For the theta calculation for the above instruments, \n\
                     the evaluation date is bumped to {:?} which is the shortest maturity of the above instruments. \n\
                     Note that the theta calculation period may be too small to get accurate theta.\n", 
-                    &shortest_maturity
+                    file!(), line!(), self.err_tag, &bumped_day, 
+                    name_mat_pair_list,
+                    &shortest_maturity,
                 );
                 self.set_theta_for_given_instruments(insts_upto_bumped_day, shortest_maturity)?;
             }
@@ -2201,7 +1805,7 @@ impl Engine {
             if !insts_over_bumped_day.is_empty() {
                 self.set_theta_for_given_instruments(insts_over_bumped_day, bumped_day)?;
             }
-            println!(
+            info!(
                 "* theta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2212,7 +1816,7 @@ impl Engine {
         if self.calculation_configuration.get_vega_calculation() {
             timer = std::time::Instant::now();
             self.set_vega()?;
-            println!(
+            info!(
                 "* vega calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2223,7 +1827,7 @@ impl Engine {
         if self.calculation_configuration.get_rho_calculation() {
             timer = std::time::Instant::now();
             self.set_rho()?;
-            println!(
+            info!(
                 "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2234,7 +1838,7 @@ impl Engine {
         if self.calculation_configuration.get_div_delta_calculation() {
             timer = std::time::Instant::now();
             self.set_div_delta()?;
-            println!(
+            info!(
                 "* div_delta calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2245,7 +1849,7 @@ impl Engine {
         if self.calculation_configuration.get_vega_structure_calculation() {
             timer = std::time::Instant::now();
             self.set_vega_structure()?;
-            println!(
+            info!(
                 "* vega_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2256,7 +1860,7 @@ impl Engine {
         if self.calculation_configuration.get_rho_structure_calculation() {
             timer = std::time::Instant::now();
             self.set_rho_structure()?;
-            println!(
+            info!(
                 "* rho calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2267,7 +1871,7 @@ impl Engine {
         if self.calculation_configuration.get_div_structure_calculation() {
             timer = std::time::Instant::now();
             self.set_div_structure()?;
-            println!(
+            info!(
                 "* div_structure calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
@@ -2278,7 +1882,7 @@ impl Engine {
         if self.calculation_configuration.get_vega_matrix_calculation() {
             timer = std::time::Instant::now();
             self.set_vega_matrix()?;
-            println!(
+            info!(
                 "* vega_matrix calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
                 self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),

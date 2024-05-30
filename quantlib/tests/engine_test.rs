@@ -9,16 +9,15 @@ mod tests {
     use time::macros::datetime;
     use ndarray::array;
     use ndarray::Array1;
-    use std::rc::Rc;
     use std::sync::Arc;
     use quantlib::evaluation_date::EvaluationDate;
     use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
     use quantlib::pricing_engines::match_parameter::MatchParameter;
     use std::collections::HashMap;
     use quantlib::pricing_engines::engine::Engine;
-
+    use anyhow::{Result, Context};
     #[test]
-    fn test_engine() {
+    fn test_engine()-> Result<()> {
         // spot = 350.0
         let spot: Real = 350.0;
         // evaluation date = 2021-01-01 00:00:00 +09:00
@@ -114,7 +113,7 @@ mod tests {
 
         let inst1 = Instrument::Futures(stock_futures1);
         let inst2 = Instrument::Futures(stock_futures2);
-        let inst_vec = vec![Rc::new(inst1), Rc::new(inst2)];
+        let inst_vec = vec![inst1, inst2];
 
         // make a calculation configuration
         let calculation_configuration = CalculationConfiguration::default()
@@ -147,13 +146,13 @@ mod tests {
         );
 
         // make an engine
-        let mut engine = Engine::new(
-            1,
+        let mut engine = Engine::builder(
+            0,
             calculation_configuration.clone(),
             evaluation_date.clone(),
-            //
             match_parameter.clone(),
-            //
+        ).with_instruments(inst_vec)?
+        .with_parameter_data(
             Arc::new(HashMap::new()),
             Arc::new(stock_data_map),
             Arc::new(zero_curve_map),
@@ -163,13 +162,14 @@ mod tests {
             Arc::new(HashMap::new()),
             Arc::new(HashMap::new()),
             Arc::new(HashMap::new()),
-        ).expect("Failed to create an engine");
-
-        engine.initialize(inst_vec).expect("Failed to initialize");
-        engine.calculate().expect("Failed to calculate");
+        )?;
+        engine.initialize_pricers().context("Failed to initialize pricers")?;
+        engine.calculate().context("Failed to calculate")?;
 
         let result = engine.get_calculation_result();
 
         println!("result: {:?}", result);
+
+        Ok(())
     }
 }

@@ -16,7 +16,6 @@ use ndarray::array;
 use ndarray::Array1;
 //use quantlib::surfacedatasample;
 use std::time::Instant;
-use std::rc::Rc;
 use std::sync::Arc;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
@@ -382,7 +381,7 @@ fn main() -> Result<()> {
         Arc::new(HashMap::new()),
         Arc::new(HashMap::new()),
     )?;
-
+    engine.initialize_pricers().context("failed to initialize pricers")?;
     engine.calculate().context("Failed to calculate")?;
 
     /*
@@ -418,7 +417,7 @@ fn main() -> Result<()> {
     //println!("result2 {:?}\n", result2.borrow());
     //println!("result3 {:?}\n", result3.borrow());
     //println!("result4 {:?}\n", result4.borrow());
-    info!("result5 {:?}\n", result5.borrow());
+    println!("result5 {:?}\n", result5.borrow());
     
     /*
     let results = engine.get_calculation_result();
