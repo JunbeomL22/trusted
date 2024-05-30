@@ -1,5 +1,5 @@
 use crate::definitions::Real;
-use crate::utils::find_index_ndarray::{binary_search_index_ndarray, vectorized_search_index_for_sorted_ndarray};
+use crate::utils::find_index_ndarray::binary_search_index_ndarray;
 use crate::math::{
     interpolator::{InterpolatorReal1D, ExtraPolationType},
     interpolators::linear_interpolator::LinearInterpolator1D,

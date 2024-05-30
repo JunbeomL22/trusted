@@ -203,7 +203,6 @@ pub mod tests {
     use super::*;
     use crate::currency::{Currency, FxCode};
     use crate::pricing_engines::pricer::{PricerTrait, Pricer};
-    use crate::enums::RateIndexCode;
     use crate::parameters::{
         zero_curve::ZeroCurve,
         rate_index::RateIndex
@@ -219,7 +218,6 @@ pub mod tests {
         PlainSwapType,
     };
 
-    use crate::definitions::Real;
     use crate::time::{
         calendar_trait::CalendarTrait,
         calendar::Calendar,
@@ -268,7 +266,7 @@ pub mod tests {
         let rate_index = RateIndex::new(
             String::from("3M"),
             Currency::USD,
-            RateIndexCode::LIBOR,
+            String::from("USD Libor 3M"),
             String::from("USD Libor 3M") // this is just a mock code
         )?;
 
@@ -445,8 +443,8 @@ pub mod tests {
         let rate_index = RateIndex::new(
             String::from("91D"),
             Currency::KRW,
-            RateIndexCode::CD,
-            String::from("CD91") // this is just a mock code
+            String::from("CD 91D"),
+            String::from("CD 91D") // this is just a mock code
         )?;
 
         let initial_fixed_side_endorsement = None;

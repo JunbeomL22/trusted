@@ -1,8 +1,8 @@
-//
 use serde::{Deserialize, Serialize};
-use std::fmt;
+//use std::fmt;
 use std::hash::Hash;
 
+/*
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum RateIndexCode {
     Dummy= 0,
@@ -33,7 +33,7 @@ impl fmt::Display for RateIndexCode {
         }
     }
 }
-
+ */
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum Compounding {
     Simple = 0,

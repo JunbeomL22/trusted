@@ -3,7 +3,7 @@ use crate::currency::Currency;
 use crate::enums::{
     CreditRating, 
     IssuerType,
-    RateIndexCode,
+    //RateIndexCode,
     OptionDailySettlementType,
 };
 use crate::instruments::plain_swap::PlainSwapType;
@@ -31,7 +31,7 @@ pub struct MatchParameter {
         Currency
     ), String>,
     // index code: RateIndexCode -> String
-    rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
+    rate_index_forward_curve_map: HashMap<String, String>,
     // Currency::XXX -> String::from("XXXCRS")
     // But if XXX == USD, then it is String::from("USDOIS")
     crs_curve_map: HashMap<Currency, String>,
@@ -56,7 +56,7 @@ impl Default for MatchParameter {
 
         let crs_curve_map: HashMap<Currency, String> = HashMap::new();
         let funding_cost_map: HashMap<Currency, String> = HashMap::new();
-        let rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
+        let rate_index_forward_curve_map: HashMap<String, String> = HashMap::new();
         MatchParameter {
             collateral_curve_map,
             borrowing_curve_map,
@@ -80,7 +80,7 @@ impl MatchParameter {
             Currency
         ), String>,
         crs_curve_map: HashMap<Currency, String>,
-        rate_index_forward_curve_map: HashMap<RateIndexCode, String>,
+        rate_index_forward_curve_map: HashMap<String, String>,
         funding_cost_map: HashMap<Currency, String>,
     ) -> MatchParameter {
         MatchParameter {
@@ -321,7 +321,7 @@ mod tests {
     use crate::instruments::futures::Futures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::currency::Currency;
-    use crate::enums::{RateIndexCode, CreditRating, IssuerType};
+    use crate::enums::{CreditRating, IssuerType};
     use std::collections::HashMap;
     use time::macros::datetime;
     use crate::time::conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention};
@@ -342,7 +342,7 @@ mod tests {
             CreditRating, 
             Currency
         ), String> = HashMap::new();
-        let mut rate_index_forward_curve_map: HashMap<RateIndexCode, String> = HashMap::new();
+        let mut rate_index_forward_curve_map: HashMap<String, String> = HashMap::new();
 
         let stock_futures = Futures::new(
             100.0,
@@ -369,8 +369,8 @@ mod tests {
         let cd = RateIndex::new(
             String::from("91D"),
             Currency::KRW,
-            RateIndexCode::CD,
-            "CD91".to_string(),
+            "CD 91D".to_string(),
+            "CD 91D".to_string(),
         )?;
 
         let issue_date = datetime!(2021-01-01 00:00:00 +00:00);
@@ -407,7 +407,7 @@ mod tests {
         )?;
         
         collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
-        rate_index_forward_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
+        rate_index_forward_curve_map.insert("CD 91D".to_string(), "KRWIRS".to_string());
 
         let funding_cost_map: HashMap<Currency, String> = HashMap::new();
         let match_parameter = MatchParameter::new(

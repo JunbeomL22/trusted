@@ -142,9 +142,9 @@ impl InstrumentTrait for VanillaOption {
         Ok(self.strike)
     }
 
-    fn get_quanto_fx_codes(&self) -> Vec<&FxCode> {
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> {
         match &self.quanto_fx_code {
-            Some(fx_code) => vec![fx_code],
+            Some(fx_code) => vec![(&self.underlying_codes[0], fx_code)],
             None => vec![],
         }
     }

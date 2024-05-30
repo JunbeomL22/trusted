@@ -1,6 +1,6 @@
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention};
-use crate::enums::RateIndexCode;
+//use crate::enums::RateIndexCode;
 use crate::instruments::schedule::BaseSchedule;
 use crate::parameters::{
     zero_curve::ZeroCurve,
@@ -35,15 +35,15 @@ pub struct RateIndex {
     curve_tenor: String,
     currency: Currency,
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
-    code: RateIndexCode, 
+    code: String,
 }
 
 impl RateIndex {
     pub fn new(
         curve_tenor: String,
         currency: Currency,
-        code: RateIndexCode,
         name: String,
+        code: String,
     ) -> Result<RateIndex> {
 
         Ok(RateIndex {
@@ -54,7 +54,7 @@ impl RateIndex {
         })
     }
 
-    pub fn get_code(&self) -> &RateIndexCode {
+    pub fn get_code(&self) -> &String {
         &self.code
     }
 
@@ -62,7 +62,7 @@ impl RateIndex {
         &self.name
     }
 
-    pub fn get_rate_index_code(&self) -> &RateIndexCode {
+    pub fn get_rate_index_code(&self) -> &String {
         &self.code
     }
 
@@ -235,7 +235,6 @@ mod tests {
     };
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::currency::Currency;
-    use crate::enums::RateIndexCode;
     use crate::parameters::zero_curve::ZeroCurve;
     use crate::data::vector_data::VectorData;
     use crate::evaluation_date::EvaluationDate;
@@ -267,7 +266,7 @@ mod tests {
                 ]
             )?;
         let currency = Currency::USD;
-        let code = RateIndexCode::SOFR;
+        let code = "SOFR1D".to_string();
         let name = "SOFR1D".to_string();
         let rate_index = RateIndex::new(
             "1D".to_string(), // "1D" means "1D" forward curve calculation period

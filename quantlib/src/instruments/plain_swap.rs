@@ -573,7 +573,8 @@ impl InstrumentTrait for PlainSwap {
 mod tests {
     use super::*;
     use crate::{
-        currency::Currency, enums::RateIndexCode, parameters::rate_index::RateIndex, time::{calendar::Calendar, calendars::{
+        currency::Currency, 
+        parameters::rate_index::RateIndex, time::{calendar::Calendar, calendars::{
             southkorea::{SouthKorea, SouthKoreaType},
             unitedstates::{UnitedStates, UnitedStatesType},
         }, conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency}, jointcalendar::JointCalendar}
@@ -610,7 +611,7 @@ mod tests {
         let rate_index = RateIndex::new(
             String::from("3M"),
             Currency::USD,
-            RateIndexCode::LIBOR,
+            String::from("USD Libor 3M"),
             String::from("USD Libor 3M") // this is just a mock code
         )?;
 

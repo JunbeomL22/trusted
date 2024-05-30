@@ -36,7 +36,7 @@ use std::{
     rc::Rc,
     cell::RefCell,
     ops::Index,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
 };
 use time::OffsetDateTime;
 
@@ -59,7 +59,7 @@ pub trait InstrumentTrait{
     // so the default action is to return an empty vector
     fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
 
-    fn get_quanto_fx_codes(&self) -> Vec<&FxCode> { vec![] }
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> { vec![] }
 
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
     // only for bonds, so None must be allowed
@@ -268,16 +268,14 @@ impl Instruments {
         fxcodes
     }
 
-    pub fn get_all_quanto_fx_codes(&self) -> Vec<&FxCode> {
-        let mut fxcodes = Vec::<&FxCode>::new();
+    pub fn get_all_quanto_fxcode_und_pairs(&self) -> HashSet<(&String, &FxCode)> {
+        let mut fxcodes = HashSet::<(&String, &FxCode)>::new();
         for instrument in self.instruments.iter() {
-            let codes = instrument.get_quanto_fx_codes();
+            let codes = instrument.get_quanto_fxcode_und_pair();
             for code in codes.iter() {
-                if !fxcodes.contains(&code) {
-                    fxcodes.push(code);
-                }
+                fxcodes.insert(code.clone());
             }
-        }
+        }   
         fxcodes
     }
 
@@ -671,7 +669,7 @@ mod tests {
     use crate::instruments::futures::Futures;
     use crate::instruments::plain_swap::PlainSwap;
     use crate::parameters::rate_index::RateIndex;
-    use crate::enums::RateIndexCode;
+    //use crate::enums::RateIndexCode;
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::time::{
         jointcalendar::JointCalendar, 
@@ -718,8 +716,8 @@ mod tests {
         let rate_index = RateIndex::new(
             String::from("91D"),
             Currency::KRW,
-            RateIndexCode::CD,
-            "CD91".to_string(),
+            String::from("CD 91D"),
+            "CD 91D".to_string(),
         )?;
 
         // make SouthKorea(SouthKorea::Settlement) JointCalendar
@@ -769,7 +767,7 @@ mod tests {
 
         // make MatchParameter
         let mut collateral_curve_map = HashMap::<String, String>::new();
-        let mut rate_index_curve_map = HashMap::<RateIndexCode, String>::new();
+        let mut rate_index_curve_map = HashMap::<String, String>::new();
         let borrowing_curve_map = HashMap::<String, String>::new();
         let bond_curve_map = HashMap::<(
             String, 
@@ -783,8 +781,8 @@ mod tests {
         // "SPX" -> "USGOV"
         // RateIndexCode::CD -> "KRWIRS"
         collateral_curve_map.insert("KOSPI2".to_string(), "KRWGOV".to_string());
-        collateral_curve_map.insert("SPX".to_string(), "USGOV".to_string());
-        rate_index_curve_map.insert(RateIndexCode::CD, "KRWIRS".to_string());
+        collateral_curve_map.insert("SPX".to_string(), "USDGOV".to_string());
+        rate_index_curve_map.insert("CD 91D".to_string(), "KRWIRS".to_string());
         crs_curve_map.insert(
             Currency::KRW,
             "KRWCRS".to_string(),
@@ -821,7 +819,7 @@ mod tests {
 
         // test get_all_curve_names
         let all_curve_names = instruments.get_all_curve_names(&match_parameter)?;
-        assert_eq!(all_curve_names, vec![&"KRWGOV", &"USGOV", &"KRWIRS"]);
+        assert_eq!(all_curve_names, vec![&"KRWGOV", &"USDGOV", &"KRWIRS"]);
         // test instruments_using_curve
         let instruments_using_krw_gov = instruments.instruments_using_curve(
             &"KRWGOV".to_string(),

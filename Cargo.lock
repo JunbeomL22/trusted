@@ -551,6 +551,9 @@ dependencies = [
  "serde",
  "serde_json",
  "time",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
  "trading-engine",
 ]
 

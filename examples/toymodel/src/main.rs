@@ -15,6 +15,7 @@ use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
 //use quantlib::surfacedatasample;
+use std::time::Instant;
 use std::rc::Rc;
 use std::sync::Arc;
 use quantlib::evaluation_date::EvaluationDate;
@@ -30,8 +31,36 @@ use quantlib::time::calendar::Calendar;
 use quantlib::time::jointcalendar::JointCalendar;
 use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use anyhow::{Result, Context};
-
+use tracing::{info, Level, span};
+use tracing_subscriber::fmt;
+use tracing_subscriber::prelude::*;
+use tracing_appender::{rolling, non_blocking};
 fn main() -> Result<()> {
+    let start_time = Instant::now();
+    // Set up rolling file appender
+    let file_appender = rolling::daily("logs", "my_app.log");
+    let (non_blocking_appender, _guard) = non_blocking(file_appender);
+
+    // Set up console layer
+    let console_layer = fmt::layer()
+        .with_writer(std::io::stdout);
+
+    // Set up file layer with non-blocking appender
+    let file_layer = fmt::layer()
+        .with_writer(non_blocking_appender);
+
+    // Combine console and file layers into a subscriber
+    let subscriber = tracing_subscriber::registry()
+        .with(console_layer)
+        .with(file_layer);
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Setting default subscriber failed");
+
+    // Create a new span with an `info` level
+    let main_span = span!(Level::INFO, "main (toymodel)");
+    let _enter = main_span.enter();
+
     let theta_day = 200;
     let spot: Real = 350.0;
     // evaluation date = 2021-01-01 00:00:00 +09:00
@@ -281,6 +310,8 @@ fn main() -> Result<()> {
     let inst4: Instrument = Instrument::Bond(bond2);
     let inst5 = Instrument::VanillaOption(option1);
 
+    let inst_vec = vec![inst1, inst2, inst3, inst4, inst5];
+    /*
     let inst_vec = vec![
         Rc::new(inst1), 
         Rc::new(inst2), 
@@ -288,7 +319,7 @@ fn main() -> Result<()> {
         Rc::new(inst4),
         Rc::new(inst5),
         ];
-
+     */
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
@@ -334,6 +365,27 @@ fn main() -> Result<()> {
     );
 
     // make an engine
+    let mut engine = Engine::builder(
+        0,
+        calculation_configuration.clone(),
+        evaluation_date.clone(),
+        match_parameter.clone(),
+    ).with_instruments(inst_vec)?
+    .with_parameter_data(
+        Arc::new(fx_data_map),
+        Arc::new(stock_data_map),
+        Arc::new(zero_curve_map),
+        Arc::new(dividend_data_map),
+        Arc::new(equity_vol_map),
+        Arc::new(equity_surface_map),
+        Arc::new(HashMap::new()),
+        Arc::new(HashMap::new()),
+        Arc::new(HashMap::new()),
+    )?;
+
+    engine.calculate().context("Failed to calculate")?;
+
+    /*
     let mut engine = Engine::new(
         1,
         calculation_configuration.clone(),
@@ -354,7 +406,7 @@ fn main() -> Result<()> {
 
     engine.initialize(inst_vec)?;
     engine.calculate().context("Failed to calculate")?;
-
+    */
     
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
@@ -362,16 +414,18 @@ fn main() -> Result<()> {
     let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
     let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
     
-    println!("result1 {:?}\n", result1.borrow());
-    println!("result2 {:?}\n", result2.borrow());
-    println!("result3 {:?}\n", result3.borrow());
-    println!("result4 {:?}\n", result4.borrow());
-    println!("result5 {:?}\n", result5.borrow());
+    //println!("result1 {:?}\n", result1.borrow());
+    //println!("result2 {:?}\n", result2.borrow());
+    //println!("result3 {:?}\n", result3.borrow());
+    //println!("result4 {:?}\n", result4.borrow());
+    info!("result5 {:?}\n", result5.borrow());
     
+    /*
     let results = engine.get_calculation_result();
     for (key, value) in results.iter() {
         println!("{}: {:?}\n\n", key, value.borrow());
     }
+     */
     /*
     println!("\n165XXX1");
     println!("result1 value: {:?}", result1.borrow().get_value());
@@ -418,5 +472,8 @@ fn main() -> Result<()> {
     // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
     // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
     */
+
+    let elapsed = start_time.elapsed();
+    info!("Application finished {:?}", elapsed);
     Ok(())
 }

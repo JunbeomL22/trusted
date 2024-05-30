@@ -324,8 +324,6 @@ impl PricerFactory {
             None => None,
         };
         
-        let fixed_currency = instrument.get_currency();
-        let floating_currency = instrument.get_underlying_currency()?;
         let fx_code = instrument.get_floating_to_fixed_fxcode()?;
         let floating_to_fixed_fx = match fx_code {
             None => None,

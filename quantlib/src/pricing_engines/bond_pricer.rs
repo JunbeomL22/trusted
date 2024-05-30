@@ -130,7 +130,7 @@ mod tests {
         jointcalendar::JointCalendar,
     };
     use crate::parameters::rate_index::RateIndex;
-    use crate::enums::RateIndexCode;
+    //use crate::enums::RateIndexCode;
     //
     use std::{rc::Rc, cell::RefCell};
     use time::{Duration, macros::datetime};
@@ -336,8 +336,8 @@ mod tests {
         let rate_index = RateIndex::new(
             String::from("91D"),
             Currency::KRW,
-            RateIndexCode::CD,
-            "CD91".to_string(),
+            String::from("CD 91D"),
+            String::from("CD 91D"),
         )?;
 
         let bond = Bond::new_from_conventions(
