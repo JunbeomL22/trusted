@@ -80,3 +80,19 @@
 
 [2m2024-05-30T08:23:14.529369Z[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m missing dividend data list (engine-id: 0)
 
+[2m2024-05-30T09:29:54.275110Z[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m missing dividend data list (engine-id: 0)
+
+
+[2m2024-05-30T09:32:51.251230Z[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m missing dividend data list (engine-id: 0)
+
+
+[2m2024-05-30T09:33:30.658784Z[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m missing dividend data list (engine-id: 0)
+
+
+[2m2024-05-30T09:34:36.316464Z[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m missing dividend data list (engine-id: 0)
+
+

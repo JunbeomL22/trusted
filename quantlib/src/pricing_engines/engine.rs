@@ -222,6 +222,8 @@ impl Engine {
         }
         if !no_dividend_data_msg.is_empty() { info!("{}\n", no_dividend_data_msg); }
         //
+        // borrowing curve parameter
+        //
         // equity parameters
         let mut equities = HashMap::new();
         let all_underlying_codes = self.instruments.get_all_underlying_codes();
@@ -281,8 +283,9 @@ impl Engine {
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get borrowing curve for {} in creating volatility surface\n\
                         zero curves list:\n {:?}",
-                        zero_curves.keys().collect::<Vec<&String>>(),
-                        file!(), line!(), und_code))?.clone();
+                        file!(), line!(), und_code,
+                        zero_curves.keys().into_iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "),
+                    ))?.clone();
                 let stickyness = self.calculation_configuration.get_stickyness_type();
                 let lv_interpolator = self.calculation_configuration.get_lv_interpolator();
                 let mut lv = LocalVolatilitySurface::initialize(
@@ -328,8 +331,11 @@ impl Engine {
                         file!(), line!(), und_code))?;
                 let borrowing_curve = zero_curves.get(borrowing_curve_map)
                     .with_context(|| anyhow!(
-                        "({}:{}) failed to get borrowing curve for {} in creating volatility surface", 
-                        file!(), line!(), und_code))?.clone();
+                        "({}:{}) failed to get borrowing curve for {} in creating volatility surface\n\
+                        zero curves list:\n {:?}",
+                        file!(), line!(), und_code,
+                        zero_curves.keys().into_iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "), 
+                    ))?.clone();
                 let stickyness = self.calculation_configuration.get_stickyness_type();
                 let lv_interpolator = self.calculation_configuration.get_lv_interpolator();
                 let mut lv = LocalVolatilitySurface::initialize(
