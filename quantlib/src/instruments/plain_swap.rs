@@ -666,6 +666,7 @@ mod tests {
             Some(issue_date.clone()),
             Currency::USD,
             "USDIRS".to_string(),
+            "USDIRS".to_string(),
         )?;
         
         let usdirs_curve = ZeroCurve::new(

@@ -139,6 +139,7 @@ mod tests {
             None,//eval_date.clone(),
             Currency::KRW,
             "KRWGOV".to_string(),
+            "KRWGOV".to_string(),
         )?;
         let discount_curve = ZeroCurve::new(
             evaluation_date.clone(),
@@ -153,6 +154,7 @@ mod tests {
             Some(array![0.5]),
             None,//eval_date.clone(),
             Currency::KRW,
+            "KTBF3Y".to_string(),
             "KTBF3Y".to_string(),
         )?;
         let borrowing_curve = ZeroCurve::new(

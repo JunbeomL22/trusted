@@ -62,6 +62,8 @@ pub trait InstrumentTrait{
     fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> { vec![] }
 
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
+
+    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> { vec![] }
     // only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Result<&CreditRating> {
         Err(anyhow!("({}:{}) not supported instrument type on get_credit_rating", file!(), line!()))
@@ -653,6 +655,38 @@ impl Instruments {
                 let mut res = Vec::<String>::new();
                 for instrument in self.instruments.iter() {
                     res.push(instrument.get_code().clone());
+                }
+                res
+            }
+        }
+    }
+
+    pub fn get_all_unerlying_codes_requiring_volatility(
+        &self,
+        instruments: Option<&Vec<Rc<Instrument>>>,
+    ) -> Vec<String> {
+        match instruments {
+            Some(instruments) => {
+                let mut res = Vec::<String>::new();
+                for instrument in instruments.iter() {
+                    let names = instrument.get_underlying_codes_requiring_volatility();
+                    for name in names.iter() {
+                        if !res.contains(name) {
+                            res.push(String::clone(name));
+                        }
+                    }
+                }
+                res
+            },
+            None => {
+                let mut res = Vec::<String>::new();
+                for instrument in self.instruments.iter() {
+                    let names = instrument.get_underlying_codes_requiring_volatility();
+                    for name in names.iter() {
+                        if !res.contains(name) {
+                            res.push(String::clone(name));
+                        }
+                    }
                 }
                 res
             }

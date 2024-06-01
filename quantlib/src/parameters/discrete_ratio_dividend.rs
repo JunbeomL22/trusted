@@ -30,6 +30,7 @@ pub struct DiscreteRatioDividend {
     deduction_interpolator: DividendInterpolator,
     spot: Real,
     name: String,
+    code: String,
 }
 
 impl DiscreteRatioDividend {
@@ -53,6 +54,7 @@ impl DiscreteRatioDividend {
         data: &VectorData, // dividend amount
         spot: Real,
         name: String,
+        code: String,
     ) -> Result<DiscreteRatioDividend> {
         // Begining of the function
         //let time_calculator = NullCalendar::default();
@@ -132,6 +134,7 @@ impl DiscreteRatioDividend {
             deduction_interpolator,
             spot,
             name,
+            code,
         };
         Ok(res)
     }
@@ -354,7 +357,7 @@ impl Parameter for DiscreteRatioDividend {
 mod tests {
     use super::*;
     use crate::data::vector_data::VectorData;
-    use crate::definitions::CLOSING_TIME;
+    use crate::definitions::DEFAULT_CLOSING_TIME;
     use crate::evaluation_date::EvaluationDate;
     use time::macros::{date, datetime};
     use time::UtcOffset;
@@ -368,7 +371,7 @@ mod tests {
                 EvaluationDate::new(
                     OffsetDateTime::new_in_offset(
                         date!(2021-01-01),
-                        CLOSING_TIME,
+                        DEFAULT_CLOSING_TIME,
                         UtcOffset::from_hms(9, 0, 0).unwrap(),
                     ) 
                 )
@@ -390,7 +393,8 @@ mod tests {
             times, 
             Some(datetime!(2021-01-01 17:30:00 +09:00)),
             Currency::KRW,
-            "test".to_string()
+            "test".to_string(),
+            "test".to_string(),
         ).expect("Failed to create VectorData");
 
         let marking_offset = UtcOffset::from_hms(9, 0, 0).unwrap();
@@ -401,7 +405,8 @@ mod tests {
             &data,
             //marking_offset,
             spot,
-            name,
+            name.clone(),
+            name.clone(),
         ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(discrete_ratio_dividend));

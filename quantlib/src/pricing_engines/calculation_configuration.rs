@@ -444,6 +444,7 @@ impl CalculationConfiguration {
         self.lv_interpolator.clone()
     }
 
+    
 }
 
 #[cfg(test)]

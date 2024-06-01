@@ -34,6 +34,8 @@ use tracing::{info, Level, span};
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 use tracing_appender::{rolling, non_blocking};
+
+
 fn main() -> Result<()> {
     let start_time = Instant::now();
     // Set up rolling file appender
@@ -84,6 +86,7 @@ fn main() -> Result<()> {
         Some(market_datetime), 
         Currency::KRW,
         zero_curve1.clone(),
+        zero_curve1.clone(),
     ).expect("Failed to create VectorData for KSD");
 
     let zero_curve2 = "KRWGOV".to_string();
@@ -93,6 +96,7 @@ fn main() -> Result<()> {
         times, 
         Some(market_datetime), 
         Currency::KRW,
+        zero_curve2.clone(),
         zero_curve2.clone(),
     ).expect("Failed to create VectorData for KRWGOV");
 
@@ -104,16 +108,19 @@ fn main() -> Result<()> {
         Some(market_datetime),
         Currency::KRW,
         funding_curve1.clone(),
+        funding_curve1.clone(),
     ).expect("failed to make a vector data for funding curve");
 
     // the borrowing fee curve which amounts to 0.005
+    let bor_curve_name = "KOSPI2".to_string();
     let borrowing_curve_data = VectorData::new(
         array![0.005, 0.005],
         Some(dates.clone()),
         None,
         Some(market_datetime),
         Currency::KRW,
-        "KOSPI2".to_string(),
+        bor_curve_name.clone(),
+        bor_curve_name.clone(),
     ).expect("failed to make a vector data for borrowing fee");
 
     //
@@ -134,6 +141,7 @@ fn main() -> Result<()> {
         Some(market_datetime),
         Currency::KRW,
         "KOSPI2".to_string(),
+        "KOSPI2".to_string(),
     ).expect("failed to make a value data for equity volatility");
 
     
@@ -147,6 +155,7 @@ fn main() -> Result<()> {
         Some(market_datetime),
         Currency::KRW,
         fx_str1.to_string(),
+        fx_str1.to_string(),
     ).expect("failed to make a value data for fx rate");
     let mut fx_data_map = HashMap::new();
     
@@ -154,24 +163,28 @@ fn main() -> Result<()> {
 
     
     // make a vector data for dividend ratio
+    let div_name = "KOSPI2".to_string();
     let dividend_data = VectorData::new(
         Array1::from(vec![3.0, 3.0]),
         Some(vec![datetime!(2024-06-01 00:00:00 +09:00), datetime!(2025-01-01 00:00:00 +09:00)]),
         None,
         Some(market_datetime),
         Currency::KRW,
-        "KOSPI2".to_string(),
+        div_name.clone(),
+        div_name.clone(),
     ).expect("failed to make a vector data for dividend ratio");
 
     let mut dividend_data_map = HashMap::new();
     dividend_data_map.insert("KOSPI2".to_string(), dividend_data.clone());
     
     // make a stock data
+    let stock_name = "KOSPI2".to_string();
     let stock_data = ValueData::new(
         spot,
         Some(market_datetime),
         Currency::KRW,
-        "KOSPI2".to_string(),
+        stock_name.clone(),
+        stock_name.clone(),
     ).expect("failed to make a stock data");
 
     let mut stock_data_map = HashMap::new();
@@ -384,47 +397,28 @@ fn main() -> Result<()> {
     engine.initialize_pricers().context("failed to initialize pricers")?;
     engine.calculate().context("Failed to calculate")?;
 
-    /*
-    let mut engine = Engine::new(
-        1,
-        calculation_configuration.clone(),
-        evaluation_date.clone(),
-        match_parameter,
-        //
-        Arc::new(fx_data_map),
-        Arc::new(stock_data_map),
-        Arc::new(zero_curve_map),
-        Arc::new(dividend_data_map),
-        Arc::new(equity_vol_map),
-        Arc::new(equity_surface_map),
-        Arc::new(HashMap::new()),
-        Arc::new(HashMap::new()),
-        Arc::new(HashMap::new()),
-        //
-    ).expect("Failed to create an engine");
-
-    engine.initialize(inst_vec)?;
-    engine.calculate().context("Failed to calculate")?;
-    */
-    
-    let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
-    let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
-    let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
-    let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
-    let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
-    
-    //println!("result1 {:?}\n", result1.borrow());
-    //println!("result2 {:?}\n", result2.borrow());
-    //println!("result3 {:?}\n", result3.borrow());
-    //println!("result4 {:?}\n", result4.borrow());
-    println!("result5 {:?}\n", result5.borrow());
-    
-    /*
+    /* 
     let results = engine.get_calculation_result();
     for (key, value) in results.iter() {
         println!("{}: {:?}\n\n", key, value.borrow());
     }
-     */
+
+    let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
+    println!("result1 {:?}\n", result1.borrow());
+
+    let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
+    println!("result2 {:?}\n", result2.borrow());
+
+    let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
+    println!("result3 {:?}\n", result3.borrow());
+
+    let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
+    println!("result4 {:?}\n", result4.borrow());
+    */
+
+    let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
+    println!("result5 {:?}\n", result5.borrow());
+    
     /*
     println!("\n165XXX1");
     println!("result1 value: {:?}", result1.borrow().get_value());
@@ -462,7 +456,8 @@ fn main() -> Result<()> {
     println!("result4 gamma: {:?}", result4.borrow().get_gamma());
     println!("result4 theta: {:?}", result4.borrow().get_theta());
     println!("result4 rho: {:?}", result4.borrow().get_rho());
-    println!("result4 rho-structure: {:?}", result4.borrow().get_rho_structure());
+    println!("result4 rho-structure: {:?}", result4.bo
+    rrow().get_rho_structure());
     println!("result4 div-delta: {:?}", result4.borrow().get_div_delta());
     println!("result4 div-structure: {:?}", result4.borrow().get_div_structure());
 

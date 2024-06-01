@@ -137,6 +137,7 @@ mod tests {
             Some(eval_date),
             Currency::KRW,
             "USDOIS".to_string(),
+            "USDOIS".to_string(),
         )?;
 
         let usdois_curve = Rc::new(RefCell::new(
@@ -154,6 +155,7 @@ mod tests {
             Some(array![0.5, 5.0]),
             Some(eval_date),
             Currency::KRW,
+            "KRWCRS".to_string(),
             "KRWCRS".to_string(),
         )?;
 

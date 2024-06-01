@@ -118,7 +118,8 @@ mod tests {
     use crate::evaluation_date::EvaluationDate;
     use crate::data::observable::Observable;
     use crate::instrument::InstrumentTrait;
-    use crate::{currency::Currency, instruments::futures::Futures, parameters::discrete_ratio_dividend::DiscreteRatioDividend};
+    use crate::{currency::Currency, instruments::futures::Futures};
+    use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
     use time::macros::datetime;
     use crate::data::vector_data::VectorData;
     use ndarray::Array1;
@@ -142,12 +143,14 @@ mod tests {
             Some(market_datetime),
             Currency::KRW,
             "KOSPI2".to_string(),
+            "KOSPI2".to_string(),
         ).expect("failed to make a vector data for dividend ratio");
 
         let dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &dividend_data,      
             spot,
+            name.to_string(),
             name.to_string(),
         ).expect("failed to make a discrete ratio dividend");
 
@@ -172,6 +175,7 @@ mod tests {
             None,
             Some(market_datetime),
             Currency::KRW,
+            "KSD".to_string(),
             "KSD".to_string(),
         ).expect("failed to make a vector data for KSD curve");
 

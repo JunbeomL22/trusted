@@ -66,6 +66,7 @@ fn main() -> Result<()> {
         Some(param_dt), 
         Currency::KRW,
         "vector data in test_zero_curve".to_string(),
+        "vector data in test_zero_curve".to_string(),
     ).with_context(|| "Failed to create VectorData.")?;
 
     

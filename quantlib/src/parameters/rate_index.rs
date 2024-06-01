@@ -225,7 +225,7 @@ impl RateIndex {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use crate::definitions::{CLOSING_TIME, NEW_YORK_OFFSET};
+    use crate::definitions::{DEFAULT_CLOSING_TIME, NEW_YORK_OFFSET};
     use super::*;
     use crate::time::{
         calendars::unitedstates::{UnitedStates, UnitedStatesType},
@@ -282,6 +282,7 @@ mod tests {
             Some(dt.clone()),
             Currency::USD,
             "USDOIS".to_string(),
+            "USDOIS".to_string(),
         )?;
         
         let zero_curve = Rc::new(RefCell::new(
@@ -314,7 +315,7 @@ mod tests {
         let cal = Calendar::UnitedStates(us);
         let close_data = Rc::new(DailyClosePrice::new(
             history_map,
-            CLOSING_TIME.clone(),
+            DEFAULT_CLOSING_TIME.clone(),
             UtcOffset::from_hms(
                 NEW_YORK_OFFSET.0, 
                 NEW_YORK_OFFSET.1, 

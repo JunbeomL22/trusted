@@ -10,7 +10,7 @@ mod tests {
     use quantlib::parameters::zero_curve::ZeroCurve;
     use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
     use quantlib::data::vector_data::VectorData;
-    use quantlib::definitions::{CLOSING_TIME, SEOUL_OFFSET};
+    use quantlib::definitions::{DEFAULT_CLOSING_TIME, SEOUL_OFFSET};
     use quantlib::currency::Currency;
     use anyhow::Result;
 
@@ -23,7 +23,7 @@ mod tests {
 
         let evaluation_offsetdatetime = time::OffsetDateTime::new_in_offset(
             time::macros::date!(2021-01-01),
-            CLOSING_TIME,
+            DEFAULT_CLOSING_TIME,
             evaluation_offset,
         );
 
@@ -49,7 +49,8 @@ mod tests {
             times, 
             Some(market_datetime), 
             Currency::KRW,
-            name
+            name.clone(),
+            name.clone(),
         ).expect("Failed to create VectorData for zero curve");
 
 
@@ -79,13 +80,15 @@ mod tests {
             times, 
             Some(market_datetime), 
             Currency::KRW,
-            name
+            name.clone(),
+            name.clone(),
         ).expect("Failed to create VectorData for dividend amount");
 
         let _dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &dividend_data,
             spot,    
+            "dividend".to_string(),
             "dividend".to_string(),
         ).expect("Failed to create DiscreteRatioDividend");
 

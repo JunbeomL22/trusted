@@ -323,6 +323,7 @@ pub mod tests {
             None,//issue_date.clone(),
             Currency::USD,
             "USDIRS".to_string(),
+            "USDIRS".to_string(),
         )?;
         
         let usdirs_curve = ZeroCurve::new(
@@ -340,6 +341,7 @@ pub mod tests {
             Some(array![0.5, 5.0]),
             None,
             Currency::KRW,
+            "KRWCRS".to_string(),
             "KRWCRS".to_string(),
         )?;
         
@@ -493,6 +495,7 @@ pub mod tests {
             None,
             Currency::KRW,
             "KRWIRS".to_string(),
+            "KRWIRS".to_string(),
         )?;
         
         let curve = Rc::new(RefCell::new(
@@ -500,7 +503,7 @@ pub mod tests {
                 evaluation_date.clone(),
                 &curve_data,
                 "KRWIRS".to_string(),
-                "KRW IR Curve".to_string(),
+                "KRWIRS".to_string(),
             )?
         ));
 

@@ -41,6 +41,7 @@ mod tests {
             Some(market_datetime), 
             Currency::KRW,
             name.clone(),
+            name.clone(),
         ).expect("Failed to create VectorData for zero curve");
 
         // the borrowing fee curve which amounts to 0.005
@@ -50,6 +51,7 @@ mod tests {
             None,
             Some(market_datetime.clone()),
             Currency::KRW,
+            "KOSPI2".to_string(),
             "KOSPI2".to_string(),
         ).expect("failed to make a vector data for borrowing fee");
 
@@ -65,6 +67,7 @@ mod tests {
             Some(market_datetime.clone()),
             Currency::KRW,
             "KOSPI2".to_string(),
+            "KOSPI2".to_string(),
         ).expect("failed to make a vector data for dividend ratio");
 
         let mut dividend_data_map = HashMap::new();
@@ -75,6 +78,7 @@ mod tests {
             spot,
             Some(market_datetime.clone()),
             Currency::KRW,
+            "KOSPI2".to_string(),
             "KOSPI2".to_string(),
         ).expect("failed to make a stock data");
 

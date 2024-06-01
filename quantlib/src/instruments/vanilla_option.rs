@@ -148,5 +148,8 @@ impl InstrumentTrait for VanillaOption {
             None => vec![],
         }
     }
-    
+
+    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> {
+        vec![&self.underlying_codes[0]]
+    }
 }

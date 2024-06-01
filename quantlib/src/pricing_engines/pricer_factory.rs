@@ -5,6 +5,7 @@ use crate::parameters::{
     quanto::Quanto,
     volatility::Volatility,
 };
+use crate::pricing_engines::calculation_configuration::CalculationConfiguration;
 use crate::parameters::{
     market_price::MarketPrice,
     past_price::DailyClosePrice,    
@@ -22,6 +23,7 @@ use crate::pricing_engines::{
     plain_swap_pricer::PlainSwapPricer,
     null_pricer::NullPricer,
 };
+use crate::enums::VanillaOptionCalculationMethod;
 //
 use std::{
     cell::RefCell,
@@ -38,11 +40,11 @@ pub struct PricerFactory {
     fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
     equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
     zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-    // dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
     underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
     quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>, // (underlying_code, fx_code) -> Quanto
     past_close_data: HashMap<String, Rc<DailyClosePrice>>,
     match_parameter: Rc<MatchParameter>,
+    calculation_configuration: Rc<CalculationConfiguration>,
 }
 
 impl PricerFactory {
@@ -51,22 +53,22 @@ impl PricerFactory {
         fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
         equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
         zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-        //dividends: HashMap<String, Rc<RefCell<DiscreteRatioDividend>>>,
         underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
         quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
         past_close_data: HashMap<String, Rc<DailyClosePrice>>,
         match_parameter: Rc<MatchParameter>,
+        calculation_configuration: Rc<CalculationConfiguration>,
     ) -> PricerFactory {
         PricerFactory {
             evaluation_date,
             fxs,
             equities,
             zero_curves,
-            //dividends,
             underlying_volatilities,
             quantos,
             past_close_data,
             match_parameter,
+            calculation_configuration,
         }
     }
  
@@ -219,15 +221,20 @@ impl PricerFactory {
             },
             true => None,
         };
-        let core = OptionAnalyticPricer::new(
-            self.evaluation_date.clone(),
-            equity,
-            collatral_curve,
-            borrowing_curve,
-            discount_curve,
-            volatility,
-            quanto,
-        );
+        let core = match self.calculation_configuration.get_vanilla_option_calculation_method() {
+            VanillaOptionCalculationMethod::Analytic => {
+                OptionAnalyticPricer::new(
+                    self.evaluation_date.clone(),
+                    equity,
+                    collatral_curve,
+                    borrowing_curve,
+                    discount_curve,
+                    volatility,
+                    quanto,
+                )
+            },
+            _ => return Err(anyhow::Error::msg("Unsupported calculation method")),        
+        };
         Ok(Pricer::OptionAnalyticPricer(core))
     }
 

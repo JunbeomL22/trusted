@@ -21,6 +21,7 @@ pub struct ValueData {
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     currency: Currency,
     name: String,
+    code: String,
 }
 
 impl Debug for ValueData {
@@ -29,6 +30,7 @@ impl Debug for ValueData {
             .field("value", &self.value)
             .field("market_datetime", &self.market_datetime)
             .field("name", &self.name)
+            .field("code", &self.code)
             .field("observers", &self.observers.iter().map(|observer| {
                 let observer = observer.borrow();
                 format!("Address: {}, Name: {}, TypeName: {}", observer.get_address(), observer.get_name(), observer.get_type_name())
@@ -60,7 +62,8 @@ impl ValueData {
         value: Real, 
         market_datetime: Option<OffsetDateTime>, 
         currency: Currency,
-        name: String
+        name: String,
+        code: String,
     ) -> Result<ValueData> {
         Ok(ValueData {
             value,
@@ -68,6 +71,7 @@ impl ValueData {
             observers: vec![],
             currency,
             name,
+            code,
         })
     }
 
@@ -157,7 +161,7 @@ mod tests {
         }
     }
     impl Parameter for MockParameter {
-        fn update(&mut self, data: &dyn Observable) -> Result<()> {
+        fn update(&mut self, _data: &dyn Observable) -> Result<()> {
             self.value += 1.0;
             Ok(())
         }
@@ -177,7 +181,9 @@ mod tests {
             1.0, 
             None,//OffsetDateTime::now_utc(),
             Currency::NIL,
-            "test".to_string()).expect("Failed to create ValueData");
+            "test".to_string(),
+            "test".to_string(),
+        ).expect("Failed to create ValueData");
         let mock_parameter = MockParameter { value: 1.0, name: "test".to_string() };
         let mock_parameter_rc = Rc::new(RefCell::new(mock_parameter));
 
@@ -193,7 +199,8 @@ mod tests {
             1.0, 
             None,//OffsetDateTime::now_utc(),
             Currency::NIL,
-            "test".to_string()
+            "test".to_string(),
+            "test".to_string(),
         ).expect("Failed to create ValueData");
         
         let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0, name: "test".to_string()}));

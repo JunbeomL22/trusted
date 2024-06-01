@@ -57,7 +57,7 @@ pub struct Engine {
     err_tag: String,
     //
     calculation_results: HashMap<String, RefCell<CalculationResult>>,
-    calculation_configuration: CalculationConfiguration, // this should be cloned
+    calculation_configuration: Rc<CalculationConfiguration>, // this should be cloned
     //
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
@@ -87,7 +87,7 @@ impl Engine {
             engine_id,
             err_tag: "".to_string(),
             calculation_results: HashMap::new(),
-            calculation_configuration,
+            calculation_configuration: Rc::new(calculation_configuration),
             evaluation_date: Rc::new(RefCell::new(evaluation_date)),
             fxs: HashMap::new(),
             equities: HashMap::new(),
@@ -213,6 +213,7 @@ impl Engine {
                         data,
                         spot,
                         underlying_code.clone(),
+                        underlying_code.clone(),
                     ).with_context(|| anyhow!(
                         "({}:{}) failed to create discrete ratio dividend for {}", 
                         file!(), line!(), underlying_code))?)));
@@ -279,18 +280,18 @@ impl Engine {
         //
         // equity volatility parameter
         let mut volatilities = HashMap::new();
-        let all_underlying_codes = self.instruments.get_all_underlying_codes();
+        let all_underlying_codes = self.instruments.get_all_unerlying_codes_requiring_volatility(None);
         for und_code in all_underlying_codes {
-            if equity_constant_volatility_data.contains_key(und_code) {
-                let data = equity_constant_volatility_data.get(und_code).unwrap();
+            if equity_constant_volatility_data.contains_key(&und_code) {
+                let data = equity_constant_volatility_data.get(&und_code).unwrap();
                 let vega_matrix_spot_moneyness = self.calculation_configuration.get_vega_matrix_spot_moneyness();
                 let vega_structure_tenors = self.calculation_configuration.get_vega_structure_tenors();
-                let market_price = equities.get(und_code)
+                let market_price = equities.get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get market price for {}", 
                         file!(), line!(), und_code))?.clone();
                 let collateral_curve_map = self.match_parameter.get_collateral_curve_map()
-                    .get(und_code)
+                    .get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get collateral curve map for {} from match_parameter in creating volatility surface",
                         file!(), line!(), und_code))?;
@@ -299,7 +300,7 @@ impl Engine {
                         "({}:{}) failed to get collateral curve for {} in creating volatility surface", 
                         file!(), line!(), und_code))?.clone();
                 let borrowing_curve_map = self.match_parameter.get_borrowing_curve_map()
-                    .get(und_code)
+                    .get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get borrowing curve map for {} from match_parameter in creating volatility surface",
                         file!(), line!(), und_code))?;
@@ -331,16 +332,16 @@ impl Engine {
                     Volatility::LocalVolatilitySurface(lv)
                 ));
                 volatilities.insert(und_code.clone(), rc);
-            } else if equity_volatility_surface_data.contains_key(und_code) {
-                let data = equity_volatility_surface_data.get(und_code).unwrap();
+            } else if equity_volatility_surface_data.contains_key(&und_code) {
+                let data = equity_volatility_surface_data.get(&und_code).unwrap();
                 let vega_matrix_spot_moneyness = self.calculation_configuration.get_vega_matrix_spot_moneyness();
                 let vega_structure_tenors = self.calculation_configuration.get_vega_structure_tenors();
-                let market_price = equities.get(und_code)
+                let market_price = equities.get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get market price for {}", 
                         file!(), line!(), und_code))?.clone();
                 let collateral_curve_map = self.match_parameter.get_collateral_curve_map()
-                    .get(und_code)
+                    .get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get collateral curve map for {} from match_parameter in creating volatility surface",
                         file!(), line!(), und_code))?;
@@ -349,7 +350,7 @@ impl Engine {
                         "({}:{}) failed to get collateral curve for {} in creating volatility surface", 
                         file!(), line!(), und_code))?.clone();
                 let borrowing_curve_map = self.match_parameter.get_borrowing_curve_map()
-                    .get(und_code)
+                    .get(&und_code)
                     .with_context(|| anyhow!(
                         "({}:{}) failed to get borrowing curve map for {} from match_parameter in creating volatility surface",
                         file!(), line!(), und_code))?;
@@ -588,11 +589,11 @@ impl Engine {
             self.fxs.clone(),
             self.equities.clone(),
             self.zero_curves.clone(),
-            //self.dividends.clone(),
             self.volatilities.clone(),
             self.quantos.clone(),
             self.past_daily_close_prices.clone(),
-            self.match_parameter.clone(),
+            Rc::clone(&self.match_parameter),
+            Rc::clone(&self.calculation_configuration),
         );
         
         for inst in inst_vec.iter() {

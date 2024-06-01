@@ -154,6 +154,7 @@ mod tests {
             None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
             name.to_string(),
+            name.to_string(),
         )?;
 
         // make a discount curve (ZeroCurve)
@@ -285,6 +286,7 @@ mod tests {
             None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
             name.to_string(),
+            name.to_string(),
         )?;
 
         // make a discount curve (ZeroCurve)
@@ -304,6 +306,7 @@ mod tests {
             Some(array!(1.0, 5.0)),
             None,//evaluation_date.borrow().get_date_clone(),
             Currency::KRW,
+            name.to_string(),
             name.to_string(),
         )?;
 

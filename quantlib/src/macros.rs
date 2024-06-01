@@ -9,6 +9,7 @@ macro_rules! vectordatasample {
             None,
             $currency,
             String::from($name),
+            String::from($name),
         )
     };
 }

@@ -23,6 +23,7 @@ pub struct VectorData {
     observers: Vec<Rc<RefCell<dyn Parameter>>>,
     currency: Currency,
     name: String,
+    code: String,
 }
 
 impl fmt::Debug for VectorData {
@@ -34,6 +35,7 @@ impl fmt::Debug for VectorData {
             .field("market_datetime", &self.market_datetime)
             .field("currency", &self.currency)
             .field("name", &self.name)
+            .field("code", &self.code)
             .field("observers", &self.observers.iter().map(|observer| {
                 let observer = observer.borrow();
                 format!("Address: {}, Name: {}, TypeName: {}", observer.get_address(), observer.get_name(), observer.get_type_name())
@@ -73,7 +75,8 @@ impl VectorData {
         times: Option<Array1<Time>>,
         market_datetime: Option<OffsetDateTime>, 
         currency: Currency,
-        name: String
+        name: String,
+        code: String,
     ) -> Result<VectorData> {
         // sanity check first
         if dates == None && times == None {
@@ -117,8 +120,8 @@ impl VectorData {
                 observers: Vec::new(),
                 currency: currency,
                 name: name,
+                code: code,
             };
-            
             Ok(res)
         } else {
             if let Some(times) = times {
@@ -138,6 +141,7 @@ impl VectorData {
                         observers: Vec::new(),
                         currency: currency,
                         name,
+                        code,
                     };
                     Ok(res)
                 }
@@ -389,6 +393,7 @@ mod tests {
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
             None,//datetime!(2020-01-01 00:00:00 UTC), 
             Currency::KRW,
+            "test_vector_data_serialization".to_string(),
             "test_vector_data_serialization".to_string()
         ).expect("failed to create VectorData");
 
@@ -412,7 +417,8 @@ mod tests {
             Some(array![0.0, 1.0, 2.0, 3.0, 4.0]), 
             Some(datetime!(2020-01-01 00:00:00 UTC)), 
             Currency::KRW,
-            "test_bump_value_time_interval".to_string()
+            "test_bump_value_time_interval".to_string(),
+            "test_bump_value_time_interval".to_string(),
         ).expect("failed to create VectorData");
 
         vector_data.bump_time_interval(-0.0, 0.5, 1.0).expect("failed to bump time interval");

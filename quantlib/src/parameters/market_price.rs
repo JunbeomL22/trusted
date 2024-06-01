@@ -153,7 +153,7 @@ mod tests {
     use time::OffsetDateTime;
     use time;
     use crate::evaluation_date::EvaluationDate;
-    use crate::definitions::{CLOSING_TIME, SEOUL_OFFSET};
+    use crate::definitions::{DEFAULT_CLOSING_TIME, SEOUL_OFFSET};
     use std::rc::Rc;
     use std::cell::RefCell;
     use crate::data::vector_data::VectorData;
@@ -167,7 +167,7 @@ mod tests {
         let offset = time::UtcOffset::from_hms(h, m, s).unwrap();
         let eval_dt = OffsetDateTime::new_in_offset(
             time::macros::date!(2021-01-01),
-            CLOSING_TIME,
+            DEFAULT_CLOSING_TIME,
             offset,
         );
 
@@ -193,12 +193,14 @@ mod tests {
             Some(eval_dt),
             Currency::NIL,
             "dividend vecto data".to_string(),
+            "dividend vector data".to_string(),
         ).expect("failed to create VectorData");
 
         let dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &data,
             spot,
+            "MockMarketPrice".to_string(),
             "MockMarketPrice".to_string(),
         ).expect("failed to create DiscreteRatioDividend");
 

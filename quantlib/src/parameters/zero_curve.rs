@@ -248,13 +248,15 @@ impl ZeroCurve {
     pub fn dummy_curve() -> Result<ZeroCurve> {
         let dt = EvaluationDate::new(datetime!(1970-01-01 00:00:00 UTC));
         let evaluation_date = Rc::new(RefCell::new(dt));
+        let name = "dummy curve in ZeroCurve::null_curve".to_string();
         let data = VectorData::new(
             array![0.0],
             Some(vec![datetime!(2080-01-01 00:00:00 UTC)]), // dummy date
             None, 
             Some(evaluation_date.borrow().get_date_clone()),
             Currency::NIL,
-            "dummy curve in ZeroCurve::null_curve".to_string()
+            name.clone(),
+            name.clone(),
         ).with_context(|| "error in ZeroCurve::dummy_curve")?;
 
         ZeroCurve::new(
@@ -517,7 +519,8 @@ mod tests {
             None, 
             Some(param_dt), 
             Currency::NIL,
-            "vector data in test_zero_curve".to_string()
+            "vector data in test_zero_curve".to_string(),
+            "vector data in test_zero_curve".to_string(),
         ).expect("error in test_zero_curve");
 
         let _zero_curve = ZeroCurve::new(
