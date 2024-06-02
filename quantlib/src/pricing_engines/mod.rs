@@ -14,7 +14,7 @@ pub mod pricer_factory;
 pub mod ktbf_pricer;
 pub mod plain_swap_pricer;
 pub mod fx_futures_pricer;
-pub mod engine_factory;
+pub mod engine_generator;
 pub mod futures_pricer;
 pub mod cash_pricer;
 pub mod null_pricer;

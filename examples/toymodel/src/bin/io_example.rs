@@ -1,20 +1,16 @@
-use quantlib::data::value_data::ValueData;
-use quantlib::currency::Currency;
 use quantlib::utils::tracing_timer::CustomOffsetTime;
 use time::Instant;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use tracing::{info, Level, span};
-use serde::Deserialize;
-use serde_json::{
-    to_string,
-    from_str,
-};
-use std::fs::write;
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 use tracing_appender::{rolling, non_blocking};
-use time::{Date, Month, Time, UtcOffset, OffsetDateTime};
-use examples_toymodel::valuedata_io::valuedata_io;
+use examples_toymodel::{
+    valuedata_io::valuedata_io,
+    vectordata_io::vectordata_io,
+    surfacedata_io::surfacedata_io,
+    futuresdata_io::futuresdata_io,
+};
 
 fn main() -> Result<()> {
     let start_time = Instant::now();
@@ -34,9 +30,18 @@ fn main() -> Result<()> {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");
 
+    let main_span = span!(Level::INFO, "main (dataio)");
+    let _enter = main_span.enter();
+
     let elapsed = start_time.elapsed();
     
+    // 
+
     valuedata_io()?;
+    vectordata_io()?;
+    surfacedata_io()?; 
+    futuresdata_io()?;
+    //
 
     info!("DataIo finished {:?}", elapsed);
     Ok(())

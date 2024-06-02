@@ -1,5 +1,4 @@
 use std::fs::write;
-use serde::Serialize;
 use anyhow::{Result, Context};
 use time::{Date, Time, UtcOffset, OffsetDateTime, Month};
 use serde_json::{

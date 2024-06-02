@@ -13,7 +13,7 @@ use ndarray::Array1;
 use crate::util::to_yyyymmdd_int;
 use anyhow::{anyhow, Result};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug)]                         
 enum DividendInterpolator {
     Stepwise(StepwiseInterpolator1D<Integer>),
     Constant(ConstantInterpolator1D),
