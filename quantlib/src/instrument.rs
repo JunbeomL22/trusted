@@ -745,7 +745,6 @@ mod tests {
 
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
         let sk = Calendar::SouthKorea(sk);
-        let joint_calendar = JointCalendar::new(vec![sk])?;
 
         let rate_index = RateIndex::new(
             String::from("91D"),
@@ -883,7 +882,7 @@ mod tests {
         assert_eq!(fut1.get_code(), instruments_with_equity_futures[0].get_code());
         assert_eq!(fut2.get_code(), instruments_with_equity_futures[1].get_code());
 
-        let instruments_with_irs = instruments.instruments_with_types(vec!["PlainSwap"]);
+        let instruments_with_irs = instruments.instruments_with_types(vec!["IRS"]);
         assert_eq!(irs.get_code(), instruments_with_irs[0].get_code());
 
         // test instruments_with_maturity_upto

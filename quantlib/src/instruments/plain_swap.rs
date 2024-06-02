@@ -28,6 +28,17 @@ pub enum PlainSwapType {
     FxSpot = 4,
 }
 
+impl PlainSwapType {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            PlainSwapType::IRS => "IRS",
+            PlainSwapType::CRS => "CRS",
+            PlainSwapType::FxSwap => "FxSwap",
+            PlainSwapType::FxForward => "FxForward",
+            PlainSwapType::FxSpot => "FxSpot",
+        }
+    }
+}
 /// By the conbination of the attributes, we can represent
 /// 1) IRS, OIS (initial and last swap amounts are all None)
 /// 2) CRS (initial and last swap amounts are all Some(Real))
@@ -541,7 +552,8 @@ impl InstrumentTrait for PlainSwap {
     }
 
     fn get_type_name(&self) -> &'static str {
-        "PlainSwap"
+        //"PlainSwap"
+        self.specific_type.as_str()
     }
 
     fn get_fixed_leg_currency(&self) -> Result<&Currency> {

@@ -29,12 +29,12 @@ use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaTy
 use quantlib::time::calendar::Calendar;
 use quantlib::time::jointcalendar::JointCalendar;
 use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+use quantlib::utils::tracing_timer::CustomOffsetTime;
 use anyhow::{Result, Context};
 use tracing::{info, Level, span};
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 use tracing_appender::{rolling, non_blocking};
-
 
 fn main() -> Result<()> {
     let start_time = Instant::now();
@@ -43,12 +43,14 @@ fn main() -> Result<()> {
     let (non_blocking_appender, _guard) = non_blocking(file_appender);
 
     // Set up console layer
+    let custom_time = CustomOffsetTime::new(9, 0, 0);
     let console_layer = fmt::layer()
-        .with_writer(std::io::stdout);
+        .with_writer(std::io::stdout)
+        .with_timer(custom_time.clone());
 
-    // Set up file layer with non-blocking appender
     let file_layer = fmt::layer()
-        .with_writer(non_blocking_appender);
+        .with_writer(non_blocking_appender)
+        .with_timer(custom_time);
 
     // Combine console and file layers into a subscriber
     let subscriber = tracing_subscriber::registry()
@@ -468,6 +470,6 @@ fn main() -> Result<()> {
     */
 
     let elapsed = start_time.elapsed();
-    info!("Application finished {:?}", elapsed);
+    info!("engine example finished {:?}", elapsed);
     Ok(())
 }
