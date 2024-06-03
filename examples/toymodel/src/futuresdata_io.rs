@@ -1,4 +1,3 @@
-use quantlib::evaluation_date::EvaluationDate;
 use quantlib::instruments::futures::Futures;
 use quantlib::currency::Currency;
 use time::macros::datetime;

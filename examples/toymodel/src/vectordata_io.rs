@@ -21,7 +21,7 @@ pub fn vectordata_io() -> Result<()> {
 
     let times = None;
     let values = array![0.1, 0.2, 0.3, 0.4, 0.5];
-    let mut data1 = VectorData::new(
+    let data1 = VectorData::new(
         values,
         Some(dates), 
         times, 
@@ -34,7 +34,7 @@ pub fn vectordata_io() -> Result<()> {
     let dates = None;
     let times = Some(array![1.0, 2.0, 3.0, 4.0, 5.0]);
     let values = array![0.1, 0.2, 0.3, 0.4, 0.5];
-    let mut data2 = VectorData::new(
+    let data2 = VectorData::new(
         values,
         dates,
         times, 

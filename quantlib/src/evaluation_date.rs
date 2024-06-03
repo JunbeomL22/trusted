@@ -67,6 +67,15 @@ impl Observable for EvaluationDate {
     }
 }
 
+impl Default for EvaluationDate {
+    fn default() -> EvaluationDate {
+        EvaluationDate {
+            date: OffsetDateTime::now_utc(),
+            observers: vec![],
+        }
+    }
+}
+
 impl EvaluationDate {
     pub fn new(date: OffsetDateTime) -> EvaluationDate {
         EvaluationDate {
