@@ -5,6 +5,7 @@ use std::any::Any;
 
 pub trait Observable: Any {
     fn notify_observers(&mut self);
-    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>);
+    //fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>);
+    //fn add_observer(&mut self, observer: Rc<RefCell<EvalDtObserver>>);
     fn as_any(&self) -> &dyn Any;
 }

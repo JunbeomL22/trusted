@@ -98,14 +98,6 @@ mod tests {
             self.value += 1.0;
             Ok(())
         }
-
-        fn get_type_name(&self) -> &'static str {
-            "MockParameter"
-        }
-
-        fn get_name(&self) -> &String {
-            &self.name
-        }
     }
 
     #[test]

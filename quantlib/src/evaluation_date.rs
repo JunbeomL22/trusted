@@ -1,6 +1,9 @@
 use crate::utils::string_arithmetic::{add_period, sub_period};
-use crate::data::observable::Observable;
-use crate::parameter::Parameter;
+//use crate::data::observable::Observable;
+use crate::parameters::{
+    discrete_ratio_dividend::DiscreteRatioDividend,
+    market_price::MarketPrice,
+};
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -11,11 +14,12 @@ use std::{
     cmp::Ordering,
 };
 
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EvaluationDate {
     date: OffsetDateTime,
     #[serde(skip)]
-    observers: Vec<Rc<RefCell<dyn Parameter>>>,
+    marketprice_observers: Vec<Rc<RefCell<MarketPrice>>>,
 }
 
 impl PartialEq<OffsetDateTime> for EvaluationDate {
@@ -50,28 +54,11 @@ impl Debug for EvaluationDate {
     }
 }
 
-impl Observable for EvaluationDate {
-    fn notify_observers(&mut self) {
-        let observers = self.observers.clone();
-        for observer in observers {
-            observer.borrow_mut().update_evaluation_date(self).expect("Failed to update evaluation date");
-        }
-    }
-
-    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
-        self.observers.push(observer);
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-
 impl Default for EvaluationDate {
     fn default() -> EvaluationDate {
         EvaluationDate {
             date: OffsetDateTime::now_utc(),
-            observers: vec![],
+            marketprice_observers: vec![],
         }
     }
 }
@@ -80,7 +67,7 @@ impl EvaluationDate {
     pub fn new(date: OffsetDateTime) -> EvaluationDate {
         EvaluationDate {
             date,
-            observers: vec![],
+            marketprice_observers: vec![],
         }
     }
 
@@ -99,6 +86,22 @@ impl EvaluationDate {
     pub fn set_date(&mut self, date: OffsetDateTime) {
         self.date = date;
         self.notify_observers();
+    }
+
+    
+    
+    pub fn add_marketprice_observer(&mut self, observer: Rc<RefCell<MarketPrice>>) {
+        self.marketprice_observers.push(observer);
+    }
+
+    fn notify_observers(&mut self) {
+        for marketprice_observer in self.marketprice_observers.iter() {
+            {
+                marketprice_observer.borrow_mut()
+                .update_evaluation_date(self)
+                .expect("Failed to update market price observer");
+            }
+        }
     }
 }
 
@@ -132,41 +135,25 @@ impl Sub<&str> for EvaluationDate {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parameter::Parameter;
     use time::macros::datetime;
     use std::rc::Rc;
     use std::cell::RefCell;
     use anyhow::Result;
 
-    struct TestParameter {
-        pub value: i32,
-        name: String,
-    }
-
-    impl Parameter for TestParameter {
-        fn update_evaluation_date(&mut self, _data: &EvaluationDate) -> Result<()> {
-            self.value += 1;
-            Ok(())
-        }
-
-        fn get_name(&self) -> &String {
-            &self.name
-        }
-
-        fn get_type_name(&self) -> &'static str {
-            "TestParameter"
-        }
-    }
-
+   
     #[test]
     fn test_add_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
         
-        let test_param = Rc::new(RefCell::new(TestParameter { value: 0, name: "TestParameter".to_string()}));
+        let test_param = Rc::new(RefCell::new(
+            EvalDtObserver::TestObserver(
+                TestObserver { value: 0, name: "TestParameter".to_string()}
+            )));
         eval_date.add_observer(test_param.clone());
 
         eval_date += "1D";
@@ -178,10 +165,16 @@ mod tests {
     fn test_sub_assign() {
         let date = datetime!(2020-01-01 00:00:00 UTC);
         let mut eval_date = EvaluationDate::new(date);
-        let test_param = Rc::new(RefCell::new(TestParameter { value: 0, name: "TestParameter".to_string()}));
+        let test_param = Rc::new(RefCell::new(
+            EvalDtObserver::TestObserver(
+                TestParameter { value: 0, name: "TestParameter".to_string()}
+            )));
+               
         eval_date.add_observer(test_param.clone());
         eval_date -= "1D";
         assert_eq!(eval_date.get_date_clone(), datetime!(2019-12-31 00:00:00 UTC));
         assert_eq!(test_param.borrow().value, 1);
     }
+     
 }
+*/

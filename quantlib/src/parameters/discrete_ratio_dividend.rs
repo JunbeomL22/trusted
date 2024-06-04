@@ -1,16 +1,17 @@
 use crate::definitions::{Integer, Real};
-use time::OffsetDateTime;
-use time;
-use crate::data::observable::Observable;
 use crate::data::vector_data::VectorData;
 use crate::evaluation_date::EvaluationDate;
 use crate::math::interpolators::stepwise_interpolatior::{StepwiseInterpolator1D, ConstantInterpolator1D};
 use crate::math::interpolator::Interpolator1D;
-use std::rc::Rc;
-use std::cell::RefCell;
 use crate::parameter::Parameter;
-use ndarray::Array1;
 use crate::util::to_yyyymmdd_int;
+use std::{
+    rc::Rc,
+    cell::RefCell,
+};
+use time::OffsetDateTime;
+use time;
+use ndarray::Array1;
 use anyhow::{anyhow, Result};
 
 #[derive(Clone, Debug)]                         
@@ -23,7 +24,6 @@ enum DividendInterpolator {
 pub struct DiscreteRatioDividend {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
     ex_dividend_dates: Vec<OffsetDateTime>,
-    //time_calculator: NullCalendar,
     date_integers: Array1<Integer>,
     dividend_amounts: Array1<Real>,
     dividend_yields: Array1<Real>,
@@ -238,34 +238,13 @@ impl DiscreteRatioDividend {
         };
         Ok(())
     }
-}
 
-impl Parameter for DiscreteRatioDividend {
-    fn get_type_name(&self) -> &'static str {
-        "DiscreteRatioDividend"
-    }
+    pub fn update_evaluation_date(&mut self, date: &EvaluationDate) -> Result<()> {
+        let eval_dt: OffsetDateTime = date.get_date_clone();
 
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    fn update(&mut self, data: &dyn Observable) -> Result<()> {
-        let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
-
-        self.ex_dividend_dates = data.get_dates_clone().unwrap();
-        let dividend_amount: Array1<Real> = data.get_value_clone();
-        self.dividend_yields = dividend_amount / self.spot;
-
-        self.date_integers = Array1::zeros(self.ex_dividend_dates.len());
-        for (i, date) in self.ex_dividend_dates.iter().enumerate() {
-            self.date_integers[i] = to_yyyymmdd_int(date);
-        };
-        //self.ex_dividend_times = Array1::zeros(self.ex_dividend_dates.len());
-        // drop data of ex-dividend date and dividend amount before the evaluation-date
-        let eval_dt = self.evaluation_date.borrow().get_date_clone(); 
         let mut ex_dividend_dates_for_interpolator = self.ex_dividend_dates.clone();
         let mut div_yields_vec = self.dividend_yields.to_vec();
-        let mut date_integers_for_interpolator_vec = self.date_integers.to_vec();
+        let mut date_integers_for_interpolator_vec = self.date_integers.clone().to_vec();
 
         let mut i = 0;
         let mut checker = 0;
@@ -301,10 +280,12 @@ impl Parameter for DiscreteRatioDividend {
             )?;
             self.deduction_interpolator = DividendInterpolator::Stepwise(deduction_interpolator);
         }
-        
         Ok(())
     }
+}
 
+/* 
+impl Parameter for DiscreteRatioDividend {
     /// this does not change the original data such as
     /// self.evalaution_date, self.ex_dividend_dates, self.dividend_yields
     /// but only change the dividend_deduction interpolator
@@ -352,7 +333,7 @@ impl Parameter for DiscreteRatioDividend {
         Ok(())
     }
 }
-
+*/
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -409,7 +390,7 @@ mod tests {
 
         let dividend = Rc::new(RefCell::new(discrete_ratio_dividend));
         
-        evaluation_date.borrow_mut().add_observer(dividend.clone());
+        //evaluation_date.borrow_mut().add_dividend_observer(dividend.clone());
 
         let test_dates = vec![
             datetime!(2021-01-01 10:00:00 +09:00),

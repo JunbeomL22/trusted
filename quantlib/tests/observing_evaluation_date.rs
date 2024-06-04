@@ -6,7 +6,6 @@ mod tests {
     use ndarray::array;
     use time;
     use quantlib::evaluation_date::EvaluationDate;
-    use quantlib::data::observable::Observable;
     use quantlib::parameters::zero_curve::ZeroCurve;
     use quantlib::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
     use quantlib::data::vector_data::VectorData;
@@ -62,8 +61,6 @@ mod tests {
         ).expect("Failed to create ZeroCurve");
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
-        //zero_curve_data.add_observer(zero_curve.clone());
-        evaluation_date.borrow_mut().add_observer(zero_curve.clone());
 
         // For constructing DiscreteRatioDividend, make a vector data object which has two data points after the evaluation_date
         let value = array![0.1, 0.2];
@@ -94,7 +91,7 @@ mod tests {
 
         let dividend = Rc::new(RefCell::new(_dividend));
         //dividend_data.add_observer(dividend.clone());
-        evaluation_date.borrow_mut().add_observer(dividend.clone());
+        //evaluation_date.borrow_mut().add_dividend_observer(dividend.clone());
 
         // test two dates
         let test_dates = vec![

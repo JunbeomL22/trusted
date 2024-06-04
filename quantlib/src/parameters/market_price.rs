@@ -2,8 +2,8 @@ use crate::currency::Currency;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::evaluation_date::EvaluationDate;
 use crate::parameter::Parameter;
-use time::OffsetDateTime;
 use crate::definitions::Real;
+use time::OffsetDateTime;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -84,6 +84,27 @@ impl MarketPrice {
             Ok(1.0)
         }
     }
+
+    pub fn update_evaluation_date(&mut self, date: &EvaluationDate) -> Result<()> {
+        if let Some(dividend) = &self.dividend {
+            let eval_dt = date.get_date_clone();
+            if self.market_datetime < eval_dt {   
+                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
+                    if (*date > self.market_datetime) && (*date <= eval_dt) {
+                        self.value *= 1.0 - div;
+                    }
+                }
+                self.market_datetime = eval_dt;   
+            } else {
+                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
+                    if (*date > eval_dt) && (*date <= self.market_datetime) {
+                        self.value /= 1.0 - div;
+                    }
+                }
+            }
+        }        
+        Ok(())
+    }
 }
 
 /// implments arithmetic for Real
@@ -112,6 +133,7 @@ impl DivAssign<Real> for MarketPrice {
     }
 }
 
+/*
 impl Parameter for MarketPrice {
     /// the stock price must be deducted by the dividend
     /// the amount is the sum of the dividend amount 
@@ -136,15 +158,8 @@ impl Parameter for MarketPrice {
         }        
         Ok(())
     }
-
-    fn get_type_name(&self) -> &'static str {
-        "MarketPrice"
-    }
-
-    fn get_name(&self) -> &String {
-        &self.name
-    }
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -215,7 +230,7 @@ mod tests {
             )
         ));
 
-        evaluation_date.borrow_mut().add_observer(stock.clone());
+        evaluation_date.borrow_mut().add_marketprice_observer(stock.clone());
 
         let mut test_spot = spot;
         for i in 1..div_yields.len() {

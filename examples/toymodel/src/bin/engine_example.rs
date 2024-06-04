@@ -374,7 +374,7 @@ fn main() -> Result<()> {
     let mut engine = Engine::builder(
         0,
         calculation_configuration.clone(),
-        evaluation_date.clone(),
+        dt.clone(),
         match_parameter.clone(),
     ).with_instruments(inst_vec)?
     .with_parameter_data(

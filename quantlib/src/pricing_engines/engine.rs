@@ -80,7 +80,7 @@ impl Engine {
     pub fn builder(
         engine_id: usize,
         calculation_configuration: CalculationConfiguration,
-        evaluation_date: EvaluationDate,
+        evaluation_date: OffsetDateTime,
         match_parameter: MatchParameter,
     ) -> Engine {
         Engine {
@@ -88,7 +88,7 @@ impl Engine {
             msg_tag: "".to_string(),
             calculation_results: HashMap::new(),
             calculation_configuration: Rc::new(calculation_configuration),
-            evaluation_date: Rc::new(RefCell::new(evaluation_date)),
+            evaluation_date: Rc::new(RefCell::new(EvaluationDate::new(evaluation_date))),
             fxs: HashMap::new(),
             equities: HashMap::new(),
             zero_curves: HashMap::new(),
@@ -455,6 +455,15 @@ impl Engine {
         self.volatilities = volatilities;
         self.quantos = quantos;
         self.past_daily_close_prices = past_daily_close_prices;
+
+        // add marketprice_observers
+        for (_, fx) in self.fxs.iter() {
+            self.evaluation_date.borrow_mut().add_marketprice_observer(fx.clone());
+        }
+        // add marketprice_observers
+        for (_, equity) in self.equities.iter() {
+            self.evaluation_date.borrow_mut().add_marketprice_observer(equity.clone());
+        }
 
         let elapsed = start_time.elapsed();
         info!(
