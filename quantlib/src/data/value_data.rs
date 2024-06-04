@@ -1,11 +1,7 @@
 use crate::definitions::Real;
-use std::ops::{Add, Sub, Mul, Div};
 use time::OffsetDateTime;
-use crate::parameter::Parameter;
-use crate::data::observable::Observable;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::any::Any;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
 use crate::currency::Currency;
@@ -17,8 +13,6 @@ use anyhow::Result;
 pub struct ValueData {
     value: Real,
     market_datetime: Option<OffsetDateTime>,
-    #[serde(skip)]
-    observers: Vec<Rc<RefCell<dyn Parameter>>>,
     currency: Currency,
     name: String,
     code: String,
@@ -31,29 +25,7 @@ impl Debug for ValueData {
             .field("market_datetime", &self.market_datetime)
             .field("name", &self.name)
             .field("code", &self.code)
-            .field("observers", &self.observers.iter().map(|observer| {
-                let observer = observer.borrow();
-                format!("Address: {}, Name: {}, TypeName: {}", observer.get_address(), observer.get_name(), observer.get_type_name())
-            }).collect::<Vec<_>>())
             .finish()
-    }
-}
-
-impl Observable for ValueData {
-    fn notify_observers(&mut self) {
-        let observers = self.observers.clone();
-        for observer in observers {
-            observer.borrow_mut().update(self)
-                .expect("ValueData::notify_observers => failed to update observer")
-        }
-    }
-
-    fn add_observer(&mut self, observer: Rc<RefCell<dyn Parameter>>) {
-        self.observers.push(observer);
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 
@@ -68,19 +40,19 @@ impl ValueData {
         Ok(ValueData {
             value,
             market_datetime,
-            observers: vec![],
             currency,
             name,
             code,
         })
     }
 
+    /*
     fn reset_data(&mut self, value: Real, market_datetime: Option<OffsetDateTime>) {
         self.value = value;
         self.market_datetime = market_datetime;
         self.notify_observers();
     }
-    
+     */
 
     pub fn get_value(&self) -> Real {
         self.value
@@ -96,45 +68,6 @@ impl ValueData {
 
     pub fn get_currency(&self) -> &Currency {
         &self.currency
-    }
-}
-
-impl Add<Real> for ValueData {
-    type Output = Self;
-    fn add(mut self, rhs: Real) -> Self::Output {
-        self.value += rhs;
-        self.notify_observers();
-        self
-    }
-}
-
-impl Sub<Real> for ValueData {
-    type Output = Self;
-
-    fn sub(mut self, rhs: Real) -> Self::Output {
-        self.value -= rhs;
-        self.notify_observers();
-        self
-    }
-}
-
-impl Mul<Real> for ValueData {
-    type Output = Self;
-
-    fn mul(mut self, rhs: Real) -> Self::Output {
-        self.value *= rhs;
-        self.notify_observers();
-        self
-    }
-}
-
-impl Div<Real> for ValueData {
-    type Output = Self;
-
-    fn div(mut self, rhs: Real) -> Self::Output {
-        self.value /= rhs;
-        self.notify_observers();
-        self
     }
 }
 
@@ -176,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add() {
+    fn test_creation() -> Result<()> {
         let mut value_data = ValueData::new(
             1.0, 
             None,//OffsetDateTime::now_utc(),
@@ -184,30 +117,8 @@ mod tests {
             "test".to_string(),
             "test".to_string(),
         ).expect("Failed to create ValueData");
-        let mock_parameter = MockParameter { value: 1.0, name: "test".to_string() };
-        let mock_parameter_rc = Rc::new(RefCell::new(mock_parameter));
 
-        value_data.add_observer(mock_parameter_rc.clone());
-        value_data = value_data + 1.0;
-        assert_eq!(value_data.get_value(), 2.0);
-        assert_eq!(mock_parameter_rc.borrow().get_value(), 2.0);
-    }
-
-    #[test]
-    fn test_reset_data() {
-        let mut value_data = ValueData::new(
-            1.0, 
-            None,//OffsetDateTime::now_utc(),
-            Currency::NIL,
-            "test".to_string(),
-            "test".to_string(),
-        ).expect("Failed to create ValueData");
-        
-        let mock_parameter = Rc::new(RefCell::new(MockParameter { value: 1.0, name: "test".to_string()}));
-        value_data.add_observer(mock_parameter.clone());
-        value_data.reset_data(2.0, Some(OffsetDateTime::now_utc()));
-        assert_eq!(value_data.get_value(), 2.0);
-        assert_eq!(mock_parameter.borrow().get_value(), 2.0);
+        Ok(())
     }
 }
 

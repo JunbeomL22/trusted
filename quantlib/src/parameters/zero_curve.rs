@@ -531,8 +531,6 @@ mod tests {
         ).expect("error in test_zero_curve");
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
-        
-        data.add_observer(zero_curve.clone());
 
         let cal = NullCalendar::default();
         let times: Vec<Time> = dates

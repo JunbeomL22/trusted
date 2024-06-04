@@ -77,7 +77,7 @@ fn main() -> Result<()> {
         String::from("test"),
     ).with_context(|| "Failed to create ZeroCurve.")?;
 
-    _data.add_observer(Rc::new(RefCell::new(zero_curve.clone())));
+    //_data.add_observer(Rc::new(RefCell::new(zero_curve.clone())));
     
 
     // make a timestep from 0 to 10 years by 0.1

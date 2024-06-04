@@ -397,20 +397,18 @@ mod tests {
             "test".to_string(),
         ).expect("Failed to create VectorData");
 
-        let marking_offset = UtcOffset::from_hms(9, 0, 0).unwrap();
         let spot = 1.0;
         let name = "test".to_string();
         let discrete_ratio_dividend = DiscreteRatioDividend::new(
             evaluation_date.clone(),
             &data,
-            //marking_offset,
             spot,
             name.clone(),
             name.clone(),
         ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(discrete_ratio_dividend));
-        data.add_observer(dividend.clone());
+        
         evaluation_date.borrow_mut().add_observer(dividend.clone());
 
         let test_dates = vec![
@@ -455,8 +453,6 @@ mod tests {
             );
         }
 
-        // bump all values by 0.1
-        data += 0.1; // notified to the dividend
         let test_values: Vec<Real> = vec![
             1.0, // evaluation_date is before the first ex-dividend date
             1.0,    
@@ -472,6 +468,7 @@ mod tests {
             0.8 * 0.7 * 0.6 * 0.5,
         ];
 
+        { dividend.borrow_mut().bump_date_interval(None, None, 0.1)?;}
         for (date, val) in test_dates.iter().zip(test_values.iter()) {
             let ratio = dividend.borrow().get_deduction_ratio(&date)?;
             assert!(

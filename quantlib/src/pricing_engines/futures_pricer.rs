@@ -190,7 +190,7 @@ mod tests {
             )
         );
 
-        ksd_data.add_observer(ksd_curve.clone());
+        //ksd_data.add_observer(ksd_curve.clone());
 
         let dummy_curve = Rc::new(RefCell::new(
             ZeroCurve::dummy_curve().expect("failed to make a dummy curve")

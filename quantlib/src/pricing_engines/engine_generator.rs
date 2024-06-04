@@ -10,6 +10,7 @@ use crate::instrument::{
 };
 use crate::pricing_engines::{
     calculation_configuration::CalculationConfiguration,
+    calculation_result::CalculationResult,
     match_parameter::MatchParameter,
     engine::Engine,
 };
@@ -21,11 +22,15 @@ use crate::data::{
 };
 //
 use std::{
-    sync::Arc,
+    sync::{
+        Arc,
+        Mutex,
+    },
     collections::HashMap,
-    thread,
+    //thread,
 };
 use serde::{Deserialize, Serialize};
+use rayon::prelude::*;
 use anyhow::{
     Result,
     anyhow,
@@ -95,8 +100,11 @@ pub struct EngineGenerator {
     instruments: Instruments,
     instrument_group_vec: Vec<Vec<Instrument>>,
     instrument_categories: Vec<InstrumentCategory>,
+    //
     calculation_configuration: CalculationConfiguration,
     match_parameter: MatchParameter,
+    //
+    calculation_results: HashMap<String, CalculationResult>,
     // evaluation date
     evaluation_date: EvaluationDate,
     // data
@@ -109,8 +117,6 @@ pub struct EngineGenerator {
     fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
     quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
     past_daily_value_data: Arc<HashMap<String, DailyValueData>>,
-    // engines
-    engines: Vec<Engine>,
 }
 
 impl Default for EngineGenerator {
@@ -119,8 +125,11 @@ impl Default for EngineGenerator {
             instruments: Instruments::default(),
             instrument_group_vec: vec![],
             instrument_categories: vec![],
+            //
             calculation_configuration: CalculationConfiguration::default(),
             match_parameter: MatchParameter::default(),
+            //
+            calculation_results: HashMap::new(),
             //
             evaluation_date: EvaluationDate::default(),
             //
@@ -133,7 +142,6 @@ impl Default for EngineGenerator {
             fx_constant_volatility_data: Arc::new(HashMap::new()),
             quanto_correlation_data: Arc::new(HashMap::new()),
             past_daily_value_data: Arc::new(HashMap::new()),
-            engines: vec![],
         }   
     }
 }
@@ -165,25 +173,25 @@ impl EngineGenerator {
 
     pub fn with_data(
         &mut self,
-        fx_data: Arc<HashMap<FxCode, ValueData>>,
-        stock_data: Arc<HashMap<String, ValueData>>,
-        curve_data: Arc<HashMap<String, VectorData>>,
-        dividend_data: Arc<HashMap<String, VectorData>>,
-        equity_constant_volatility_data: Arc<HashMap<String, ValueData>>,
-        equity_volatility_surface_data: Arc<HashMap<String, SurfaceData>>,
-        fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
-        quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
-        past_daily_value_data: Arc<HashMap<String, DailyValueData>>,
+        fx_data: HashMap<FxCode, ValueData>,
+        stock_data: HashMap<String, ValueData>,
+        curve_data: HashMap<String, VectorData>,
+        dividend_data: HashMap<String, VectorData>,
+        equity_constant_volatility_data: HashMap<String, ValueData>,
+        equity_volatility_surface_data: HashMap<String, SurfaceData>,
+        fx_constant_volatility_data: HashMap<FxCode, ValueData>,
+        quanto_correlation_data: HashMap<(String, FxCode), ValueData>,
+        past_daily_value_data: HashMap<String, DailyValueData>,
     ) -> Result<&mut Self> {
-        self.fx_data = fx_data;
-        self.stock_data = stock_data;
-        self.curve_data = curve_data;
-        self.dividend_data = dividend_data;
-        self.equity_constant_volatility_data = equity_constant_volatility_data;
-        self.equity_volatility_surface_data = equity_volatility_surface_data;
-        self.fx_constant_volatility_data = fx_constant_volatility_data;
-        self.quanto_correlation_data = quanto_correlation_data;
-        self.past_daily_value_data = past_daily_value_data;
+        self.fx_data = Arc::new(fx_data);
+        self.stock_data = Arc::new(stock_data);
+        self.curve_data = Arc::new(curve_data);
+        self.dividend_data = Arc::new(dividend_data);
+        self.equity_constant_volatility_data = Arc::new(equity_constant_volatility_data);
+        self.equity_volatility_surface_data = Arc::new(equity_volatility_surface_data);
+        self.fx_constant_volatility_data = Arc::new(fx_constant_volatility_data);
+        self.quanto_correlation_data = Arc::new(quanto_correlation_data);
+        self.past_daily_value_data = Arc::new(past_daily_value_data);
         Ok(self)
     }
 
@@ -213,7 +221,7 @@ impl EngineGenerator {
         for (inst_id, is_distributed) in distribution_checker.iter().enumerate() {
             if !is_distributed {
                 let msg = format!(
-                    "{} ({})"
+                    "{} ({})",
                     self.instruments[inst_id].get_name(),
                     self.instruments[inst_id].get_code(),
                 );
@@ -234,29 +242,65 @@ impl EngineGenerator {
         Ok(())
     }
 
-    pub fn distribute_engines(&mut self) -> Result<()> {
-        let mut engines: Vec<Engine> = vec![];
-        for (id, instrument_group) in self.instrument_group_vec.iter().enumerate() {
-            let engine = Engine::builder(
-                id,
-                self.calculation_configuration.clone(),
-                self.evaluation_date.clone(),
-                self.match_parameter.clone(),
-            ).with_instruments(instrument_group.clone())?
-            .with_parameter_data(
-                self.fx_data.clone(),
-                self.stock_data.clone(),
-                self.curve_data.clone(),
-                self.dividend_data.clone(),
-                self.equity_constant_volatility_data.clone(),
-                self.equity_volatility_surface_data.clone(),
-                self.fx_constant_volatility_data.clone(),
-                self.quanto_correlation_data.clone(),
-                self.past_daily_value_data.clone(),
-            )?;
-            engines.push(engine);
+    /// spawn threads to create engine and calculate
+    pub fn calculate(&mut self) -> Result<()> {
+        let mut shared_results = Arc::new(Mutex::new(HashMap::<String, CalculationResult>::new()));
+        /*
+        let calc_res: Result<()> = self.instrument_group_vec.par_iter().enumerate().map(
+            |(group_id, instrument_group)| {
+                let mut engine = Engine::builder(
+                    group_id,
+                    self.calculation_configuration.clone(),
+                    self.evaluation_date.clone(),
+                    self.match_parameter.clone(),
+                );
+        
+                let mut engine = match engine.with_instruments(instrument_group.clone()) {
+                    Ok(engine) => engine,
+                    Err(e) => return Err(e),
+                };
+        
+                let mut engine = match engine.with_parameter_data(
+                    self.fx_data.clone(),
+                    self.stock_data.clone(),
+                    self.curve_data.clone(),
+                    self.dividend_data.clone(),
+                    self.equity_constant_volatility_data.clone(),
+                    self.equity_volatility_surface_data.clone(),
+                    self.fx_constant_volatility_data.clone(),
+                    self.quanto_correlation_data.clone(),
+                    self.past_daily_value_data.clone(),
+                ) {
+                    Ok(engine) => engine,
+                    Err(e) => return Err(e),
+                };
+        
+                if let Err(e) = engine.initialize_pricers() {
+                    return Err(e.into());
+                }
+        
+                if let Err(e) = engine.calculate() {
+                    return Err(e.into());
+                }
+        
+                let result = engine.get_calculation_result();
+                let mut mut_res = shared_results.lock().unwrap();
+        
+                for (key, value) in result.iter() {
+                    mut_res.insert(key.clone(), value.borrow().clone());
+                }
+        
+                Ok(())
+            }
+        ).collect();
+
+        self.calculation_results = shared_results.lock().unwrap().clone();
+
+        match calc_res {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
         }
-        self.engines = engines;
+        */
         Ok(())
     }
 }

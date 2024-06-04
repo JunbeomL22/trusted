@@ -325,15 +325,7 @@ fn main() -> Result<()> {
     let inst5 = Instrument::VanillaOption(option1);
 
     let inst_vec = vec![inst1, inst2, inst3, inst4, inst5];
-    /*
-    let inst_vec = vec![
-        Rc::new(inst1), 
-        Rc::new(inst2), 
-        Rc::new(inst3),
-        Rc::new(inst4),
-        Rc::new(inst5),
-        ];
-     */
+    
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
@@ -399,12 +391,12 @@ fn main() -> Result<()> {
     engine.initialize_pricers().context("failed to initialize pricers")?;
     engine.calculate().context("Failed to calculate")?;
 
-    /* 
+ 
     let results = engine.get_calculation_result();
     for (key, value) in results.iter() {
         println!("{}: {:?}\n\n", key, value.borrow());
     }
-
+    /* 
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     println!("result1 {:?}\n", result1.borrow());
 
@@ -416,11 +408,10 @@ fn main() -> Result<()> {
 
     let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
     println!("result4 {:?}\n", result4.borrow());
-    */
 
     let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
     println!("result5 {:?}\n", result5.borrow());
-    
+    */
     /*
     println!("\n165XXX1");
     println!("result1 value: {:?}", result1.borrow().get_value());

@@ -1,0 +1,105 @@
+[2m2024-06-04T16:54:14.8447493+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+(engine-id: 0) Engine::with_parameter_data elapsed time: 203.9431ms
+
+[2m2024-06-04T16:54:14.8454428+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8458299+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8461769+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.847295+09:00[0m [33m WARN[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+quantlib\src\pricing_engines\engine.rs:1799
+<ENGINE>
+engine-id: 0
+instrument-types: Futures / Bond / VanillaPut
+currencies: KRW
+underlying-codes: KOSPI2
+
+(Engine::calculate -> theta calculation)
+There are instruments whose maturity is within the evaluation_date + theta_day (= 2024-09-29 16:30:00.0 +09:00:00) 
+
+The instruments are as follows:
+KOSPI2 Fut Mar21: 2024-06-14 0:00:00.0 +09:00:00
+KOSPI2 Call Sep21: 2024-09-13 0:00:00.0 +09:00:00
+
+For the theta calculation for the above instruments, 
+the evaluation date is bumped to 2024-06-14 0:00:00.0 +09:00:00 which is the shortest maturity of the above instruments. 
+Note that the theta calculation period may be too small to get accurate theta.
+
+[2m2024-06-04T16:54:14.8478646+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8483747+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8488963+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8492642+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T16:54:14.8632817+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.02s)
+[2m2024-06-04T16:54:14.8858101+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.04s)
+[2m2024-06-04T16:54:14.9014513+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.06s)
+[2m2024-06-04T16:54:14.9213649+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.08s)
+[2m2024-06-04T16:54:14.9390417+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 332.4649ms
+[2m2024-06-04T17:06:57.1144418+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+(engine-id: 0) Engine::with_parameter_data elapsed time: 242.85ms
+
+[2m2024-06-04T17:06:57.1150499+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1153874+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1157041+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1164783+09:00[0m [33m WARN[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+quantlib\src\pricing_engines\engine.rs:1799
+<ENGINE>
+engine-id: 0
+instrument-types: Futures / Bond / VanillaPut
+currencies: KRW
+underlying-codes: KOSPI2
+
+(Engine::calculate -> theta calculation)
+There are instruments whose maturity is within the evaluation_date + theta_day (= 2024-09-29 16:30:00.0 +09:00:00) 
+
+The instruments are as follows:
+KOSPI2 Fut Mar21: 2024-06-14 0:00:00.0 +09:00:00
+KOSPI2 Call Sep21: 2024-09-13 0:00:00.0 +09:00:00
+
+For the theta calculation for the above instruments, 
+the evaluation date is bumped to 2024-06-14 0:00:00.0 +09:00:00 which is the shortest maturity of the above instruments. 
+Note that the theta calculation period may be too small to get accurate theta.
+
+[2m2024-06-04T17:06:57.1168881+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1174504+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.118069+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1184258+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:06:57.1426962+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-04T17:06:57.1822535+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 0.07s)
+[2m2024-06-04T17:06:57.2048621+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-04T17:06:57.2280711+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.11s)
+[2m2024-06-04T17:06:57.2427791+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 408.4262ms
+[2m2024-06-04T17:08:11.7090838+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m[1mEngine::with_parameter_data
+[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+(engine-id: 0) Engine::with_parameter_data elapsed time: 229.8727ms
+
+[2m2024-06-04T17:08:11.7097992+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7101433+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.710492+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7113314+09:00[0m [33m WARN[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+quantlib\src\pricing_engines\engine.rs:1799
+<ENGINE>
+engine-id: 0
+instrument-types: Futures / Bond / VanillaPut
+currencies: KRW
+underlying-codes: KOSPI2
+
+(Engine::calculate -> theta calculation)
+There are instruments whose maturity is within the evaluation_date + theta_day (= 2024-09-29 16:30:00.0 +09:00:00) 
+
+The instruments are as follows:
+KOSPI2 Fut Mar21: 2024-06-14 0:00:00.0 +09:00:00
+KOSPI2 Call Sep21: 2024-09-13 0:00:00.0 +09:00:00
+
+For the theta calculation for the above instruments, 
+the evaluation date is bumped to 2024-06-14 0:00:00.0 +09:00:00 which is the shortest maturity of the above instruments. 
+Note that the theta calculation period may be too small to get accurate theta.
+
+[2m2024-06-04T17:08:11.7118287+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7125097+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7131758+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7135379+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-04T17:08:11.7300567+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-04T17:08:11.7649445+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.06s)
+[2m2024-06-04T17:08:11.7803062+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-04T17:08:11.8049395+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.10s)
+[2m2024-06-04T17:08:11.8512231+09:00[0m [32m INFO[0m [1mmain (toymodel)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 419.8486ms

@@ -53,8 +53,8 @@ use time::{OffsetDateTime, Duration};
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
 pub struct Engine {
-    engine_id: u64,
-    err_tag: String,
+    engine_id: usize,
+    msg_tag: String,
     //
     calculation_results: HashMap<String, RefCell<CalculationResult>>,
     calculation_configuration: Rc<CalculationConfiguration>, // this should be cloned
@@ -78,14 +78,14 @@ pub struct Engine {
 
 impl Engine {
     pub fn builder(
-        engine_id: u64,
+        engine_id: usize,
         calculation_configuration: CalculationConfiguration,
         evaluation_date: EvaluationDate,
         match_parameter: MatchParameter,
     ) -> Engine {
         Engine {
             engine_id,
-            err_tag: "".to_string(),
+            msg_tag: "".to_string(),
             calculation_results: HashMap::new(),
             calculation_configuration: Rc::new(calculation_configuration),
             evaluation_date: Rc::new(RefCell::new(evaluation_date)),
@@ -478,8 +478,8 @@ impl Engine {
         let all_types = self.instruments.get_all_type_names();
         let curr_str: Vec<&str> = self.instruments.get_all_currencies()?.iter().map(|c| c.as_str()).collect();
         let all_und_codes: Vec<&str> = self.instruments.get_all_underlying_codes().iter().map(|c| c.as_str()).collect();
-        self.err_tag = format!(
-            "<TAG>\n\
+        self.msg_tag = format!(
+            "<ENGINE>\n\
             engine-id: {}\n\
             instrument-types: {}\n\
             currencies: {}\n\
@@ -550,7 +550,7 @@ impl Engine {
                 Note that these products may produce numerical errors.
                 <LIST>\n{}\n{}\n",
                 display,
-                self.err_tag
+                self.msg_tag
             );
         }
 
@@ -603,7 +603,7 @@ impl Engine {
                     file!(), line!(),
                     inst.get_code(),
                     inst.get_type_name(),
-                    self.err_tag,
+                    self.msg_tag,
                 ))?;
             self.pricers.insert(inst.get_code().clone(), pricer);
         }
@@ -624,14 +624,14 @@ impl Engine {
                 .with_context(|| anyhow!(
                     "({}:{}) <Egnine::get_npvs> failed to get pricer for {}\n{}", 
                     file!(), line!(),
-                    inst_code, self.err_tag))?;
+                    inst_code, self.msg_tag))?;
 
             let npv = pricer
                 .npv(inst)
                 .with_context(|| anyhow!(
                     "({}:{}) <Egnine::get_npvs> failed to get npv for {}\n{}", 
                     file!(), line!(),
-                    inst_code, self.err_tag
+                    inst_code, self.msg_tag
                 ))?;
     
             npvs.insert(inst_code.clone(), npv);
@@ -648,7 +648,7 @@ impl Engine {
                     "({}:{}) <Engine::get_npv_results> failed to get pricer for {}\n{}",
                     file!(), line!(), 
                     inst_code,
-                    self.err_tag,
+                    self.msg_tag,
                 ))?;
 
             let npv = pricer.npv_result(inst)?;
@@ -663,7 +663,7 @@ impl Engine {
         for (code, result) in self.calculation_results.iter() {
             result.borrow_mut().set_npv(
                 npvs.get(code)
-                .ok_or_else(|| anyhow!("npv is not set for {}\n{}", code, self.err_tag,))?.clone()
+                .ok_or_else(|| anyhow!("npv is not set for {}\n{}", code, self.msg_tag,))?.clone()
             )
         }
         Ok(())
@@ -673,7 +673,7 @@ impl Engine {
         for (code, result) in self.calculation_results.iter() {
             let npv_res = result.borrow().get_npv_result()
                 .ok_or_else(|| anyhow!(
-                    "npv_result is not set for {}\n{}", code, self.err_tag,
+                    "npv_result is not set for {}\n{}", code, self.msg_tag,
                 ))?.clone();
                 
             let cashflow = npv_res.get_expected_coupon_amount()
@@ -912,7 +912,7 @@ impl Engine {
                     .with_context(|| anyhow!(
                         "({}:{}) no zero curve: {}\n{}", 
                         file!(), line!(),
-                        curve_name, self.err_tag,))?)
+                        curve_name, self.msg_tag,))?)
                         .as_ref()
                         .borrow_mut()
                         .bump_time_interval(None, None, bump_val)?;
@@ -949,7 +949,7 @@ impl Engine {
                     .with_context(|| anyhow!(
                         "({}:{}) no zero curve: {}\n{}", 
                         file!(), line!(),
-                        curve_name, self.err_tag,))?)
+                        curve_name, self.msg_tag,))?)
                     .as_ref()
                     .borrow_mut()
                     .bump_time_interval(None, None, -bump_val)?;
@@ -983,7 +983,7 @@ impl Engine {
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
                         file!(), line!(),
-                        vol_code, self.err_tag
+                        vol_code, self.msg_tag
                     ))?)
                     .as_ref()
                     .borrow_mut()
@@ -1030,7 +1030,7 @@ impl Engine {
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
                         file!(), line!(),
-                        vol_code, self.err_tag
+                        vol_code, self.msg_tag
                     ))?).as_ref().borrow_mut()
                     .bump_volatility(
                         None, 
@@ -1122,7 +1122,7 @@ impl Engine {
                         .get(und_code)
                         .ok_or_else(|| anyhow!(
                             "({}:{}) volatility {} is not set\ntag:\n{}", 
-                            file!(), line!(), und_code, self.err_tag
+                            file!(), line!(), und_code, self.msg_tag
                         ))?).as_ref()
                         .borrow_mut()
                         .bump_volatility(
@@ -1171,7 +1171,7 @@ impl Engine {
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
                         file!(), line!(),
-                        und_code, self.err_tag
+                        und_code, self.msg_tag
                     ))?).as_ref()
                     .borrow_mut()
                     .bump_volatility(
@@ -1270,7 +1270,7 @@ impl Engine {
                             .get(und_code)
                             .ok_or_else(|| anyhow!(
                                 "({}:{}) volatility {} is not set\ntag:\n{}", 
-                                file!(), line!(), und_code, self.err_tag
+                                file!(), line!(), und_code, self.msg_tag
                             ))?).as_ref()
                             .borrow_mut()
                             .bump_volatility(
@@ -1319,7 +1319,7 @@ impl Engine {
                     .ok_or_else(|| anyhow!(
                         "({}:{}) volatility {} is not set\ntag:\n{}", 
                         file!(), line!(),
-                        und_code, self.err_tag
+                        und_code, self.msg_tag
                     ))?).as_ref()
                     .borrow_mut()
                     .bump_volatility(
@@ -1550,7 +1550,7 @@ impl Engine {
                         .with_context(|| anyhow!(
                             "({}:{}) no zero curve: {}\n{}", 
                             file!(), line!(),
-                            curve_code, self.err_tag,))?)
+                            curve_code, self.msg_tag,))?)
                             .as_ref()
                             .borrow_mut()
                             .bump_time_interval(bump_start, bump_end, bump_val)?;
@@ -1577,7 +1577,7 @@ impl Engine {
                         .with_context(|| anyhow!(
                             "({}:{}) no zero curve: {}\n{}", 
                             file!(), line!(),
-                            curve_code, self.err_tag,))?)
+                            curve_code, self.msg_tag,))?)
                             .as_ref()
                             .borrow_mut()
                             .bump_time_interval(bump_start, bump_end, -bump_val)?;
@@ -1796,7 +1796,7 @@ impl Engine {
                     For the theta calculation for the above instruments, \n\
                     the evaluation date is bumped to {:?} which is the shortest maturity of the above instruments. \n\
                     Note that the theta calculation period may be too small to get accurate theta.\n", 
-                    file!(), line!(), self.err_tag, &bumped_day, 
+                    file!(), line!(), self.msg_tag, &bumped_day, 
                     name_mat_pair_list,
                     &shortest_maturity,
                 );

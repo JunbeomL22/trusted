@@ -62,7 +62,7 @@ mod tests {
         ).expect("Failed to create ZeroCurve");
 
         let zero_curve = Rc::new(RefCell::new(_zero_curve));
-        zero_curve_data.add_observer(zero_curve.clone());
+        //zero_curve_data.add_observer(zero_curve.clone());
         evaluation_date.borrow_mut().add_observer(zero_curve.clone());
 
         // For constructing DiscreteRatioDividend, make a vector data object which has two data points after the evaluation_date
@@ -93,7 +93,7 @@ mod tests {
         ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(_dividend));
-        dividend_data.add_observer(dividend.clone());
+        //dividend_data.add_observer(dividend.clone());
         evaluation_date.borrow_mut().add_observer(dividend.clone());
 
         // test two dates
