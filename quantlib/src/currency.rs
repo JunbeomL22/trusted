@@ -59,6 +59,13 @@ impl std::fmt::Display for Currency {
         write!(f, "{}", self.as_str())
     }
 }
+
+impl Default for Currency {
+    fn default() -> Currency {
+        Currency::NIL
+    }
+}
+
 //implment from<&str> for Currency
 impl From<&str> for Currency {
     fn from(s: &str) -> Self {

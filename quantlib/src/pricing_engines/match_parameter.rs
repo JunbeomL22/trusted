@@ -228,7 +228,8 @@ impl MatchParameter {
             Instrument::BondFutures(_) |
             Instrument::KTBF(_) |
             Instrument::FxFutures(_) |
-            Instrument::Stock(_) => {
+            Instrument::Stock(_) |
+            Instrument::Cash(_) => {
                 Ok(&self.dummy_string)
             },
         }

@@ -90,8 +90,7 @@ mod tests {
         ).expect("Failed to create DiscreteRatioDividend");
 
         let dividend = Rc::new(RefCell::new(_dividend));
-        //dividend_data.add_observer(dividend.clone());
-        //evaluation_date.borrow_mut().add_dividend_observer(dividend.clone());
+        evaluation_date.borrow_mut().add_dividend_observer(dividend.clone());
 
         // test two dates
         let test_dates = vec![

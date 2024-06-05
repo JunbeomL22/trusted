@@ -34,8 +34,11 @@ use rayon::prelude::*;
 use anyhow::{
     Result,
     anyhow,
+    bail,
     Context,
 };
+use time::OffsetDateTime;
+use tracing::info;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InstrumentCategory {
@@ -87,7 +90,8 @@ impl InstrumentCategory {
         }
         // check underlying codes are the same (not inclusion)
         if let Some(underlying_codes) = &self.underlying_codes {
-            if underlying_codes.iter().collect::<Vec<&String>>() != underlying_codes_inp {
+            if underlying_codes_inp.len() > 0 &&
+            underlying_codes.iter().collect::<Vec<&String>>() != underlying_codes_inp {
                 res = false;
             }
         }
@@ -147,16 +151,18 @@ impl Default for EngineGenerator {
 }
 
 impl EngineGenerator {
-    pub fn initialize() -> EngineGenerator {
+    pub fn builder() -> EngineGenerator {
         EngineGenerator::default()
     }
 
     pub fn with_configuration(
         &mut self,
         calculation_configuration: CalculationConfiguration,
+        evalutation_datetime: OffsetDateTime,
         match_parameter: MatchParameter,
     ) -> Result<&mut Self> {
         self.calculation_configuration = calculation_configuration;
+        self.evaluation_date = EvaluationDate::new(evalutation_datetime);
         self.match_parameter = match_parameter;
         Ok(self)
     }
@@ -202,28 +208,29 @@ impl EngineGenerator {
         for instrument_category in &self.instrument_categories {
             let mut instrument_group: Vec<Instrument> = vec![];
             for (inst_id, instrument) in self.instruments.iter().enumerate() {
-                if instrument_category.contains(instrument)? {
+                if !distribution_checker[inst_id] && instrument_category.contains(instrument)? {
                     instrument_group.push(instrument.as_ref().clone());
-                    if distribution_checker[inst_id] {
-                        return Err(anyhow!(
-                            "The instrument {} ({})is already distributed",
-                            instrument.get_name(),
-                            instrument.get_code(),
-                        ));
-                    }
                     distribution_checker[inst_id] = true;
                 }
             }
-            instrument_group_vec.push(instrument_group);
+            if !instrument_group.is_empty() {
+                instrument_group_vec.push(instrument_group);
+            }
         }
         
         let mut inst_name_code: Vec<String> = vec![];
         for (inst_id, is_distributed) in distribution_checker.iter().enumerate() {
             if !is_distributed {
                 let msg = format!(
-                    "{} ({})",
+                    "{} ({})\n\
+                    type: {}\n\
+                    currency: {}\n\
+                    underlying_codes: {:?}\n",
                     self.instruments[inst_id].get_name(),
                     self.instruments[inst_id].get_code(),
+                    self.instruments[inst_id].get_type_name(),
+                    self.instruments[inst_id].get_currency(),
+                    self.instruments[inst_id].get_underlying_codes(),
                 );
 
                 inst_name_code.push(msg);
@@ -232,7 +239,7 @@ impl EngineGenerator {
 
         if !inst_name_code.is_empty() {
             return Err(anyhow!(
-                "The following instruments are not distributed: {}",
+                "The following instruments are not distributed:\n{}",
                 inst_name_code.join("\n"),
             ));
         }
@@ -245,13 +252,13 @@ impl EngineGenerator {
     /// spawn threads to create engine and calculate
     pub fn calculate(&mut self) -> Result<()> {
         let mut shared_results = Arc::new(Mutex::new(HashMap::<String, CalculationResult>::new()));
-        /*
+        let dt = self.evaluation_date.get_date_clone();
         let calc_res: Result<()> = self.instrument_group_vec.par_iter().enumerate().map(
             |(group_id, instrument_group)| {
                 let mut engine = Engine::builder(
                     group_id,
                     self.calculation_configuration.clone(),
-                    self.evaluation_date.clone(),
+                    dt.clone(),
                     self.match_parameter.clone(),
                 );
         
@@ -270,11 +277,11 @@ impl EngineGenerator {
                     self.fx_constant_volatility_data.clone(),
                     self.quanto_correlation_data.clone(),
                     self.past_daily_value_data.clone(),
-                ) {
+                ){
                     Ok(engine) => engine,
                     Err(e) => return Err(e),
                 };
-        
+                 
                 if let Err(e) = engine.initialize_pricers() {
                     return Err(e.into());
                 }
@@ -300,7 +307,9 @@ impl EngineGenerator {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }
-        */
-        Ok(())
+    }
+
+    pub fn get_calculation_results(&self) -> &HashMap<String, CalculationResult> {
+        &self.calculation_results
     }
 }

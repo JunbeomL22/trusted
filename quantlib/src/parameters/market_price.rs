@@ -1,12 +1,12 @@
 use crate::currency::Currency;
 use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
 use crate::evaluation_date::EvaluationDate;
-use crate::parameter::Parameter;
 use crate::definitions::Real;
 use time::OffsetDateTime;
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use std::rc::Rc;
 use std::cell::RefCell;
+use tracing::debug;
 use anyhow::Result;
 
 /// an observer of evaluation_date 
@@ -92,6 +92,7 @@ impl MarketPrice {
                 for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > self.market_datetime) && (*date <= eval_dt) {
                         self.value *= 1.0 - div;
+                        debug!("\n{} ({}) is DEDUCTED from dividens by {} on {}\n", self.name, self.code, div, &date);
                     }
                 }
                 self.market_datetime = eval_dt;   
@@ -99,7 +100,9 @@ impl MarketPrice {
                 for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > eval_dt) && (*date <= self.market_datetime) {
                         self.value /= 1.0 - div;
+                        debug!("\n{} ({}) div deduction is ROLLED back by {} on {}\n", self.name, self.code, div, &date);
                     }
+                    
                 }
             }
         }        
@@ -133,48 +136,19 @@ impl DivAssign<Real> for MarketPrice {
     }
 }
 
-/*
-impl Parameter for MarketPrice {
-    /// the stock price must be deducted by the dividend
-    /// the amount is the sum of the dividend amount 
-    /// between the market_datetime and the EvaluationDate
-    fn update_evaluation_date(&mut self, data: &EvaluationDate) -> Result<()> {
-        if let Some(dividend) = &self.dividend {
-            let eval_dt = data.get_date_clone();
-            if self.market_datetime < eval_dt {   
-                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
-                    if (*date > self.market_datetime) && (*date <= eval_dt) {
-                        self.value *= 1.0 - div;
-                    }
-                }
-                self.market_datetime = eval_dt;   
-            } else {
-                for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
-                    if (*date > eval_dt) && (*date <= self.market_datetime) {
-                        self.value /= 1.0 - div;
-                    }
-                }
-            }
-        }        
-        Ok(())
-    }
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;
+    use crate::definitions::{DEFAULT_CLOSING_TIME, SEOUL_OFFSET};
+    use crate::data::vector_data::VectorData;
+    use crate::evaluation_date::EvaluationDate;
+    use crate::currency::Currency;
     use time::OffsetDateTime;
     use time;
-    use crate::evaluation_date::EvaluationDate;
-    use crate::definitions::{DEFAULT_CLOSING_TIME, SEOUL_OFFSET};
     use std::rc::Rc;
     use std::cell::RefCell;
-    use crate::data::vector_data::VectorData;
     use ndarray::Array1;
-    use crate::data::observable::Observable;
-    use crate::currency::Currency;
 
     #[test]
     fn test_equity_update_evaluation_date() {

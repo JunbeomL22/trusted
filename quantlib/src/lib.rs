@@ -6,7 +6,7 @@ pub mod math;
 pub mod utils;
 pub mod util;
 pub mod parameters;
-pub mod parameter;
+//pub mod parameter;
 pub mod data;
 pub mod evaluation_date;
 pub mod pricing_engines;

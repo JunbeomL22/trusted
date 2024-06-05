@@ -73,32 +73,13 @@ impl ValueData {
 
 #[cfg(test)]
 mod tests {
-    use crate::data::observable::Observable;
     use crate::data::value_data::ValueData;
-    use crate::parameter::Parameter;
     use time::OffsetDateTime;
     use crate::definitions::Real;
     use std::rc::Rc;
     use std::cell::RefCell; 
     use crate::currency::Currency;
     use anyhow::Result;
-
-    struct MockParameter {
-        value: Real,
-        name: String,
-    }
-
-    impl MockParameter {
-        fn get_value(&self) -> Real {
-            self.value
-        }
-    }
-    impl Parameter for MockParameter {
-        fn update(&mut self, _data: &dyn Observable) -> Result<()> {
-            self.value += 1.0;
-            Ok(())
-        }
-    }
 
     #[test]
     fn test_creation() -> Result<()> {

@@ -1,5 +1,4 @@
 use env_logger;
-use quantlib::data::observable::Observable;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::parameters::zero_curve::ZeroCurve;
 use quantlib::data::vector_data::VectorData;

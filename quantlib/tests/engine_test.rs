@@ -153,7 +153,7 @@ mod tests {
         let mut engine = Engine::builder(
             0,
             calculation_configuration.clone(),
-            evaluation_date.clone(),
+            evaluation_date.get_date_clone(),
             match_parameter.clone(),
         ).with_instruments(inst_vec)?
         .with_parameter_data(

@@ -80,7 +80,7 @@ impl Engine {
     pub fn builder(
         engine_id: usize,
         calculation_configuration: CalculationConfiguration,
-        evaluation_date: OffsetDateTime,
+        evaluation_offsetdatetime: OffsetDateTime,
         match_parameter: MatchParameter,
     ) -> Engine {
         Engine {
@@ -88,7 +88,7 @@ impl Engine {
             msg_tag: "".to_string(),
             calculation_results: HashMap::new(),
             calculation_configuration: Rc::new(calculation_configuration),
-            evaluation_date: Rc::new(RefCell::new(EvaluationDate::new(evaluation_date))),
+            evaluation_date: Rc::new(RefCell::new(EvaluationDate::new(evaluation_offsetdatetime))),
             fxs: HashMap::new(),
             equities: HashMap::new(),
             zero_curves: HashMap::new(),
@@ -114,12 +114,7 @@ impl Engine {
         fx_constant_volatility_data: Arc<HashMap<FxCode, ValueData>>,
         quanto_correlation_data: Arc<HashMap<(String, FxCode), ValueData>>,
         past_daily_value_data: Arc<HashMap<String, DailyValueData>>,
-    ) -> Result<Engine> {
-        //
-        let start_time = Instant::now();
-        let engine_span = span!(Level::INFO, "Engine::with_parameter_data\n");
-        let _enter = engine_span.enter();
-        
+    ) -> Result<Engine> {        
         let fx_codes = self.instruments.get_all_fxcodes_for_pricing();
         let mut fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>> = HashMap::new();
         for fx_code in fx_codes {
@@ -127,8 +122,9 @@ impl Engine {
                 let data = fx_data.get(&fx_code).unwrap();
                 let rc = Rc::new(RefCell::new(MarketPrice::new(
                     data.get_value(),
-                    data.get_market_datetime().unwrap_or(
-                        self.evaluation_date.borrow().get_date_clone()),
+                    //data.get_market_datetime().unwrap_or(
+                        //self.evaluation_date.borrow().get_date_clone()),
+                    self.evaluation_date.borrow().get_date_clone(),
                     None,
                     fx_code.get_currency2().clone(),
                     fx_code.to_string(),
@@ -139,8 +135,9 @@ impl Engine {
                 let data = fx_data.get(&fx_code.reciprocal()).unwrap();
                 let rc = Rc::new(RefCell::new(MarketPrice::new(
                     1.0 / data.get_value(),
-                    data.get_market_datetime().unwrap_or(
-                        self.evaluation_date.borrow().get_date_clone()),
+                    //data.get_market_datetime().unwrap_or(
+                        //self.evaluation_date.borrow().get_date_clone()),
+                    self.evaluation_date.borrow().get_date_clone(),
                     None,
                     fx_code.get_currency2().clone(),
                     fx_code.to_string(),
@@ -155,8 +152,9 @@ impl Engine {
                 let rc = Rc::new(RefCell::new(
                     MarketPrice::new(
                         data1.get_value() / data2.get_value(),
-                        data1.get_market_datetime().unwrap_or(
-                            self.evaluation_date.borrow().get_date_clone()),
+                        //data1.get_market_datetime().unwrap_or(
+                            //self.evaluation_date.borrow().get_date_clone()),
+                        self.evaluation_date.borrow().get_date_clone(),
                         None,
                         fx_code.get_currency2().clone(),
                         fx_code.to_string(),
@@ -262,12 +260,13 @@ impl Engine {
                 let rc = Rc::new(RefCell::new(
                     MarketPrice::new(
                         data.get_value(),
-                        data.get_market_datetime().unwrap_or(
-                            self.evaluation_date.borrow().get_date_clone()),
-                            div,
-                            data.get_currency().clone(),
-                            data.get_name().clone(),
-                            underlying_code.clone(),
+                        self.evaluation_date.borrow().get_date_clone(),
+                        //data.get_market_datetime().unwrap_or(
+                        //self.evaluation_date.borrow().get_date_clone()),
+                        div,
+                        data.get_currency().clone(),
+                        data.get_name().clone(),
+                        underlying_code.clone(),
                     )));
                 equities.insert(underlying_code.clone(), rc);
             } else {
@@ -465,10 +464,13 @@ impl Engine {
             self.evaluation_date.borrow_mut().add_marketprice_observer(equity.clone());
         }
 
-        let elapsed = start_time.elapsed();
-        info!(
-            "\n(engine-id: {}) Engine::with_parameter_data elapsed time: {:?}\n", 
-            self.engine_id, elapsed,);
+        for (_, dividend) in self.dividends.iter() {
+            if let Some(div) = dividend {
+                self.evaluation_date.borrow_mut().add_dividend_observer(div.clone());
+            }
+        }
+
+        info!("* (engine-id: {}) set all parameters", self.engine_id);
 
         Ok(self)
     }
@@ -1426,7 +1428,6 @@ impl Engine {
     ) -> Result<()> {
         // 
         self.instruments_in_action = given_instruments;
-        
         let time_calculator = NullCalendar::default();
         let original_evaluation_date = self.evaluation_date.borrow().get_date_clone();
         let time_diff = time_calculator.get_time_difference(&original_evaluation_date, &bumped_date);
@@ -1450,7 +1451,8 @@ impl Engine {
         for inst in self.instruments_in_action.iter() {
             let inst_code = inst.get_code();
             let inst_type = inst.get_type_name();
-            if !continue_type.contains(&inst_type) {
+            if continue_type.contains(&inst_type) {
+                dbg!(inst_code, inst_type);
                 continue;
             };
 
@@ -1486,8 +1488,8 @@ impl Engine {
                 for (date, cash) in cashflows.iter() {
                     if (original_evaluation_date.date() < date.date()) && (date.date() <= bumped_date.date()) {
                         cash_sum += cash;
-                        println!(
-                            "# {} ({}) has a cashflow: {} at {}\n", 
+                        info!(
+                            "\n### {} ({}) has a cashflow: {} at {}\n", 
                             inst_code, 
                             inst_type,
                             cash, 
@@ -1497,8 +1499,7 @@ impl Engine {
             }
             
             let theta = (npv_theta - npv + cash_sum) * unitamt / time_diff / 365.0 * THETA_PNL_UNIT;
-                
-            result.borrow_mut().set_theta(theta);
+            { result.borrow_mut().set_theta(theta); }
         }
         // put back
         { (*self.evaluation_date).borrow_mut().set_date(original_evaluation_date); }
@@ -1720,6 +1721,10 @@ impl Engine {
     }
 
     pub fn calculate(&mut self) -> Result<()>{
+        // enter new span
+        let span = tracing::span!(Level::INFO, "calculate", engine_id = self.engine_id.clone());
+        let _enter = span.enter();
+
         let mut timer = std::time::Instant::now();
         let start_time = std::time::Instant::now();
 
@@ -1733,8 +1738,8 @@ impl Engine {
             self.set_cashflow_inbetween()?;
 
             info!(
-                "* npv calculation is done (engine id: {}, time = {} whole time elapsed: {})"
-                , self.engine_id, 
+                "* npv calculation is done (engine id: {}, time = {} whole time elapsed: {})", 
+                self.engine_id, 
                 format_duration(timer.elapsed().as_secs_f64()),
                 format_duration(start_time.elapsed().as_secs_f64()),
             );
@@ -1792,7 +1797,8 @@ impl Engine {
                 let shortest_maturity = self.instruments.get_shortest_maturity(Some(&insts_upto_bumped_day)).unwrap();
                 let mut name_mat_pair_list: String = String::new();
                 for inst in insts_upto_bumped_day.iter() {
-                    name_mat_pair_list.push_str(&format!("{}: {}\n", inst.get_name(), inst.get_maturity().unwrap()));
+                    name_mat_pair_list.push_str(&format!(
+                        "{} ({}): {}\n", inst.get_name(), inst.get_code(), inst.get_maturity().unwrap()));
                 }
                 warn!(
                     "\n{}:{}\n\

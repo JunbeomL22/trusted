@@ -21,7 +21,8 @@ use crate::pricing_engines::{
     ktbf_pricer::KtbfPricer,
     fx_futures_pricer::FxFuturesPricer,
     plain_swap_pricer::PlainSwapPricer,
-    null_pricer::NullPricer,
+    identity_pricer::IdentityPricer,
+    unit_pricer::UnitPricer,    
 };
 use crate::enums::VanillaOptionCalculationMethod;
 //
@@ -363,7 +364,12 @@ impl PricerFactory {
                 "({}:{}) failed to get equity of {}.\nself.equities does not have {}",
                 file!(), line!(), instrument.get_code(), instrument.get_code(),
             ))?.clone();
-        let core = NullPricer::new(equity);
-        Ok(Pricer::NullPricer(core))
+        let core = IdentityPricer::new(equity);
+        Ok(Pricer::IdentityPricer(core))
+    }
+
+    fn get_cash_pricer(&self, _instrument: &Rc<Instrument>) -> Result<Pricer> {
+        let core = UnitPricer::new();
+        Ok(Pricer::UnitPricer(core))
     }
 }

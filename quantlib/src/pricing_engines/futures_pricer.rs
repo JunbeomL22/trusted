@@ -116,7 +116,6 @@ impl PricerTrait for FuturesPricer {
 mod tests {
     use super::*;
     use crate::evaluation_date::EvaluationDate;
-    use crate::data::observable::Observable;
     use crate::instrument::InstrumentTrait;
     use crate::{currency::Currency, instruments::futures::Futures};
     use crate::parameters::discrete_ratio_dividend::DiscreteRatioDividend;

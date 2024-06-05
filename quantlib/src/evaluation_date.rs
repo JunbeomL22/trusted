@@ -20,6 +20,8 @@ pub struct EvaluationDate {
     date: OffsetDateTime,
     #[serde(skip)]
     marketprice_observers: Vec<Rc<RefCell<MarketPrice>>>,
+    #[serde(skip)]
+    dividend_observers: Vec<Rc<RefCell<DiscreteRatioDividend>>>,
 }
 
 impl PartialEq<OffsetDateTime> for EvaluationDate {
@@ -59,6 +61,7 @@ impl Default for EvaluationDate {
         EvaluationDate {
             date: OffsetDateTime::now_utc(),
             marketprice_observers: vec![],
+            dividend_observers: vec![],
         }
     }
 }
@@ -68,6 +71,7 @@ impl EvaluationDate {
         EvaluationDate {
             date,
             marketprice_observers: vec![],
+            dividend_observers: vec![],
         }
     }
 
@@ -88,7 +92,9 @@ impl EvaluationDate {
         self.notify_observers();
     }
 
-    
+    pub fn add_dividend_observer(&mut self, observer: Rc<RefCell<DiscreteRatioDividend>>) {
+        self.dividend_observers.push(observer);
+    }
     
     pub fn add_marketprice_observer(&mut self, observer: Rc<RefCell<MarketPrice>>) {
         self.marketprice_observers.push(observer);
@@ -100,6 +106,14 @@ impl EvaluationDate {
                 marketprice_observer.borrow_mut()
                 .update_evaluation_date(self)
                 .expect("Failed to update market price observer");
+            }
+        }
+
+        for dividend_observer in self.dividend_observers.iter() {
+            {
+                dividend_observer.borrow_mut()
+                .update_evaluation_date(self)
+                .expect("Failed to update dividend observer");
             }
         }
     }
@@ -134,47 +148,3 @@ impl Sub<&str> for EvaluationDate {
         sub_period(&self.date, rhs)
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use time::macros::datetime;
-    use std::rc::Rc;
-    use std::cell::RefCell;
-    use anyhow::Result;
-
-   
-    #[test]
-    fn test_add_assign() {
-        let date = datetime!(2020-01-01 00:00:00 UTC);
-        let mut eval_date = EvaluationDate::new(date);
-        
-        let test_param = Rc::new(RefCell::new(
-            EvalDtObserver::TestObserver(
-                TestObserver { value: 0, name: "TestParameter".to_string()}
-            )));
-        eval_date.add_observer(test_param.clone());
-
-        eval_date += "1D";
-        assert_eq!(eval_date.get_date_clone(), datetime!(2020-01-02 00:00:00 UTC));
-        assert_eq!(test_param.borrow().value, 1);
-    }
-
-    #[test]
-    fn test_sub_assign() {
-        let date = datetime!(2020-01-01 00:00:00 UTC);
-        let mut eval_date = EvaluationDate::new(date);
-        let test_param = Rc::new(RefCell::new(
-            EvalDtObserver::TestObserver(
-                TestParameter { value: 0, name: "TestParameter".to_string()}
-            )));
-               
-        eval_date.add_observer(test_param.clone());
-        eval_date -= "1D";
-        assert_eq!(eval_date.get_date_clone(), datetime!(2019-12-31 00:00:00 UTC));
-        assert_eq!(test_param.borrow().value, 1);
-    }
-     
-}
-*/

@@ -9,19 +9,21 @@ use quantlib::instruments::{
     bond::Bond,
     vanilla_option::VanillaOption,
 };
-use quantlib::instrument::Instrument;
+use quantlib::instrument::{
+    Instrument,
+    Instruments,
+};
 use quantlib::definitions::Real;
-use time::{macros::datetime, Duration};
-use ndarray::array;
-use ndarray::Array1;
-//use quantlib::surfacedatasample;
-use std::time::Instant;
-use std::sync::Arc;
-use quantlib::evaluation_date::EvaluationDate;
 use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
-use quantlib::pricing_engines::engine::Engine;
+use quantlib::pricing_engines::{
+    engine::Engine,
+    engine_generator::{
+        EngineGenerator,
+        InstrumentCategory,
+    },
+};
 use quantlib::data::value_data::ValueData;
 use quantlib::data::vector_data::VectorData;
 use quantlib::enums::{IssuerType, CreditRating, RankType};
@@ -31,12 +33,23 @@ use quantlib::time::jointcalendar::JointCalendar;
 use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use quantlib::utils::tracing_timer::CustomOffsetTime;
 use anyhow::{Result, Context};
-use tracing::{info, Level, span};
-use tracing_subscriber::fmt;
-use tracing_subscriber::prelude::*;
-use tracing_appender::{rolling, non_blocking};
+use tracing::{span, info, Level};
+use tracing_subscriber::fmt::{
+    self,
+    writer::MakeWriterExt,
+};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_appender::rolling;
+use tracing_appender::non_blocking;
+use time::{macros::datetime, Duration};
+use ndarray::array;
+use ndarray::Array1;
+use std::time::Instant;
+use std::sync::Arc;
+use std::rc::Rc;
 
 fn main() -> Result<()> {
+    let theta_day = 100;
     let start_time = Instant::now();
     // Set up rolling file appender
     let file_appender = rolling::daily("logs", "my_app.log");
@@ -44,31 +57,36 @@ fn main() -> Result<()> {
 
     // Set up console layer
     let custom_time = CustomOffsetTime::new(9, 0, 0);
+
+    let err_layer = fmt::layer()
+        .with_writer(std::io::stderr.with_max_level(Level::ERROR))
+        .with_timer(custom_time.clone());
+
     let console_layer = fmt::layer()
-        .with_writer(std::io::stdout)
+        .with_writer(
+            std::io::stdout.with_max_level(Level::DEBUG))
         .with_timer(custom_time.clone());
 
     let file_layer = fmt::layer()
-        .with_writer(non_blocking_appender)
+        .with_writer(non_blocking_appender.with_max_level(Level::DEBUG).with_min_level(Level::INFO))
         .with_timer(custom_time);
 
     // Combine console and file layers into a subscriber
     let subscriber = tracing_subscriber::registry()
-        .with(console_layer)
-        .with(file_layer);
+        .with(file_layer)
+        .with(err_layer)
+        .with(console_layer);
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");
 
     // Create a new span with an `info` level
-    let main_span = span!(Level::INFO, "main (toymodel)");
+    let main_span = span!(Level::INFO, "main (engine)");
     let _enter = main_span.enter();
 
-    let theta_day = 200;
     let spot: Real = 350.0;
     // evaluation date = 2021-01-01 00:00:00 +09:00
     let dt = datetime!(2024-03-13 16:30:00 +09:00);
-    let evaluation_date = EvaluationDate::new(dt);
 
     // make zero curve named "KSD". First make vector data whose values are 0.03 and 0.04
     // then make it as hash map whose key is "KSD"
@@ -324,18 +342,24 @@ fn main() -> Result<()> {
     let inst4: Instrument = Instrument::Bond(bond2);
     let inst5 = Instrument::VanillaOption(option1);
 
-    let inst_vec = vec![inst1, inst2, inst3, inst4, inst5];
+    let inst_vec = vec![
+        Rc::new(inst1),
+        Rc::new(inst2),
+        Rc::new(inst3),
+        Rc::new(inst4),
+        Rc::new(inst5),
+    ];
     
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
         .with_gamma_calculation(true)
+        .with_theta_calculation(true)
         .with_rho_calculation(true)
         .with_vega_calculation(true)
         .with_vega_structure_calculation(true)
         .with_div_delta_calculation(true)
         .with_rho_structure_calculation(true)
-        .with_theta_calculation(true)
         .with_div_structure_calculation(true)
         .with_vega_matrix_calculation(true)
         .with_theta_day(theta_day);
@@ -370,11 +394,65 @@ fn main() -> Result<()> {
         funding_cost_map,        
     );
 
+    let category1 = InstrumentCategory::new(
+        Some(vec![
+            "Futures".to_string(),
+            "VanillaCall".to_string(),
+            "VanillaPut".to_string(),
+            "IRS".to_string(),
+            "CRS".to_string(),
+            "FxFutures".to_string(),
+            ]),
+        Some(vec![Currency::KRW]),
+        Some(vec![
+            "KOSPI2".to_string(),
+        ])
+    );
+
+    let category2 = InstrumentCategory::new(
+        Some(vec![
+            "Bond".to_string(),
+            ]),
+        Some(vec![Currency::KRW]),
+        None,
+    );
+
+    let instrument_categories = vec![category1, category2];
+
+    let mut engine_builder = EngineGenerator::builder();
+    let mut engine_generator = engine_builder
+        .with_configuration(
+            calculation_configuration, 
+            dt.clone(),
+            match_parameter)?
+        .with_instruments(Instruments::new(inst_vec))?
+        .with_instrument_categories(instrument_categories)?
+        .with_data(
+            fx_data_map,
+            stock_data_map,
+            zero_curve_map,
+            dividend_data_map,
+            equity_vol_map,
+            equity_surface_map,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+        )?;
+        
+    engine_generator.distribute_instruments().context("Failed to distribute instruments")?;
+    engine_generator.calculate().context("Failed to calculate")?;
+
+    /*
+    let results = engine_generator.get_calculation_results();
+    for (key, value) in results.iter() {
+        println!("{}: {:?}\n\n", key, value);
+    }
+    
     // make an engine
     let mut engine = Engine::builder(
         0,
         calculation_configuration.clone(),
-        dt.clone(),
+        dt,
         match_parameter.clone(),
     ).with_instruments(inst_vec)?
     .with_parameter_data(
@@ -390,13 +468,13 @@ fn main() -> Result<()> {
     )?;
     engine.initialize_pricers().context("failed to initialize pricers")?;
     engine.calculate().context("Failed to calculate")?;
-
- 
+    */
+    /*
     let results = engine.get_calculation_result();
     for (key, value) in results.iter() {
         println!("{}: {:?}\n\n", key, value.borrow());
     }
-    /* 
+    
     let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
     println!("result1 {:?}\n", result1.borrow());
 

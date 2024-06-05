@@ -4,19 +4,19 @@ use crate::instrument::InstrumentTrait;
 //
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Cash {
-    amount: Real,
     currency: Currency,
     name: String,
+    code: String,
 }
 
 impl Cash {
-    pub fn new(amount: Real, currency: Currency) -> Self {
+    pub fn new(currency: Currency) -> Self {
         Cash { 
-            amount, 
             currency,
-            name: currency.as_str().to_string()
+            name: currency.as_str().to_string(),
+            code: currency.as_str().to_string(),
         }
     }
 }
@@ -26,16 +26,15 @@ impl InstrumentTrait for Cash {
         &self.name
     }
 
+    fn get_unit_notional(&self) -> Real {
+        1.0
+    }
     fn get_code(&self) -> &String {
         &self.name
     }
 
     fn get_currency(&self) -> &Currency {
         &self.currency
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.amount
     }
 
     fn get_type_name(&self) -> &'static str {

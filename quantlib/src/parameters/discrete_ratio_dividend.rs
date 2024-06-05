@@ -3,7 +3,6 @@ use crate::data::vector_data::VectorData;
 use crate::evaluation_date::EvaluationDate;
 use crate::math::interpolators::stepwise_interpolatior::{StepwiseInterpolator1D, ConstantInterpolator1D};
 use crate::math::interpolator::Interpolator1D;
-use crate::parameter::Parameter;
 use crate::util::to_yyyymmdd_int;
 use std::{
     rc::Rc,

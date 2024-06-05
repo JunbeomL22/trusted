@@ -8,6 +8,7 @@ use crate::instruments::{
     fx_futures::FxFutures,
     vanilla_option::VanillaOption,
     stock::Stock,
+    cash::Cash,
 };
 use crate::definitions::Real;
 use crate::currency::{Currency, FxCode};
@@ -193,6 +194,7 @@ pub enum Instrument {
     FxFutures(FxFutures),
     VanillaOption(VanillaOption),   
     Stock(Stock),
+    Cash(Cash),
 }
 
 /// calculation groups for calculation optimization, 

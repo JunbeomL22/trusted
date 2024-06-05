@@ -1,30 +1,22 @@
 use crate::pricing_engines::pricer::PricerTrait;
 use crate::instrument::Instrument;
 use crate::definitions::Real;
-use crate::parameters::market_price::MarketPrice;
 use crate::pricing_engines::npv_result::NpvResult;
 //
 use anyhow::Result;
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
 
-pub struct NullPricer {
-    market_price: Rc<RefCell<MarketPrice>>,
-}
+#[derive(Default)]
+pub struct UnitPricer {}
 
-impl NullPricer {
-    pub fn new(market_price: Rc<RefCell<MarketPrice>>) -> NullPricer {
-        NullPricer {
-            market_price,
-        }
+impl UnitPricer {
+    pub fn new() -> UnitPricer {
+        UnitPricer { }
     }
 }
 
-impl PricerTrait for NullPricer {
+impl PricerTrait for UnitPricer {
     fn npv(&self, _instrument: &Instrument) -> Result<Real> {
-        Ok(self.market_price.borrow().get_value())
+        Ok(1.0)
     }
 
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {

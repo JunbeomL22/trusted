@@ -2,9 +2,8 @@ use crate::currency::Currency;
 use time::{OffsetDateTime, macros::datetime};
 use crate::enums::Compounding;
 use crate::evaluation_date::EvaluationDate;
-use crate::data::{vector_data::VectorData, observable::Observable};
+use crate::data::vector_data::VectorData;
 use crate::definitions::{Real, Time};
-use crate::parameter::Parameter;
 use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
 use crate::math::interpolator::InterpolatorReal1D;
 use crate::math::interpolator::Interpolator1D;
@@ -422,61 +421,6 @@ impl ZeroCurve {
         self.evaluation_date.clone()
     }
 
-}
-
-impl Parameter for ZeroCurve {
-    fn get_address(&self) -> String {
-        format!("{:p}", self)
-    }
-
-    fn update(&mut self, data: &dyn Observable) -> Result<()> {
-        let data = data.as_any().downcast_ref::<VectorData>().expect("error: cannot downcast to VectorData in ZeroCurve::update");
-        let rate_times = data.get_times_clone();
-        let zero_rates = data.get_value_clone();
-
-        if zero_rates.len() != rate_times.len() {
-            let error = anyhow!(
-                "update filed by input data length mismatch\n\
-                name = {}\n\
-                data = {:?}\n\
-                zero_rates = {:?}\n\
-                rate_times = {:?}", 
-                self.name, data, zero_rates, rate_times);
-            
-            return Err(error)
-        }
-
-        if zero_rates.len() < 1 {
-            let error = anyhow!("name = {} zero_rates = {:?} data = {:?}", self.name, zero_rates, data);
-            return Err(error)
-        }
-
-        if zero_rates.len() == 1 {
-            self.rate_interpolator = ZeroCurveInterpolator::Constant(
-                ConstantInterpolator1D::new(zero_rates[0])?
-            );
-        } else {
-            self.rate_interpolator = ZeroCurveInterpolator::Linear(
-                LinearInterpolator1D::new(
-                    rate_times.clone(),
-                    zero_rates.clone(), 
-                    ExtraPolationType::Flat, 
-                    true
-                )?
-            );
-        }
-
-        let interpolated_rates = match &self.rate_interpolator {
-            ZeroCurveInterpolator::Constant(c) =>  c.vectorized_interpolate_for_sorted_ndarray(&self.discount_times)?, 
-            ZeroCurveInterpolator::Linear(l) => l.vectorized_interpolate_for_sorted_ndarray(&self.discount_times)?,
-        };
-        
-        self.discount_factors = interpolated_rates.iter().zip(&self.discount_times).map(|(rate, time)| (-rate * time).exp()).collect();
-        
-        self.discount_interpolator = LinearInterpolator1D::new(self.discount_times.clone(), self.discount_factors.clone(), ExtraPolationType::None, false)?;
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
