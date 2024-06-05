@@ -82,6 +82,7 @@ impl PricerFactory {
             Instrument::FxFutures(_) => self.get_fx_futures_pricer(instrument)?,
             Instrument::PlainSwap(_) => self.get_plain_swap_pricer(instrument)?,
             Instrument::Stock(_) => self.get_stock_pricer(instrument)?,
+            Instrument::Cash(_) => self.get_cash_pricer(instrument)?,
             //
             //
             _ => {

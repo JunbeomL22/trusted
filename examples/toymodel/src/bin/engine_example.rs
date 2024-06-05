@@ -3,18 +3,24 @@ use quantlib::enums::{
     OptionType,
     OptionExerciseType,
 };
+use quantlib::enums::StockRankType;
 use quantlib::currency::{Currency, FxCode};
 use quantlib::instruments::{
     futures::Futures,
     bond::Bond,
     vanilla_option::VanillaOption,
+    stock::Stock,
+    cash::Cash,
 };
 use quantlib::instrument::{
     Instrument,
     Instruments,
 };
 use quantlib::definitions::Real;
-use quantlib::pricing_engines::calculation_configuration::CalculationConfiguration;
+use quantlib::pricing_engines::{
+    calculation_configuration::CalculationConfiguration,
+    calculation_result::CalculationResult,
+};
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
 use quantlib::pricing_engines::{
@@ -47,6 +53,11 @@ use ndarray::Array1;
 use std::time::Instant;
 use std::sync::Arc;
 use std::rc::Rc;
+use serde_json::{
+    to_string,
+    from_str,
+};
+use std::fs::write;
 
 fn main() -> Result<()> {
     let theta_day = 100;
@@ -336,11 +347,27 @@ fn main() -> Result<()> {
         "165XXX3".to_string(),
     );
 
+    let cash = Cash::new(
+        Currency::USD, 
+        "USD Cash".to_string(),
+        "USD Cash".to_string(),
+    );
+
+    let stock = Stock::new(
+        "KOSPI2".to_string(),
+        "KOSPI2".to_string(),
+        vec!["KOSPI2".to_string()],
+        Currency::KRW,
+        None,
+    );
+
     let inst1 = Instrument::Futures(stock_futures1);
     let inst2 = Instrument::Futures(stock_futures2);
     let inst3: Instrument = Instrument::Bond(bond);
     let inst4: Instrument = Instrument::Bond(bond2);
     let inst5 = Instrument::VanillaOption(option1);
+    let inst6 = Instrument::Cash(cash);
+    let inst7 = Instrument::Stock(stock);
 
     let inst_vec = vec![
         Rc::new(inst1),
@@ -348,6 +375,8 @@ fn main() -> Result<()> {
         Rc::new(inst3),
         Rc::new(inst4),
         Rc::new(inst5),
+        Rc::new(inst6),
+        Rc::new(inst7),
     ];
     
     // make a calculation configuration
@@ -412,9 +441,13 @@ fn main() -> Result<()> {
     let category2 = InstrumentCategory::new(
         Some(vec![
             "Bond".to_string(),
+            "Cash".to_string(),
+            "Stock".to_string(),
             ]),
-        Some(vec![Currency::KRW]),
-        None,
+        Some(vec![Currency::KRW, Currency::USD]),
+        Some(vec![
+            "KOSPI2".to_string(),
+        ])
     );
 
     let instrument_categories = vec![category1, category2];
@@ -442,10 +475,19 @@ fn main() -> Result<()> {
     engine_generator.distribute_instruments().context("Failed to distribute instruments")?;
     engine_generator.calculate().context("Failed to calculate")?;
 
-    /*
+    
     let results = engine_generator.get_calculation_results();
+
+    let json = to_string(&results)
+        .context("Failed to serialize Vec<ValueData> to JSON")?;
+
+    write("json_data/engine_results.json", &json).context("Failed to write JSON to file")?;
+
+    let res: HashMap<String, CalculationResult> = from_str(&json)
+        .context("Failed to deserialize JSON to ValueData")?;
+    /*
     for (key, value) in results.iter() {
-        println!("{}: {:?}\n\n", key, value);
+        println!("{}: {:?}\n\n", key, value.borrow()
     }
     
     // make an engine

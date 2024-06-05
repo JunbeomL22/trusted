@@ -12,11 +12,15 @@ pub struct Cash {
 }
 
 impl Cash {
-    pub fn new(currency: Currency) -> Self {
+    pub fn new(
+        currency: Currency,
+        name: String,
+        code: String,
+    ) -> Self {
         Cash { 
             currency,
-            name: currency.as_str().to_string(),
-            code: currency.as_str().to_string(),
+            name,
+            code,
         }
     }
 }
