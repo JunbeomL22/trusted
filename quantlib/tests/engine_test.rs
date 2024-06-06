@@ -59,7 +59,7 @@ mod tests {
         let theta_day = 100;
         let start_time = Instant::now();
         // Set up rolling file appender
-        let file_appender = rolling::daily("logs", "my_app.log");
+        let file_appender = rolling::daily("test_logs", "engine-test.log");
         let (non_blocking_appender, _guard) = non_blocking(file_appender);
 
         // Set up console layer
