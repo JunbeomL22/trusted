@@ -2,7 +2,7 @@ use crate::definitions::Real;
 use std::fmt;
 
 pub fn write_number_with_commas(f: &mut fmt::Formatter<'_>, number: Real) -> fmt::Result {
-    let number_str = format!("{:.1}", number);
+    let number_str = format!("{:.3}", number);
     let parts: Vec<&str> = number_str.split('.').collect();
     let integer_part = parts[0];
     let decimal_part = if parts.len() > 1 { parts[1] } else { "" };

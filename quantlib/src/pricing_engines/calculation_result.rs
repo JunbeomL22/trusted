@@ -5,7 +5,10 @@ use crate::pricing_engines::npv_result::NpvResult;
 use crate::utils::number_format::{write_number_with_commas, formatted_number};
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use serde::{
+    Serialize, 
+    Deserialize, 
+};
 use time::OffsetDateTime;
 use ndarray::Array2;
 
@@ -39,6 +42,7 @@ pub struct CalculationResult {
     rho: Option<HashMap<String, Real>>, // Curve Code -> rho
     rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
+    #[serde(skip)]
     cashflows: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
     representation_currency: Option<Currency>,
 }

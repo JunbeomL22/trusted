@@ -3,7 +3,6 @@ use quantlib::enums::{
     OptionType,
     OptionExerciseType,
 };
-use quantlib::enums::StockRankType;
 use quantlib::currency::{Currency, FxCode};
 use quantlib::instruments::{
     futures::Futures,
@@ -24,7 +23,6 @@ use quantlib::pricing_engines::{
 use quantlib::pricing_engines::match_parameter::MatchParameter;
 use std::collections::HashMap;
 use quantlib::pricing_engines::{
-    engine::Engine,
     engine_generator::{
         EngineGenerator,
         InstrumentCategory,
@@ -51,10 +49,10 @@ use time::{macros::datetime, Duration};
 use ndarray::array;
 use ndarray::Array1;
 use std::time::Instant;
-use std::sync::Arc;
 use std::rc::Rc;
 use serde_json::{
     to_string,
+    to_string_pretty,
     from_str,
 };
 use std::fs::write;
@@ -453,7 +451,7 @@ fn main() -> Result<()> {
     let instrument_categories = vec![category1, category2];
 
     let mut engine_builder = EngineGenerator::builder();
-    let mut engine_generator = engine_builder
+    let engine_generator = engine_builder
         .with_configuration(
             calculation_configuration, 
             dt.clone(),
@@ -476,111 +474,25 @@ fn main() -> Result<()> {
     engine_generator.calculate().context("Failed to calculate")?;
 
     
-    let results = engine_generator.get_calculation_results();
+    let calculation_results: &HashMap<String, CalculationResult> = engine_generator.get_calculation_results();
 
-    let json = to_string(&results)
-        .context("Failed to serialize Vec<ValueData> to JSON")?;
-
-    write("json_data/engine_results.json", &json).context("Failed to write JSON to file")?;
-
-    let res: HashMap<String, CalculationResult> = from_str(&json)
-        .context("Failed to deserialize JSON to ValueData")?;
-    /*
-    for (key, value) in results.iter() {
-        println!("{}: {:?}\n\n", key, value.borrow()
-    }
+    let json = to_string_pretty(&calculation_results)
+        .with_context(|| format!("({}:{}) Failed to serialize CalculationResult to JSON", file!(), line!()))?;
     
-    // make an engine
-    let mut engine = Engine::builder(
-        0,
-        calculation_configuration.clone(),
-        dt,
-        match_parameter.clone(),
-    ).with_instruments(inst_vec)?
-    .with_parameter_data(
-        Arc::new(fx_data_map),
-        Arc::new(stock_data_map),
-        Arc::new(zero_curve_map),
-        Arc::new(dividend_data_map),
-        Arc::new(equity_vol_map),
-        Arc::new(equity_surface_map),
-        Arc::new(HashMap::new()),
-        Arc::new(HashMap::new()),
-        Arc::new(HashMap::new()),
-    )?;
-    engine.initialize_pricers().context("failed to initialize pricers")?;
-    engine.calculate().context("Failed to calculate")?;
-    */
-    /*
-    let results = engine.get_calculation_result();
-    for (key, value) in results.iter() {
-        println!("{}: {:?}\n\n", key, value.borrow());
-    }
-    
-    let result1 = engine.get_calculation_result().get(&String::from("165XXX1")).unwrap();
-    println!("result1 {:?}\n", result1.borrow());
+    write("json_data/engine_results.json", &json)
+        .with_context(|| format!("({}:{}) Failed to write JSON to file", file!(), line!()))?;
 
-    let result2 = engine.get_calculation_result().get(&String::from("165XXX2")).unwrap();
-    println!("result2 {:?}\n", result2.borrow());
+    // re-read the json file
+    let json_str = std::fs::read_to_string("json_data/engine_results.json")
+        .with_context(|| format!("({}:{}) Failed to read JSON from file", file!(), line!()))?;
 
-    let result3 = engine.get_calculation_result().get(&String::from(bond_code)).unwrap();
-    println!("result3 {:?}\n", result3.borrow());
+    let res: HashMap<String, CalculationResult> = from_str(&json_str)
+        .with_context(|| format!("({}:{}) Failed to deserialize JSON to CalculationResult", file!(), line!()))?;
 
-    let result4 = engine.get_calculation_result().get(&String::from(bond_code2)).unwrap();
-    println!("result4 {:?}\n", result4.borrow());
-
-    let result5 = engine.get_calculation_result().get(&String::from("165XXX3")).unwrap();
-    println!("result5 {:?}\n", result5.borrow());
-    */
-    /*
-    println!("\n165XXX1");
-    println!("result1 value: {:?}", result1.borrow().get_value());
-    println!("result1 delta: {:?}", result1.borrow().get_delta());
-    println!("result1 gamma: {:?}", result1.borrow().get_gamma());
-    println!("result1 theta: {:?}", result1.borrow().get_theta());
-    println!("result1 rho: {:?}", result1.borrow().get_rho());
-    println!("result1 rho-structure: {:?}", result1.borrow().get_rho_structure());
-    println!("result1 div-delta: {:?}", result1.borrow().get_div_delta());
-    println!("result1 div-structure: {:?}", result1.borrow().get_div_structure());
-
-    println!("\n165XXX2");
-    println!("result2 value: {:?}", result2.borrow().get_value());
-    println!("result2 delta: {:?}", result2.borrow().get_delta());
-    println!("result2 gamma: {:?}", result2.borrow().get_gamma());
-    println!("result2 theta: {:?}", result2.borrow().get_theta());
-    println!("result2 rho: {:?}", result2.borrow().get_rho());
-    println!("result2 rho-structure: {:?}", result2.borrow().get_rho_structure());
-    println!("result2 div-delta: {:?}", result2.borrow().get_div_delta());
-    println!("result2 div-structure: {:?}", result2.borrow().get_div_structure());
-
-    println!("\nKR1234567890");
-    println!("result3 value: {:?}", result3.borrow().get_value());
-    println!("result3 delta: {:?}", result3.borrow().get_delta());
-    println!("result3 gamma: {:?}", result3.borrow().get_gamma());
-    println!("result3 theta: {:?}", result3.borrow().get_theta());
-    println!("result3 rho: {:?}", result3.borrow().get_rho());
-    println!("result3 rho-structure: {:?}", result3.borrow().get_rho_structure());
-    println!("result3 div-delta: {:?}", result3.borrow().get_div_delta());
-    println!("result3 div-structure: {:?}", result3.borrow().get_div_structure());
-
-    println!("\nKR103501GCC0");
-    println!("result4 value: {:?}", result4.borrow().get_value());
-    println!("result4 delta: {:?}", result4.borrow().get_delta());
-    println!("result4 gamma: {:?}", result4.borrow().get_gamma());
-    println!("result4 theta: {:?}", result4.borrow().get_theta());
-    println!("result4 rho: {:?}", result4.borrow().get_rho());
-    println!("result4 rho-structure: {:?}", result4.bo
-    rrow().get_rho_structure());
-    println!("result4 div-delta: {:?}", result4.borrow().get_div_delta());
-    println!("result4 div-structure: {:?}", result4.borrow().get_div_structure());
-
-    println!("result4 cashflow: {:?}", result4.borrow().get_cashflows());
-    //println!("\n\n{:?}", result1);
-    // println!("result1:\n{}", serde_json::to_string_pretty(&result1).unwrap());
-    // println!("result2:\n{}", serde_json::to_string_pretty(&result2).unwrap());
-    */
+    println!("calculation results: {:?}", res);
 
     let elapsed = start_time.elapsed();
     info!("engine example finished {:?}", elapsed);
+     
     Ok(())
 }

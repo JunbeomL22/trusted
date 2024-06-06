@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::fmt::Display;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Currency {
@@ -50,7 +50,7 @@ pub enum Currency {
     JOD,
     ILS,
     EGP,
-    ZMW
+    ZMW,
 }
 
 impl std::fmt::Display for Currency {
@@ -176,10 +176,20 @@ impl Currency {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash, Copy)]
 pub struct FxCode {
     currency1: Currency,
     currency2: Currency,
+}
+
+impl Serialize for FxCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{:?}_{:?}", self.currency1, self.currency2);
+        serializer.serialize_str(&s)
+    }
 }
 
 impl FxCode {
