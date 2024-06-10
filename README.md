@@ -12,8 +12,8 @@ This Rust project consists of two main components:
 ### quantlib
 | Module | Description |
 | ------ | ----------- |
-| [data](./trusted/quantlib/src/data) | Raw market observatiions, which are not directly used for calculation <br>  Data is shared by Engine object in multi-thread environment|
-| [parameters](./trusted/quantlib/src/parameters) | Objects generated from data objects for actual calculation |
+| [data](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/data) | Raw market observatiions, which are not directly used for calculation <br>  Data is shared by Engine object in multi-thread environment|
+| [parameters](https://github.com/JunbeomL22/trusted/tree/main//quantlib/src/parameters) | Objects generated from data objects for actual calculation |
 | [isntruments](./trusted/quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
 | [time](./trusted/quantlib/src/time) | Calendars, conventions, handling holiday |
 | [pricing_engines](./trusted/quantlib/src/pricing_engines) | Engine, EngineGenerator, and Pricer |
