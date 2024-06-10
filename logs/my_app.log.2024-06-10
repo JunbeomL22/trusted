@@ -1,0 +1,1138 @@
+[2m2024-06-10T10:17:55.2589867+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T10:17:55.2595674+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2600811+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2606565+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2625324+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2632416+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2638677+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2644827+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2652993+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:17:55.2660154+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:17:55.2665734+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:17:55.2758668+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T10:17:55.2762817+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2767143+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2771912+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2778008+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2785162+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2790197+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:17:55.2797025+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2806407+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:17:55.2821943+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:17:55.2826717+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:17:55.2849861+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T10:17:55.2963689+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.02s)
+[2m2024-06-10T10:17:55.3107054+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T10:17:55.3268412+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T10:17:55.3273495+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T10:17:55.3461126+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T10:17:55.3480564+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T10:17:55.3637535+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T10:17:55.430236+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 382.8583ms
+[2m2024-06-10T10:37:23.6406758+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T10:37:23.6413958+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.6418992+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.6423932+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.6428459+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T10:37:23.6429254+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6432405+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.643793+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6441591+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.6445683+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6450563+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.645479+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:37:23.6463176+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6473596+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6478484+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6482278+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6486539+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6491327+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:37:23.6499487+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6506493+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6513027+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6519581+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:37:23.6626427+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.02s)
+[2m2024-06-10T10:37:23.6726295+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T10:37:26.6125183+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 2.95s whole time elapsed: 2.97s)
+[2m2024-06-10T10:37:26.6350529+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 2.99s)
+[2m2024-06-10T10:37:26.6565618+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 3.02s)
+[2m2024-06-10T10:37:27.2867653+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 3.61s whole time elapsed: 3.64s)
+[2m2024-06-10T10:37:27.3019789+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 3.66s)
+[2m2024-06-10T10:37:27.3299738+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.03s whole time elapsed: 3.69s)
+[2m2024-06-10T10:37:27.379792+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 3.9220545s
+[2m2024-06-10T10:39:42.3003463+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T10:39:42.3012585+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3020259+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3026263+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3032616+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.3039057+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.3044085+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.3049476+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3054192+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3061067+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:39:42.3065729+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:39:42.3221785+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T10:39:42.3282577+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T10:39:42.3286711+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3293865+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3299144+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3315842+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.3321626+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.332752+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:39:42.3334084+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:39:42.3343056+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:39:42.3351105+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:39:42.3357239+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:39:42.3473077+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T10:39:42.3603962+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T10:39:42.3692272+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T10:39:42.3835117+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.08s)
+[2m2024-06-10T10:39:43.7948635+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 1.43s whole time elapsed: 1.47s)
+[2m2024-06-10T10:39:43.8101067+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 1.48s)
+[2m2024-06-10T10:39:43.8425934+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.03s whole time elapsed: 1.51s)
+[2m2024-06-10T10:39:43.9038526+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 1.7977603s
+[2m2024-06-10T10:43:03.4493622+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T10:43:03.4499986+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4505661+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4509454+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4513419+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.451726+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.4520861+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.452457+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4528374+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4533518+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4537316+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.457391+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T10:43:03.4578227+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4582038+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4586061+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:03.4617304+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.4623566+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.4629988+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:03.4636265+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:43:03.464456+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:43:03.4655535+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:43:03.466153+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T10:43:03.4715769+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T10:43:03.4849055+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T10:43:03.4994669+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T10:43:03.5158116+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T10:43:03.523832+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 0.07s)
+[2m2024-06-10T10:43:03.5310088+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.08s)
+[2m2024-06-10T10:43:03.5393558+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.08s)
+[2m2024-06-10T10:43:03.5607259+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.10s)
+[2m2024-06-10T10:43:03.6234282+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 394.238ms
+[2m2024-06-10T10:43:26.3735754+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T10:43:26.3741412+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3745068+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3748419+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3752601+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:26.3757882+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T10:43:26.3761118+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T10:43:26.3764453+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3767648+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3772465+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3775663+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T10:43:26.3999733+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T11:02:33.1889952+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:02:33.1897331+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.1901253+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.1905567+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.190975+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.1914282+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.1918367+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.1922191+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.1926182+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.192957+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2058426+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:02:33.2063958+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2069121+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2073602+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2088016+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.2092611+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T11:02:33.2093062+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.2100303+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:02:33.2104394+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2111013+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:02:33.2118148+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T11:02:33.2340758+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.04s)
+[2m2024-06-10T11:02:33.236668+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T11:02:33.2488676+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.06s)
+[2m2024-06-10T11:02:33.2614727+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.06s)
+[2m2024-06-10T11:02:33.2656058+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.08s)
+[2m2024-06-10T11:02:33.2762938+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T11:02:33.2963866+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T11:02:33.3402518+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 357.4369ms
+[2m2024-06-10T11:09:12.3000525+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:09:12.3006924+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:12.3011665+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:12.327999+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:09:12.3284227+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:12.3287964+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:12.3386651+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.04s whole time elapsed: 0.04s)
+[2m2024-06-10T11:09:12.3605707+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:09:12.396282+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 303.4159ms
+[2m2024-06-10T11:09:41.1018412+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:09:41.102525+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1030016+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1035428+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1136638+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:09:41.1141687+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1146367+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1154182+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:09:41.1483541+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.04s whole time elapsed: 0.05s)
+[2m2024-06-10T11:09:41.1531041+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 0.04s)
+[2m2024-06-10T11:09:41.1919305+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 295.6941ms
+[2m2024-06-10T11:10:28.8751654+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:10:28.8757375+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.8761414+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.8772463+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.8776437+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.8780609+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.8784508+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.8788563+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.914803+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 0.04s)
+[2m2024-06-10T11:10:28.9149426+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:10:28.9158094+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.9162045+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.9167199+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.9172213+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.9176092+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+
+[2m2024-06-10T11:10:28.918203+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.918731+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:10:28.9541687+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.04s whole time elapsed: 0.04s)
+[2m2024-06-10T11:10:28.9829643+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 280.9665ms
+[2m2024-06-10T11:11:08.2004682+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:11:08.2011635+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2016372+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2022033+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2045085+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:11:08.2048327+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2051767+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2057734+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:11:08.2287584+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T11:11:08.2312603+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:11:08.2574118+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 250.1779ms
+[2m2024-06-10T11:37:34.7404046+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:37:34.7410185+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.7414308+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.7418872+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 347
+[2m2024-06-10T11:37:34.7423779+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:37:34.7428459+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 350
+[2m2024-06-10T11:37:34.7436633+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.7444106+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.7807959+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.04s whole time elapsed: 0.04s)
+[2m2024-06-10T11:37:34.7957254+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:37:34.7961708+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.796626+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.798054+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 347
+[2m2024-06-10T11:37:34.7985715+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 350
+[2m2024-06-10T11:37:34.7991501+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 353.02594
+[2m2024-06-10T11:37:34.7996837+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.8002742+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:37:34.827011+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:37:34.8582716+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 306.8813ms
+[2m2024-06-10T11:40:49.3097751+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:40:49.310417+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3109055+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3114039+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 347
+
+[2m2024-06-10T11:40:49.3120435+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:40:49.3125829+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 350
+
+[2m2024-06-10T11:40:49.3130695+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3135116+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3219441+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:40:49.3223234+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3227086+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3239947+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 347
+
+[2m2024-06-10T11:40:49.3245082+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 350
+
+[2m2024-06-10T11:40:49.3251725+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+                        
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+value: 353.02594
+
+[2m2024-06-10T11:40:49.3256339+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3261981+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:40:49.3361991+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T11:40:49.3550768+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:40:49.3853267+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 297.5247ms
+[2m2024-06-10T11:46:32.6080697+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:46:32.6087526+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6091874+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6096532+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:46:32.6101997+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:46:32.6106273+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:46:32.6111123+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6116886+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6428606+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:46:32.64309+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:46:32.6436809+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6440202+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6451151+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:46:32.6456143+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:46:32.6460355+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T11:46:32.6464067+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6470178+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:46:32.6709486+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T11:46:32.6973431+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 295.2212ms
+[2m2024-06-10T11:50:19.8927437+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:50:19.8933049+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:50:19.8939977+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:50:19.894596+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:50:19.8952831+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:50:19.8958047+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:50:19.9040915+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T11:50:19.9047374+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T11:50:19.9128389+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:50:19.9132365+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:50:19.9136979+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:50:19.9152527+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:50:19.9158651+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:50:19.9227203+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T11:50:19.9278417+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T11:50:19.9284185+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T11:50:19.9388797+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T11:50:19.9510194+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.04s)
+[2m2024-06-10T11:50:19.9889352+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 264.16ms
+[2m2024-06-10T11:57:51.4351484+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T11:57:51.4357917+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.436168+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4365712+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:57:51.4370496+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T11:57:51.437442+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:57:51.437857+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4382715+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4635005+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T11:57:51.4639961+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4643999+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4655366+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T11:57:51.4659483+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T11:57:51.4664278+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T11:57:51.4668556+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4674573+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T11:57:51.4703332+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:57:51.4934952+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T11:57:51.523086+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 259.9129ms
+[2m2024-06-10T12:00:09.0781125+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:00:09.0788218+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.0792682+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.0796208+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:00:09.0801446+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:00:09.0805111+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:00:09.0808978+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.0932928+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:00:09.0936655+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.0939931+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.0953676+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:00:09.0958892+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:00:09.0964049+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:00:09.0968267+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:00:09.118042+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 211.6911ms
+[2m2024-06-10T12:01:48.908116+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:01:48.9090473+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:01:48.9094663+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:01:48.9099033+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:01:48.9106136+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:01:48.9109602+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:02:12.9662282+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 24.06s whole time elapsed: 24.06s)
+[2m2024-06-10T12:02:12.9921993+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:02:12.9931463+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:02:12.9939454+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:02:12.9956598+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:02:12.9962046+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:02:34.4543584+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:02:36.0790919+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 23.08s whole time elapsed: 23.09s)
+[2m2024-06-10T12:02:36.1059175+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 47.7554177s
+[2m2024-06-10T12:02:52.255368+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:02:52.2559006+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:02:52.2563104+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:02:52.2574818+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:02:52.2579402+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:02:55.8402877+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:03:15.3792047+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:03:15.3798076+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:15.3804306+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:15.3814325+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:03:20.1102498+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:03:28.859884+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:03:54.4003639+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:03:54.4009378+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4013252+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4017393+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:03:54.4022355+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:03:54.4026528+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:03:54.4031247+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4602938+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:03:54.4608152+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4612283+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4627019+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:03:54.4632144+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:03:54.4637624+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:03:54.4643835+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:54.4968519+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 279.9034ms
+[2m2024-06-10T12:03:59.2871617+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:03:59.2878106+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:59.2882409+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:03:59.2886362+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:03:59.2891052+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:04:05.4291481+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:04:05.4298815+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 6.14s whole time elapsed: 6.14s)
+[2m2024-06-10T12:04:05.4603105+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:04:05.4607923+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:04:05.4611811+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:04:05.462334+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:04:13.2585817+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:04:52.5030138+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:06:02.9002714+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:06:02.901153+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:06:02.90199+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:06:02.9039361+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:06:02.9039132+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:06:02.9044589+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:06:02.9047773+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:06:02.9051043+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:06:02.9057201+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m roll back checker
+[2m2024-06-10T12:06:02.9062855+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:06:02.9067249+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:06:02.9072344+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:06:02.9076152+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m roll back checker
+[2m2024-06-10T12:06:02.9080202+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:06:02.9084325+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T12:06:02.9089206+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m roll back checker
+[2m2024-06-10T12:06:02.9096816+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T12:06:02.9537374+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 257.9513ms
+[2m2024-06-10T12:34:43.8092125+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:34:43.810118+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:34:43.8107003+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:34:43.8156786+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:34:43.8157857+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:34:43.8163146+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:34:43.8167776+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:34:43.8171752+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:34:43.8176131+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:34:43.8187671+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T12:34:43.8211945+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:34:43.8217465+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:34:43.8236704+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 353.02594
+
+[2m2024-06-10T12:34:43.8242699+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T12:34:43.851212+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 210.702ms
+[2m2024-06-10T12:48:17.5623245+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:48:17.5628876+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.5634048+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.5646747+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:48:17.5652663+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:48:17.5658067+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:48:17.5663534+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:48:17.5668539+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.5693854+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:48:17.5697387+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.5700979+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.5704787+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:48:17.5712342+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:48:17.5717026+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:48:17.5722111+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:48:17.6044076+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 229.5824ms
+[2m2024-06-10T12:51:04.3552912+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T12:51:04.3561082+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3565609+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3568937+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3572776+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:51:04.3577875+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T12:51:04.3583185+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:51:04.3588688+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.359293+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3599149+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3604339+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3610461+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T12:51:04.3614148+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3617521+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3621154+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3633492+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:51:04.3638094+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:51:04.3642741+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T12:51:04.3646746+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T12:51:04.3650516+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T12:51:04.3664828+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T12:51:04.3669478+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T12:51:04.3673286+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T12:51:04.3833613+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T12:51:04.3843019+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T12:51:04.4102215+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T12:51:04.4102006+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T12:51:04.4264032+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T12:51:04.4273913+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T12:51:04.4477142+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T12:51:04.4509662+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T12:51:04.4967632+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 373.7978ms
+[2m2024-06-10T13:12:09.1280035+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:12:09.1285965+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1291823+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1299532+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1311673+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:12:09.1316823+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:12:09.1321702+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:12:09.132646+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:12:09.1331722+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.133779+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:12:09.134344+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:12:09.1348203+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:12:09.1457944+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:12:09.1462601+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1466355+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1470792+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1475099+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:12:09.1480291+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T13:12:09.1484099+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:12:09.1488474+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.149173+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1496559+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1499862+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:12:09.1510709+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:12:09.1697757+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:12:09.1750293+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T13:12:09.1938716+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T13:12:09.1979539+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T13:12:09.2135398+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T13:12:09.2244027+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.10s)
+[2m2024-06-10T13:12:09.2370866+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:12:09.2743759+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 346.1805ms
+[2m2024-06-10T13:40:49.3401588+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:40:49.3406756+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:40:49.3411556+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:40:49.3599221+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:40:49.3604148+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:40:49.3608397+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:40:49.361265+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:40:49.3616859+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:40:49.3760303+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.04s)
+[2m2024-06-10T13:40:49.4122164+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 0.07s)
+[2m2024-06-10T13:40:49.4322153+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:40:49.4457149+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m[1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.11s)
+[2m2024-06-10T13:40:49.4533089+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 236.9002ms
+[2m2024-06-10T13:42:37.5175547+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:42:37.5179994+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:42:37.5180598+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:42:37.518338+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:42:37.5184956+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:42:37.5186986+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:43:08.8324788+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 31.31s whole time elapsed: 31.31s)
+[2m2024-06-10T13:43:16.7663438+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 7.93s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7669994+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7680629+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7691478+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:43:16.7697693+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7704927+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:43:16.7710229+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7717819+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 39.25s)
+[2m2024-06-10T13:43:16.7733212+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 39.26s)
+[2m2024-06-10T13:43:16.7746751+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 39.26s)
+[2m2024-06-10T13:43:16.775598+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 39.26s)
+[2m2024-06-10T13:43:16.804206+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.03s whole time elapsed: 39.29s)
+[2m2024-06-10T13:43:16.8120978+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.04s whole time elapsed: 39.29s)
+[2m2024-06-10T13:43:16.8532017+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.05s whole time elapsed: 39.34s)
+[2m2024-06-10T13:43:16.8570077+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.04s whole time elapsed: 39.34s)
+[2m2024-06-10T13:43:16.883598+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.03s whole time elapsed: 39.37s)
+[2m2024-06-10T13:43:16.8894926+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.04s whole time elapsed: 39.37s)
+[2m2024-06-10T13:43:16.9097116+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 39.39s)
+[2m2024-06-10T13:43:16.9181586+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.03s whole time elapsed: 39.40s)
+[2m2024-06-10T13:43:16.9292575+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 39.818408s
+[2m2024-06-10T13:45:08.3686092+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:45:08.3691529+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:45:08.369699+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:45:08.3772187+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:45:08.3779963+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:45:08.3784287+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:45:08.3800662+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3811927+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:45:08.3816151+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:45:08.3820727+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3824259+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3829706+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3833025+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3869056+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3872498+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3875657+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3879012+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3882199+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:45:08.3996527+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T13:45:08.4011669+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.02s)
+[2m2024-06-10T13:45:08.423961+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T13:45:08.4274843+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T13:45:08.4379769+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T13:45:08.442286+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.06s)
+[2m2024-06-10T13:45:08.4547049+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:45:08.4557012+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.08s)
+[2m2024-06-10T13:45:08.4674679+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 236.9189ms
+[2m2024-06-10T13:52:48.8236984+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:52:48.8243749+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:52:48.8249339+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:52:48.8284365+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:52:48.8288722+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:52:48.8293776+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T13:52:48.8297505+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:52:48.8302133+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:52:48.8305984+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:52:48.8311801+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:52:48.83153+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:52:48.8390717+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:52:48.8395635+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:52:48.8399906+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:52:48.8465906+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.02s)
+[2m2024-06-10T13:52:48.859798+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:52:48.8609308+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:52:48.8613472+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:52:48.8618158+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:52:48.8622137+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:52:48.8626486+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:52:48.8631766+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:52:48.8642215+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.02s)
+[2m2024-06-10T13:52:48.8656064+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.03s)
+[2m2024-06-10T13:52:48.8824228+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.04s whole time elapsed: 0.06s)
+[2m2024-06-10T13:52:48.8850074+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T13:52:48.9003816+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.08s)
+[2m2024-06-10T13:52:48.9153937+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.09s)
+[2m2024-06-10T13:52:48.9169976+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.08s)
+[2m2024-06-10T13:52:48.9396344+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.10s)
+[2m2024-06-10T13:52:48.9591485+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.12s)
+[2m2024-06-10T13:52:49.0036893+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 383.1325ms
+[2m2024-06-10T13:54:00.8613744+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:54:00.862016+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.86252+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.8629841+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.8635357+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:54:00.8641463+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T13:54:00.8646396+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:54:00.8652106+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.8656795+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.8665356+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.8671884+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:54:00.8864528+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:54:00.912046+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.05s)
+[2m2024-06-10T13:54:00.9204834+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:54:00.9211608+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.9217307+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.922313+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:54:00.9240324+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:54:00.9247444+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:54:00.9254113+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:54:00.9260405+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:54:00.926631+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:54:00.9274203+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:54:00.9281412+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:54:00.9282719+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T13:54:00.9286719+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:54:00.943947+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.08s)
+[2m2024-06-10T13:54:00.9545612+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.03s)
+[2m2024-06-10T13:54:00.9872005+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.07s)
+[2m2024-06-10T13:54:01.00888+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:54:01.0318349+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.11s)
+[2m2024-06-10T13:54:01.1069556+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 475.0252ms
+[2m2024-06-10T13:55:24.1946483+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:55:24.1953009+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.1957592+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.1963311+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.1968448+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:55:24.197411+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T13:55:24.1979708+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:55:24.1986886+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.1993364+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.2001113+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.2007175+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:55:24.2054863+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:55:24.2059829+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.2065531+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.2070548+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:55:24.2086818+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:55:24.2093538+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:55:24.2100592+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:55:24.2106391+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:55:24.2113463+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:55:24.2120903+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:55:24.2126557+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:55:24.2131158+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:55:24.219475+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.02s)
+[2m2024-06-10T13:55:24.2376711+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T13:55:24.2515491+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.06s)
+[2m2024-06-10T13:55:24.2625521+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.06s)
+[2m2024-06-10T13:55:24.2664397+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T13:55:24.2775341+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T13:55:24.2811326+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.09s)
+[2m2024-06-10T13:55:24.2998793+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:55:24.3685594+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 368.2774ms
+[2m2024-06-10T13:56:37.2795872+09:00[0m [32m INFO[0m [1mmain (dataio)[0m[2m:[0m [2mexamples_toymodel::valuedata_io[0m[2m:[0m [ValueData { value: 350.0, market_datetime: Some(2024-01-31 7:13:31.000000874 +09:00:00), name: "KOSPI2", code: "KOSPI2" }, ValueData { value: 5000.0, market_datetime: Some(2024-04-01 7:13:31.000000874 +09:00:00), name: "SPX", code: "SPX" }]
+[2m2024-06-10T13:56:37.283361+09:00[0m [32m INFO[0m [1mmain (dataio)[0m[2m:[0m [2mexamples_toymodel::vectordata_io[0m[2m:[0m [VectorData { value: [0.1, 0.2, 0.3, 0.4, 0.5], shape=[5], strides=[1], layout=CFcf (0xf), const ndim=1, dates: Some([2021-01-01 0:00:00.0 +09:00:00, 2021-01-03 0:00:00.0 +09:00:00, 2021-01-06 0:00:00.0 +09:00:00, 2021-01-08 0:00:00.0 +09:00:00, 2021-01-11 0:00:00.0 +09:00:00]), times: [-0.001997717, 0.0034817352, 0.011700913, 0.017180366, 0.025399543], shape=[5], strides=[1], layout=CFcf (0xf), const ndim=1, market_datetime: Some(2021-01-01 17:30:00.0 +09:00:00), currency: KRW, name: "vector_data_name1", code: "vector_data_code1" }, VectorData { value: [0.1, 0.2, 0.3, 0.4, 0.5], shape=[5], strides=[1], layout=CFcf (0xf), const ndim=1, dates: None, times: [1.0, 2.0, 3.0, 4.0, 5.0], shape=[5], strides=[1], layout=CFcf (0xf), const ndim=1, market_datetime: None, currency: KRW, name: "vector_data_name2", code: "vector_data_code2" }]
+[2m2024-06-10T13:56:37.3087391+09:00[0m [32m INFO[0m [1mmain (dataio)[0m[2m:[0m [2mexamples_toymodel::surfacedata_io[0m[2m:[0m [SurfaceData { spot: Some(350.0), value: [[0.904032, 0.821533, 0.748239, 0.681917, 0.621013, 0.564395, 0.511195, 0.460727, 0.412415, 0.365763, 0.320319, 0.275673, 0.231523, 0.188142, 0.149353, 0.132981, 0.14566, 0.16721, 0.189804, 0.211774, 0.232762, 0.252733, 0.271736, 0.289845, 0.307132],
+ [0.757368, 0.691392, 0.632752, 0.579675, 0.530931, 0.485626, 0.443082, 0.402768, 0.364255, 0.32719, 0.291288, 0.256356, 0.222404, 0.190057, 0.162026, 0.145896, 0.147238, 0.158936, 0.174041, 0.189881, 0.20556, 0.220769, 0.235411, 0.249468, 0.262957],
+ [0.682848, 0.625079, 0.573729, 0.527255, 0.484585, 0.444944, 0.40775, 0.372549, 0.338987, 0.306783, 0.275735, 0.245753, 0.216968, 0.190073, 0.167197, 0.152949, 0.150916, 0.157908, 0.168979, 0.181475, 0.194288, 0.206962, 0.219311, 0.231261, 0.24279],
+ [0.571081, 0.525578, 0.485156, 0.448607, 0.415096, 0.384026, 0.354951, 0.327538, 0.301536, 0.276768, 0.253133, 0.230639, 0.209472, 0.190148, 0.17376, 0.162083, 0.156705, 0.157371, 0.162186, 0.169278, 0.177461, 0.186092, 0.194832, 0.203504, 0.212017],
+ [0.512868, 0.473601, 0.438747, 0.407264, 0.378439, 0.351762, 0.326858, 0.303451, 0.281341, 0.260397, 0.240557, 0.221858, 0.204473, 0.188793, 0.17552, 0.165639, 0.160015, 0.15871, 0.16085, 0.165264, 0.171004, 0.177453, 0.184237, 0.191139, 0.198031],
+ [0.474875, 0.439666, 0.408439, 0.380263, 0.354501, 0.3307, 0.308531, 0.287755, 0.268203, 0.249769, 0.232416, 0.216186, 0.201233, 0.187864, 0.17657, 0.167976, 0.162608, 0.160544, 0.16131, 0.164144, 0.168331, 0.173336, 0.178802, 0.184501, 0.190291],
+ [0.426607, 0.396703, 0.370229, 0.346395, 0.324664, 0.304655, 0.286097, 0.268796, 0.252619, 0.237489, 0.223383, 0.210337, 0.198457, 0.187928, 0.179012, 0.172002, 0.16713, 0.164449, 0.163775, 0.164752, 0.166969, 0.170056, 0.173723, 0.177759, 0.182015],
+ [0.393157, 0.366712, 0.343341, 0.322347, 0.303257, 0.28574, 0.269562, 0.254558, 0.240622, 0.227693, 0.215761, 0.204859, 0.195071, 0.186525, 0.179379, 0.173785, 0.169836, 0.167516, 0.166687, 0.167119, 0.168548, 0.170726, 0.17344, 0.176527, 0.179861],
+ [0.348153, 0.326246, 0.306965, 0.289731, 0.274156, 0.259973, 0.246998, 0.235106, 0.22422, 0.2143, 0.205343, 0.19737, 0.190426, 0.184562, 0.179822, 0.176225, 0.173743, 0.172305, 0.171795, 0.172074, 0.172998, 0.174431, 0.176255, 0.178371, 0.180702]], shape=[9, 25], strides=[25, 1], layout=Cc (0x5), const ndim=2, dates: [2021-02-01 17:00:00.0 +09:00:00, 2021-03-01 17:00:00.0 +09:00:00, 2021-04-01 17:00:00.0 +09:00:00, 2021-07-01 17:00:00.0 +09:00:00, 2021-10-01 17:00:00.0 +09:00:00, 2022-01-01 17:00:00.0 +09:00:00, 2022-07-01 17:00:00.0 +09:00:00, 2023-01-01 17:00:00.0 +09:00:00, 2024-01-01 17:00:00.0 +09:00:00], strikes: [105.00001, 122.50001, 140.0, 157.5, 175.0, 192.5, 210.0, 227.5, 245.0, 262.5, 280.0, 297.5, 315.0, 332.5, 350.0, 367.5, 385.0, 402.5, 420.0, 437.5, 455.0, 472.5, 490.0, 507.5, 525.0], shape=[25], strides=[1], layout=CFcf (0xf), const ndim=1, market_datetime: Some(2021-01-01 17:00:00.0 +09:00:00), currency: KRW, name: "KOSPI2 20220414 Data", code: "KOSPI2 20220414 Data" }, SurfaceData { spot: None, value: [[2.0, 1.0],
+ [1.0, 2.0]], shape=[2, 2], strides=[2, 1], layout=Cc (0x5), const ndim=2, dates: [2021-01-01 17:00:00.0 +09:00:00, 2021-01-02 17:00:00.0 +09:00:00], strikes: [1.0, 2.0], shape=[2], strides=[1], layout=CFcf (0xf), const ndim=1, market_datetime: None, currency: NIL, name: "mock surface", code: "mock surface" }]
+[2m2024-06-10T13:56:37.3111424+09:00[0m [32m INFO[0m [1mmain (dataio)[0m[2m:[0m [2mexamples_toymodel::futuresdata_io[0m[2m:[0m [Futures { average_trade_price: 350.0, first_trade_date: 2021-01-01 17:00:00.0 +09:00:00, last_trade_date: 2022-01-01 17:00:00.0 +09:00:00, maturity: 2022-01-01 17:00:00.0 +09:00:00, settlement_date: 2022-01-01 17:00:00.0 +09:00:00, unit_notional: 250000.0, currency: KRW, underlying_currency: KRW, underlying_codes: ["KOSPI2"], name: "KOSPI2 fut1", code: "165AAA" }, Futures { average_trade_price: 5000.0, first_trade_date: 2021-01-01 17:00:00.0 +09:00:00, last_trade_date: 2022-01-01 17:00:00.0 +09:00:00, maturity: 2022-01-01 17:00:00.0 +09:00:00, settlement_date: 2022-01-01 17:00:00.0 +09:00:00, unit_notional: 50.0, currency: USD, underlying_currency: USD, underlying_codes: ["SPX"], name: "SPX fut1", code: "ESF22" }]
+[2m2024-06-10T13:56:37.3114674+09:00[0m [32m INFO[0m [1mmain (dataio)[0m[2m:[0m [2mio_example[0m[2m:[0m DataIo finished Duration { seconds: 0, nanoseconds: 4488700 }
+[2m2024-06-10T13:56:43.9651306+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 1) set all parameters
+[2m2024-06-10T13:56:43.9755956+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.9770808+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.9786412+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.9796708+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:56:43.9805554+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m 
+### KR103501GCC0 (Bond) has a cashflow: 0.02125 at 2024-06-10 16:30:00.0 +09:00:00
+
+[2m2024-06-10T13:56:43.9812867+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:56:43.9821578+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:43.9828739+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:43.9838004+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:43.9843108+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 1, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:43.9936225+09:00[0m [32m INFO[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * (engine-id: 0) set all parameters
+[2m2024-06-10T13:56:43.9943368+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * npv calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.994957+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * fx exposure calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.9955837+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.00s)
+[2m2024-06-10T13:56:43.9979982+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-14 0:00:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:56:43.9988594+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:56:43.9998601+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) is DEDUCTED from dividens by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evaluation_date: 2024-06-21 16:30:00.0 +09:00:00, value: 347
+
+[2m2024-06-10T13:56:44.0004652+09:00[0m [34mDEBUG[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::parameters::market_price[0m[2m:[0m 
+KOSPI2 (KOSPI2) div deduction is ROLLED back by 0.008571428 on 2024-06-01 0:00:00.0 +09:00:00
+evluation_date: 2024-03-13 16:30:00.0 +09:00:00, value: 350
+
+[2m2024-06-10T13:56:44.001076+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * theta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:44.0016508+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:44.0023634+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:44.0033702+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_delta calculation is done (engine id: 0, time = 0.00s whole time elapsed: 0.01s)
+[2m2024-06-10T13:56:44.0056421+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T13:56:44.0195224+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.03s)
+[2m2024-06-10T13:56:44.0346019+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 1, time = 0.03s whole time elapsed: 0.06s)
+[2m2024-06-10T13:56:44.04918+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * rho calculation is done (engine id: 0, time = 0.03s whole time elapsed: 0.05s)
+[2m2024-06-10T13:56:44.0499021+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 1, time = 0.01s whole time elapsed: 0.07s)
+[2m2024-06-10T13:56:44.0656875+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m1[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 1, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:56:44.066166+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * div_structure calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.07s)
+[2m2024-06-10T13:56:44.0889822+09:00[0m [32m INFO[0m [1mcalculate[0m[1m{[0m[3mengine_id[0m[2m=[0m0[1m}[0m[2m:[0m [2mquantlib::pricing_engines::engine[0m[2m:[0m * vega_matrix calculation is done (engine id: 0, time = 0.02s whole time elapsed: 0.09s)
+[2m2024-06-10T13:56:44.1381079+09:00[0m [32m INFO[0m [1mmain (engine)[0m[2m:[0m [2mengine_example[0m[2m:[0m engine example finished 383.5168ms

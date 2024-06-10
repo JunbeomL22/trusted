@@ -92,7 +92,11 @@ impl MarketPrice {
                 for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > self.market_datetime) && (*date <= eval_dt) {
                         self.value *= 1.0 - div;
-                        debug!("\n{} ({}) is DEDUCTED from dividens by {} on {}\n", self.name, self.code, div, &date);
+                        debug!(
+                            "\n{} ({}) is DEDUCTED from dividens by {} on {}\n\
+                            evaluation_date: {:?}, value: {}\n", 
+                            self.name, self.code, div, &date, 
+                            &eval_dt, &self.value);
                     }
                 }
                 self.market_datetime = eval_dt;   
@@ -100,10 +104,14 @@ impl MarketPrice {
                 for (date, div) in dividend.borrow().get_dividend_ratio().iter() {
                     if (*date > eval_dt) && (*date <= self.market_datetime) {
                         self.value /= 1.0 - div;
-                        debug!("\n{} ({}) div deduction is ROLLED back by {} on {}\n", self.name, self.code, div, &date);
+                        debug!(
+                            "\n{} ({}) div deduction is ROLLED back by {} on {}\n\
+                            evluation_date: {:?}, value: {}\n", 
+                            self.name, self.code, div, &date, 
+                            &eval_dt, &self.value);
                     }
-                    
                 }
+                self.market_datetime = eval_dt;
             }
         }        
         Ok(())

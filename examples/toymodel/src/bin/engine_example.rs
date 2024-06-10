@@ -224,7 +224,7 @@ fn main() -> Result<()> {
     let stock_futures1 = Futures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
-        datetime!(2021-01-11 00:00:00 +09:00),
+        datetime!(2024-06-14 00:00:00 +09:00),
         datetime!(2024-06-14 00:00:00 +09:00),
         datetime!(2024-06-14 00:00:00 +09:00),
         250_000.0,
@@ -238,7 +238,7 @@ fn main() -> Result<()> {
     let stock_futures2 = Futures::new(
         350.0,
         datetime!(2021-01-01 00:00:00 +09:00),
-        datetime!(2021-01-01 00:00:00 +09:00),
+        datetime!(2025-06-14 00:00:00 +09:00),
         datetime!(2025-06-14 00:00:00 +09:00),
         datetime!(2025-06-14 00:00:00 +09:00),
         250_000.0,
@@ -341,7 +341,7 @@ fn main() -> Result<()> {
         OptionType::Put,
         OptionExerciseType::European,
         OptionDailySettlementType::NotSettled,
-        "KOSPI2 Call Sep21".to_string(),
+        "KOSPI2 Put Sep21".to_string(),
         "165XXX3".to_string(),
     );
 
@@ -381,14 +381,14 @@ fn main() -> Result<()> {
     let calculation_configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
         .with_gamma_calculation(true)
-        .with_theta_calculation(true)
-        .with_rho_calculation(true)
         .with_vega_calculation(true)
         .with_vega_structure_calculation(true)
         .with_div_delta_calculation(true)
-        .with_rho_structure_calculation(true)
         .with_div_structure_calculation(true)
         .with_vega_matrix_calculation(true)
+        .with_rho_calculation(true)
+        .with_rho_structure_calculation(true)
+        .with_theta_calculation(true)
         .with_theta_day(theta_day);
         
     // make a match parameter
@@ -473,15 +473,16 @@ fn main() -> Result<()> {
     engine_generator.distribute_instruments().context("Failed to distribute instruments")?;
     engine_generator.calculate().context("Failed to calculate")?;
 
-    
     let calculation_results: &HashMap<String, CalculationResult> = engine_generator.get_calculation_results();
-
+    println!("calculation results: {:?}", calculation_results);
+    
     let json = to_string_pretty(&calculation_results)
         .with_context(|| format!("({}:{}) Failed to serialize CalculationResult to JSON", file!(), line!()))?;
     
     write("json_data/engine_results.json", &json)
         .with_context(|| format!("({}:{}) Failed to write JSON to file", file!(), line!()))?;
 
+    /*
     // re-read the json file
     let json_str = std::fs::read_to_string("json_data/engine_results.json")
         .with_context(|| format!("({}:{}) Failed to read JSON from file", file!(), line!()))?;
@@ -490,7 +491,7 @@ fn main() -> Result<()> {
         .with_context(|| format!("({}:{}) Failed to deserialize JSON to CalculationResult", file!(), line!()))?;
 
     println!("calculation results: {:?}", res);
-
+    */
     let elapsed = start_time.elapsed();
     info!("engine example finished {:?}", elapsed);
      

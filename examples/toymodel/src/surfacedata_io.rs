@@ -4,6 +4,7 @@ use time::{macros::datetime, Duration};
 use serde_json::{
     from_str,
     to_string,
+    to_string_pretty,
 };
 use tracing::info;
 use quantlib::data::surface_data::SurfaceData;
@@ -92,7 +93,7 @@ pub fn surfacedata_io() -> Result<()> {
     );
 
     let surfacedata_vec = vec![data1, data2];
-    let surfacedata_json = to_string(&surfacedata_vec).context("Failed to serialize SurfaceData")?;
+    let surfacedata_json = to_string_pretty(&surfacedata_vec).context("Failed to serialize SurfaceData")?;
     write("json_data/surfacedata.json", surfacedata_json).context("Failed to write SurfaceData")?;
     
     let surfacedata_json = std::fs::read_to_string("json_data/surfacedata.json").context("Failed to read SurfaceData")?;

@@ -4,6 +4,7 @@ use time::macros::datetime;
 use serde_json::{
     from_str,
     to_string,
+    to_string_pretty,
 };
 use tracing::info;
 use quantlib::data::vector_data::VectorData;
@@ -46,7 +47,7 @@ pub fn vectordata_io() -> Result<()> {
 
     let vec_datas_vec = vec![data1, data2];
     
-    let json = to_string(&vec_datas_vec)
+    let json = to_string_pretty(&vec_datas_vec)
         .context("Failed to serialize Vec<VectorData> to JSON")?;
     write("json_data/vectordata.json", &json).context("Failed to write JSON to file")?;
 

@@ -5,6 +5,7 @@ use anyhow::{Result, Context};
 use serde_json::{
     from_str,
     to_string,
+    to_string_pretty,
 };
 use tracing::info;
 use std::fs::{
@@ -43,7 +44,7 @@ pub fn futuresdata_io() -> Result<()> {
 
     let futdate_vec = vec![futures1, futures2];
 
-    let json = to_string(&futdate_vec)
+    let json = to_string_pretty(&futdate_vec)
         .context("Failed to serialize Vec<Futures> to JSON")?;
 
     write("json_data/futuresdata.json", &json)

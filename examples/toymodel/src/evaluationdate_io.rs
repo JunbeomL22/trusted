@@ -4,6 +4,7 @@ use anyhow::{Result, Context};
 use serde_json::{
     from_str,
     to_string,
+    to_string_pretty,
 };
 use tracing::info;
 use std::fs::{
@@ -14,7 +15,7 @@ use std::fs::{
 pub fn evaluationdate_io() -> Result<()> {
     let evaluation_datetime = datetime!(2021-01-01 17:00:00 +09:00);
     let data1 = EvaluationDate::new(evaluation_datetime);
-    let json = to_string(&data1)
+    let json = to_string_pretty(&data1)
         .context("Failed to serialize EvaluationDate to JSON")?;
     write("json_data/evaluationdate.json", &json)
         .context("Failed to write JSON to file")?;

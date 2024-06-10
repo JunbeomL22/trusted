@@ -4,6 +4,7 @@ use time::{Date, Time, UtcOffset, OffsetDateTime, Month};
 use serde_json::{
     from_str,
     to_string,
+    to_string_pretty,
 };
 use tracing::info;
 use quantlib::data::value_data::ValueData;
@@ -36,7 +37,7 @@ pub fn valuedata_io() -> Result<()> {
 
     let value_data_vec = vec![kospi_value_data, spx_value_data];
 
-    let json = to_string(&value_data_vec)
+    let json = to_string_pretty(&value_data_vec)
         .context("Failed to serialize Vec<ValueData> to JSON")?;
     write("json_data/valuedata.json", &json).context("Failed to write JSON to file")?;
     

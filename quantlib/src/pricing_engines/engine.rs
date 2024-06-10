@@ -1,4 +1,4 @@
-use tracing::{info, Level, span, warn};
+use tracing::{info, Level, span, warn, debug};
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
@@ -49,6 +49,7 @@ use std::sync::Arc;
 use anyhow::{Result, Context, anyhow, bail};
 use ndarray::Array2;
 use time::{OffsetDateTime, Duration};
+
 /// Engine typically handles a bunch of instruments and calculate the pricing of the instruments.
 /// Therefore, the result of calculations is a hashmap with the key being the code of the instrument
 /// Engine is a struct that holds the calculation results of the instruments
@@ -122,8 +123,6 @@ impl Engine {
                 let data = fx_data.get(&fx_code).unwrap();
                 let rc = Rc::new(RefCell::new(MarketPrice::new(
                     data.get_value(),
-                    //data.get_market_datetime().unwrap_or(
-                        //self.evaluation_date.borrow().get_date_clone()),
                     self.evaluation_date.borrow().get_date_clone(),
                     None,
                     fx_code.get_currency2().clone(),
@@ -135,8 +134,6 @@ impl Engine {
                 let data = fx_data.get(&fx_code.reciprocal()).unwrap();
                 let rc = Rc::new(RefCell::new(MarketPrice::new(
                     1.0 / data.get_value(),
-                    //data.get_market_datetime().unwrap_or(
-                        //self.evaluation_date.borrow().get_date_clone()),
                     self.evaluation_date.borrow().get_date_clone(),
                     None,
                     fx_code.get_currency2().clone(),
@@ -152,8 +149,6 @@ impl Engine {
                 let rc = Rc::new(RefCell::new(
                     MarketPrice::new(
                         data1.get_value() / data2.get_value(),
-                        //data1.get_market_datetime().unwrap_or(
-                            //self.evaluation_date.borrow().get_date_clone()),
                         self.evaluation_date.borrow().get_date_clone(),
                         None,
                         fx_code.get_currency2().clone(),
@@ -261,8 +256,6 @@ impl Engine {
                     MarketPrice::new(
                         data.get_value(),
                         self.evaluation_date.borrow().get_date_clone(),
-                        //data.get_market_datetime().unwrap_or(
-                        //self.evaluation_date.borrow().get_date_clone()),
                         div,
                         data.get_currency().clone(),
                         data.get_name().clone(),
@@ -741,20 +734,21 @@ impl Engine {
         for inst in insts {
             let inst_code = inst.get_code();
             let unitamt = inst.get_unit_notional();
-            let value = self.calculation_results
+            let npv = self.calculation_results
                 .get(inst_code)
                 .ok_or_else(|| anyhow!(
                     "({}:{}) result is not set in {} ({})",
                     file!(), line!(), inst_code, inst.get_type_name(),
                 ))?
                 .borrow()
-                .get_value()
+                .get_npv_result()
                 .ok_or_else(|| anyhow!(
                     "({}:{}) value is not set in {} ({})", 
                     file!(), line!(), inst_code, inst.get_type_name(),
-                ))?;
-            let delta = value * DELTA_PNL_UNIT;
+                ))?.get_npv();
+            let delta = npv * DELTA_PNL_UNIT * unitamt;
             let gamma = 0.0;
+            
             (*self.calculation_results
                 .get(inst_code)
                 .ok_or_else(|| anyhow!(
@@ -762,7 +756,7 @@ impl Engine {
                     file!(), line!(), inst_code, inst.get_type_name(),
                 ))?)
                 .borrow_mut()
-                .set_single_delta(&inst_code, delta * unitamt);
+                .set_single_delta(&inst_code, delta);
             (*self.calculation_results
                 .get(inst_code)
                 .ok_or_else(|| anyhow!(
@@ -770,9 +764,8 @@ impl Engine {
                     file!(), line!(), inst_code, inst.get_type_name(),
                 ))?)
                 .borrow_mut()
-                .set_single_gamma(&inst_code, gamma * unitamt);
+                .set_single_gamma(&inst_code, gamma);
         }
-
         Ok(())
     }
     
@@ -806,15 +799,16 @@ impl Engine {
             if self.instruments_in_action.is_empty() {
                 continue;
             }
+
             original_price = self.equities
                 .get(*und_code)
-                .ok_or_else(|| anyhow!("there is no stock {}", und_code))?
+                .ok_or_else(|| anyhow!("there is no equity {}", und_code))?
                 .borrow()
                 .get_value();
 
             // set instruments that needs to be calculated
             {
-                let mut stock = (*self.equities
+                let mut equity = (*self.equities
                     .get(*und_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) there is no stock {}", 
@@ -822,20 +816,20 @@ impl Engine {
                         und_code
                     ))?).as_ref().borrow_mut();
 
-                *stock *= up_bump;
+                *equity *= up_bump;
             }
 
             delta_up_map = self.get_npvs().context("failed to get npvs")?;
             {
-                let mut stock = (*self.equities
+                let mut equity = (*self.equities
                     .get(*und_code)
                     .ok_or_else(|| anyhow!(
                         "({}:{}) there is no stock {}", 
                         file!(), line!(),
                         und_code))?).as_ref().borrow_mut();
 
-                stock.set_price(original_price);
-                *stock *= down_bump;
+                equity.set_price(original_price);
+                *equity *= down_bump;
             }
             
             delta_down_map = self.get_npvs().context("failed to get npvs")?;
@@ -864,12 +858,12 @@ impl Engine {
                     .set_single_delta(&und_code, delta * unitamt);
 
                 mid = self.calculation_results
-                    .get(inst.get_code())
-                    .ok_or_else(|| anyhow!("result is not set"))?
-                    .borrow()
-                    .get_npv_result()
-                    .ok_or_else(|| anyhow!("npv is not set"))?
-                    .get_npv();
+                        .get(inst.get_code())
+                        .ok_or_else(|| anyhow!("result is not set"))?
+                        .borrow()
+                        .get_npv_result()
+                        .ok_or_else(|| anyhow!("npv is not set"))?
+                        .get_npv();
 
                 gamma = delta_up - mid + delta_down - mid;
                 gamma *= DELTA_PNL_UNIT / delta_bump_ratio;
@@ -897,6 +891,7 @@ impl Engine {
                     .set_price(original_price);
             }
         }
+        
         Ok(())
     }
 
@@ -1440,7 +1435,10 @@ impl Engine {
 
         // limit the scope that the attribute is mutably borrowed
         
-        { (*self.evaluation_date).borrow_mut().set_date(bumped_date.clone()); }
+        { 
+            (*self.evaluation_date).borrow_mut().set_date(bumped_date.clone()); 
+        }
+
 
         let npvs_theta = self.get_npvs()
             .with_context(|| anyhow!(
@@ -1452,7 +1450,6 @@ impl Engine {
             let inst_code = inst.get_code();
             let inst_type = inst.get_type_name();
             if continue_type.contains(&inst_type) {
-                dbg!(inst_code, inst_type);
                 continue;
             };
 
@@ -1502,7 +1499,9 @@ impl Engine {
             { result.borrow_mut().set_theta(theta); }
         }
         // put back
-        { (*self.evaluation_date).borrow_mut().set_date(original_evaluation_date); }
+        { 
+            (*self.evaluation_date).borrow_mut().set_date(original_evaluation_date); 
+        }
 
         Ok(())
     }
@@ -1531,6 +1530,7 @@ impl Engine {
         let mut val: Real;
         let exclude_type = vec!["Stock", "Cash"];
         let exclude_type_clone = exclude_type.clone();
+
         for curve_code in all_curve_codes {
             self.instruments_in_action = self.instruments
                 .instruments_using_curve(
@@ -1553,7 +1553,6 @@ impl Engine {
                     _ => Some(calc_times[i-1]),
                 };
                 let bump_end = Some(calc_times[i]);
-                
                 // bump the curve with the limit of the scope of mutable borrow
                 {
                     (*self.zero_curves.get(curve_code)
@@ -1561,11 +1560,10 @@ impl Engine {
                             "({}:{}) no zero curve: {}\n{}", 
                             file!(), line!(),
                             curve_code, self.msg_tag,))?)
-                            .as_ref()
-                            .borrow_mut()
-                            .bump_time_interval(bump_start, bump_end, bump_val)?;
+                        .as_ref()
+                        .borrow_mut()
+                        .bump_time_interval(bump_start, bump_end, bump_val)?;
                 }
-                
                 // 
                 npvs_up = self.get_npvs().context("failed to get npvs")?;
                 for inst in &self.instruments_in_action {
@@ -1588,11 +1586,11 @@ impl Engine {
                             "({}:{}) no zero curve: {}\n{}", 
                             file!(), line!(),
                             curve_code, self.msg_tag,))?)
-                            .as_ref()
-                            .borrow_mut()
-                            .bump_time_interval(bump_start, bump_end, -bump_val)?;
+                        .as_ref()
+                        .borrow_mut()
+                        .bump_time_interval(bump_start, bump_end, -bump_val)?;
                 }
-
+               
                 // if there is no instrument over the calc_tenors, we do not need to calculate the next bump
                 let inst_over_bump_end = self.instruments
                     .instruments_with_maturity_over(

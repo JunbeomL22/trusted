@@ -117,6 +117,18 @@ impl EvaluationDate {
             }
         }
     }
+
+    pub fn display_observers(&self) {
+        println!("Market Price Observers:");
+        for observer in self.marketprice_observers.iter() {
+            println!("{:?}", observer.borrow().get_name());
+        }
+
+        println!("Dividend Observers:");
+        for observer in self.dividend_observers.iter() {
+            println!("{:?}", observer.borrow().get_name());
+        }
+    }
 }
 
 impl AddAssign<&str> for EvaluationDate {
