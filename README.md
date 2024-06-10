@@ -13,18 +13,18 @@ This Rust project consists of two main components:
 | Module | Description |
 | ------ | ----------- |
 | [data](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/data) | Raw market observatiions, which are not directly used for calculation <br>  Data is shared by Engine object in multi-thread environment|
-| [parameters](https://github.com/JunbeomL22/trusted/tree/main//quantlib/src/parameters) | Objects generated from data objects for actual calculation |
-| [isntruments](./trusted/quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
-| [time](./trusted/quantlib/src/time) | Calendars, conventions, handling holiday |
-| [pricing_engines](./trusted/quantlib/src/pricing_engines) | Engine, EngineGenerator, and Pricer |
+| [parameters](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/parameters) | Objects generated from data objects for actual calculation |
+| [isntruments](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
+| [time](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/time) | Calendars, conventions, handling holiday |
+| [pricing_engines](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines) | Engine, EngineGenerator, and Pricer |
 
 | Struct \& Enum | Description |
 |------- | ----------- |
-|[CalculationConfiguration](./trusted/quantlib/src/pricing_engines/calculation_configuration.rs) | All information for pricing: delta bump ratio, gap days for theta calculation, etc
-| [Pricer](./trusted/quantlib/src/pricing_engines/pricer.rs) | Enum containing pricers for each [Instrument](./trusted/quantlib/src/instrument.rs) |
-| [Engine](./trusted/quantlib/src/pricing_engines/engine.rs) | An Engine takes data as Arc objects and creates parameters such as [ZeroCurve](./trusted/quantlib/src/parameters/zero_curve.rs), [DiscreteDividendRatio](./trusted/quantlib/src/parameters/discrete_dividend_ratio.rs), etc. The parameters, as Rc<RefCell<..>> objects, are shared only inside the Engine. Then the Engine excutes Pricers repeatedly for calculating risks, e.g., delta, gamma, theta, rho, etc|
-| [CalculationResult](./trusted/quantlib/src/pricing_engines/calculation_result.rs)| price, greeks, cashflows |
-| [EngineGenerator](./trusted/quantlib/src/pricing_engines/engine_generator.rs) | EngineGnerator groups instruments according to [InstrumentCategory](./trusted/quantlib/src/pricing_engines/engine_generator.rs), then [Engine](./trusted/quantlib/src/pricing_engines/engine.rs)s are created for each group of instruments. The purpose of separation is mmainly for compuation performance. This is especially useful for Monte-Carlo simulation (not yet developed) since the most of the computation cost in MC simulation is caused by path generation. |
+|[CalculationConfiguration](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/calculation_configuration.rs) | All information for pricing: delta bump ratio, gap days for theta calculation, etc
+| [Pricer](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/pricer.rs) | Enum containing pricers for each [Instrument](./trusted/quantlib/src/instrument.rs) |
+| [Engine](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/engine.rs) | An Engine takes data as Arc objects and creates parameters such as [ZeroCurve](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/parameters/zero_curve.rs), [DiscreteDividendRatio](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/parameters/discrete_dividend_ratio.rs), etc. The parameters, as Rc<RefCell<..>> objects, are shared only inside the Engine. Then the Engine excutes Pricers repeatedly for calculating risks, e.g., delta, gamma, theta, rho, etc|
+| [CalculationResult](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/calculation_result.rs)| price, greeks, cashflows |
+| [EngineGenerator](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/engine_generator.rs) | EngineGnerator groups instruments according to [InstrumentCategory](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/engine_generator.rs), then [Engine](https://github.com/JunbeomL22/trusted/tree/main/quantlib/src/pricing_engines/engine.rs)s are created for each group of instruments. The purpose of separation is mmainly for compuation performance. This is especially useful for Monte-Carlo simulation (not yet developed) since the most of the computation cost in MC simulation is caused by path generation. |
 
 
 ```mermaid
