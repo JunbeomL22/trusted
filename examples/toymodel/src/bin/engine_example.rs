@@ -77,7 +77,7 @@ fn main() -> Result<()> {
         .with_timer(custom_time.clone());
 
     let file_layer = fmt::layer()
-        .with_writer(non_blocking_appender.with_max_level(Level::DEBUG).with_min_level(Level::INFO))
+        .with_writer(non_blocking_appender.with_max_level(Level::DEBUG))
         .with_timer(custom_time);
 
     // Combine console and file layers into a subscriber
@@ -389,7 +389,8 @@ fn main() -> Result<()> {
         .with_rho_calculation(true)
         .with_rho_structure_calculation(true)
         .with_theta_calculation(true)
-        .with_theta_day(theta_day);
+        .with_theta_day(theta_day)
+        .with_vega_matrix_spot_moneyness(array![0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.3]);
         
     // make a match parameter
     let mut collateral_curve_map = HashMap::new();
