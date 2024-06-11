@@ -32,10 +32,14 @@ This Rust project consists of two main components:
 title: quantlib structure
 ---
 stateDiagram-v2
-    EngineGenerator --> Engine1: instruments <br> data <br> calc config
-    EngineGenerator --> Engine2: instruments <br> data <br> calc config
-    EngineGenerator --> Engine3: instruments <br> data <br> calc config
-    Engine1 --> CalculationResult: merge
-    Engine2 --> CalculationResult: merge
-    Engine3 --> CalculationResult: merge
+    EngineGenerator --> InstrumentCategory: instruments
+    InstrumentCategory --> Engine1: inst group1
+    InstrumentCategory --> Engine2: inst group2
+    EngineGenerator --> Engine1: data & config
+    EngineGenerator --> Engine2: data & config
+    Engine1 --> CalculationResult: results
+    Engine2 --> CalculationResult: results
+    Engine1 --> Parameters: data for inst group 1
+    Parameters --> Pricer1
+    Parameters --> Pricer2
 ```
