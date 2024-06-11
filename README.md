@@ -14,7 +14,7 @@ This Rust project consists of two main components:
 | ------ | ----------- |
 | [data](./quantlib/src/data) | Raw market observatiions, which are not directly used for calculation. <br>  Data is shared by Engine object in multi-thread environment|
 | [parameters](./quantlib/src/parameters) | Objects generated from data objects for actual calculation |
-| [isntruments](./quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
+| [instruments](./quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
 | [time](./quantlib/src/time) | Calendars, conventions, handling holiday |
 | [pricing_engines](./quantlib/src/pricing_engines) | Engine, EngineGenerator, and Pricer |
 
