@@ -12,7 +12,7 @@ This Rust project consists of two main components:
 ### quantlib
 | Module | Description |
 | ------ | ----------- |
-| [data](./quantlib/src/data) | Raw market observatiions, which are not directly used for calculation. <br>  Data is shared by Engine object in multi-thread environment|
+| [data](./quantlib/src/data) | Raw market observations, which are not directly used for calculation. <br>  Data is shared by Engine object in multi-thread environment|
 | [parameters](./quantlib/src/parameters) | Objects generated from data objects for actual calculation |
 | [instruments](./quantlib/src/instruments) | ex) Futures, FxFutures, FxForward, FxSwap, VanillaOption, IRS, CCS, Bond, KtbFutures|
 | [time](./quantlib/src/time) | Calendars, conventions, handling holiday |
