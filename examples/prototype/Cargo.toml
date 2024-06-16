@@ -1,0 +1,11 @@
+[package]
+name = "examples-prototype"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+minstant = "0.1"
+time = { version = "0.3", features = ["macros"]}
+

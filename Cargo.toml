@@ -7,11 +7,10 @@ members = [
     "examples/*",
 ]
 
+
 [workspace.dependencies]
 num-format = "0.4.0"
 tracing = "0.1.25"
-
-# dev-dependencies
+chrono = "0.4"
+minstant = "0.1"
 criterion = { version = "0.5.1"}
-
-

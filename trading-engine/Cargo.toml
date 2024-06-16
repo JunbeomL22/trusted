@@ -6,8 +6,15 @@ edition = "2021"
 [lib]
 name = "trading_engine"
 
+[[bench]]
+name = "timer"
+harness = false
+
 [dependencies]
 serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 anyhow = "1.0.79"
-rstest = "0.20"
+rstest = "0.21"
+minstant = "0.1"
+quanta = "0.12"
+criterion = "0.5"
