@@ -1,5 +1,4 @@
-use minstant;
-use std::fmt::Display;
+
 use log::LevelFilter;
 use log::info as log_info;
 use fast_log::config::Config;
@@ -39,12 +38,12 @@ fn bench_fast_log() {
 
     let mut histograms = Vec::new();
 
-    for _ in 0..5 {
+    for _ in 0..10 {
         let now = std::time::Instant::now();
         let mut sum = 0;
-        for i in 0..10000 {
-            sum += i;
-            log_info!("sum = {}", sum);
+        for i in 0..1000 {
+            sum += i*i;
+            log_info!("sum = {}", sum); 
         }
 
         log::logger().flush();
@@ -81,11 +80,11 @@ fn bench_ftlog() {
         .expect("logger build or set failed");
 
     let mut histograms = Vec::new();
-    for _ in 0..5 {
+    for _ in 0..10 {
         let now = std::time::Instant::now();
         let mut sum = 0;
-        for i in 0..10000 {
-            sum += i;
+        for i in 0..1000 {
+            sum += i*i;
             ftlog_info!("sum = {}", sum);
         }
 
@@ -102,6 +101,7 @@ fn bench_mylogger() {
     let _guard = logger::builder()
         .max_log_level(LevelFilter::Info)
         .bounded(100_000, false)
+        //.unbounded()
         .root(
             MyFileAppender::builder()
                 .path("./mylog.log")
@@ -114,11 +114,11 @@ fn bench_mylogger() {
         .expect("logger build or set failed");
 
     let mut histograms = Vec::new();
-    for _ in 0..5 {
+    for _ in 0..10 {
         let now = std::time::Instant::now();
         let mut sum = 0;
-        for i in 0..10000 {
-            sum += i;
+        for i in 0..1000 {
+            sum += i*i;
             myinfo!("sum = {}", sum);
         }
         let elapsed = now.elapsed();

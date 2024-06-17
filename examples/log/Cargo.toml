@@ -5,8 +5,6 @@ edition = "2021"
 publish = false
 
 [dependencies]
-minitrace = "0.6"
-minstant = "0.1"
 log = "0.4"
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }
 serde = { version = "1.0", features = ["derive"] } 
