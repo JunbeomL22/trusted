@@ -106,11 +106,47 @@ fn bench_datetime_formatter(c: &mut Criterion) {
 
     bgroup.finish();
 }
+
+fn bench_make_string_then_byte_string(c: &mut Criterion) {
+    let anchor = minstant::Anchor::new();
+    let mut bgroup = c.benchmark_group("make_string_then_byte_string");
+
+    bgroup.bench_function("format -> to_string -> into_bytes", |b| {
+        b.iter(|| {
+            let unix_nano = minstant::Instant::now().as_unix_nanos(&anchor);
+            let s = format!(
+                "({} unixnano) {}",
+                unix_nano,
+                "hello world");
+            s.as_bytes().to_vec()
+        });
+    });
+
+    bgroup.bench_function("unix_nano -> into_bytes", |b| {
+        b.iter(|| {
+            let unix_nano = minstant::Instant::now().as_unix_nanos(&anchor);
+            let s1 = "(".as_bytes();
+            let ts_bytes = unix_nano.to_le_bytes();
+            let s2 = " unixnano) ".as_bytes();
+            let msg_bytes = "hello world".as_bytes();
+
+            //return the concated byte
+            let mut bytes = Vec::with_capacity(s1.len() + ts_bytes.len() + s2.len() + msg_bytes.len());
+            bytes.extend_from_slice(s1);
+            bytes.extend_from_slice(&ts_bytes);
+            bytes.extend_from_slice(s2);
+            bytes.extend_from_slice(msg_bytes);
+            bytes
+        });
+    });
+    bgroup.finish();
+}
 criterion_group!(
     benches, 
     //bench_base,
     //bench_concat_numbers,
-    bench_datetime_formatter,
+    //bench_datetime_formatter,
+    bench_make_string_then_byte_string
 );
 
 criterion_main!(benches);

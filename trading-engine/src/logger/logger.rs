@@ -18,21 +18,11 @@ use log::{kv::Key, set_boxed_logger, set_max_level, Log, Metadata, SetLoggerErro
 use chrono::{DateTime, Utc};
 use minstant::Instant as Minstant;
 //
-use time::{
-    OffsetDateTime,
-    UtcOffset,
-};
-
-//
+use time::UtcOffset;
 //
 pub enum LogTimezone {
-    /// local timezone
-    ///
-    /// Only *unix OS is supported for now
     Local,
-    /// UTC timezone
     Utc,
-    /// fixed timezone
     Fixed(UtcOffset),
 }
 
@@ -112,10 +102,11 @@ impl LogMsg {
             let delay = duration(self.time, now);
 
             let s = format!(
-                "({} unixnano) {}ms {} {}\n",
-                minstant_unix_nano(),
-                delay.as_millis(),
-                *missed_entry,
+                //"({} unixnano) {}ms {} {}\n",
+                "{}\n",
+                //minstant_unix_nano(),
+                //delay.as_millis(),
+                //*missed_entry,
                 msg,
             );
 
@@ -129,10 +120,11 @@ impl LogMsg {
             let delay = duration(self.time, now);
             
             let s = format!(
-                "({} unixnano) {}ms {}\n",
-                minstant_unix_nano(),
-                delay.as_millis(),
-                msg
+                //"({} unixnano) {}ms {}\n",
+                "{}\n",
+                //kminstant_unix_nano(),
+                //delay.as_millis(),
+                msg,
             );
 
             if let Err(e) = writer.write_all(s.as_bytes()) {
@@ -152,78 +144,13 @@ enum LoggerOutput {
     Flushed,
     FlushError(std::io::Error),
 }
-
-/// Shared by ftlog formatter
-///
-/// To further reduce time spent on log macro calls, ftlog saves required data
-/// and later construct log string in log thread.
-///
-/// `LogFormat` defines how to turn an reference to record into a box object,
-/// which can be sent to log thread and later formatted into string.
-///
-/// Here is an example of custom formatter:
-///
-/// ```
-/// use std::fmt::Display;
-///
-/// use trading_engine::logger::logger::LogFormat;
-/// use log::{Level, Record};
-///
-/// struct MyFormatter;
-/// impl LogFormat for MyFormatter {
-///     fn msg(&self, record: &Record) -> Box<dyn Send + Sync + Display> {
-///         Box::new(Msg {
-///             level: record.level(),
-///             thread: std::thread::current().name().map(|n| n.to_string()),
-///             file: record.file_static(),
-///             line: record.line(),
-///             args: format!("{}", record.args()),
-///             module_path: record.module_path_static(),
-///         })
-///     }
-/// }
-/// // Store necessary field, define how to format into string with `Display` trait.
-/// struct Msg {
-///     level: Level,
-///     thread: Option<String>,
-///     file: Option<&'static str>,
-///     line: Option<u32>,
-///     args: String,
-///     module_path: Option<&'static str>,
-/// }
-///
-/// impl Display for Msg {
-///     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-///         f.write_str(&format!(
-///             "{}@{}||{}:{}[{}] {}",
-///             self.thread.as_ref().map(|x| x.as_str()).unwrap_or(""),
-///             self.module_path.unwrap_or(""),
-///             self.file.unwrap_or(""),
-///             self.line.unwrap_or(0),
-///             self.level,
-///             self.args
-///         ))
-///     }
-/// }
-/// ```
 pub trait LogFormat: Send + Sync {
     /// turn an reference to record into a box object, which can be sent to log thread
     /// and then formatted into string.
     fn msg(&self, record: &Record) -> Box<dyn Send + Sync + Display>;
+
 }
 
-/// Default ftlog formatter
-///
-/// The default ftlog format is like:
-/// ```text
-/// INFO main [examples/ftlog.rs:27] Hello, world!
-/// ```
-///
-/// Since ftlog cannot customize timestamp, the corresponding part is omitted.
-/// The actual log output is like:
-/// ```text
-/// 2022-11-22 17:02:12.574+08 0ms INFO main [examples/ftlog.rs:27] Hello, world!
-/// ```
 pub struct LogFormatter;
 impl LogFormat for LogFormatter {
     /// Return a box object that contains required data (e.g. thread name, line of code, etc.) for later formatting into string
@@ -401,43 +328,6 @@ struct BoundedChannelOption {
     print: bool,
 }
 
-/// Ftlog builder
-///
-/// ```
-/// # use trading_engine::logger::appender::{FileAppender, Duration, Period};
-/// # use log::LevelFilter;
-/// let logger = trading_engine::logger::logger::builder()
-///     // use our own format
-///     .format(trading_engine::logger::logger::LogFormatter)
-///     // global max log level
-///     .max_log_level(LevelFilter::Info)
-///     // define root appender, pass anything that is Write and Send
-///     // omit `Builder::root` to write to stderr
-///     .root(FileAppender::rotate_with_expire(
-///         "./current.log",
-///         Period::Day,
-///         Duration::days(7),
-///     ))
-///     // ---------- configure additional filter ----------
-///     // write to "ftlog-appender" appender, with different level filter
-///     .filter("ftlog::appender", "ftlog-appender", LevelFilter::Error)
-///     // write to root appender, but with different level filter
-///     .filter("ftlog", None, LevelFilter::Trace)
-///     // write to "ftlog" appender, with default level filter
-///     .filter("ftlog::appender::file", "ftlog", None)
-///     // ----------  configure additional appender ----------
-///     // new appender
-///     .appender("ftlog-appender", FileAppender::new("ftlog-appender.log"))
-///     // new appender, rotate to new file every Day
-///     .appender("ftlog", FileAppender::rotate("ftlog.log", Period::Day))
-///     .build()
-///     .expect("logger build failed");
-/// ```
-///
-/// # Local timezone
-/// For performance reason, `ftlog` only retrieve timezone info once and use this
-/// local timezone offset forever. Thus timestamp in log does not aware of timezone
-/// change by OS.
 pub struct Builder {
     format: Box<dyn LogFormat>,
     level: Option<LevelFilter>,
