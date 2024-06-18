@@ -21,7 +21,7 @@ impl<T: Precision> Level<T> {
         Level {
             price: price,
             orders: BTreeMap::new(),
-            arraival_order: Vec::new(),
+            arraival_order: Vec::new(), // *optimizable* assign with capacityk
         }
     }
 
