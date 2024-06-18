@@ -1,27 +1,26 @@
-pub trait FromU8 {
-    fn from_u8(value: u8) -> Option<Self>
+pub trait FromI8 {
+    fn from_i8(value: i8) -> Option<Self>
     where
         Self: Sized;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum OrderSide {
-    NoSide = 0,
     Buy = 1,
-    Sell = 2,
+    NoSide = 0,
+    Sell = -1,
 }
 
-impl FromU8 for OrderSide {
-    fn from_u8(v: u8) -> Option<Self> {
+impl FromI8 for OrderSide {
+    fn from_i8(v: i8) -> Option<Self> {
         match v {
-            0 => Some(OrderSide::NoSide),
             1 => Some(OrderSide::Buy),
-            2 => Some(OrderSide::Sell),
-            _ => None, 
+            0 => Some(OrderSide::NoSide),
+            -1 => Some(OrderSide::Sell),
+            _ => None,
         }
     }
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BookType { 
     L1 = 1,
