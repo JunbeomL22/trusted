@@ -5,24 +5,24 @@ use serde::{Deserialize, Serialize};
 use anyhow::Result;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Quantity<T: Precision> {
+pub struct BookQuantity<T: Precision> {
     pub iovalue: u64,
     _precision: PhantomData<T>
 }
 
-impl<T: Precision> std::default::Default for Quantity<T> {
+impl<T: Precision> std::default::Default for BookQuantity<T> {
     fn default() -> Self {
-        Quantity {
+        BookQuantity {
             iovalue: 0,
             _precision: PhantomData,
         }
     }
 }
 
-impl<T: Precision> Quantity<T> {
+impl<T: Precision> BookQuantity<T> {
     pub fn new(val: f64) -> Result<Self> {
         Ok(
-            Quantity {
+            BookQuantity {
                 iovalue: T::quantity_f64_to_u64(val)?,
                 _precision: PhantomData,
             }
@@ -30,7 +30,7 @@ impl<T: Precision> Quantity<T> {
     }
 
     pub fn zero() -> Self {
-        Quantity {
+        BookQuantity {
             iovalue: 0,
             _precision: PhantomData,
         }
@@ -45,13 +45,13 @@ impl<T: Precision> Quantity<T> {
     }
 
     pub fn from_iovalue(iovalue: u64) -> Self {
-        Quantity {
+        BookQuantity {
             iovalue: iovalue,
             _precision: PhantomData,
         }
     }
 
     pub fn as_f64(&self) -> f64 {
-        T::quantity_i64_to_f64(self.iovalue)
+        T::quantity_u64_to_f64(self.iovalue)
     }
 }

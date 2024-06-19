@@ -15,6 +15,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
 dependencies = [
  "cfg-if",
+ "getrandom",
  "once_cell",
  "version_check",
  "zerocopy",
@@ -823,7 +824,7 @@ dependencies = [
  "log",
  "nohash-hasher",
  "time",
- "typed-builder 0.16.2",
+ "typed-builder",
  "tz-rs",
 ]
 
@@ -2099,19 +2100,17 @@ dependencies = [
  "chrono",
  "criterion",
  "crossbeam-channel",
+ "enum_dispatch",
  "hashbrown",
  "joinery",
  "lazy_format",
- "log",
  "minstant",
- "nohash-hasher",
- "once_cell",
  "quanta",
  "rstest",
  "serde",
  "serde_json",
  "time",
- "typed-builder 0.18.2",
+ "ustr",
 ]
 
 [[package]]
@@ -2126,16 +2125,7 @@ version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34085c17941e36627a879208083e25d357243812c30e7d7387c3b954f30ade16"
 dependencies = [
- "typed-builder-macro 0.16.2",
-]
-
-[[package]]
-name = "typed-builder"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77739c880e00693faef3d65ea3aad725f196da38b22fdc7ea6ded6e1ce4d3add"
-dependencies = [
- "typed-builder-macro 0.18.2",
+ "typed-builder-macro",
 ]
 
 [[package]]
@@ -2143,17 +2133,6 @@ name = "typed-builder-macro"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f03ca4cb38206e2bef0700092660bb74d696f808514dae47fa1467cbfe26e96e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
-name = "typed-builder-macro"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f718dfaf347dcb5b983bfc87608144b0bad87970aebcbea5ce44d2a30c08e63"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2180,6 +2159,18 @@ name = "unicode-ident"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+
+[[package]]
+name = "ustr"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e904a2279a4a36d2356425bb20be271029cc650c335bc82af8bfae30085a3d0"
+dependencies = [
+ "ahash",
+ "byteorder",
+ "lazy_static",
+ "parking_lot",
+]
 
 [[package]]
 name = "utf8parse"

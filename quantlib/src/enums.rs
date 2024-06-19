@@ -2,38 +2,6 @@ use serde::{Deserialize, Serialize};
 //use std::fmt;
 use std::hash::Hash;
 
-/*
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
-pub enum RateIndexCode {
-    Dummy= 0,
-    HIBOR = 1,
-    SOFR = 2,
-    CD = 3,
-    KOFR = 4,
-    ESTR = 5,
-    TONAR = 6,
-    HONIA = 7,
-    LIBOR = 8,
-    Undefined = 9,
-}
-
-impl fmt::Display for RateIndexCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            RateIndexCode::Dummy => write!(f, "Dummy"),
-            RateIndexCode::HIBOR => write!(f, "HIBOR"),
-            RateIndexCode::SOFR => write!(f, "SOFR"),
-            RateIndexCode::CD => write!(f, "CD"),
-            RateIndexCode::KOFR => write!(f, "KOFR"),
-            RateIndexCode::ESTR => write!(f, "ESTR"),
-            RateIndexCode::TONAR => write!(f, "TONAR"),
-            RateIndexCode::HONIA => write!(f, "HONIA"),
-            RateIndexCode::LIBOR => write!(f, "LIBOR"),
-            RateIndexCode::Undefined => write!(f, "Undefined"),
-        }
-    }
-}
- */
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum Compounding {
     Simple = 0,

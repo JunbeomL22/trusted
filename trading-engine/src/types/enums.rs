@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub trait FromI8 {
     fn from_i8(value: i8) -> Option<Self>
     where
@@ -28,8 +30,8 @@ pub enum BookType {
     L3 = 3,
 }
 
-impl FromU8 for BookType {
-    fn from_u8(v: u8) -> Option<Self> {
+impl FromI8 for BookType {
+    fn from_i8(v: i8) -> Option<Self> {
         match v {
             1 => Some(BookType::L1),
             2 => Some(BookType::L2),

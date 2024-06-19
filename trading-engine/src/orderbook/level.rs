@@ -1,7 +1,7 @@
-use crate::data::order::Order;
+use crate::data::book_order::BookOrder;
 use crate::types::{
-    types::{OrderId, TraderId},
-    price::Price,
+    types::OrderId,
+    book_price::BookPrice,
     precision::Precision,
 };
 //
@@ -9,36 +9,37 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Level<T: Precision> {
-    pub price: Price<T>,
-    pub orders: BTreeMap<OrderId, Order>,
+pub struct Level<T: Precision + Clone> {
+    pub book_price: BookPrice<T>,
+    pub orders: BTreeMap<OrderId, BookOrder<T>>,
     arraival_order: Vec<OrderId>,
 }
 
-impl<T: Precision> Level<T> {
+impl<T: Precision + Clone> Level<T> {
     #[must_use]
-    pub fn initialize(price: Price<T>) -> Self {
+    pub fn initialize(book_price: BookPrice<T>) -> Self {
         Level {
-            price: price,
+            book_price: book_price,
             orders: BTreeMap::new(),
             arraival_order: Vec::new(), // *optimizable* assign with capacityk
         }
     }
 
     #[must_use]
-    pub fn initialize_with_order(order: Order) -> Self {
+    pub fn initialize_with_order(order: BookOrder<T>) -> Self {
         let mut orders = BTreeMap::new();
-        orders.insert(order.order_id, order);
+        let order_clone = order.clone();
+        orders.insert(order.order_id.clone(), order);
         Level {
-            price: order.price.clone(),
+            book_price: order_clone.price,
             orders: orders,
-            arraival_order: vec![order.order_id],
+            arraival_order: vec![order_clone.order_id],
         }
     }
 
-    pub fn add_order(&mut self, order: Order) {
+    pub fn add_order(&mut self, order: BookOrder<T>) {
+        self.arraival_order.push(order.order_id.clone());
         self.orders.insert(order.order_id, order);
-        self.arraival_order.push(order.order_id);
     }
 
     pub fn remove_order(&mut self, order_id: OrderId) {
@@ -46,12 +47,34 @@ impl<T: Precision> Level<T> {
         self.arraival_order.retain(|&x| x != order_id);
     }
 
-    pub fn get_order(&self, order_id: OrderId) -> Option<&Order> {
+    pub fn get_order(&self, order_id: OrderId) -> Option<&BookOrder<T>> {
         self.orders.get(&order_id)
     }
 
+    pub fn price(&self) -> f64 {
+        self.book_price.as_f64()
+    }
+
+    pub fn book_quanity_sum(&self) -> u64 {
+        self.orders
+            .values()
+            .map(|order| order.quantity.iovalue)
+            .sum()
+    }
+
+    pub fn quantity_sum(&self) -> f64 {
+        self.orders
+            .values()
+            .map(|order| order.quantity.as_f64())
+            .sum()
+    }
+
+    pub fn order_count(&self) -> usize {
+        self.orders.len()
+    }
+
     #[must_use]
-    pub fn get_orders_in_arrival_order(&self) -> Vec<&Order> {
+    pub fn get_orders_in_arrival_order(&self) -> Vec<&BookOrder<T>> {
         self.arraival_order
             .iter()
             .filter_map(|&order_id| self.orders.get(&order_id))
@@ -60,10 +83,6 @@ impl<T: Precision> Level<T> {
 
     pub fn is_empty(&self) -> bool {
         self.orders.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.orders.len()
     }
 
 }
