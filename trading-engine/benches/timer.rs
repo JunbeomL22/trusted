@@ -76,10 +76,10 @@ fn bench_datetime_creation(c: &mut Criterion) {
 
 criterion_group!(
     benches, 
-    //bench_nows, 
+    bench_nows, 
     //bench_anchor_new, 
-    //bench_as_unix_nanos,
-    //bench_datetime_conversion,
+    bench_as_unix_nanos,
+    bench_datetime_conversion,
     bench_datetime_creation,
 );
 criterion_main!(benches);

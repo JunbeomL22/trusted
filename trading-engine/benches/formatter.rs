@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use lazy_format::{lazy_format, write};
 use joinery::JoinableIterator;
+use trading_engine::utils::timer::get_unix_nano;
 
 fn bench_base(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("compare");
@@ -141,12 +142,33 @@ fn bench_make_string_then_byte_string(c: &mut Criterion) {
     });
     bgroup.finish();
 }
+
+fn bench_lazy_formatter(c: &mut Criterion) {
+    let mut bgroup = c.benchmark_group("lazy_formatter");
+
+    let unix_nano = get_unix_nano();
+    bgroup.bench_function("lazy_format", |b| {
+        b.iter(|| {
+            
+            lazy_format!("({} unixnano) {}", unix_nano, "hello world")
+        });
+    });
+
+    bgroup.bench_function("lazy_format -> to_string", |b| {
+        b.iter(|| {
+            lazy_format!("({} unixnano) {}", unix_nano, "hello world").to_string()
+        });
+    });
+
+    bgroup.finish();
+}
 criterion_group!(
     benches, 
     //bench_base,
     //bench_concat_numbers,
     //bench_datetime_formatter,
-    bench_make_string_then_byte_string
+    //bench_make_string_then_byte_string
+    bench_lazy_formatter,
 );
 
 criterion_main!(benches);
