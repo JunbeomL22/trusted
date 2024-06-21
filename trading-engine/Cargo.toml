@@ -26,8 +26,8 @@ harness = false
 
 [dependencies]
 serde = { version = "1.0.196", features = ["derive"] }
-serde_json = "1.0.113"
-anyhow = "1.0.79"
+serde_json = "1.0"
+anyhow = "1.0"
 rstest = "0.21"
 minstant = { version = "0.1" }#, features = ["fallback-coarse"] }
 quanta = "0.12"

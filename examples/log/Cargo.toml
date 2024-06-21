@@ -25,3 +25,4 @@ logcall = "0.1"
 fast_log = "1.6"
 ftlog = "0.2"
 trading-engine = { version = "0.1", path = "../../trading-engine" }
+anyhow = "1.0"
