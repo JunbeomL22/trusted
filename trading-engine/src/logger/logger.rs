@@ -337,7 +337,7 @@ impl Logger {
         std::fs::create_dir_all(file_path)?;
 
         let current_time = chrono::Local::now();
-        let file_name = format!("{}/{}.log-{}", file_path, file_name, current_time.format("%Y%m%d-%H%M%S"));
+        let file_name = format!("{}/{}-{}.log", file_path, file_name, current_time.format("%Y%m%d-%H%M%S"));
         self.file_name = Some(file_name);
         Ok(self)
     }
