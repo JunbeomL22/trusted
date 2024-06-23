@@ -27,7 +27,7 @@ fn main() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 50_000;
+    let iteration = 300_000;
     
     let start = crate::timer::get_unix_nano();
     
