@@ -10,7 +10,7 @@ pub const QUANTITY_MIN: f64 = 0.0;
 pub trait Precision {
     fn precision() -> u8;
 
-    fn check_precesion_bound() -> bool { Self::precision() <= MAX_IO_PRECISION }
+    fn check_precision_bound() -> bool { Self::precision() <= MAX_IO_PRECISION }
 
     fn check_f64price_bound(price: f64) -> bool { 
         (PRICE_MIN <= price) && ( price <= PRICE_MAX )
