@@ -16,13 +16,13 @@ use serde::{Serialize, Deserialize};
 struct TestStruct {
     a: i32,
     b: f64,
-    c: String,
+    //c: String,
 }
 
 fn main() -> Result<()> {
     let _guard = Logger::initialize()
         .with_file("logs", "test")?
-        .with_console_report(true)
+        .with_console_report(false)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
         .launch();
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let test_struct = TestStruct {
         a: 1,
         b: 3.14,
-        c: "hello".to_string(),
+        //c: "hello".to_string(),
     };
 
     for _ in 0..iteration {
