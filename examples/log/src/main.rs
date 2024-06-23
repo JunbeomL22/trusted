@@ -22,12 +22,12 @@ struct TestStruct {
 fn main() -> Result<()> {
     let _guard = Logger::initialize()
         .with_file("logs", "test")?
-        .with_console_report(false)
+        .with_console_report(true)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 300_000;
+    let iteration = 100_000;
     
     let start = crate::timer::get_unix_nano();
     
@@ -48,7 +48,8 @@ fn main() -> Result<()> {
     let elapsed_as_seconds = elapsed as f64 / 1_000_000_000.0;
     let elapsed_average = elapsed as f64 / iteration as f64;
 
-    info!("elapsed: {}s, average: {}ns", elapsed_as_seconds, elapsed_average);
+    println!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
+    info!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
 
     Ok(())
 }

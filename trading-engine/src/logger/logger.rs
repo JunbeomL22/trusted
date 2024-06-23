@@ -22,6 +22,9 @@ use std::{
 use anyhow::{Result, anyhow};
 use chrono;
 
+const LOG_MESSAGE_BUFFER_SIZE: usize = 1_000_000; // string length
+const LOG_MESSAGE_FLUSH_INTERVAL: u64 = 1_000_000; // 1 second
+
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
 
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
@@ -33,26 +36,52 @@ pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> = Lazy::n
 pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let (sender, receiver) = unbounded();
     
+    let mut message_queue: Vec<String> = Vec::with_capacity(LOG_MESSAGE_BUFFER_SIZE);
+    let mut last_flush_time = get_unix_nano();
+
     *LOGGER_HANDLER.lock().unwrap() = Some(thread::spawn(move || {
         let mut writer: Option<BufWriter<File>> = None;
         while let Ok(msg) = receiver.recv() {
             match msg {
                 LogMessage::LazyMessage(lazy_message) => {
                     let message = lazy_message.eval();
-                    if let Some(ref mut writer) = writer {
-                        writeln!(writer, "{}", message).unwrap();
-                    }
-                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
-                        println!("{}", message);
+                    let new_msg_length = message.len();
+                    let buffer_size = message_queue.len();
+                    let timestamp = get_unix_nano();
+                    message_queue.push(message);
+
+                    if (buffer_size + new_msg_length > LOG_MESSAGE_BUFFER_SIZE) ||
+                        (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL) {
+                        if let Some(ref mut writer) = writer {
+                            let output = message_queue.join("");
+                            writer.write_all(output.as_bytes()).unwrap();
+                            if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                                println!("{}", output);
+                            }
+
+                            message_queue.clear();
+                            last_flush_time = get_unix_nano();
+                        } 
                     }
                 },
                 LogMessage::StaticString(message) => {
-                    if let Some(ref mut writer) = writer {
-                        writeln!(writer, "{}", message).unwrap();
-                    }
-                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
-                        println!("{}", message);
-                    }
+                    let buffer_size = message_queue.len();
+                    let timestamp = get_unix_nano();
+                    message_queue.push(message.to_string());
+
+                    if (buffer_size + message.len() > LOG_MESSAGE_BUFFER_SIZE) ||
+                        (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL) {
+                        if let Some(ref mut writer) = writer {
+                            let output = message_queue.join("");
+                            writer.write_all(output.as_bytes()).unwrap();
+                            if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                                println!("{}", output);
+                            }
+
+                            message_queue.clear();
+                            last_flush_time = get_unix_nano();
+                        } 
+                    } 
                 },
                 LogMessage::SetFile(file_name) => {
                     if let Some(ref mut writer) = writer {
@@ -87,6 +116,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 },
                 LogMessage::Close => {
                     if let Some(ref mut writer) = writer {
+                        writer.write_all(message_queue.join("").as_bytes()).unwrap();
                         writer.flush().unwrap();
                         let _ = writer.get_mut().sync_all();
                     }
@@ -272,7 +302,7 @@ macro_rules! log_fn_json {
                     "data": json_obj,
                 });
 
-                json_msg.to_string()
+                json_msg.to_string() + "\n"
             };
 
             $crate::LOG_SENDER.send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
@@ -297,7 +327,7 @@ macro_rules! log_fn_json {
                     "data": json_obj,
                 });
 
-                json_msg.to_string()
+                json_msg.to_string() + "\n"
             };
 
             $crate::LOG_SENDER.send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
