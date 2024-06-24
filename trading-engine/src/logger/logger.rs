@@ -26,11 +26,8 @@ const LOG_MESSAGE_BUFFER_SIZE: usize = 1_000_000; // string length
 const LOG_MESSAGE_FLUSH_INTERVAL: u64 = 1_000_000; // 1 second
 
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
-
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
-
 pub static CONSOLE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
-
 pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> = Lazy::new(|| Mutex::new(None));
 
 pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {

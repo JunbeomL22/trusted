@@ -110,6 +110,9 @@ fn bench_conversion_to_string(c: &mut Criterion) {
     let time_dt = time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
         .expect("failed to convert to OffsetDateTime");
 
+    let offset = time::UtcOffset::from_hms(9,0,0)
+        .expect("failed to create UtcOffset");
+
     let mut group = c.benchmark_group("conversion to string");
     group.bench_function("chrono::DateTime", |b| {
         b.iter(|| {
@@ -129,6 +132,16 @@ fn bench_conversion_to_string(c: &mut Criterion) {
         });
     });
 
+    group.bench_function("convert_unix_nano_to_offsetdatetime_then_format", |b| {
+        b.iter(|| {
+            let dt = time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
+                .expect("failed to convert to OffsetDateTime")
+                .to_offset(offset);
+
+            dt.format(&Rfc3339).unwrap_or_else(|_| String::from("failed to format"))
+        });
+    });
+
     group.finish();
 }
 
@@ -136,9 +149,9 @@ fn bench_conversion_to_string(c: &mut Criterion) {
 
 criterion_group!(
     benches, 
+    bench_conversion_to_string,
     bench_datetime_conversion_from_unix_nano,
     bench_direct_datetime_creation,
-    bench_conversion_to_string,
     bench_nows,
     bench_unix_nanos,
 );
