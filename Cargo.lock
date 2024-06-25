@@ -2123,6 +2123,7 @@ dependencies = [
  "core_affinity",
  "criterion",
  "crossbeam-channel",
+ "crossbeam-utils",
  "enum_dispatch",
  "hashbrown",
  "joinery",

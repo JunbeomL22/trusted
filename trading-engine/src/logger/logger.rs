@@ -105,7 +105,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 },
                 LogMessage::SetCore => {
                     let core_ids = core_affinity::get_core_ids().unwrap();
-                    if let Some(last_core_id) = core_ids.last() {
+                    if let Some(last_core_id) = core_ids.first() {
                         core_affinity::set_for_current(*last_core_id);
                     } else {
                         panic!("No core available for logger thread")
