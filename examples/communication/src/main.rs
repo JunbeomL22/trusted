@@ -103,9 +103,11 @@ fn round_trip_std(
 
     let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
-    tx.send(a.clone()).unwrap();
-    while let Ok(_) = rx.recv() {
-        break;
+    for _ in 0..10 {
+        tx.send(a.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
+            break;
+        }
     }
 
     let start = get_unix_nano();
@@ -150,9 +152,11 @@ fn round_trip_crossbeam(
 
     let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
-    tx.send(a.clone()).unwrap();
-    while let Ok(_) = rx.recv() {
-        break;
+    for _ in 0..10 {
+        tx.send(a.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
+            break;
+        }
     }
     
     let mut count = 0;
@@ -218,9 +222,11 @@ fn round_trip_with_cache_padded(
 
     let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<CachePadded<A>>>();
 
-    tx.send(a.clone()).unwrap();
-    while let Ok(_) = rx.recv() {
-        break;
+    for _ in 0..10 {
+        tx.send(a.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
+            break;
+        }
     }
 
     let start = get_unix_nano();
@@ -268,9 +274,11 @@ fn round_trip_kanal(
 
     let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
-    tx.send(a.clone()).unwrap();
-    while let Ok(_) = rx.recv() {
-        break;
+    for _ in 0..10 {
+        tx.send(a.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
+            break;
+        }
     }
 
     let start = get_unix_nano();
