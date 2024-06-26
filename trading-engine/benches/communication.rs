@@ -1,5 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::sync::mpsc::{channel, Sender, Receiver};
+//use std::sync::mpsc::{channel, Sender, Receiver};
+//use crossbeam_channel::{unbounded, Sender, Receiver};
+use kanal::{unbounded, Sender, Receiver};
 use std::thread;
 use ustr::Ustr;
 use core_affinity::{self, CoreId};
@@ -16,10 +18,10 @@ pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
 });
 
 fn setup_channel() -> (Sender<A>, Receiver<A>, thread::JoinHandle<()>) {
-    let worker_core_id = CORE_IDS[5];
+    let worker_core_id = CORE_IDS[0];
 
-    let (tx1, rx1) = channel();
-    let (tx2, rx2) = channel();
+    let (tx1, rx1) = unbounded();
+    let (tx2, rx2) = unbounded();
 
     let handle = thread::spawn(move || {
         core_affinity::set_for_current(worker_core_id);
@@ -32,7 +34,7 @@ fn setup_channel() -> (Sender<A>, Receiver<A>, thread::JoinHandle<()>) {
 }
 
 fn bench_channel_roundtrip(c: &mut Criterion) {
-    let main_core_id = CORE_IDS[4];
+    let main_core_id = CORE_IDS[1];
 
     let trip_numbers = vec![1, 10, 100, 1000, 10000];
     let mut group = c.benchmark_group("channel_roundtrip");
@@ -63,5 +65,27 @@ fn bench_channel_roundtrip(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_channel_roundtrip);
+fn bench_one_way_trip(c: &mut Criterion) {
+    let (tx, rx) = unbounded();
+    let msg = A {
+        number: 42,
+        string: Ustr::from("Hello, World!"),
+    };
+
+    c.bench_function("one_way_trip", |b| {
+        b.iter(|| {
+            tx.send(msg.clone()).unwrap();
+            while let Ok(msg) = rx.recv() {
+                black_box(msg);
+                break;
+            }
+        });
+    });
+}
+
+
+criterion_group!(
+    benches, 
+    bench_one_way_trip,
+    bench_channel_roundtrip);
 criterion_main!(benches);

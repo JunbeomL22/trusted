@@ -1,0 +1,22 @@
+[package]
+name = "examples-communication"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+default = []
+std = []
+crossbeam = []
+kanal = []
+
+[dependencies]
+kanal = "0.1.0-pre8"
+crossbeam-channel = "0.5"
+core_affinity = "0.8"
+once_cell = "1.19"
+trading-engine = { version = "0.1", path = "../../trading-engine" }
+anyhow = "1.0"
+criterion = "0.5"
+ustr = "1.0"
+crossbeam-utils = "0.8"
