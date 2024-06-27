@@ -12,7 +12,9 @@ use std::fmt::Debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Level
-<T: Precision + Clone + Debug, S: Precision + Clone + Debug> {
+<T: Precision + Clone + Debug, 
+ S: Precision + Clone + Debug> 
+{
     pub book_price: BookPrice<T>,
     pub orders: BTreeMap<OrderId, BookOrder<T, S>>,
     arraival_order: Vec<OrderId>,
