@@ -42,16 +42,16 @@ pub trait Precision {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec0;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec1;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec2;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec3;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec4;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec5;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec6;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec7;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec8;
-#[derive(Debug, Clone, Copy, Default, Hash)] pub struct Prec9;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec0;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec1;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec2;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec3;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec4;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec5;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec6;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec7;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec8;
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec9;
 
 impl Precision for Prec0 {
     fn precision() -> u8 { 0 }

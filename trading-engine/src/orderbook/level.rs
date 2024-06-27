@@ -6,12 +6,11 @@ use crate::types::{
 };
 use crate::warn;
 //
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use anyhow::{Result, anyhow};
 use std::fmt::Debug;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Level
 <T: Precision + Clone + Debug, S: Precision + Clone + Debug> {
     pub book_price: BookPrice<T>,

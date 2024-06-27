@@ -30,6 +30,11 @@ harness = false
 name = "communication"
 harness = false
 
+[[bench]]
+name = "hashmap"
+harness = false
+
+
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

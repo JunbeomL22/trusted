@@ -13,6 +13,12 @@ pub enum OrderSide {
     Sell = -1,
 }
 
+impl Default for OrderSide {
+    fn default() -> Self {
+        OrderSide::NoSide
+    }
+}
+
 impl FromI8 for OrderSide {
     fn from_i8(v: i8) -> Option<Self> {
         match v {

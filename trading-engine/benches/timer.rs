@@ -5,8 +5,11 @@ use time;
 use time::format_description::well_known::Rfc3339;
 use trading_engine::timer::{
     get_unix_nano,
+    get_thread_local_unix_nano,
     convert_unix_nano_to_datetime_format,
 };
+use core_affinity;
+use std::thread;
 
 fn bench_nows(c: &mut Criterion) {
     // The first call will take some time for calibartion
@@ -41,6 +44,7 @@ fn bench_unix_nanos(c: &mut Criterion) {
     let anchor = minstant::Anchor::new();
     let mut group = c.benchmark_group("Instant::as_unix_nanos()");
     let _ = get_unix_nano();
+    let _ = get_thread_local_unix_nano();
 
     group.bench_function("minstant", |b| {
         b.iter(|| {
@@ -62,8 +66,15 @@ fn bench_unix_nanos(c: &mut Criterion) {
         });
     });
 
+    group.bench_function("quanta thread local", |b| {
+        b.iter(|| {
+            get_thread_local_unix_nano()
+        });
+    });
+
     group.finish();
 }
+
 
 fn bench_datetime_conversion_from_unix_nano(c: &mut Criterion) {
     let anchor = minstant::Anchor::new();
@@ -145,14 +156,59 @@ fn bench_conversion_to_string(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_multi_thread_unix_nano(c: &mut Criterion) {
+    let thread_number = 3;
+    let mut group = c.benchmark_group(format!("{} threads quanta unix nano", thread_number));
+    let _ = get_unix_nano();
+    let _ = get_thread_local_unix_nano();
+    let core_ids = core_affinity::get_core_ids().unwrap();
 
+    group.sample_size(10);
+    // generate 1000 get_unix_nano() for 6 threads
+    group.bench_function("with thread local", |b| {
+        b.iter(|| {
+            let handles: Vec<_> = (0..thread_number).map(|i| {
+                let core_id = core_ids[i].clone();
+                core_affinity::set_for_current(core_id);
+                thread::spawn(|| {
+                    for _ in 0..1_000_000 {
+                        get_thread_local_unix_nano();
+                    }
+                })
+            }).collect();
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+    });
+
+    group.bench_function("without thread local", |b| {
+        b.iter(|| {
+            let handles: Vec<_> = (0..thread_number).map(|i| {
+                let core_id = core_ids[i].clone();
+                core_affinity::set_for_current(core_id);
+                thread::spawn(|| {
+                    for _ in 0..1_000_000 {
+                        get_unix_nano();
+                    }
+                })
+            }).collect();
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+    });
+}
 
 criterion_group!(
     benches, 
-    bench_conversion_to_string,
-    bench_datetime_conversion_from_unix_nano,
-    bench_direct_datetime_creation,
-    bench_nows,
-    bench_unix_nanos,
+    //bench_conversion_to_string,
+    //bench_datetime_conversion_from_unix_nano,
+    //bench_direct_datetime_creation,
+    //bench_nows,
+    //bench_unix_nanos,
+    bench_multi_thread_unix_nano,
 );
 criterion_main!(benches);

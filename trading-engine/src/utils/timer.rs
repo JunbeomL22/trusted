@@ -1,22 +1,51 @@
 use quanta::Clock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use once_cell::sync::Lazy;
+use std::cell::{Cell, RefCell};
 
 const UNIX_NANO_ANCHOR_BUFFER: u64 = 10; //10ns
 
-pub static CLOCK: Lazy<Clock> = Lazy::new(|| Clock::new());
+thread_local! {
+    static CLOCK: RefCell<Option<Clock>> = RefCell::new(None);
+    static SYSTEMTIME_ANCHOR: Cell<Option<u64>> = Cell::new(None);
+    static CLOCK_ANCHOR: Cell<Option<u64>> = Cell::new(None);
+}
+
+pub fn get_thread_local_unix_nano() -> u64 {
+    SYSTEMTIME_ANCHOR.with(|systemtime_anchor| {
+        CLOCK_ANCHOR.with(|clock_anchor| {
+            CLOCK.with(|clock| {
+                if systemtime_anchor.get().is_none() {
+                    let clock_content = Clock::new();
+                    systemtime_anchor.set(Some(SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_nanos() as u64 + UNIX_NANO_ANCHOR_BUFFER));
+                    clock_anchor.set(Some(clock_content.raw()));
+                    *clock.borrow_mut() = Some(clock_content);
+                }
+
+                let clock_borrow = clock.borrow();
+                let clock_content = clock_borrow.as_ref().unwrap();
+                clock_content.delta_as_nanos(clock_anchor.get().unwrap(), clock_content.raw()) + systemtime_anchor.get().unwrap()
+            })
+        })
+    })
+}
+
+pub static UNIVERSIAL_CLOCK: Lazy<Clock> = Lazy::new(|| Clock::new());
 
 #[inline]
 pub fn get_unix_nano() -> u64 {
-    static SYSTEMTIME_ANCHOR: Lazy<u64> = Lazy::new(|| {
+    static UNIVERSIAL_SYSTEMTIME_ANCHOR: Lazy<u64> = Lazy::new(|| {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64 + UNIX_NANO_ANCHOR_BUFFER
     });
-    static CLOCK_ANCHOR: Lazy<u64> = Lazy::new(|| CLOCK.raw());
+    static UNIVERSIAL_CLOCK_ANCHOR: Lazy<u64> = Lazy::new(|| UNIVERSIAL_CLOCK.raw());
 
-    CLOCK.delta_as_nanos(*CLOCK_ANCHOR, CLOCK.raw()) + *SYSTEMTIME_ANCHOR
+    UNIVERSIAL_CLOCK.delta_as_nanos(*UNIVERSIAL_CLOCK_ANCHOR, UNIVERSIAL_CLOCK.raw()) + *UNIVERSIAL_SYSTEMTIME_ANCHOR
 }
 
 pub fn convert_unix_nano_to_datetime_format(unix_nano: u64, utc_offset_hour: i32) -> String {
