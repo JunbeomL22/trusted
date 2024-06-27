@@ -43,9 +43,7 @@ fn main() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 1_000_000;
-    
-    let start = crate::timer::get_unix_nano();
+    let iteration = 200_000;
     
     let test_struct = TestStruct {
         a: 1,
@@ -53,9 +51,16 @@ fn main() -> Result<()> {
         //c: "hello".to_string(),
     };
 
-    let _guard = Guard {
+    for _ in 0..10 {
+        info!("warm up")
+    }
+    
+
+    let __guard = Guard {
         ts: get_unix_nano(),
     };
+
+    let start = crate::timer::get_unix_nano();
 
     for _ in 0..iteration {
         let test_clone = test_struct.clone();

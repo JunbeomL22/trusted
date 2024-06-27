@@ -26,9 +26,9 @@ pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
     core_affinity::get_core_ids().expect("Failed to get core IDs")
 });
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug)]
 struct A {
-    number: u64,
+    number: Vec<u16>,
     string: Ustr,
 }
 
@@ -97,11 +97,11 @@ fn round_trip_std(
     let (tx, rx, handle) = setup_channel_std( channel_core_id );
 
     let a = A {
-        number: 42,
+        number: vec![42; 50],
         string: Ustr::from("Hello, World!"),
     };
 
-    let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
+    let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
@@ -112,8 +112,8 @@ fn round_trip_std(
 
     let start = get_unix_nano();
     let mut count = 0;
-    for e in a_vec.drain(..) {
-        tx.send(e).unwrap();
+    for e in a_vec.iter() {
+        tx.send(e.clone()).unwrap();
         while let Ok(_) = rx.recv() {
             //a = msg;
             count += 1;
@@ -146,11 +146,11 @@ fn round_trip_crossbeam(
     let (tx, rx, handle) = setup_channel_crossbeam( channel_core_id );
 
     let a = A {
-        number: 42,
+        number: vec![42; 50],
         string: Ustr::from("Hello, World!"),
     };
 
-    let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
+    let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
@@ -161,8 +161,8 @@ fn round_trip_crossbeam(
     
     let mut count = 0;
     let start = get_unix_nano();
-    for e in a_vec.drain(..) {
-        tx.send(e).unwrap();
+    for e in a_vec.iter() {
+        tx.send(e.clone()).unwrap();
         while let Ok(_) = rx.recv() {
             //a = msg;
             count += 1;
@@ -216,11 +216,11 @@ fn round_trip_with_cache_padded(
     let (tx, rx, handle) = setup_channel_crossbeam_cachepadded( channel_core_id );
 
     let a = CachePadded::new(A {
-        number: 42,
+        number: vec![42; 50],
         string: Ustr::from("Hello, World!"),
     });
 
-    let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<CachePadded<A>>>();
+    let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<CachePadded<A>>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
@@ -231,9 +231,9 @@ fn round_trip_with_cache_padded(
 
     let start = get_unix_nano();
     let mut count = 0;
-    for e in a_vec.drain(..) {
-        tx.send(e).unwrap();
-        while let Ok(msg) = rx.recv() {
+    for e in a_vec.iter() {
+        tx.send(e.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
             //a = msg;
             count += 1;
             break;
@@ -268,11 +268,11 @@ fn round_trip_kanal(
     let (tx, rx, handle) = setup_channel_kanal( channel_core_id );
 
     let a = A {
-        number: 42,
+        number: vec![42; 50],
         string: Ustr::from("Hello, World!"),
     };
 
-    let mut a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
+    let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
@@ -283,9 +283,9 @@ fn round_trip_kanal(
 
     let start = get_unix_nano();
     let mut count = 0;
-    for e in a_vec.drain(..) {
-        tx.send(e).unwrap();
-        while let Ok(msg) = rx.recv() {
+    for e in a_vec.iter() {
+        tx.send(e.clone()).unwrap();
+        while let Ok(_) = rx.recv() {
             //a = msg;
             count += 1;
             break;

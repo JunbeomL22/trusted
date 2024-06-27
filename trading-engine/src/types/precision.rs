@@ -1,3 +1,8 @@
+use crate::utils::numeric_converter::{
+    IntegerConverter,
+    FloatConverter,
+};
+use once_cell::sync::Lazy;
 use anyhow::{Result, anyhow};
 
 pub const MAX_IO_PRECISION: u8 = 9;
@@ -27,6 +32,7 @@ pub trait Precision {
     fn price_i64_to_f64(value: i64) -> f64 {
         value as f64 / MAX_IO_MULTIPLIER
     }
+    
     #[must_use]
     fn quantity_f64_to_u64(value: f64) -> Result<u64>;
 
