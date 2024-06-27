@@ -69,7 +69,7 @@ fn main() -> Result<()> {
     let elapsed_average = elapsed as f64 / iteration as f64;
 
     //println!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
-    debug!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
+    info!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
 
     Ok(())
 }
