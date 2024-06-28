@@ -38,5 +38,5 @@
 | &str                      | parse\<u64>                | 6ns             |
 | &str                      | parse\<f32>                | 12ns            |
 | &str                      | parse\<f64>                | 8ns             |
-| &str                      | -> ryu -> i64 (BookPrice) | 21ns            |
+| &str                      | parse\<f64> -> i64 (BookPrice) | 21ns            |
 | i64 (BookPrice)           | -> ryu -> &str            | 31ns            |
