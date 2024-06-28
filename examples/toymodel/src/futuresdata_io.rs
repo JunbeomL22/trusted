@@ -47,11 +47,11 @@ pub fn futuresdata_io() -> Result<()> {
     let json = to_string_pretty(&futdate_vec)
         .context("Failed to serialize Vec<Futures> to JSON")?;
 
-    write("json_data/futuresdata.json", &json)
+    write("./examples/toymodel/json_data/futuresdata.json", &json)
         .context("Failed to write JSON to file")?;
 
     // re-read the file
-    let json = read_to_string("json_data/futuresdata.json")
+    let json = read_to_string("./examples/toymodel/json_data/futuresdata.json")
         .context("Failed to read JSON from file")?;
 
     let res: Vec<Futures> = from_str(&json)

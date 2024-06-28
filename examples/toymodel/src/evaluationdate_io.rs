@@ -17,10 +17,10 @@ pub fn evaluationdate_io() -> Result<()> {
     let data1 = EvaluationDate::new(evaluation_datetime);
     let json = to_string_pretty(&data1)
         .context("Failed to serialize EvaluationDate to JSON")?;
-    write("json_data/evaluationdate.json", &json)
+    write("./examples/toymodel/json_data/evaluationdate.json", &json)
         .context("Failed to write JSON to file")?;
 
-    let json = read_to_string("json_data/evaluationdate.json")
+    let json = read_to_string("./examples/toymodel/json_data/evaluationdate.json")
         .context("Failed to read JSON from file")?;
 
     let res: EvaluationDate = from_str(&json)

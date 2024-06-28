@@ -39,10 +39,10 @@ pub fn valuedata_io() -> Result<()> {
 
     let json = to_string_pretty(&value_data_vec)
         .context("Failed to serialize Vec<ValueData> to JSON")?;
-    write("json_data/valuedata.json", &json).context("Failed to write JSON to file")?;
+    write("./examples/toymodel/json_data/valuedata.json", &json).context("Failed to write JSON to file")?;
     
     // re-read the file
-    let json = std::fs::read_to_string("json_data/valuedata.json")
+    let json = std::fs::read_to_string("./examples/toymodel/json_data/valuedata.json")
         .context("Failed to read JSON from file")?;
 
     let res: Vec<ValueData> = from_str(&json)

@@ -94,9 +94,9 @@ pub fn surfacedata_io() -> Result<()> {
 
     let surfacedata_vec = vec![data1, data2];
     let surfacedata_json = to_string_pretty(&surfacedata_vec).context("Failed to serialize SurfaceData")?;
-    write("json_data/surfacedata.json", surfacedata_json).context("Failed to write SurfaceData")?;
+    write("./examples/toymodel/json_data/surfacedata.json", surfacedata_json).context("Failed to write SurfaceData")?;
     
-    let surfacedata_json = std::fs::read_to_string("json_data/surfacedata.json").context("Failed to read SurfaceData")?;
+    let surfacedata_json = std::fs::read_to_string("./examples/toymodel/json_data/surfacedata.json").context("Failed to read SurfaceData")?;
     let surfacedata_vec: Vec<SurfaceData> = from_str(&surfacedata_json).context("Failed to deserialize SurfaceData")?;
     info!("{:?}", surfacedata_vec);
 

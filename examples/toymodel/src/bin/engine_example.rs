@@ -61,7 +61,7 @@ fn main() -> Result<()> {
     let theta_day = 100;
     let start_time = Instant::now();
     // Set up rolling file appender
-    let file_appender = rolling::daily("logs", "my_app.log");
+    let file_appender = rolling::daily("./examples/toymodel/logs", "engine.log");
     let (non_blocking_appender, _guard) = non_blocking(file_appender);
 
     // Set up console layer
@@ -480,7 +480,7 @@ fn main() -> Result<()> {
     let json = to_string_pretty(&calculation_results)
         .with_context(|| format!("({}:{}) Failed to serialize CalculationResult to JSON", file!(), line!()))?;
     
-    write("json_data/engine_results.json", &json)
+    write("./examples/toymodel/json_data/results.json", &json)
         .with_context(|| format!("({}:{}) Failed to write JSON to file", file!(), line!()))?;
 
     /*

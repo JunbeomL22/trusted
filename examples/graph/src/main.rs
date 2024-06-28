@@ -88,7 +88,7 @@ fn main() -> Result<()> {
         zero_curve_values[i] = zero_curve.get_forward_rate_between_times(0.0, t_values[i], Compounding::Continuous)
                                     .expect("nil")
     }
-    plot_vectors(&t_values, &zero_curve_values, "./graphs/zero_rate_test.png").expect("Failed to plot vectors.");
+    plot_vectors(&t_values, &zero_curve_values, "./examples/graph/images/zero_rate_test.png").expect("Failed to plot vectors.");
 
     Ok(())
 }

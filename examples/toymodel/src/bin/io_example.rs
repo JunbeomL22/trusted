@@ -14,7 +14,7 @@ use examples_toymodel::{
 
 fn main() -> Result<()> {
     let start_time = Instant::now();
-    let file_appender = rolling::daily("logs", "my_app.log");
+    let file_appender = rolling::daily("./examples/toymodel/logs", "io.log");
     let (non_blocking_appender, _guard) = non_blocking(file_appender);
     let custom_time = CustomOffsetTime::new(9, 0, 0);
     let console_layer = fmt::layer()

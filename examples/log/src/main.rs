@@ -37,7 +37,7 @@ impl Drop for Guard {
 
 fn main() -> Result<()> {
     let _guard = Logger::initialize()
-        .with_file("logs", "test")?
+        .with_file("./examples/log/logs", "test")?
         .with_console_report(false)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)

@@ -1,0 +1,873 @@
+{
+  "165XXX3": {
+    "instrument_info": {
+      "name": "KOSPI2 Put Sep21",
+      "code": "165XXX3",
+      "instrument_type": "VanillaPut",
+      "currency": "KRW",
+      "unit_notional": 250000.0,
+      "maturity": [
+        2024,
+        257,
+        0,
+        0,
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 1.3148706,
+      "cashflow_amounts": {},
+      "cashflow_probabilities": {}
+    },
+    "value": 328717.66,
+    "fx_exposure": {
+      "KRW": 328717.66
+    },
+    "delta": {
+      "KOSPI2": -51269.875
+    },
+    "gamma": {
+      "KOSPI2": 3596.2612
+    },
+    "vega": {
+      "KOSPI2": 75955.69
+    },
+    "vega_strucure": {
+      "KOSPI2": [
+        0.0,
+        0.0,
+        596.85114,
+        75358.836,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "vega_matrix": {
+      "KOSPI2": {
+        "v": 1,
+        "dim": [
+          9,
+          11
+        ],
+        "data": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          489.80118,
+          107.04994,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          52978.844,
+          22379.994,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "theta": -2851.2485,
+    "div_delta": {
+      "KOSPI2": 1.8775463
+    },
+    "div_structure": {
+      "KOSPI2": [
+        0.0,
+        0.0,
+        1.8775463,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "rho": {
+      "Discount(KRW)": -16.480684,
+      "KSD": -257.04504
+    },
+    "rho_structure": {
+      "KSD": [
+        0.0,
+        0.0,
+        0.0,
+        -257.04504,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Discount(KRW)": [
+        0.0,
+        0.0,
+        0.0,
+        -16.480684,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "theta_day": null,
+    "representation_currency": "KRW"
+  },
+  "USD Cash": {
+    "instrument_info": {
+      "name": "USD Cash",
+      "code": "USD Cash",
+      "instrument_type": "Cash",
+      "currency": "USD",
+      "unit_notional": 1.0,
+      "maturity": null
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 1.0,
+      "cashflow_amounts": {},
+      "cashflow_probabilities": {}
+    },
+    "value": 1.0,
+    "fx_exposure": {
+      "USD": 1.0
+    },
+    "delta": null,
+    "gamma": null,
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": 0.0,
+    "div_delta": null,
+    "div_structure": null,
+    "rho": null,
+    "rho_structure": null,
+    "theta_day": null,
+    "representation_currency": "USD"
+  },
+  "165XXX1": {
+    "instrument_info": {
+      "name": "KOSPI2 Fut Mar21",
+      "code": "165XXX1",
+      "instrument_type": "Futures",
+      "currency": "KRW",
+      "unit_notional": 250000.0,
+      "maturity": [
+        2024,
+        166,
+        0,
+        0,
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 349.46622,
+      "cashflow_amounts": {},
+      "cashflow_probabilities": {}
+    },
+    "value": 87366550.0,
+    "fx_exposure": {
+      "KRW": -133445.73
+    },
+    "delta": {
+      "165XXX1": 873665.5
+    },
+    "gamma": {
+      "165XXX1": 0.0
+    },
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": -6697.2886,
+    "div_delta": {
+      "KOSPI2": -22.888184
+    },
+    "div_structure": {
+      "KOSPI2": [
+        0.0,
+        0.0,
+        -22.888184,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "rho": {
+      "KSD": 2220.1538
+    },
+    "rho_structure": {
+      "KSD": [
+        0.0,
+        0.0,
+        2189.6362,
+        38.146973,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "theta_day": null,
+    "representation_currency": "KRW"
+  },
+  "KRxxxxxxxxxx": {
+    "instrument_info": {
+      "name": "Virtual KTB",
+      "code": "KRxxxxxxxxxx",
+      "instrument_type": "Bond",
+      "currency": "KRW",
+      "unit_notional": 10000.0,
+      "maturity": [
+        2025,
+        364,
+        16,
+        30,
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 0.9993008,
+      "cashflow_amounts": {
+        "3": [
+          [
+            2025,
+            182,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.015
+        ],
+        "1": [
+          [
+            2025,
+            364,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0149167
+        ],
+        "2": [
+          [
+            2025,
+            1,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.015
+        ],
+        "0": [
+          [
+            2024,
+            183,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.015
+        ]
+      },
+      "cashflow_probabilities": {
+        "0": [
+          [
+            2024,
+            183,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "2": [
+          [
+            2025,
+            1,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "3": [
+          [
+            2025,
+            182,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "1": [
+          [
+            2025,
+            364,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ]
+      }
+    },
+    "value": 9993.008,
+    "fx_exposure": {
+      "KRW": 9993.008
+    },
+    "delta": null,
+    "gamma": null,
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": 0.9208985,
+    "div_delta": null,
+    "div_structure": null,
+    "rho": {
+      "KRWGOV": -1.7511845
+    },
+    "rho_structure": {
+      "KRWGOV": [
+        0.0,
+        0.0,
+        -0.0011920929,
+        -0.0029802322,
+        -0.008940697,
+        -0.008940697,
+        -0.59723854,
+        -1.1312962,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "theta_day": null,
+    "representation_currency": "KRW"
+  },
+  "KR103501GCC0": {
+    "instrument_info": {
+      "name": "국고채권 04250-2512(22-13)",
+      "code": "KR103501GCC0",
+      "instrument_type": "Bond",
+      "currency": "KRW",
+      "unit_notional": 10000.0,
+      "maturity": [
+        2025,
+        344,
+        16,
+        30,
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 1.0254111,
+      "cashflow_amounts": {
+        "1": [
+          [
+            2025,
+            344,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.02125
+        ],
+        "0": [
+          [
+            2024,
+            345,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.02125
+        ],
+        "2": [
+          [
+            2025,
+            161,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.02125
+        ],
+        "3": [
+          [
+            2024,
+            162,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          0.02125
+        ]
+      },
+      "cashflow_probabilities": {
+        "3": [
+          [
+            2024,
+            162,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "2": [
+          [
+            2025,
+            161,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "0": [
+          [
+            2024,
+            345,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ],
+        "1": [
+          [
+            2025,
+            344,
+            16,
+            30,
+            0,
+            0,
+            9,
+            0,
+            0
+          ],
+          1.0
+        ]
+      }
+    },
+    "value": 10254.111,
+    "fx_exposure": {
+      "KRW": 10254.111
+    },
+    "delta": null,
+    "gamma": null,
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": 0.94296986,
+    "div_delta": null,
+    "div_structure": null,
+    "rho": {
+      "KRWGOV": -1.7225742
+    },
+    "rho_structure": {
+      "KRWGOV": [
+        0.0011920929,
+        0.0,
+        -0.0047683716,
+        0.0,
+        -0.014305115,
+        -0.009536743,
+        -0.76413155,
+        -0.9274483,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "theta_day": null,
+    "representation_currency": "KRW"
+  },
+  "165XXX2": {
+    "instrument_info": {
+      "name": "KOSPI2 Fut Jun21",
+      "code": "165XXX2",
+      "instrument_type": "Futures",
+      "currency": "KRW",
+      "unit_notional": 250000.0,
+      "maturity": [
+        2025,
+        165,
+        0,
+        0,
+        0,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 356.31058,
+      "cashflow_amounts": {},
+      "cashflow_probabilities": {}
+    },
+    "value": 89077650.0,
+    "fx_exposure": {
+      "KRW": 1577644.4
+    },
+    "delta": {
+      "165XXX2": 890776.4
+    },
+    "gamma": {
+      "165XXX2": 0.0
+    },
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": -6798.8184,
+    "div_delta": {
+      "KOSPI2": -53.40576
+    },
+    "div_structure": {
+      "KOSPI2": [
+        0.0,
+        0.0,
+        -30.517578,
+        0.0,
+        0.0,
+        -30.517578,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "rho": {
+      "KSD": 11131.287
+    },
+    "rho_structure": {
+      "KSD": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4470.825,
+        6660.4614,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "theta_day": null,
+    "representation_currency": "KRW"
+  },
+  "KOSPI2": {
+    "instrument_info": {
+      "name": "KOSPI2",
+      "code": "KOSPI2",
+      "instrument_type": "Stock",
+      "currency": "KRW",
+      "unit_notional": 1.0,
+      "maturity": null
+    },
+    "evaluation_date": [
+      2024,
+      73,
+      16,
+      30,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    "npv_result": {
+      "npv": 350.0,
+      "cashflow_amounts": {},
+      "cashflow_probabilities": {}
+    },
+    "value": 350.0,
+    "fx_exposure": {
+      "KRW": 350.0
+    },
+    "delta": {
+      "KOSPI2": 3.5
+    },
+    "gamma": {
+      "KOSPI2": 0.0
+    },
+    "vega": null,
+    "vega_strucure": null,
+    "vega_matrix": null,
+    "theta": 0.0,
+    "div_delta": null,
+    "div_structure": null,
+    "rho": null,
+    "rho_structure": null,
+    "theta_day": null,
+    "representation_currency": "KRW"
+  }
+}

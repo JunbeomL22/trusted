@@ -441,15 +441,19 @@ mod tests {
             .with_timezone(TimeZone::Local)
             .launch();
 
-        let iteration = 1_000_000;
-        
-        let start = crate::timer::get_unix_nano();
+        info!("warm up");
+        info!("warm up");
+        info!("warm up");
+
+        let iteration = 100_000;
         
         let test_struct = TestStruct {
             a: 1,
             b: 3.14,
             c: "hello".to_string(),
         };
+
+        let start = crate::timer::get_unix_nano();
 
         for _ in 0..iteration {
             let test_clone = test_struct.clone();
