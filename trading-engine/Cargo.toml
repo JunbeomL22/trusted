@@ -7,6 +7,14 @@ edition = "2021"
 name = "trading_engine"
 
 [[bench]]
+name = "book_price"
+harness = false
+
+[[bench]]
+name = "fixed"
+harness = false
+
+[[bench]]
 name = "timer"
 harness = false
 
@@ -58,3 +66,4 @@ kanal = "0.1.0-pre8"
 ryu = "1.0"
 itoa = "1.0"
 parking_lot = "0.12"
+fixed = "1.27"

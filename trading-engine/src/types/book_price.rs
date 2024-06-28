@@ -54,7 +54,7 @@ impl<T: Precision + Clone> BookPrice<T> {
     pub fn precision(&self) -> u8 {
         T::precision()
     }
-    
+
 }
 
 #[cfg(test)]
