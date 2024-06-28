@@ -1,8 +1,8 @@
 # Conversion
 
 ## Source
-- [trading-engine/benches/conversion.rs](./trading-engine/benches/conversion.rs)
-- [trading-engine/benches/timer.rs](./trading-engine/benches/timer.rs)
+- [trading-engine/benches/conversion.rs](/trading-engine/benches/conversion.rs)
+- [trading-engine/benches/timer.rs](/trading-engine/benches/timer.rs)
 
 ## Type Conversion Performance Table
 
@@ -39,4 +39,4 @@
 | &str                      | parse\<f32>                | 12ns            |
 | &str                      | parse\<f64>                | 8ns             |
 | &str                      | parse\<f64> -> i64 (BookPrice) | 21ns            |
-| i64 (BookPrice)           | -> ryu -> &str            | 31ns            |
+| i64 (BookPrice)           | -> as_f64 -> ryu            | 31ns            |
