@@ -1,0 +1,12 @@
+[package]
+name = "examples-multi_consumers"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+
+[dependencies]
+crossbeam-channel = "0.5"
+core_affinity = "0.5.10"
+trading-engine = { version = "0.1", path = "../../trading-engine" }
+anyhow = "1.0"
