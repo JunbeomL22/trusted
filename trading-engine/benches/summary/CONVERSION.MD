@@ -31,12 +31,12 @@
 | f32 | as u64 | 262ps |
 | f64 | as u32 | 256ps |
 | f64 | as u64 | 253ps |
-| &str                      | parse<i32>                | 10ns            |
-| &str                      | parse<i64>                | 8ns             |
-| &str                      | parse<i128>               | 12ns            |
-| &str                      | parse<u32>                | 9ns             |
-| &str                      | parse<u64>                | 6ns             |
-| &str                      | parse<f32>                | 12ns            |
-| &str                      | parse<f64>                | 8ns             |
+| &str                      | parse\<i32>                | 10ns            |
+| &str                      | parse\<i64>                | 8ns             |
+| &str                      | parse\<i128>               | 12ns            |
+| &str                      | parse\<u32>                | 9ns             |
+| &str                      | parse\<u64>                | 6ns             |
+| &str                      | parse\<f32>                | 12ns            |
+| &str                      | parse\<f64>                | 8ns             |
 | &str                      | -> ryu -> i64 (BookPrice) | 21ns            |
 | i64 (BookPrice)           | -> ryu -> &str            | 31ns            |
