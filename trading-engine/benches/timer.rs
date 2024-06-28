@@ -103,54 +103,24 @@ fn bench_datetime_conversion_from_unix_nano(c: &mut Criterion) {
 
 }
 
-fn bench_direct_datetime_creation(c: &mut Criterion) {
+fn bench_datetime_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("datetime creation now");
-    group.bench_function("chrono::DateTime", |b| {
-        b.iter(chrono::Utc::now);
-    });
-    group.bench_function("time::OffsetDatetime", |b| {
-        b.iter(time::OffsetDateTime::now_utc);
-    });
-    
-    group.finish();
-}
-
-fn bench_conversion_to_string(c: &mut Criterion) {
-    let unix_nano = get_unix_nano();
-    let chrono_dt = DateTime::<Local>::from(Local.timestamp_nanos(unix_nano as i64));
-    let time_dt = time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
-        .expect("failed to convert to OffsetDateTime");
-
     let offset = time::UtcOffset::from_hms(9,0,0)
         .expect("failed to create UtcOffset");
 
-    let mut group = c.benchmark_group("conversion to string");
-    group.bench_function("chrono::DateTime", |b| {
-        b.iter(|| {
-            format!("{}", chrono_dt.format("%Y-%m-%dT%H:%M:%S%.3f%:z"))
-        });
+    group.bench_function("chrono::DateTime utc", |b| {
+        b.iter(chrono::Utc::now);
     });
-    
+
+    group.bench_function("chrono::DateTime Local", |b| {
+        b.iter(|| chrono::Local::now());
+    });
+
+    group.bench_function("time::OffsetDatetime utc", |b| {
+        b.iter(time::OffsetDateTime::now_utc);
+    });
     group.bench_function("time::OffsetDatetime Local", |b| {
-        b.iter(|| {
-            time_dt.format(&Rfc3339).unwrap_or_else(|_| String::from("failed to format"))
-        });
-    });
-
-    group.bench_function("convert_unix_nano_to_datetime_format", |b| {
-        b.iter(|| {
-            convert_unix_nano_to_datetime_format(unix_nano, 9)
-        });
-    });
-
-    group.bench_function("convert_unix_nano_to_offsetdatetime_then_format", |b| {
-        b.iter(|| {
-            let dt = time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
-                .expect("failed to convert to OffsetDateTime")
-                .to_offset(offset);
-
-            dt.format(&Rfc3339).unwrap_or_else(|_| String::from("failed to format"))
-        });
+        b.iter(|| time::OffsetDateTime::now_utc().to_offset(offset));
     });
 
     group.finish();
@@ -204,11 +174,10 @@ fn bench_multi_thread_unix_nano(c: &mut Criterion) {
 
 criterion_group!(
     benches, 
-    //bench_conversion_to_string,
-    //bench_datetime_conversion_from_unix_nano,
-    //bench_direct_datetime_creation,
-    //bench_nows,
-    //bench_unix_nanos,
+    bench_datetime_conversion_from_unix_nano,
+    bench_datetime_creation,
+    bench_nows,
+    bench_unix_nanos,
     bench_multi_thread_unix_nano,
 );
 criterion_main!(benches);

@@ -19,4 +19,5 @@ trading-engine = { version = "0.1", path = "../../trading-engine" }
 anyhow = "1.0"
 criterion = "0.5"
 ustr = "1.0"
+flume = "0.11"
 crossbeam-utils = "0.8"

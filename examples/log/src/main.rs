@@ -37,13 +37,13 @@ impl Drop for Guard {
 
 fn main() -> Result<()> {
     let _guard = Logger::initialize()
-        .with_file("./examples/log/logs", "test")?
+        .with_file("logs", "message")?
         .with_console_report(false)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 200_000;
+    let iteration = 100_000;
     
     let test_struct = TestStruct {
         a: 1,
@@ -73,8 +73,8 @@ fn main() -> Result<()> {
     let elapsed_as_seconds = elapsed as f64 / 1_000_000_000.0;
     let elapsed_average = elapsed as f64 / iteration as f64;
 
-    //println!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
     info!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
+    println!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
 
     Ok(())
 }

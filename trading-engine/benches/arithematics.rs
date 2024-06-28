@@ -177,23 +177,8 @@ fn bench_division(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_converion(c: &mut Criterion) {
-    let mut group = c.benchmark_group("conversion from f64 to u64");
-    let x: f64 = 1.123456;
-    group.bench_function("conversion by nmultiplcation", |b| b.iter(|| {
-        let y = (x * 1_000_000_000.0) as u64;
-    }));
-
-    let xu = 1_123_456;
-    group.bench_function("conversion by division", |b| b.iter(|| {
-        let zu = (xu / 1_000_000_000) as f64;
-    }));
-    group.finish();
-}
-
 criterion_group!(
     benches, 
-    //bench_addition, bench_multiply, bench_division,
-    bench_converion,
+    bench_multiply, bench_division,
 );
 criterion_main!(benches);

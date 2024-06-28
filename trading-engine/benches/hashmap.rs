@@ -6,20 +6,21 @@ use criterion::{criterion_group, criterion_main, Criterion};
 fn bench_hashmap(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("hashmap");
 
-    bgroup.bench_function("std::HashMap", |b| {
+    let mut map = HashMap::new();
+    let mut brown_map = HashbrownHashMap::new();
+    bgroup.bench_function("std::HashMap 1000 insertion", |b| {
         b.iter(|| {
-            let mut map = HashMap::new();
+            
             for i in 0..1000 {
                 map.insert(i, i+1);
             }
         });
     });
 
-    bgroup.bench_function("hashbrown::HashMap", |b| {
+    bgroup.bench_function("hashbrown::HashMap 1000 insertion", |b| {
         b.iter(|| {
-            let mut map = HashbrownHashMap::new();
             for i in 0..1000 {
-                map.insert(i, i+1);
+                brown_map.insert(i, i+1);
             }
         });
     });
@@ -36,7 +37,7 @@ fn bench_search_time(c: &mut Criterion) {
         map.insert(i, i+1);
     }
 
-    bgroup.bench_function("std::HashMap", |b| {
+    bgroup.bench_function("std::HashMap search after 100_000 insertion", |b| {
         b.iter(|| {
             for i in 0..100_000 {
                 map.get(&i);
@@ -49,7 +50,7 @@ fn bench_search_time(c: &mut Criterion) {
         map.insert(i, i+1);
     }
 
-    bgroup.bench_function("hashbrown::HashMap", |b| {
+    bgroup.bench_function("hashbrown::HashMap search after 100_000 insertion", |b| {
         b.iter(|| {
             for i in 0..100_000 {
                 map.get(&i);
