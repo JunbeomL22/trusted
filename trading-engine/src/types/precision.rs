@@ -10,12 +10,15 @@ pub const QUANTITY_MIN: f64 = 0.0;
 pub trait Precision {
     fn precision() -> u8;
 
+    #[inline]
     fn check_precision_bound() -> bool { Self::precision() <= MAX_IO_PRECISION }
 
+    #[inline]
     fn check_f64price_bound(price: f64) -> bool { 
         (PRICE_MIN <= price) && ( price <= PRICE_MAX )
     }
 
+    #[inline]
     fn check_f64quantity_bound(quantity: f64) -> bool {
         (QUANTITY_MIN <= quantity) && (quantity <= QUANTITY_MAX)
     }
@@ -24,6 +27,7 @@ pub trait Precision {
     fn price_f64_to_i64(value: f64) -> Result<i64>;
 
     #[must_use]
+    #[inline]
     fn price_i64_to_f64(value: i64) -> f64 {
         value as f64 / MAX_IO_MULTIPLIER
     }
@@ -32,6 +36,7 @@ pub trait Precision {
     fn quantity_f64_to_u64(value: f64) -> Result<u64>;
 
     #[must_use]
+    #[inline]
     fn quantity_u64_to_f64(value: u64) -> f64 {
         value as f64 / MAX_IO_MULTIPLIER
     }
@@ -49,8 +54,10 @@ pub trait Precision {
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec9;
 
 impl Precision for Prec0 {
+    #[inline]
     fn precision() -> u8 { 0 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec0::check_f64price_bound(value) {
             Ok((value.round() as i64) * 1_000_000_000_i64)
@@ -60,6 +67,7 @@ impl Precision for Prec0 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value: f64) -> Result<u64> {
         if Prec0::check_f64quantity_bound(value) {
             Ok((value.round() as u64) * 1_000_000_000_u64)
@@ -71,8 +79,10 @@ impl Precision for Prec0 {
 }
 
 impl Precision for Prec1 {
+    #[inline]
     fn precision() -> u8 { 1 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec1::check_f64price_bound(value) {
             let rounded = (value * 10.0).round() as i64;
@@ -83,6 +93,7 @@ impl Precision for Prec1 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec1::check_f64quantity_bound(value) {
             let rounded = (value * 10.0).round() as u64;
@@ -95,8 +106,10 @@ impl Precision for Prec1 {
 }
 
 impl Precision for Prec2 {
+    #[inline]
     fn precision() -> u8 { 2 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec2::check_f64price_bound(value) {
             let rounded = (value * 100.0).round() as i64;
@@ -107,6 +120,7 @@ impl Precision for Prec2 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec2::check_f64quantity_bound(value) {
             let rounded = (value * 100.0).round() as u64;
@@ -119,6 +133,7 @@ impl Precision for Prec2 {
 }
 
 impl Precision for Prec3 {
+    #[inline]
     fn precision() -> u8 { 3 }
 
     fn price_f64_to_i64(value: f64) -> Result<i64> {
@@ -131,6 +146,7 @@ impl Precision for Prec3 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec3::check_f64quantity_bound(value) {
             let rounded = (value * 1_000.0).round() as u64;
@@ -143,6 +159,7 @@ impl Precision for Prec3 {
 }
 
 impl Precision for Prec4 {
+    #[inline]
     fn precision() -> u8 { 4 }
 
     fn price_f64_to_i64(value: f64) -> Result<i64> {
@@ -155,6 +172,7 @@ impl Precision for Prec4 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec4::check_f64quantity_bound(value) {
             let rounded = (value * 10_000.0).round() as u64;
@@ -167,8 +185,10 @@ impl Precision for Prec4 {
 }
 
 impl Precision for Prec5 {
+    #[inline]
     fn precision() -> u8 { 5 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec5::check_f64price_bound(value) {
             let rounded = (value * 100_000.0).round() as i64;
@@ -179,6 +199,7 @@ impl Precision for Prec5 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec5::check_f64quantity_bound(value) {
             let rounded = (value * 100_000.0).round() as u64;
@@ -191,6 +212,7 @@ impl Precision for Prec5 {
 }
 
 impl Precision for Prec6 {
+    #[inline]
     fn precision() -> u8 { 6 }
 
     fn price_f64_to_i64(value: f64) -> Result<i64> {
@@ -203,6 +225,7 @@ impl Precision for Prec6 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec6::check_f64quantity_bound(value) {
             let rounded = (value * 1_000_000.0).round() as u64;
@@ -215,8 +238,10 @@ impl Precision for Prec6 {
 }
 
 impl Precision for Prec7 {
+    #[inline]
     fn precision() -> u8 { 7 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec7::check_f64price_bound(value) {
             let rounded = (value * 10_000_000.0).round() as i64;
@@ -227,6 +252,7 @@ impl Precision for Prec7 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec7::check_f64quantity_bound(value) {
             let rounded = (value * 10_000_000.0).round() as u64;
@@ -239,8 +265,10 @@ impl Precision for Prec7 {
 }
 
 impl Precision for Prec8 {
+    #[inline]
     fn precision() -> u8 { 8 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec8::check_f64price_bound(value) {
             let rounded = (value * 100_000_000.0).round() as i64;
@@ -251,6 +279,7 @@ impl Precision for Prec8 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec8::check_f64quantity_bound(value) {
             let rounded = (value * 100_000_000.0).round() as u64;
@@ -264,8 +293,10 @@ impl Precision for Prec8 {
 
 
 impl Precision for Prec9 {
+    #[inline]
     fn precision() -> u8 { 9 }
 
+    #[inline]
     fn price_f64_to_i64(value: f64) -> Result<i64> {
         if Prec9::check_f64price_bound(value) {
             let rounded = (value * 1_000_000_000.0).round() as i64;
@@ -276,6 +307,7 @@ impl Precision for Prec9 {
         }
     }
 
+    #[inline]
     fn quantity_f64_to_u64(value:f64) -> Result<u64> {
         if Prec9::check_f64quantity_bound(value) {
             let rounded = (value * 1_000_000_000.0).round() as u64;

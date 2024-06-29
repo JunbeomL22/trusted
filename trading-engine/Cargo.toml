@@ -11,7 +11,7 @@ name = "book_price"
 harness = false
 
 [[bench]]
-name = "fixed"
+name = "float"
 harness = false
 
 [[bench]]

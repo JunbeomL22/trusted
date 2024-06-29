@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use anyhow::Result;
 
+
 #[derive(Debug, Clone, Default)]
 pub struct Ladder
 <T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> {

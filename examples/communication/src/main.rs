@@ -31,7 +31,7 @@ pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
     core_affinity::get_core_ids().expect("Failed to get core IDs")
 });
 
-const DATA_SIZE: usize = 1;
+const DATA_SIZE: usize = 1000;
 
 #[derive(Clone, Debug)]
 struct A {

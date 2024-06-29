@@ -1,93 +1,37 @@
 use std::fs::File;
 use std::io::{Write, Read};
-use pcap::{Capture, Device};
 use serde::{Serialize, Deserialize};
 use anyhow::{Result, Context};
+use etherparse::{Ethernet2Header, Ipv4Header, UdpHeader, PacketHeaders, SlicedPacket};
+use pcap::{Capture, Device};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PacketPayload {
     pub payload: Vec<u8>,
 }
 
-fn main() -> Result<()> {
-    let input_file = "data/small_20231228105204.pcap";
-    let output_file = "data/payloads.bin";
+const PCAP_FILE: &str = "data/small_20231228105204.pcap";
+const PAYLOADS_FILE: &str = "data/payloads.bin";
 
-    // Extract payloads
-    let payloads = extract_payloads(input_file)?;
-    println!("Extracted {} payloads", payloads.len());
-
-    // Serialize and save payloads
-    serialize_payloads(&payloads, output_file)?;
-    println!("Serialized payloads saved to {}", output_file);
-
-    // Read and deserialize payloads
-    let deserialized_payloads = deserialize_payloads(output_file)?;
-    println!("Deserialized {} payloads", deserialized_payloads.len());
-
-    // Verify deserialized data
-    assert_eq!(payloads.len(), deserialized_payloads.len(), "Payload count mismatch");
-    for (original, deserialized) in payloads.iter().zip(deserialized_payloads.iter()) {
-        assert_eq!(original.payload, deserialized.payload, "Payload data mismatch");
-    }
-    println!("Deserialized data verified successfully");
-    // Iterate over deserialized payloads
-    /*
-    for payload in deserialized_payloads.iter().take(10) {
-        let payload_str = String::from_utf8_lossy(&payload.payload);
-        println!("ASCII Payload: {}", payload_str);
-        println!("{:?} (len = {})", payload.payload, payload.payload.len()  );
-    }
-     */
-    Ok(())
-}
-
-fn extract_payloads(filename: &str) -> Result<Vec<PacketPayload>> {
-    let mut cap = Capture::from_file(filename)
-        .context("Failed to open PCAP file")?;
-
-    let mut payloads = Vec::new();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Open the PCAP file
+    let mut capture = Capture::from_file(PCAP_FILE).context("Failed to open PCAP file")?;
 
     let mut count = 0;
-    while let Ok(packet) = cap.next_packet() {
-        dbg!(packet.clone());
+
+    while let Ok(packet) = capture.next_packet() {
         count += 1;
         if count > 10 {
             break;
         }
-
-        let payload = PacketPayload {
-            payload: packet.data.to_vec(),
-        };
-        payloads.push(payload);
+        match SlicedPacket::from_ethernet(&packet.data) {
+            Err(value) => println!("Err {:?}", value),
+            Ok(value) => {
+                println!("---");
+                println!("{:?}", String::from_utf8_lossy(value.ether_payload().unwrap().payload));
+            }
+        }
     }
 
-    Ok(payloads)
-}
-
-fn serialize_payloads(payloads: &[PacketPayload], filename: &str) -> Result<()> {
-    let serialized = bincode::serialize(payloads)
-        .context("Failed to serialize payloads")?;
-    
-    let mut file = File::create(filename)
-        .context("Failed to create output file")?;
-    
-    file.write_all(&serialized)
-        .context("Failed to write serialized data")?;
-
     Ok(())
-}
-
-fn deserialize_payloads(filename: &str) -> Result<Vec<PacketPayload>> {
-    let mut file = File::open(filename)
-        .context("Failed to open serialized file")?;
-    
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)
-        .context("Failed to read serialized data")?;
-
-    let payloads: Vec<PacketPayload> = bincode::deserialize(&buffer)
-        .context("Failed to deserialize payloads")?;
-
-    Ok(payloads)
 }
