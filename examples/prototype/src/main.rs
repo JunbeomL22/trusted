@@ -6,7 +6,7 @@ use anyhow::{Result, Context};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PacketPayload {
-    payload: Vec<u8>,
+    pub payload: Vec<u8>,
 }
 
 fn main() -> Result<()> {
@@ -31,7 +31,14 @@ fn main() -> Result<()> {
         assert_eq!(original.payload, deserialized.payload, "Payload data mismatch");
     }
     println!("Deserialized data verified successfully");
-
+    // Iterate over deserialized payloads
+    /*
+    for payload in deserialized_payloads.iter().take(10) {
+        let payload_str = String::from_utf8_lossy(&payload.payload);
+        println!("ASCII Payload: {}", payload_str);
+        println!("{:?} (len = {})", payload.payload, payload.payload.len()  );
+    }
+     */
     Ok(())
 }
 
@@ -41,7 +48,14 @@ fn extract_payloads(filename: &str) -> Result<Vec<PacketPayload>> {
 
     let mut payloads = Vec::new();
 
+    let mut count = 0;
     while let Ok(packet) = cap.next_packet() {
+        dbg!(packet.clone());
+        count += 1;
+        if count > 10 {
+            break;
+        }
+
         let payload = PacketPayload {
             payload: packet.data.to_vec(),
         };
