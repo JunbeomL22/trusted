@@ -19,46 +19,26 @@ impl VenueTrait for Mock {
 
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub struct MockOrderId {
-    #[serde(deserialize_with = "order_id_from_str")]
-    id: Ustr,
+    id: u64,
 }
 
 impl MockOrderId {
-    pub fn new(id: Ustr) -> MockOrderId {
+    pub fn new(id: u64) -> MockOrderId {
         MockOrderId { id }
     }
 }
 
 impl PartialEq<u64> for MockOrderId {
     fn eq(&self, other: &u64) -> bool {
-        self.id == Ustr::from(other.to_string().as_str())
-    }
-}
-
-impl PartialEq<Ustr> for MockOrderId {
-    fn eq(&self, other: &Ustr) -> bool {
         self.id == *other
     }
 }
 
-impl MockOrderId {
-    pub fn new_from_u64(id: u64) -> Result<MockOrderId> {
-        if id <= 0 {
-            let lazy_error = || anyhow!("Invalid order id: {}", id);
-            return Err(lazy_error());
-        }
-        let id_str = id.to_string();
-        let res = MockOrderId {
-            id: Ustr::from(&*id_str),
-        };
-        Ok(res)
-    }
-}
 
 impl Default for MockOrderId {
     fn default() -> Self {
         MockOrderId {
-            id: Ustr::from("0"),
+            id: 0,
         }
     }
 }

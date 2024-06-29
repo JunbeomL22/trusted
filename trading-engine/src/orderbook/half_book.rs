@@ -14,17 +14,17 @@ use anyhow::Result;
 
 
 #[derive(Debug, Clone, Default)]
-pub struct Ladder
+pub struct HalfBook
 <T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> {
     pub order_side: OrderSide,
     pub levels: BTreeMap<BookPrice<T>, Level<T, S>>,
     pub cache: HashMap<OrderId, BookPrice<T>>,
 }
 
-impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> Ladder<T, S> {
+impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> HalfBook<T, S> {
     #[must_use]
     pub fn initialize(order_side: OrderSide) -> Self {
-        Ladder {
+        HalfBook {
             order_side: order_side,
             levels: BTreeMap::new(),
             cache: HashMap::new(),
@@ -39,7 +39,7 @@ impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> Ladder<T,
         levels.insert(price.clone(), level);
         let mut cache = HashMap::new();
         cache.insert(order.order_id, price);
-        Ladder {
+        HalfBook {
             order_side: order.order_side,
             levels: levels,
             cache: cache,
