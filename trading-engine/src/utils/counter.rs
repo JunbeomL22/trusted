@@ -29,9 +29,9 @@ impl CounterUsize {
         let res = self.counter.fetch_add(1, Ordering::SeqCst);
         if res > self.end {
             let lazy_error = || anyhow!("CounterUsize: counter overflow, start: {}, end: {}", self.start, self.end);
-            return Err(lazy_error());
+            Err(lazy_error())
         } else {
-            return Ok(res);
+            Ok(res)
         }
     }
 }
@@ -60,9 +60,9 @@ impl CounterU64 {
         let res = self.counter.fetch_add(1, Ordering::SeqCst);
         if res > self.end {
             let lazy_error = || anyhow!("CounterU64: counter overflow, start: {}, end: {}", self.start, self.end);
-            return Err(lazy_error());
+            Err(lazy_error())
         } else {
-            return Ok(res);
+            Ok(res)
         }
     }
 }
@@ -136,7 +136,7 @@ mod tests {
             let counter_clone = Arc::clone(&counter);
             let handle = thread::spawn(move || {
                 for _ in 0..30000 {
-                    counter_clone.next();
+                    let _ = counter_clone.next();
                 }
             });
             handles.push(handle);

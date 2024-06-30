@@ -50,7 +50,7 @@ impl PricerTrait for BondPricer {
         let pricing_date = instrument.get_pricing_date()?.unwrap_or(&eval_dt);
     
         let cashflow = instrument.get_cashflows(
-            &pricing_date,
+            pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating Bond::npv")?;
@@ -62,7 +62,7 @@ impl PricerTrait for BondPricer {
             }
         }
 
-        res /= self.discount_curve.borrow().get_discount_factor_at_date(&pricing_date)?;
+        res /= self.discount_curve.borrow().get_discount_factor_at_date(pricing_date)?;
         Ok(res)
 
     }
@@ -78,7 +78,7 @@ impl PricerTrait for BondPricer {
         let mut disc_factor: Real;
         
         let cashflow = instrument.get_cashflows(
-            &pricing_date,
+            pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone(),
         ).context("Failed to get coupon cashflow in calculating Bond::npv_result")?; // include evaluation date
@@ -90,12 +90,12 @@ impl PricerTrait for BondPricer {
             }
 
             if pricing_date.date() <= payment_date.date () {
-                coupon_amounts.insert(i as usize, (payment_date.clone(), *amount));
-                coupon_payment_probability.insert(i, (payment_date.clone(), 1.0));
+                coupon_amounts.insert(i, (*payment_date, *amount));
+                coupon_payment_probability.insert(i, (*payment_date, 1.0));
             }
         }
 
-        npv /= self.discount_curve.borrow().get_discount_factor_at_date(&pricing_date)?;
+        npv /= self.discount_curve.borrow().get_discount_factor_at_date(pricing_date)?;
 
         let res = NpvResult::new(
             npv,

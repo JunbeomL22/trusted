@@ -2,7 +2,6 @@ use crossbeam_channel::{bounded, Sender, Receiver};
 use std::thread;
 use std::time::Instant;
 use std::sync::Arc;
-use core_affinity;
 
 const MESSAGE_COUNT: usize = 100_000;
 const WARMUP_COUNT: usize = 2;
@@ -47,7 +46,7 @@ fn run_test(num_consumers: usize) -> f64 {
             let rx = warmup_rx[i].clone();
             let core_ids = Arc::clone(&core_ids);
             thread::spawn(move || {
-                core_affinity::set_for_current(core_ids[(i + 1) % num_cores].clone());
+                core_affinity::set_for_current(core_ids[(i + 1) % num_cores]);
                 consumer(rx, i, true);
             })
         })
@@ -56,7 +55,7 @@ fn run_test(num_consumers: usize) -> f64 {
     let warmup_producer_handle = {
         let core_ids = Arc::clone(&core_ids);
         thread::spawn(move || {
-            core_affinity::set_for_current(core_ids[0].clone());
+            core_affinity::set_for_current(core_ids[0]);
             producer(warmup_tx, true);
         })
     };
@@ -74,7 +73,7 @@ fn run_test(num_consumers: usize) -> f64 {
             let rx = rx[i].clone();
             let core_ids = Arc::clone(&core_ids);
             thread::spawn(move || {
-                core_affinity::set_for_current(core_ids[(i + 1) % num_cores].clone());
+                core_affinity::set_for_current(core_ids[(i + 1) % num_cores]);
                 consumer(rx, i, false);
             })
         })
@@ -85,7 +84,7 @@ fn run_test(num_consumers: usize) -> f64 {
     let producer_handle = {
         let core_ids = Arc::clone(&core_ids);
         thread::spawn(move || {
-            core_affinity::set_for_current(core_ids[0].clone());
+            core_affinity::set_for_current(core_ids[0]);
             producer(tx, false);
         })
     };

@@ -50,11 +50,7 @@ use ndarray::array;
 use ndarray::Array1;
 use std::time::Instant;
 use std::rc::Rc;
-use serde_json::{
-    to_string,
-    to_string_pretty,
-    from_str,
-};
+use serde_json::to_string_pretty;
 use std::fs::write;
 
 fn main() -> Result<()> {
@@ -106,7 +102,7 @@ fn main() -> Result<()> {
     ];
 
     let times = None;
-    let market_datetime = dt.clone();
+    let market_datetime = dt;
     let zero_curve1 = "KSD".to_string();
     let zero_curve_data1 = VectorData::new(
         &value - 0.0005, 
@@ -269,8 +265,8 @@ fn main() -> Result<()> {
         bond_currency,
         10_000.0,
         false, 
-        issuedate.clone(), 
-        issuedate.clone(),
+        issuedate, 
+        issuedate,
         None,
         maturity,
         Some(0.03),
@@ -308,8 +304,8 @@ fn main() -> Result<()> {
         bond_currency2,
         10_000.0, 
         false, 
-        issuedate2.clone(), 
-        issuedate2.clone(),
+        issuedate2, 
+        issuedate2,
         None,
         maturity2,
         Some(0.0425),
@@ -455,7 +451,7 @@ fn main() -> Result<()> {
     let engine_generator = engine_builder
         .with_configuration(
             calculation_configuration, 
-            dt.clone(),
+            dt,
             match_parameter)?
         .with_instruments(Instruments::new(inst_vec))?
         .with_instrument_categories(instrument_categories)?
@@ -480,7 +476,7 @@ fn main() -> Result<()> {
     let json = to_string_pretty(&calculation_results)
         .with_context(|| format!("({}:{}) Failed to serialize CalculationResult to JSON", file!(), line!()))?;
     
-    write("./examples/toymodel/json_data/results.json", &json)
+    write("./examples/toymodel/json_data/results.json", json)
         .with_context(|| format!("({}:{}) Failed to write JSON to file", file!(), line!()))?;
 
     /*

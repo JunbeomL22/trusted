@@ -9,6 +9,12 @@ pub struct FloatConverter {
     float_buffer: FloatBuffer,
 }
 
+impl Default for FloatConverter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FloatConverter {
     pub fn new() -> Self {
         Self {
@@ -31,6 +37,12 @@ impl FloatConverter {
 
 pub struct IntegerConverter {
     integer_buffer: IntegerBuffer,
+}
+
+impl Default for IntegerConverter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IntegerConverter {

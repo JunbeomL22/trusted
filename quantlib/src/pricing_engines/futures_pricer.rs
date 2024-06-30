@@ -67,7 +67,7 @@ impl PricerTrait for FuturesPricer {
         let res = match instrument {
             Instrument::Futures(futures) => {
                 let maturity = futures.get_maturity().unwrap();
-                let res = NpvResult::new_from_npv(self.fair_forward(&maturity)?);
+                let res = NpvResult::new_from_npv(self.fair_forward(maturity)?);
                 Ok(res)
             }
             _ => Err(anyhow!(
@@ -81,7 +81,7 @@ impl PricerTrait for FuturesPricer {
         let res = match instrument {
             Instrument::Futures(futures) => {
                 let maturity = futures.get_maturity().unwrap();
-                self.fair_forward(&maturity)
+                self.fair_forward(maturity)
             }
             _ => Err(anyhow!(
                 "FuturesPricer::npv: not supported instrument type: {}", 
@@ -100,7 +100,7 @@ impl PricerTrait for FuturesPricer {
                 let unit_notional = futures.get_unit_notional();
                 let exposure = (npv - average_trade_price) * unit_notional;
                 let currency = futures.get_currency();
-                let res = HashMap::from_iter(vec![(currency.clone(), exposure)]);
+                let res = HashMap::from_iter(vec![(*currency, exposure)]);
                 Ok(res)
             },
             _ => Err(anyhow!(
@@ -168,7 +168,7 @@ mod tests {
         );
 
         // make a zero curve which represents KSD curve which is equivelantly KRWGOV - 5bp
-        let mut ksd_data = VectorData::new(
+        let ksd_data = VectorData::new(
             Array1::from(vec![0.0345, 0.0345]),
             Some(vec![datetime!(2021-01-02 16:00:00 +09:00), datetime!(2022-01-01 00:00:00 +09:00)]),
             None,

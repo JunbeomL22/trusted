@@ -39,7 +39,7 @@ impl LinearInterpolator1D
         // BoB
         let n = domain.len();
         if n != value.len() {
-            let mut message = format!("domain and value must have the same length");
+            let mut message = "domain and value must have the same length".to_string();
             message.push_str(&format!("\ndomain: {:?}", domain));
             message.push_str(&format!("\nvalue: {:?}", value));
             return Err(anyhow!(message));
@@ -54,7 +54,7 @@ impl LinearInterpolator1D
         // first initialize the derivatives with n-1 elements
         let mut derivatives = Array1::zeros(n-1);
         for i in 0..n-1 {
-            derivatives[i] = (value[i+1] - value[i]) / ((domain[i+1] - domain[i]));
+            derivatives[i] = (value[i+1] - value[i]) / (domain[i+1] - domain[i]);
         }
 
         Ok(LinearInterpolator1D {
@@ -123,14 +123,14 @@ impl InterpolatorReal1D for LinearInterpolator1D
         
         let index = binary_search_index_ndarray(&self.domain, x);
         let res = self.value[index] + self.derivatives[index] * (x - self.domain[index]);
-        return Ok(res);
+        Ok(res)
     }
 
     /// Interpolate for a vector of x. This function does not check if x is sorted.
     fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<Real>) -> Result<Array1<Real>> {
         let x_n = x.len();
         let domain_n = self.domain.len();
-        let indices = vectorized_search_index_for_sorted_ndarray(&self.domain, &x);
+        let indices = vectorized_search_index_for_sorted_ndarray(&self.domain, x);
         let mut result = Array1::zeros(x_n);
 
         for i in 0..x_n {

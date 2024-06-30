@@ -1,7 +1,5 @@
 use crate::definitions::Real;
 use time::OffsetDateTime;
-use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
 use crate::currency::Currency;
@@ -74,23 +72,19 @@ impl ValueData {
 #[cfg(test)]
 mod tests {
     use crate::data::value_data::ValueData;
-    use time::OffsetDateTime;
-    use crate::definitions::Real;
-    use std::rc::Rc;
-    use std::cell::RefCell; 
     use crate::currency::Currency;
     use anyhow::Result;
 
     #[test]
     fn test_creation() -> Result<()> {
-        let mut value_data = ValueData::new(
+        let value_data = ValueData::new(
             1.0, 
             None,//OffsetDateTime::now_utc(),
             Currency::NIL,
             "test".to_string(),
             "test".to_string(),
         ).expect("Failed to create ValueData");
-
+        assert!(value_data.get_value() == 1.0);
         Ok(())
     }
 }

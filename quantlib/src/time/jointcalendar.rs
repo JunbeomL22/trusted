@@ -13,7 +13,7 @@ pub struct JointCalendar {
 
 impl JointCalendar {
     pub fn new(calendars: Vec<Calendar>) -> Result<JointCalendar> {
-        if calendars.len() < 1 {
+        if calendars.is_empty() {
             return Err(anyhow!(
                 "{}:{}  JointCalendar must have at least one calendar",
                 file!(), line!()
@@ -74,7 +74,7 @@ impl CalendarTrait for JointCalendar {
             if self.is_holiday(&date) && (include_weekend || !self.is_weekend(&date)) {
                 println!("{:?}", date);
             }
-            date = date + time::Duration::days(1);
+            date += time::Duration::days(1);
         }
     }
 
@@ -114,7 +114,7 @@ mod tests {
     
     #[test]
     fn test_joint_calendar() -> Result<()> {
-        let summer_time = false;
+        let _summer_time = false;
         let us = UnitedStates::new(UnitedStatesType::Settlement);
         let us_cal = Calendar::UnitedStates(us);
         let sk = SouthKorea::new(SouthKoreaType::Settlement);

@@ -1,4 +1,4 @@
-use tracing::{info, Level, span, warn, debug};
+use tracing::{info, Level, warn};
 use crate::instruments::instrument_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
@@ -40,7 +40,6 @@ use crate::time::{
 };
 
 use std::{
-    time::Instant,
     collections::{HashMap, HashSet},
     rc::Rc,
     cell::RefCell,
@@ -104,6 +103,7 @@ impl Engine {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn with_parameter_data(
         mut self,
         fx_data: Arc<HashMap<FxCode, ValueData>>,
@@ -125,7 +125,7 @@ impl Engine {
                     data.get_value(),
                     self.evaluation_date.borrow().get_date_clone(),
                     None,
-                    fx_code.get_currency2().clone(),
+                    *fx_code.get_currency2(),
                     fx_code.to_string(),
                     fx_code.to_string(),
                 )));
@@ -136,26 +136,26 @@ impl Engine {
                     1.0 / data.get_value(),
                     self.evaluation_date.borrow().get_date_clone(),
                     None,
-                    fx_code.get_currency2().clone(),
+                    *fx_code.get_currency2(),
                     fx_code.to_string(),
                     fx_code.to_string(),
                 )));
-                fxs.insert(fx_code.clone(), rc);
-            } else if fx_data.contains_key(&FxCode::new(fx_code.get_currency1().clone(), Currency::KRW)) 
-                && fx_data.contains_key(&FxCode::new(fx_code.get_currency2().clone(), Currency::KRW)) {
-                let data1 = fx_data.get(&FxCode::new(fx_code.get_currency1().clone(), Currency::KRW)).unwrap();
-                let data2 = fx_data.get(&FxCode::new(fx_code.get_currency2().clone(), Currency::KRW)).unwrap();
+                fxs.insert(fx_code, rc);
+            } else if fx_data.contains_key(&FxCode::new(*fx_code.get_currency1(), Currency::KRW)) 
+                && fx_data.contains_key(&FxCode::new(*fx_code.get_currency2(), Currency::KRW)) {
+                let data1 = fx_data.get(&FxCode::new(*fx_code.get_currency1(), Currency::KRW)).unwrap();
+                let data2 = fx_data.get(&FxCode::new(*fx_code.get_currency2(), Currency::KRW)).unwrap();
 
                 let rc = Rc::new(RefCell::new(
                     MarketPrice::new(
                         data1.get_value() / data2.get_value(),
                         self.evaluation_date.borrow().get_date_clone(),
                         None,
-                        fx_code.get_currency2().clone(),
+                        *fx_code.get_currency2(),
                         fx_code.to_string(),
                         fx_code.to_string(),
                     )));
-                fxs.insert(fx_code.clone(), rc);
+                fxs.insert(fx_code, rc);
             } else {
                 bail!(
                     "({}:{}) failed to get fx data for {}.\n\
@@ -257,7 +257,7 @@ impl Engine {
                         data.get_value(),
                         self.evaluation_date.borrow().get_date_clone(),
                         div,
-                        data.get_currency().clone(),
+                        *data.get_currency(),
                         data.get_name().clone(),
                         underlying_code.clone(),
                     )));
@@ -301,7 +301,7 @@ impl Engine {
                         "({}:{}) failed to get borrowing curve for {} in creating volatility surface\n\
                         zero curves list:\n {:?}",
                         file!(), line!(), und_code,
-                        zero_curves.keys().into_iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "),
+                        zero_curves.keys().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "),
                     ))?.clone();
                 let stickyness = self.calculation_configuration.get_stickyness_type();
                 let lv_interpolator = self.calculation_configuration.get_lv_interpolator();
@@ -351,7 +351,7 @@ impl Engine {
                         "({}:{}) failed to get borrowing curve for {} in creating volatility surface\n\
                         zero curves list:\n {:?}",
                         file!(), line!(), und_code,
-                        zero_curves.keys().into_iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "), 
+                        zero_curves.keys().map(|s| s.as_str()).collect::<Vec<&str>>().join(" | "), 
                     ))?.clone();
                 let stickyness = self.calculation_configuration.get_stickyness_type();
                 let lv_interpolator = self.calculation_configuration.get_lv_interpolator();
@@ -384,7 +384,7 @@ impl Engine {
         // 
         // fx volatility parameter
         let quanto_fx_und_pair = self.instruments.get_all_quanto_fxcode_und_pairs();
-        let unique_fxcodes: HashSet<FxCode> = quanto_fx_und_pair.iter().map(|(_, second)| (**second).clone()).collect();
+        let unique_fxcodes: HashSet<FxCode> = quanto_fx_und_pair.iter().map(|(_, second)| **second).collect();
 
         let mut fx_volatilities = HashMap::new();
         for fx_code in unique_fxcodes {
@@ -396,7 +396,7 @@ impl Engine {
                         fx_code.to_string(),
                         fx_code.to_string(),
                     ))));
-                fx_volatilities.insert(fx_code.clone(), rc);
+                fx_volatilities.insert(fx_code, rc);
             } else {
                 bail!(
                     "({}:{}) failed to get fx volatility data for {}", 
@@ -408,8 +408,8 @@ impl Engine {
         // quanto parameter
         let mut quantos = HashMap::new();
         for (und_code, fxcode) in quanto_fx_und_pair {
-            if quanto_correlation_data.contains_key(&(und_code.clone(), fxcode.clone())) {
-                let data = quanto_correlation_data.get(&(und_code.clone(), fxcode.clone())).unwrap();
+            if quanto_correlation_data.contains_key(&(und_code.clone(), *fxcode)) {
+                let data = quanto_correlation_data.get(&(und_code.clone(), *fxcode)).unwrap();
                 let rc = Rc::new(RefCell::new(
                     Quanto::new(
                         fx_volatilities.get(fxcode)
@@ -418,10 +418,10 @@ impl Engine {
                                 file!(), line!(), und_code, fxcode))?
                             .clone(),
                         data.get_value(),
-                        fxcode.clone(),
+                        *fxcode,
                         und_code.clone(),
                     )));
-                quantos.insert((und_code.clone(), fxcode.clone()), rc);
+                quantos.insert((und_code.clone(), *fxcode), rc);
             } else {
                 bail!(
                     "({}:{}) failed to get quanto correlation data for {:?}", 
@@ -504,7 +504,7 @@ impl Engine {
                 inst_codes.push(inst.get_code().clone());
                 let mat = inst.get_maturity();
                 match mat {
-                    Some(m) => inst_mat.push(Some(m.clone())),
+                    Some(m) => inst_mat.push(Some(*m)),
                     None => inst_mat.push(None),
                 }
             }
@@ -536,7 +536,7 @@ impl Engine {
                 inst_codes.push(inst.get_code().clone());
                 let mat = inst.get_maturity();
                 match mat {
-                    Some(m) => inst_mat.push(Some(m.clone())),
+                    Some(m) => inst_mat.push(Some(*m)),
                     None => inst_mat.push(None),
                 }
             }
@@ -568,9 +568,9 @@ impl Engine {
                 inst.get_name().to_string(),
                 code.to_string(),
                 inst_type,
-                inst.get_currency().clone(),
+                *inst.get_currency(),
                 inst.get_unit_notional(),
-                inst.get_maturity().clone(),
+                inst.get_maturity(),
             );
 
             let init_res = CalculationResult::new(
@@ -756,7 +756,7 @@ impl Engine {
                     file!(), line!(), inst_code, inst.get_type_name(),
                 ))?)
                 .borrow_mut()
-                .set_single_delta(&inst_code, delta);
+                .set_single_delta(inst_code, delta);
             (*self.calculation_results
                 .get(inst_code)
                 .ok_or_else(|| anyhow!(
@@ -764,7 +764,7 @@ impl Engine {
                     file!(), line!(), inst_code, inst.get_type_name(),
                 ))?)
                 .borrow_mut()
-                .set_single_gamma(&inst_code, gamma);
+                .set_single_gamma(inst_code, gamma);
         }
         Ok(())
     }
@@ -837,14 +837,12 @@ impl Engine {
             for inst in &self.instruments_in_action {
                 let inst_code = inst.get_code();
                 let unitamt = inst.get_unit_notional();
-                delta_up = delta_up_map
+                delta_up = *delta_up_map
                     .get(inst_code)
-                    .ok_or_else(|| anyhow!("delta_up is not set"))?
-                    .clone();
-                delta_down = delta_down_map
+                    .ok_or_else(|| anyhow!("delta_up is not set"))?;
+                delta_down = *delta_down_map
                     .get(inst_code)
-                    .ok_or_else(|| anyhow!("delta_down is not set"))?
-                    .clone();
+                    .ok_or_else(|| anyhow!("delta_down is not set"))?;
 
                 delta = (delta_up - delta_down) / (2.0 * delta_bump_ratio) * DELTA_PNL_UNIT;
 
@@ -855,7 +853,7 @@ impl Engine {
                         file!(), line!(), inst_code,
                     ))?)
                     .borrow_mut()
-                    .set_single_delta(&und_code, delta * unitamt);
+                    .set_single_delta(und_code, delta * unitamt);
 
                 mid = self.calculation_results
                         .get(inst.get_code())
@@ -876,7 +874,7 @@ impl Engine {
                         file!(), line!(), inst.get_code(),
                     ))?)
                     .borrow_mut()
-                    .set_single_gamma(&und_code, gamma * unitamt);
+                    .set_single_gamma(und_code, gamma * unitamt);
             }
 
             {
@@ -1147,10 +1145,10 @@ impl Engine {
                 for inst in self.instruments_in_action.iter() {
                     let inst_code = inst.get_code();
                     let unitamt = inst.get_unit_notional();
-                    npv_up = current_npvs_up.get(inst_code)
-                        .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?.clone();
-                    npv = prev_npvs_up.get(inst_code)
-                        .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?.clone();
+                    npv_up = *current_npvs_up.get(inst_code)
+                        .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?;
+                    npv = *prev_npvs_up.get(inst_code)
+                        .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?;
                     
                     let vega_structure = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
                     single_vega_structure.get_mut(inst_code)
@@ -1294,10 +1292,10 @@ impl Engine {
                     for inst in self.instruments_in_action.iter() {
                         let inst_code = inst.get_code();
                         let unitamt = inst.get_unit_notional();
-                        npv_up = current_npvs_up.get(inst_code)
-                            .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?.clone();
-                        npv = prev_npvs_up.get(inst_code)
-                            .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?.clone();
+                        npv_up = *current_npvs_up.get(inst_code)
+                            .ok_or_else(|| anyhow!("npv_up is not set for {}", inst_code))?;
+                        npv = *prev_npvs_up.get(inst_code)
+                            .ok_or_else(|| anyhow!("npv is not set for {}", inst_code))?;
 
                         let vega_matrix = (npv_up - npv) / bump_val * VEGA_PNL_UNIT * unitamt;
                         single_vega_matrix.get_mut(inst_code)
@@ -1436,7 +1434,7 @@ impl Engine {
         // limit the scope that the attribute is mutably borrowed
         
         { 
-            (*self.evaluation_date).borrow_mut().set_date(bumped_date.clone()); 
+            (*self.evaluation_date).borrow_mut().set_date(bumped_date); 
         }
 
 
@@ -1445,7 +1443,7 @@ impl Engine {
                 "({}:{}) failed to get npvs",
                 file!(), line!()))?;
 
-        let continue_type = vec!["Stock", "Cash"];
+        let continue_type = ["Stock", "Cash"];
         for inst in self.instruments_in_action.iter() {
             let inst_code = inst.get_code();
             let inst_type = inst.get_type_name();
@@ -1569,7 +1567,7 @@ impl Engine {
                 for inst in &self.instruments_in_action {
                     let inst_code = inst.get_code();
                     let unitamt = inst.get_unit_notional();
-                    npv_up = npvs_up.get(inst_code).context("failed to get npv_up in rho-structure calculation")?.clone();
+                    npv_up = *npvs_up.get(inst_code).context("failed to get npv_up in rho-structure calculation")?;
                     npv = self.calculation_results.get(inst_code)
                         .context("failed to get npv in rho-structure calculation")?
                         .borrow().get_npv_result()
@@ -1676,7 +1674,7 @@ impl Engine {
                 for inst in &self.instruments_in_action {
                     let inst_code = inst.get_code();
                     let unitamt = inst.get_unit_notional();
-                    npv_up = npvs_up.get(inst_code).context("failed to get npv_up in div-structure calculation")?.clone();
+                    npv_up = *npvs_up.get(inst_code).context("failed to get npv_up in div-structure calculation")?;
                     npv = self.calculation_results.get(inst_code)
                         .context("failed to get npv in div-structure calculation")?
                         .borrow().get_npv_result()
@@ -1726,7 +1724,7 @@ impl Engine {
         let mut timer = std::time::Instant::now();
         let start_time = std::time::Instant::now();
 
-        if self.instruments_in_action.len() < 1 {    
+        if !self.instruments_in_action.is_empty() {    
             warn!("* no instruments to calculate in engine-{}\n", self.engine_id);
         }
 

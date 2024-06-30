@@ -2,8 +2,9 @@ use std::hash::Hash;
 use std::fmt::Display;
 use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Currency {
+    #[default]
     NIL,
     KRW,
     USD,
@@ -57,12 +58,6 @@ impl std::fmt::Display for Currency {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // Implement the formatting logic for Currency here
         write!(f, "{}", self.as_str())
-    }
-}
-
-impl Default for Currency {
-    fn default() -> Currency {
-        Currency::NIL
     }
 }
 
@@ -213,10 +208,6 @@ impl FxCode {
             currency1: self.currency2,
             currency2: self.currency1,
         }
-    }
-
-    pub fn to_string(&self) -> String {
-        format!("{}{}", self.currency1.as_str(), self.currency2.as_str())
     }
 }
 impl Display for FxCode {

@@ -129,15 +129,15 @@ impl BilinearInterpolator {
         if t < self.t_domain[0] {
             if self.t_domain_allow_extrapolation {
                 match self.t_domain_extrapolation_type {
-                    ExtraPolationType::Flat => return Ok(self.x_interpolator[0].interpolate(x)?),
+                    ExtraPolationType::Flat => Ok(self.x_interpolator[0].interpolate(x)?),
                     ExtraPolationType::Linear => {
                         let v_first = self.x_interpolator[0].interpolate(x)?;
                         let v_second = self.x_interpolator[1].interpolate(x)?;
                         let t_first = self.t_domain[0];
                         let t_second = self.t_domain[1];
-                        return Ok(v_first + (t - t_first) * (v_second - v_first) / (t_second - t_first));
+                        Ok(v_first + (t - t_first) * (v_second - v_first) / (t_second - t_first))
                     },
-                    ExtraPolationType::None => return Err(anyhow!(
+                    ExtraPolationType::None => Err(anyhow!(
                         "({}:{}) {}: extrapolation has not been implemented yet",
                         file!(),
                         line!(),
@@ -145,19 +145,19 @@ impl BilinearInterpolator {
                     )),
                 }
             } else {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "({}:{}) t (={}) is out of range where\n\
                     t_domain: Array1<Real> = {:?}",
                     file!(),
                     line!(),
                     t,
                     self.t_domain
-                ));
+                ))
             }
         } else if t >= self.t_domain[n - 1] {
             if self.t_domain_allow_extrapolation {
                 match self.t_domain_extrapolation_type {
-                    ExtraPolationType::Flat => return Ok(self.x_interpolator[n - 1].interpolate(x)?),
+                    ExtraPolationType::Flat => Ok(self.x_interpolator[n - 1].interpolate(x)?),
                     ExtraPolationType::Linear => {
                         let v_last = self.x_interpolator[n - 1].interpolate(x)?;
                         let v_prev = self.x_interpolator[n - 2].interpolate(x)?;

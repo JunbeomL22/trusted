@@ -3,7 +3,6 @@ use anyhow::{Result, Context};
 use time::{macros::datetime, Duration};
 use serde_json::{
     from_str,
-    to_string,
     to_string_pretty,
 };
 use tracing::info;
@@ -13,6 +12,7 @@ use quantlib::definitions::Real;
 use quantlib::utils::string_arithmetic::add_period;
 use ndarray::{array, Array1, Array2};
 
+#[allow(clippy::excessive_precision)]
 pub fn surfacedata_io() -> Result<()> {
     let parameter_datetime = datetime!(2021-01-01 17:00:00 +09:00);
     let close_price = 350.0;
@@ -70,7 +70,7 @@ pub fn surfacedata_io() -> Result<()> {
             add_period(&parameter_datetime, "3Y"),
         ],
         Array1::linspace(0.3 * close_price, 1.5 * close_price, 25),
-        Some(parameter_datetime.clone()),
+        Some(parameter_datetime),
         Currency::KRW,
         "KOSPI2 20220414 Data".to_string(),
         "KOSPI2 20220414 Data".to_string(),
@@ -84,7 +84,7 @@ pub fn surfacedata_io() -> Result<()> {
     let data2 = SurfaceData::new(
         None,
         array2,
-        vec![parameter_datetime.clone(), parameter_datetime.clone() + Duration::days(1)],
+        vec![parameter_datetime, parameter_datetime + Duration::days(1)],
         array![1.0, 2.0],
         None,
         Currency::NIL,

@@ -42,7 +42,7 @@ mod tests {
         let times = None;
         let market_datetime = evaluation_offsetdatetime.clone();
         let name = "zero curve data".to_string();
-        let mut zero_curve_data = VectorData::new(
+        let zero_curve_data = VectorData::new(
             value, 
             Some(dates), 
             times, 
@@ -71,7 +71,7 @@ mod tests {
         let times = None;
         let market_datetime = evaluation_offsetdatetime.clone();
         let name = "dividend amount data".to_string();
-        let mut dividend_data = VectorData::new(
+        let dividend_data = VectorData::new(
             value, 
             Some(dates.clone()), 
             times, 

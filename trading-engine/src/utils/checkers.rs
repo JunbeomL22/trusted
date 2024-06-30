@@ -11,7 +11,7 @@ pub fn valid_isin_code_length(isin: &str) -> Result<bool> {
 }
 
 pub fn contains_white_space(code: &str) -> Result<bool> {
-    match code.contains(" ") {
+    match code.contains(' ') {
         true => {
             let lazy_error = || anyhow!("The value {} has a white space", code);
             Err( lazy_error() )

@@ -81,6 +81,7 @@ impl RateIndex {
     /// pricing_date (OffsetDateTime): evaluation date
     /// compound_tenor (Option<&String>): compounding tenor. This is optional and None means that it is not a overnight type index. 
     /// For example, if the floatin part is CD91, Libor3M, etc, it is None, but in case of SOFR1D, it is Some(String::from("1D"))
+    #[allow(clippy::too_many_arguments)]
     pub fn get_coupon_amount(
         &self,
         base_schedule: &BaseSchedule,
@@ -99,9 +100,8 @@ impl RateIndex {
                 let fixing_date = base_schedule.get_fixing_date();
                 let curve_end_date = add_period(
                     fixing_date, self.curve_tenor.as_str());
-                let res: Real;
-                if fixing_date < pricing_date {
-                    res = match close_data.get(&(fixing_date.date())) {
+                let res: Real = if fixing_date < pricing_date {
+                    match close_data.get(&(fixing_date.date())) {
                         Some(rate) => *rate,
                         None => {
                             println!(
@@ -114,14 +114,14 @@ impl RateIndex {
                                 &curve_end_date, Compounding::Simple,
                             )?
                         },
-                    };                    
+                    }
                 } else { // fixing_date >= eval_dt
-                    res = forward_curve.borrow().get_forward_rate_between_dates(
-                        &fixing_date, 
+                    forward_curve.borrow().get_forward_rate_between_dates(
+                        fixing_date, 
                         &curve_end_date, 
                         Compounding::Simple,
-                    )?;
-                }
+                    )?
+                };
                     
                 let frac = calendar.year_fraction(
                     base_schedule.get_calc_start_date(),
@@ -136,18 +136,18 @@ impl RateIndex {
                 if fixing_date >= pricing_date {
                     // if the fixing date is after the evaluation date, the rate is calculated by the forward curve
                     // the value is taken as the average of the first and last fixing for performance
-                    let curve_end_date = add_period(fixing_date, &self.curve_tenor.as_str());
+                    let curve_end_date = add_period(fixing_date, self.curve_tenor.as_str());
                         
                     let first_rate = forward_curve.borrow().get_forward_rate_between_dates(
-                        &fixing_date,
+                        fixing_date,
                         &curve_end_date,
                         Compounding::Simple,
                     )?;
 
-                    let last_fixing_date = base_schedule.get_calc_end_date().clone() - Duration::days(fixing_days);
+                    let last_fixing_date = *base_schedule.get_calc_end_date() - Duration::days(fixing_days);
                     let last_rate = forward_curve.borrow().get_forward_rate_between_dates(
                         &last_fixing_date,
-                        &add_period(&last_fixing_date, &self.curve_tenor.as_str()),
+                        &add_period(&last_fixing_date, self.curve_tenor.as_str()),
                         Compounding::Simple,
                     )?;
 
@@ -160,10 +160,10 @@ impl RateIndex {
                     )?;
                     return Ok((rate + spread) * frac);
                 }
-                let curve_end_date_from_eval_date = add_period(pricing_date, &comp_tenor.as_str());
-                let mut calc_start_date = base_schedule.get_calc_start_date().clone();
+                let curve_end_date_from_eval_date = add_period(pricing_date, comp_tenor.as_str());
+                let mut calc_start_date = *base_schedule.get_calc_start_date();
                 let mut next_calc_date: OffsetDateTime;
-                let calc_end_date = base_schedule.get_calc_end_date().clone();
+                let calc_end_date = *base_schedule.get_calc_end_date();
                 
                 let spot_rate = forward_curve.borrow().get_forward_rate_between_dates(
                     pricing_date,
@@ -182,13 +182,13 @@ impl RateIndex {
                         &BusinessDayConvention::Preceding,
                     )?;
 
-                    next_calc_date = add_period(&calc_start_date, &comp_tenor.as_str());
+                    next_calc_date = add_period(&calc_start_date, comp_tenor.as_str());
                     next_calc_date = min_offsetdatetime(&next_calc_date, &calc_end_date);
 
                     frac = calendar.year_fraction(
                         &calc_start_date,
                         &next_calc_date,
-                        &daycounter
+                        daycounter
                     )?;
 
                     if &fixing_date < pricing_date {
@@ -206,14 +206,14 @@ impl RateIndex {
                     } else {
                         rate = forward_curve.borrow().get_forward_rate_between_dates(
                             &fixing_date,
-                            &add_period(&fixing_date, &self.curve_tenor.as_str()),
+                            &add_period(&fixing_date, self.curve_tenor.as_str()),
                             Compounding::Simple,
                         )?;
                     };
                     
                     compounded_value *= 1.0 + (rate + spread) * frac;
                  
-                    calc_start_date = next_calc_date.clone();
+                    calc_start_date = next_calc_date;
                 }
                 let res = compounded_value - 1.0;
                 Ok(res)
@@ -254,10 +254,10 @@ mod tests {
         let evaluation_date = Rc::new(RefCell::new(
             EvaluationDate::new(dt.clone())
         ));
-        let payment_frequency = PaymentFrequency::Quarterly;
-        let business_day_convention = BusinessDayConvention::ModifiedFollowing;
+        let _payment_frequency = PaymentFrequency::Quarterly;
+        let _business_day_convention = BusinessDayConvention::ModifiedFollowing;
         let daycounter = DayCountConvention::Actual365Fixed;
-        let tenor = "1D".to_string();
+        let _tenor = "1D".to_string();
         let compound_tenor = Some("1D".to_string());
         let fixing_days = 7;
         let calendar = JointCalendar::new(

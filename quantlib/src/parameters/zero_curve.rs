@@ -82,7 +82,7 @@ impl ZeroCurve {
             return Err(error)
         }
         
-        if zero_rates.len() < 1 {
+        if zero_rates.is_empty() {
             let error = anyhow!(
                 "({}:{}) name = {} zero_rates = {:?} data = {:?}", 
                 file!(), line!(),
@@ -90,21 +90,17 @@ impl ZeroCurve {
             return Err(error)
         }
 
-        let rate_interpolator: ZeroCurveInterpolator;
-
-        if zero_rates.len() == 1 {
-            rate_interpolator = ZeroCurveInterpolator::Constant(
-                ConstantInterpolator1D::new(zero_rates[0])?
-            );
+        let rate_interpolator: ZeroCurveInterpolator = if zero_rates.len() == 1 {
+            ZeroCurveInterpolator::Constant(ConstantInterpolator1D::new(zero_rates[0])?)
         } else {
-            rate_interpolator = ZeroCurveInterpolator::Linear(
+            ZeroCurveInterpolator::Linear(
                 LinearInterpolator1D::new(
                     rate_times.clone(),
                     zero_rates.clone(), 
                     ExtraPolationType::Flat, 
                     true)?
-            );
-        }
+            )
+        };
         
         let period_leteral = vec![
             "0D", "1D", 
@@ -188,14 +184,8 @@ impl ZeroCurve {
         time2: Option<Time>,
         bump_val: Real
     ) -> Result<()> {
-        let t1 = match time1 {
-            Some(t) => t,
-            None => -99999999.0
-        };
-        let t2 = match time2 {
-            Some(t) => t,
-            None => 99999999.0
-        };
+        let t1 = time1.unwrap_or(-99999999.0);
+        let t2 = time2.unwrap_or(99999999.0);
         //sanity check
         if self.interpolated_rates.len() != self.discount_times.len() {
             return Err(anyhow!(
@@ -288,7 +278,7 @@ impl ZeroCurve {
         }
     }
 
-    pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &Vec<OffsetDateTime>) -> Result<Vec<Real>> {
+    pub fn get_vectorized_discount_factor_for_sorted_dates(&self, dates: &[OffsetDateTime]) -> Result<Vec<Real>> {
         dates.iter().map(|date| self.get_discount_factor_at_date(date)).collect()
     }
 
@@ -310,18 +300,17 @@ impl ZeroCurve {
             true => {
                 let tau = t2 - t1;
         
-                let disc: Real;
-                if tau.abs() > 1e-6 {
-                    disc = match self.get_discount_factor_between_times(t1, t2) {
+                let disc: Real = if tau.abs() > 1e-6 {
+                    match self.get_discount_factor_between_times(t1, t2) {
                         Ok(d) => d,
                         Err(e) => return Err(e)
                     }
                 } else {
-                    disc = match self.get_discount_factor_between_times(t1, t2 + 1e-5) {
+                    match self.get_discount_factor_between_times(t1, t2 + 1e-5) {
                         Ok(d) => d,
                         Err(e) => return Err(e)
                     }
-                }
+                };
                 
                 match compounding {
                     Compounding::Simple => Ok((1.0 - disc) / tau),
@@ -355,7 +344,7 @@ impl ZeroCurve {
 
         let t1 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date1);
         let t2 = self.time_calculator.get_time_difference(&self.evaluation_date.borrow().get_date_clone(), date2);
-        return self.get_forward_rate_between_times(t1, t2, compounding)
+        self.get_forward_rate_between_times(t1, t2, compounding)
     }
 
     pub fn get_forward_rate_from_evaluation_date(
@@ -385,7 +374,7 @@ impl ZeroCurve {
         }
     }
 
-    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &Vec<Time>) -> Result<Vec<Real>> {
+    pub fn get_vectorized_short_rate_for_sorted_times(&self, times: &[Time]) -> Result<Vec<Real>> {
         let mut res = vec![0.0; times.len()];
         for i in 0..times.len() {
             res[i] = match self.get_short_rate_at_time(times[i]) {
@@ -449,7 +438,7 @@ mod tests {
             add_period(&param_dt, "5Y")
             ];
 
-        let mut data = VectorData::new(
+        let data = VectorData::new(
             array![0.02, 0.02, 0.025, 0.03, 0.035, 0.04],
             Some(dates.clone()), 
             None, 

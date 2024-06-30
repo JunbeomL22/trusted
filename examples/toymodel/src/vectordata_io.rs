@@ -3,7 +3,6 @@ use anyhow::{Result, Context};
 use time::macros::datetime;
 use serde_json::{
     from_str,
-    to_string,
     to_string_pretty,
 };
 use tracing::info;
@@ -49,7 +48,7 @@ pub fn vectordata_io() -> Result<()> {
     
     let json = to_string_pretty(&vec_datas_vec)
         .context("Failed to serialize Vec<VectorData> to JSON")?;
-    write("./examples/toymodel/json_data/vectordata.json", &json).context("Failed to write JSON to file")?;
+    write("./examples/toymodel/json_data/vectordata.json", json).context("Failed to write JSON to file")?;
 
     // re-read the file
     let json = std::fs::read_to_string("./examples/toymodel/json_data/vectordata.json")

@@ -55,5 +55,5 @@ fn from_str<'de, D>(deserializer: D) -> Result<Ustr, D::Error>
 where D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(Ustr::from(&*s))
+    Ok(Ustr::from(&s))
 }

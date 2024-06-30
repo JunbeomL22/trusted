@@ -59,6 +59,7 @@ pub struct Bond {
 }
 
 impl Bond {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         issuer_type: IssuerType,
         credit_rating: CreditRating,
@@ -143,6 +144,7 @@ impl Bond {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_from_conventions(
         issuer_type: IssuerType,
         credit_rating: CreditRating,
@@ -309,14 +311,14 @@ impl InstrumentTrait for Bond {
             let given_amount = base_schedule.get_amount();
             match given_amount {
                 Some(amount) => {
-                    res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+                    res.entry(*payment_date).and_modify(|e| *e += amount).or_insert(amount);
                     //res.insert(payment_date.clone(), amount);
                 },
                 None => {
                     match self.rate_index.as_ref() {
                         Some(rate_index) => {// begin of the case of frn
                             let amount = rate_index.get_coupon_amount(
-                                &base_schedule,
+                                base_schedule,
                                 self.floating_coupon_spread,
                                 forward_curve.clone().unwrap(),
                                 past_data.clone().unwrap_or(Rc::new(DailyClosePrice::default())),
@@ -326,7 +328,7 @@ impl InstrumentTrait for Bond {
                                 &self.daycounter,
                                 self.fixing_gap_days,
                             )?;
-                            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+                            res.entry(*payment_date).and_modify(|e| *e += amount).or_insert(amount);
                             //*res.entry(payment_date.clone()).or_insert(amount) += amount;
                             //res.insert(payment_date.clone(), amount);
                         }, // end of the case of frn
@@ -339,7 +341,7 @@ impl InstrumentTrait for Bond {
                             )?;
                             let rate = self.fixed_coupon_rate.unwrap();
                             let amount = frac * rate;
-                            res.entry(payment_date.clone()).and_modify(|e| *e += amount).or_insert(amount);
+                            res.entry(*payment_date).and_modify(|e| *e += amount).or_insert(amount);
 
                         }, // end of the case of fixed rate bond
                     } // end of branch of bond type
@@ -348,7 +350,7 @@ impl InstrumentTrait for Bond {
         }
 
         if !self.is_coupon_strip()? && self.maturity.date() >= pricing_date.date() {
-            res.entry(self.maturity.clone()).and_modify(|e| *e += 1.0).or_insert(1.0);
+            res.entry(self.maturity).and_modify(|e| *e += 1.0).or_insert(1.0);
         }
 
         Ok(res)

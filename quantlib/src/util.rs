@@ -4,9 +4,9 @@ use crate::definitions::Integer;
 
 pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDateTime {
     if d1 < d2 {
-        d1.clone()
+        *d1
     } else {
-        d2.clone()
+        *d2
     }
 }
 
@@ -25,7 +25,7 @@ pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDat
 pub fn type_name<T>(_: &T) -> &'static str {
     let full_name = std::any::type_name::<T>();
     let parts: Vec<&str> = full_name.split("::").collect();
-    *parts.last().unwrap_or(&full_name)
+    parts.last().unwrap_or(&full_name)
 }
 
 pub fn is_ndarray_sorted<T>(arr: &Array1<T>) -> bool 

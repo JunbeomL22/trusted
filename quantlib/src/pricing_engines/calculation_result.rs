@@ -24,7 +24,7 @@ use ndarray::Array2;
 /// mostly pnl -> value_2 - value_1 +cashflow_inbetween
 /// all greeks are calculated based on value not the npv in other words, considering unit_notional
 /// fx_exposure: Option<Real>:
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct CalculationResult {
     instrument_info: Option<InstrumentInfo>,
     evaluation_date: Option<OffsetDateTime>,
@@ -47,35 +47,9 @@ pub struct CalculationResult {
     representation_currency: Option<Currency>,
 }
 
-impl Default for CalculationResult {
-    fn default() -> CalculationResult {
-        CalculationResult {
-            instrument_info: None,
-            evaluation_date: None,
-            npv_result: None,
-            value: None,
-            fx_exposure: None,
-            delta: None,
-            gamma: None,
-            vega: None,
-            vega_strucure: None,
-            vega_matrix: None,
-            theta: None,
-            div_delta: None,
-            div_structure: None,
-            rho: None,
-            rho_structure: None,
-            theta_day: None,
-            cashflows: None,
-            representation_currency: None,
-        }
-    }
-}
-
-
 impl std::fmt::Debug for CalculationResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f,"")?;
+        writeln!(f)?;
         if let Some(ref info) = self.instrument_info {
             writeln!(f, " * instrument  {:?}", info)?;
         }
@@ -95,18 +69,18 @@ impl std::fmt::Debug for CalculationResult {
             for (currency, value) in exposure {
                 write!(f, "        {}: ", currency)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
         if let Some(ref delta) = self.delta {
             writeln!(f, " * delta: ")?;
             for (key, value) in delta {
                 write!(f, "        {}: ", key)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
         // Similar formatting for gamma, vega, vega_structure, theta, div_delta, div_structure, rho, rho_structure
         if let Some(ref gamma) = self.gamma {
@@ -114,26 +88,26 @@ impl std::fmt::Debug for CalculationResult {
             for (key, value) in gamma {
                 write!(f, "        {}: ", key)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(ref theta) = self.theta {
             write!(f, " * theta: ")?;
             write_number_with_commas(f, *theta)?;
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
 
         if let Some(ref vega) = self.vega {
             writeln!(f, " * vega: ")?;
             for (key, value) in vega {
                 write!(f, "        {}: ", key)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(ref vega_structure) = self.vega_strucure {
@@ -148,9 +122,9 @@ impl std::fmt::Debug for CalculationResult {
                     write_number_with_commas(f, *v)?;
                     write!(f, " | ")?;
                 }
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(ref rho) = self.rho {
@@ -158,9 +132,9 @@ impl std::fmt::Debug for CalculationResult {
             for (key, value) in rho {
                 write!(f, "        {}: ", key)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(ref rho_structure) = self.rho_structure {
@@ -175,9 +149,9 @@ impl std::fmt::Debug for CalculationResult {
                     write_number_with_commas(f, *v)?;
                     write!(f, " | ")?;
                 }
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(div_delta) = self.div_delta.as_ref() {
@@ -185,9 +159,9 @@ impl std::fmt::Debug for CalculationResult {
             for (key, value) in div_delta {
                 write!(f, "        {}: ", key)?;
                 write_number_with_commas(f, *value)?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(div_structure) = self.div_structure.as_ref() {
@@ -202,9 +176,9 @@ impl std::fmt::Debug for CalculationResult {
                     write_number_with_commas(f, *v)?;
                     write!(f, " | ")?;
                 }
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         if let Some(vega_matrix) = self.vega_matrix.as_ref() {
@@ -213,7 +187,7 @@ impl std::fmt::Debug for CalculationResult {
                 let matrix_sum: Real = value.iter().fold(0.0, |acc, &x| acc + x);
                 write!(f, "        {} (sum = ", key)?;
                 write_number_with_commas(f, matrix_sum)?;
-                write!(f, "): \n")?;
+                writeln!(f, "): ")?;
 
 
                 let under_line = "-".repeat((9+3) * 17);
@@ -224,11 +198,11 @@ impl std::fmt::Debug for CalculationResult {
                         let formatted_number = format!("{:9}", formatted_number(*element));
                         write!(f, "{} | ", formatted_number)?;
                     }       
-                    writeln!(f, "")?;
+                    writeln!(f)?;
                     writeln!(f, "{}", under_line)?;
                 }
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
         if let Some(ref currency) = self.representation_currency {
             writeln!(f, " * representation_currency: {:?}", currency)?;
@@ -297,118 +271,118 @@ impl CalculationResult {
 
     /// insert delta to self.delta as und_code as its key
     /// if the key is already in the map, it will be updated
-    pub fn set_single_delta(&mut self, und_code: &String, v: Real) {
+    pub fn set_single_delta(&mut self, und_code: &str, v: Real) {
         match &mut self.delta {
             None => {
                 let mut delta = HashMap::new();
-                delta.insert(und_code.clone(), v);
+                delta.insert(und_code.to_owned(), v);
                 self.delta = Some(delta);
             },
             Some(delta) => {
-                delta.insert(und_code.clone(), v);
+                delta.insert(und_code.to_owned(), v);
             },
         }
     }
 
-    pub fn set_single_gamma(&mut self, und_code: &String, v: Real) {
+    pub fn set_single_gamma(&mut self, und_code: &str, v: Real) {
         match &mut self.gamma {
             None => {
                 let mut gamma = HashMap::new();
-                gamma.insert(und_code.clone(), v);
+                gamma.insert(und_code.to_owned(), v);
                 self.gamma = Some(gamma);
             },
             Some(gamma) => {
-                gamma.insert(und_code.clone(), v);
+                gamma.insert(und_code.to_owned(), v);
             },
         }
     }
 
     pub fn set_single_vega_structure(
         &mut self, 
-        und_code: &String, 
+        und_code: &str, 
         vega_structure: Vec<Real>,
     ) {
         match &mut self.vega_strucure {
             None => {
                 let mut vega_structure_map = HashMap::new();
-                vega_structure_map.insert(und_code.clone(), vega_structure);
+                vega_structure_map.insert(und_code.to_owned(), vega_structure);
                 self.vega_strucure = Some(vega_structure_map);
             },
             Some(vega_structure_map) => {
-                vega_structure_map.insert(und_code.clone(), vega_structure);
+                vega_structure_map.insert(und_code.to_owned(), vega_structure);
             },
         }
     }
     
-    pub fn set_single_vega(&mut self, und_code: &String, v: Real) {
+    pub fn set_single_vega(&mut self, und_code: &str, v: Real) {
         match &mut self.vega {
             None => {
                 let mut vega = HashMap::new();
-                vega.insert(und_code.clone(), v);
+                vega.insert(und_code.to_owned(), v);
                 self.vega = Some(vega);
             },
             Some(vega) => {
-                vega.insert(und_code.clone(), v);
+                vega.insert(und_code.to_owned(), v);
             },
         }
     }
     
-    pub fn set_single_rho(&mut self, curve_code: &String, v: Real) {
+    pub fn set_single_rho(&mut self, curve_code: &str, v: Real) {
         match &mut self.rho {
             None => {
                 let mut rho = HashMap::new();
-                rho.insert(curve_code.clone(), v);
+                rho.insert(curve_code.to_owned(), v);
                 self.rho = Some(rho);
             },
             Some(rho) => {
-                rho.insert(curve_code.clone(), v);
+                rho.insert(curve_code.to_owned(), v);
             },
         }
     }
 
     pub fn set_single_rho_structure(
         &mut self, 
-        curve_code: &String, 
+        curve_code: &str, 
         rho_structure: Vec<Real>,
     ) {
         match &mut self.rho_structure {
             None => {
                 let mut rho_structure_map = HashMap::new();
-                rho_structure_map.insert(curve_code.clone(), rho_structure);
+                rho_structure_map.insert(curve_code.to_owned(), rho_structure);
                 self.rho_structure = Some(rho_structure_map);
             },
             Some(rho_structure_map) => {
-                rho_structure_map.insert(curve_code.clone(), rho_structure);
+                rho_structure_map.insert(curve_code.to_owned(), rho_structure);
             },
         }
     }
 
-    pub fn set_single_div_delta(&mut self, und_code: &String, v: Real) {
+    pub fn set_single_div_delta(&mut self, und_code: &str, v: Real) {
         match &mut self.div_delta {
             None => {
                 let mut div_delta = HashMap::new();
-                div_delta.insert(und_code.clone(), v);
+                div_delta.insert(und_code.to_owned(), v);
                 self.div_delta = Some(div_delta);
             },
             Some(div_delta) => {
-                div_delta.insert(und_code.clone(), v);
+                div_delta.insert(und_code.to_owned(), v);
             },
         }
     }
 
     pub fn set_single_div_structure(
         &mut self, 
-        und_code: &String, 
+        und_code: &str, 
         div_structure: Vec<Real>,
     ) {
         match &mut self.div_structure {
             None => {
                 let mut div_structure_map = HashMap::new();
-                div_structure_map.insert(und_code.clone(), div_structure);
+                div_structure_map.insert(und_code.to_owned(), div_structure);
                 self.div_structure = Some(div_structure_map);
             },
             Some(div_structure_map) => {
-                div_structure_map.insert(und_code.clone(), div_structure);
+                div_structure_map.insert(und_code.to_owned(), div_structure);
             },
         }
     }
@@ -487,17 +461,17 @@ impl CalculationResult {
 
     pub fn set_single_vega_matrix(
         &mut self, 
-        und_code: &String, 
+        und_code: &str, 
         vega_matrix: Array2<Real>,
     ) {
         match &mut self.vega_matrix {
             None => {
                 let mut vega_matrix_map = HashMap::new();
-                vega_matrix_map.insert(und_code.clone(), vega_matrix);
+                vega_matrix_map.insert(und_code.to_owned(), vega_matrix);
                 self.vega_matrix = Some(vega_matrix_map);
             },
             Some(vega_matrix_map) => {
-                vega_matrix_map.insert(und_code.clone(), vega_matrix);
+                vega_matrix_map.insert(und_code.to_owned(), vega_matrix);
             },
         }
     }
@@ -508,12 +482,9 @@ impl CalculationResult {
         }
 
         let instrument_info = self.instrument_info.clone();
-        let evaluation_date = self.evaluation_date.clone();
+        let evaluation_date = self.evaluation_date;
         let npv_result = self.npv_result.clone();
-        let value = match self.value {
-            Some(v) => Some(v * fx_rate),
-            None => None,
-        };
+        let value = self.value.map(|x| x * fx_rate);
         let fx_exposure: Option<HashMap<Currency, Real>> = match &self.fx_exposure {
             Some(exposure) => {
                 let mut new_exposure = HashMap::new();
@@ -580,10 +551,7 @@ impl CalculationResult {
             None => None,
         };
 
-        let theta: Option<Real> = match self.theta {
-            Some(v) => Some(v * fx_rate),
-            None => None,
-        };
+        let theta: Option<Real> = self.theta.map(|x| x * fx_rate);
         let div_delta: Option<HashMap<String, Real>> = match &self.div_delta {
             Some(div_delta) => {
                 let mut new_div_delta = HashMap::new();
@@ -626,7 +594,7 @@ impl CalculationResult {
             },
             None => None,
         };
-        let theta_day: Option<Integer> = self.theta_day.clone();
+        let theta_day: Option<Integer> = self.theta_day;
         let cashflows: Option<HashMap<OffsetDateTime, Real>> = self.cashflows.clone();
         let representation_currency: Option<Currency> = Some(currency);
 

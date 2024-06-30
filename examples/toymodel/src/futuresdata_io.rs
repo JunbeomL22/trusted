@@ -4,7 +4,6 @@ use time::macros::datetime;
 use anyhow::{Result, Context};
 use serde_json::{
     from_str,
-    to_string,
     to_string_pretty,
 };
 use tracing::info;
@@ -47,7 +46,7 @@ pub fn futuresdata_io() -> Result<()> {
     let json = to_string_pretty(&futdate_vec)
         .context("Failed to serialize Vec<Futures> to JSON")?;
 
-    write("./examples/toymodel/json_data/futuresdata.json", &json)
+    write("./examples/toymodel/json_data/futuresdata.json", json)
         .context("Failed to write JSON to file")?;
 
     // re-read the file

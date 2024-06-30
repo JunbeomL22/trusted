@@ -40,9 +40,9 @@ impl KtbfVirtualBond {
         let effective_coupon = self.coupon_rate / calc_freq;
         let mut res = 0.0;
         for i in 1..=coupon_payment_number {
-            res += effective_coupon / (1.0 + effective_yield).powi(i as i32);
+            res += effective_coupon / (1.0 + effective_yield).powi(i);
         }
-        res += 1.0 / (1.0 + effective_yield).powi(coupon_payment_number as i32);
+        res += 1.0 / (1.0 + effective_yield).powi(coupon_payment_number);
         res * self.unit_notional
     }
     
@@ -64,6 +64,7 @@ pub struct KTBF {
 }
 
 impl KTBF {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         currency: Currency,
         unit_notional: Real,

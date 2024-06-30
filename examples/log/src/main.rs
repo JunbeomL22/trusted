@@ -1,5 +1,5 @@
 use trading_engine::{
-    logger::logger::{
+    logger::{
         LogLevel,
         TimeZone,
         Logger,
@@ -7,7 +7,6 @@ use trading_engine::{
     timer,
     log_info,
     info,
-    debug,
 };
 use trading_engine::utils::timer::get_unix_nano;
 
@@ -19,6 +18,16 @@ struct TestStruct {
     a: i32,
     b: f64,
     //c: String,
+}
+
+impl Default for TestStruct {
+    fn default() -> Self {
+        TestStruct {
+            a: 0,
+            b: 0.0,
+            //c: "".to_string(),
+        }
+    }
 }
 
 struct Guard {
@@ -45,11 +54,7 @@ fn main() -> Result<()> {
 
     let iteration = 100_000;
     
-    let test_struct = TestStruct {
-        a: 1,
-        b: 3.14,
-        //c: "hello".to_string(),
-    };
+    let test_struct = TestStruct::default();
 
     for _ in 0..10 {
         info!("warm up")

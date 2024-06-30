@@ -8,17 +8,15 @@ pub fn write_number_with_commas(f: &mut fmt::Formatter<'_>, number: Real) -> fmt
     let decimal_part = if parts.len() > 1 { parts[1] } else { "" };
     
     let mut comma_separated = String::new();
-    let mut count = 0;
     
     let is_negative = integer_part.starts_with('-');
     let abs_integer_part = if is_negative { &integer_part[1..] } else { integer_part };
     
-    for c in abs_integer_part.chars().rev() {
+    for (count, c) in abs_integer_part.chars().rev().enumerate() {
         if count > 0 && count % 3 == 0 {
             comma_separated.insert(0, ',');
         }
         comma_separated.insert(0, c);
-        count += 1;
     }
     
     if is_negative {
@@ -41,17 +39,15 @@ pub fn formatted_number(number: Real) -> String {
     let decimal_part = if parts.len() > 1 { parts[1] } else { "" };
     
     let mut comma_separated = String::new();
-    let mut count = 0;
     
     let is_negative = integer_part.starts_with('-');
     let abs_integer_part = if is_negative { &integer_part[1..] } else { integer_part };
     
-    for c in abs_integer_part.chars().rev() {
+    for (count, c) in abs_integer_part.chars().rev().enumerate() {
         if count > 0 && count % 3 == 0 {
             comma_separated.insert(0, ',');
         }
         comma_separated.insert(0, c);
-        count += 1;
     }
     
     if is_negative {

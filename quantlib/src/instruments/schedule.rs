@@ -58,7 +58,7 @@ impl BaseSchedule {
 
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Default)]
 pub struct Schedule {
     data: Vec<BaseSchedule>,
 }
@@ -71,12 +71,6 @@ impl Index<usize> for Schedule {
     }
 }
 
-
-impl Default for Schedule {
-    fn default() -> Self {
-        Schedule { data: vec![] }
-    }
-}
 
 impl<'a> IntoIterator for &'a Schedule {
     type Item = &'a BaseSchedule;
@@ -96,6 +90,10 @@ impl Schedule {
         self.data.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
     pub fn iter(&self) -> std::slice::Iter<BaseSchedule> {
         self.data.iter()
     }
@@ -104,6 +102,7 @@ impl Schedule {
 /// make a schedule for a coupon for bonds, IRS, etc.
 /// The first calc_start_date is the effective date
 /// Then, the payment_dates are the calc_end_date + payment_gap adjusted by the BusinessDayConvention
+#[allow(clippy::too_many_arguments)]
 pub fn build_schedule(
     forward_generation: bool, // true => generate from effective_date to maturity, false => generate from maturity to effective_date
     effective_date: &OffsetDateTime, 
@@ -131,21 +130,21 @@ pub fn build_schedule(
     
     match forward_generation {
         true => {
-            let mut raw_start_date = effective_date.clone();
+            let mut raw_start_date = *effective_date;
             raw_start_date_vec.push_back(raw_start_date);
             let mut count = 1;
             while &raw_start_date < maturity {
-                raw_start_date = add_period(&effective_date, &freq.to_string_with_multiple(count).as_str());
+                raw_start_date = add_period(effective_date, freq.to_string_with_multiple(count).as_str());
                 count += 1;
                 raw_start_date_vec.push_back(raw_start_date);
             }
         },
         false => {
-            let mut raw_end_date = maturity.clone();
+            let mut raw_end_date = *maturity;
             raw_start_date_vec.push_front(raw_end_date);
             let mut count = 1;
             while &raw_end_date > effective_date {
-                raw_end_date = sub_period(&maturity, &freq.to_string_with_multiple(count).as_str());
+                raw_end_date = sub_period(maturity, freq.to_string_with_multiple(count).as_str());
                 count += 1;
                 raw_start_date_vec.push_front(raw_end_date);
             }
@@ -163,8 +162,8 @@ pub fn build_schedule(
     let mut payment_date: OffsetDateTime;
     for i in 0..schedule_length {
         if i == 0 {
-            calc_start_date = effective_date.clone();
-            calc_end_date = calc_start_date_vec[i + 1].clone();
+            calc_start_date = *effective_date;
+            calc_end_date = calc_start_date_vec[i + 1];
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
                     &BusinessDayConvention::Preceding,
@@ -175,17 +174,17 @@ pub fn build_schedule(
             )?;
         } 
         else if i == schedule_length - 1 {
-            calc_start_date = calc_start_date_vec[i].clone();
-            calc_end_date = maturity.clone();
+            calc_start_date = calc_start_date_vec[i];
+            calc_end_date = *maturity;
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
                 &BusinessDayConvention::Preceding,
             )?;
-            payment_date = maturity.clone();
+            payment_date = *maturity;
         } 
         else {
-            calc_start_date = calc_start_date_vec[i].clone();
-            calc_end_date = calc_start_date_vec[i + 1].clone();
+            calc_start_date = calc_start_date_vec[i];
+            calc_end_date = calc_start_date_vec[i + 1];
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
                 &BusinessDayConvention::Preceding,

@@ -38,7 +38,13 @@ pub fn binary_search_index<T: PartialOrd + Copy>(vec: &[T], value: T) -> usize {
     }
 
     // Adjusts low to ensure the condition vec[index] <= value < vec[index+1]
-    if vec[low] < value { low } else { if low == 0 { 0 } else { low - 1 } }
+    if vec[low] < value { 
+        low 
+    } else if low == 0 { 
+        0 
+    } else { 
+        low - 1 
+    }
 }
 
 /// vectorized bunary search index function for sorted input vector and sorted search vector

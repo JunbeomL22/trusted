@@ -1,4 +1,3 @@
-use env_logger;
 use quantlib::evaluation_date::EvaluationDate;
 use quantlib::parameters::zero_curve::ZeroCurve;
 use quantlib::data::vector_data::VectorData;
@@ -13,7 +12,7 @@ use plotters::prelude::*;
 use ndarray::array;
 use anyhow::{Result, Context};
 
-fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn plot_vectors(x_values: &[Real], y_values: &Vec<Real>, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Define the size of the chart
     let root_area = BitMapBackend::new(file_name, (640, 480)).into_drawing_area();
     root_area.fill(&WHITE)?;
@@ -34,7 +33,7 @@ fn plot_vectors(x_values: &Vec<Real>, y_values: &Vec<Real>, file_name: &str) -> 
     chart.configure_mesh().draw()?;
 
     // Combine x and y values into a single vector of points for plotting
-    let data: Vec<(Real, Real)> = x_values.into_iter().zip(y_values.into_iter()).map(|(&x, &y)| (x, y)).collect();
+    let data: Vec<(Real, Real)> = x_values.iter().zip(y_values).map(|(&x, &y)| (x, y)).collect();
     // Draw the line
     chart.draw_series(LineSeries::new(data, &RED))?;
 

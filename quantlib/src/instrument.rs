@@ -203,6 +203,7 @@ pub enum Instrument {
 /// GROUP1: Vec<&'static str> = vec!["StockFutures"]; 
 /// GROUP2: Vec<&'static str> = vec!["FixedCouponBond", "BondFutures", "KTBF"]; 
 /// GROUP3: Vec<&'static str> = vec!["StructuredProduct"]; 
+#[derive(Clone, Debug, Default)]
 pub struct Instruments {
     instruments: Vec<Rc<Instrument>>,
 }
@@ -212,14 +213,6 @@ impl Index<usize> for Instruments {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.instruments[index]
-    }
-}
-
-impl Default for Instruments {
-    fn default() -> Self {
-        Instruments { 
-            instruments: vec![],
-        }
     }
 }
 
@@ -238,6 +231,10 @@ impl Instruments {
         self.instruments.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.instruments.is_empty()
+    }
+
     pub fn get_instruments_clone(&self) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
@@ -251,7 +248,7 @@ impl Instruments {
         for instrument in self.instruments.iter() {
             let names = instrument.get_underlying_codes();
             for name in names.iter() {
-                if !underlying_codes.contains(&name) {
+                if !underlying_codes.contains(name) {
                     underlying_codes.push(name);
                 }
             }
@@ -264,8 +261,8 @@ impl Instruments {
         for instrument in self.instruments.iter() {
             let codes = instrument.get_all_fxcodes_for_pricing();
             for code in codes.iter() {
-                if !fxcodes.contains(&code) {
-                    fxcodes.push(code.clone());
+                if !fxcodes.contains(code) {
+                    fxcodes.push(*code);
                 }
             }
         }
@@ -277,7 +274,7 @@ impl Instruments {
         for instrument in self.instruments.iter() {
             let codes = instrument.get_quanto_fxcode_und_pair();
             for code in codes.iter() {
-                fxcodes.insert(code.clone());
+                fxcodes.insert(*code);
             }
         }   
         fxcodes
@@ -339,10 +336,7 @@ impl Instruments {
         und_code: &String,
         exclude_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
-        let exclude_type = match exclude_type {
-            Some(exlude_type) => exlude_type,
-            None => vec![],
-        };
+        let exclude_type = exclude_type.unwrap_or_default();
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             let names = instrument.get_underlying_codes();
@@ -382,10 +376,7 @@ impl Instruments {
         exclude_type: Option<Vec<&str>>,
     ) -> Result<Vec<Rc<Instrument>>> {
         let mut res = Vec::<Rc<Instrument>>::new();
-        let exclude_type = match exclude_type {
-            Some(exclude_type) => exclude_type,
-            None => vec![],
-        };
+        let exclude_type = exclude_type.unwrap_or_default();
         // 1) discount curve
         // 2) collateral curves
         // 3) rate index forward curves
@@ -455,10 +446,7 @@ impl Instruments {
         maturity: &OffsetDateTime,
         exlucde_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
-        let exlucde_type = match exlucde_type {
-            Some(exlucde_type) => exlucde_type,
-            None => vec![],
-        };
+        let exlucde_type = exlucde_type.unwrap_or_default();
 
         match instruments {
             Some(instruments) => {
@@ -498,10 +486,7 @@ impl Instruments {
         maturity: &OffsetDateTime,
         exclude_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
-        let exclude_type = match exclude_type {
-            Some(exclude_type) => exclude_type,
-            None => vec![],
-        };
+        let exclude_type = exclude_type.unwrap_or_default();
         
         match instruments {
             Some(instruments) => {
@@ -511,7 +496,7 @@ impl Instruments {
                         continue;
                     }
 
-                    if instrument.get_maturity() == None {
+                    if instrument.get_maturity().is_none() {
                         res.push(instrument.clone());
                     }
                     
@@ -530,7 +515,7 @@ impl Instruments {
                         continue;
                     }
 
-                    if instrument.get_maturity() == None {
+                    if instrument.get_maturity().is_none() {
                         res.push(instrument.clone());
                     }
                     
@@ -746,7 +731,7 @@ mod tests {
         );
 
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let sk = Calendar::SouthKorea(sk);
+        let _sk = Calendar::SouthKorea(sk);
 
         let rate_index = RateIndex::new(
             String::from("91D"),

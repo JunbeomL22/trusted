@@ -41,7 +41,7 @@ pub trait CalendarTrait {
             if self.is_holiday(&date) && (include_weekend || !self.is_weekend(&date)) {
                 println!("{:?}", date);
             }
-            date = date + time::Duration::days(1);
+            date += time::Duration::days(1);
         }
     }
 
@@ -77,23 +77,23 @@ pub trait CalendarTrait {
         if self.is_added_holiday(date) {
             return true;
         }
-        return false;
+        false
     }
 
     fn adjust_following(&self, date: &OffsetDateTime) -> OffsetDateTime {
-        let mut res = date.clone();
+        let mut res = *date;
 
         while self.is_holiday(&res) {
-            res = res + time::Duration::days(1);
+            res += time::Duration::days(1);
         }
         res
     }
 
     fn adjust_preceding(&self, date: &OffsetDateTime) -> OffsetDateTime {
-        let mut res = date.clone();
+        let mut res = *date;
 
         while self.is_holiday(&res) {
-            res = res - time::Duration::days(1);
+            res -= time::Duration::days(1);
         }
         res
     }
@@ -101,14 +101,14 @@ pub trait CalendarTrait {
     fn adjust_modified_following(&self, date: &OffsetDateTime) -> OffsetDateTime {
         let month = date.month();
 
-        let mut res = date.clone();
+        let mut res = *date;
 
         while self.is_holiday(&res) {
-            res = res + time::Duration::days(1);
+            res += time::Duration::days(1);
         }
 
         if month != res.month() {
-            res = date.clone();
+            res = *date;
             self.adjust_preceding(&res)    
         }
         else {
@@ -119,14 +119,14 @@ pub trait CalendarTrait {
     fn adjust_modified_preceding(&self, date: &OffsetDateTime) -> OffsetDateTime {
         let month = date.month();
 
-        let mut res = date.clone();
+        let mut res = *date;
 
         while self.is_holiday(&res) {
-            res = res - time::Duration::days(1);
+            res -= time::Duration::days(1);
         }
 
         if month != res.month() {
-            res = date.clone();
+            res = *date;
             self.adjust_following(&res)    
         }
         else {
@@ -137,10 +137,10 @@ pub trait CalendarTrait {
     fn adjust(&self, date: &OffsetDateTime, convention: &BusinessDayConvention) -> Result<OffsetDateTime> {
         match convention {
             BusinessDayConvention::Unadjusted => Ok(*date),
-            BusinessDayConvention::Following => Ok(self.adjust_following(&date)),
-            BusinessDayConvention::Preceding => Ok(self.adjust_preceding(&date)),
-            BusinessDayConvention::ModifiedPreceding => Ok(self.adjust_modified_preceding(&date)),
-            BusinessDayConvention::ModifiedFollowing => Ok(self.adjust_modified_following(&date)),
+            BusinessDayConvention::Following => Ok(self.adjust_following(date)),
+            BusinessDayConvention::Preceding => Ok(self.adjust_preceding(date)),
+            BusinessDayConvention::ModifiedPreceding => Ok(self.adjust_modified_preceding(date)),
+            BusinessDayConvention::ModifiedFollowing => Ok(self.adjust_modified_following(date)),
             BusinessDayConvention::Dummy => Err(anyhow!("Dummy business day convention is not supported")),
         }
     }
@@ -240,7 +240,7 @@ pub trait CalendarTrait {
 
     /// The last calendar day of a month, not the last business day
     fn last_day_of_month(&self, year: i32, month: Month) -> Date {
-        let last_day = match month {
+        match month {
             Month::January | Month::March | Month::May | Month::July | Month::August | Month::October | Month::December => {
                 Date::from_calendar_date(year, month, 31).unwrap()
             },
@@ -255,8 +255,7 @@ pub trait CalendarTrait {
                     Date::from_calendar_date(year, month, 28).unwrap()
                 }
             },
-        };
-        last_day
+        }
     }
 
     fn is_leap_year(&self, year: i32) -> bool {

@@ -70,12 +70,12 @@ impl PricerTrait for OptionAnalyticPricer {
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
         let maturity = instrument.get_maturity()
             .context("(OptionAnalyticPricer:npv) Failed to get maturity")?;
-        let fwd = self.futures_helper.fair_forward(&maturity)?;
+        let fwd = self.futures_helper.fair_forward(maturity)?;
         let strike = instrument.get_strike()?;
         let forward_moneyness = strike / fwd;
         let t = self.time_calculator.get_time_difference(
             self.evaluation_date.borrow().get_date(),
-            &maturity,
+            maturity,
         );
         
         let total_variance = self.volatility

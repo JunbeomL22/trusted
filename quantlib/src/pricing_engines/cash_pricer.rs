@@ -12,6 +12,12 @@ impl CashPricer {
     }
 }
 
+impl Default for CashPricer {
+    fn default() -> CashPricer {
+        CashPricer::new()
+    }
+}
+
 impl PricerTrait for CashPricer {
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let npv = self.npv(instrument)?;

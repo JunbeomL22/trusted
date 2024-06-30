@@ -52,7 +52,6 @@ mod tests {
     use ndarray::Array1;
     use std::time::Instant;
     use std::rc::Rc;
-    use std::fs::write;
 
     #[test]
     fn test_engine()-> Result<()> {

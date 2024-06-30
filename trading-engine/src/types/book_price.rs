@@ -42,7 +42,7 @@ impl<T: Precision + Clone> BookPrice<T> {
 
     pub fn from_iovalue(iovalue: i64) -> Self {
         BookPrice {
-            iovalue: iovalue,
+            iovalue,
             _precision: PhantomData,
         }
     }

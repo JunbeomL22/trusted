@@ -137,7 +137,7 @@ impl PricerTrait for KrxYieldPricer {
         let maturity = bond.get_maturity().unwrap();
 
         let cashflow = bond.get_cashflows(
-            &pricing_date,
+            pricing_date,
             self.forward_curve.clone(),
             self.past_fixing_data.clone()
         ).with_context(|| anyhow!(
@@ -150,16 +150,16 @@ impl PricerTrait for KrxYieldPricer {
             .keys()
             .filter(|&date| date.date() > pricing_date.date())
             .min()
-            .unwrap_or(&maturity);
+            .unwrap_or(maturity);
         
-        if cashflow.len() > 0 {
+        if !cashflow.is_empty() {
             for (date, amount) in cashflow.iter() {
                 if date.date() <= pricing_date.date() {
                     continue;
                 }
                 diff = cal.year_fraction(
-                    &min_cashflow_date,
-                    &date, 
+                    min_cashflow_date,
+                    date, 
                     &daycounter)?;
                 disc_factor = 1.0 / (1.0 + effective_yield).powf(diff * freq);
                 res += amount * disc_factor;

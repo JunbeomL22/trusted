@@ -6,9 +6,9 @@ use std::cell::{Cell, RefCell};
 const UNIX_NANO_ANCHOR_BUFFER: u64 = 10; //10ns
 
 thread_local! {
-    static CLOCK: RefCell<Option<Clock>> = RefCell::new(None);
-    static SYSTEMTIME_ANCHOR: Cell<Option<u64>> = Cell::new(None);
-    static CLOCK_ANCHOR: Cell<Option<u64>> = Cell::new(None);
+    static CLOCK: RefCell<Option<Clock>> = const {RefCell::new(None)};
+    static SYSTEMTIME_ANCHOR: Cell<Option<u64>> = const {Cell::new(None)};
+    static CLOCK_ANCHOR: Cell<Option<u64>> = const {Cell::new(None)};
 }
 
 pub fn get_thread_local_unix_nano() -> u64 {
@@ -33,7 +33,7 @@ pub fn get_thread_local_unix_nano() -> u64 {
     })
 }
 
-pub static UNIVERSIAL_CLOCK: Lazy<Clock> = Lazy::new(|| Clock::new());
+pub static UNIVERSIAL_CLOCK: Lazy<Clock> = Lazy::new(Clock::new);
 
 #[inline]
 pub fn get_unix_nano() -> u64 {

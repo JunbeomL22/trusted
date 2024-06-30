@@ -25,7 +25,7 @@ impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> HalfBook<
     #[must_use]
     pub fn initialize(order_side: OrderSide) -> Self {
         HalfBook {
-            order_side: order_side,
+            order_side,
             levels: BTreeMap::new(),
             cache: HashMap::new(),
         }
@@ -41,14 +41,23 @@ impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> HalfBook<
         cache.insert(order.order_id, price);
         HalfBook {
             order_side: order.order_side,
-            levels: levels,
-            cache: cache,
+            levels,
+            cache,
         }
     }
 
     #[must_use]
     pub fn len(&self) -> usize {
         self.levels.len()
+    }
+
+    pub fn clear(&mut self) {
+        self.levels.clear();
+        self.cache.clear();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.levels.is_empty()
     }
 
     pub fn add_order(&mut self, order: BookOrder<T, S>) -> Result<()> {

@@ -9,20 +9,17 @@ fn currencies_to_fx_codes(
     for cur1 in &currencies {
         for cur2 in &currencies {
             if cur1 != cur2 {
-                result.push(FxCode::new(cur1.clone(), cur2.clone()));
+                result.push(FxCode::new(*cur1, *cur2));
             }
         }
     }
 
-    match must_include {
-        Some(must_include) => {
-            for code in must_include {
-                if !result.contains(&code) {
-                    result.push(code);
-                }
+    if let Some(must_include) = must_include {
+        for code in must_include {
+            if !result.contains(&code) {
+                result.push(code);
             }
-        },
-        None => {},
+        }
     }
     result
 }
@@ -40,7 +37,7 @@ pub mod tests {
             Currency::JPY,
             Currency::KRW,
         ];
-        let must_include = vec![
+        let _must_include = vec![
             FxCode::new(Currency::KRW, Currency::KRW),
         ];
         let result = currencies_to_fx_codes(currs, None);

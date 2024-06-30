@@ -4,7 +4,7 @@ pub mod data;
 pub mod utils;
 pub mod logger;
 
-pub use logger::logger::{
+pub use logger::{
     LogLevel,
     LogMessage,
     LazyMessage,   

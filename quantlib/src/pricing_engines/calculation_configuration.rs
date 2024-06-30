@@ -119,6 +119,7 @@ impl Default for CalculationConfiguration {
 }
 
 impl CalculationConfiguration {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         npv: bool,
         fx_exposure: bool,
@@ -393,7 +394,7 @@ impl CalculationConfiguration {
     }
 
     pub fn get_stickyness_type(&self) -> StickynessType {
-        self.stickyness_type.clone()
+        self.stickyness_type
     }
 
     pub fn get_npv_calculation(&self) -> bool {

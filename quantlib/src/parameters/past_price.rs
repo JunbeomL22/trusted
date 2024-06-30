@@ -62,8 +62,8 @@ impl DailyClosePrice {
     ) -> Result<DailyClosePrice> {
         let res = DailyClosePrice {
             value: data.get_value().clone(),
-            close_time: data.get_close_time().clone(),
-            utc_offset: data.get_utc_offset().clone(),
+            close_time: *data.get_close_time(),
+            utc_offset: *data.get_utc_offset(),
             calendar: data.get_calendar().clone(),
             name: data.get_name().clone(),
             code: data.get_code().clone(),

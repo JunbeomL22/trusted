@@ -20,12 +20,10 @@ use flume::{
     Receiver as FlumeReceiver,
 };
 use std::thread;
-use ustr::Ustr;
 use core_affinity::{self, CoreId};
 use once_cell::sync::Lazy;
 use trading_engine::utils::timer::get_unix_nano;
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
 
 pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
     core_affinity::get_core_ids().expect("Failed to get core IDs")
@@ -35,7 +33,16 @@ const DATA_SIZE: usize = 1000;
 
 #[derive(Clone, Debug)]
 struct A {
+    #[allow(dead_code)]
     number: Vec<u64>,
+}
+
+impl Default for A {
+    fn default() -> Self {
+        A {
+            number: vec![42; DATA_SIZE],
+        }
+    }
 }
 
 fn setup_channel_std(core_id: usize) -> (StdSender<A>, StdReceiver<A>, thread::JoinHandle<()>) {
@@ -102,30 +109,20 @@ fn round_trip_std(
 
     let (tx, rx, handle) = setup_channel_std( channel_core_id );
 
-    let a = A {
-        number: vec![42; DATA_SIZE],
-    };
+    let a = A::default();
 
     let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
 
     let start = get_unix_nano();
-    let mut count = 0;
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            //a = msg;
-            count += 1;
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
-    assert!(count == trip_number);
 
     println!(
         "(std) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
@@ -150,30 +147,20 @@ fn round_trip_crossbeam(
 
     let (tx, rx, handle) = setup_channel_crossbeam( channel_core_id );
 
-    let a = A {
-        number: vec![42; DATA_SIZE],
-    };
+    let a = A::default();
 
     let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
     
-    let mut count = 0;
     let start = get_unix_nano();
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            //a = msg;
-            count += 1;
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
-    assert!(count == trip_number);
 
     let end = get_unix_nano();
     let ave = (end - start) / trip_number as u64;
@@ -219,30 +206,20 @@ fn round_trip_with_cache_padded(
 
     let (tx, rx, handle) = setup_channel_crossbeam_cachepadded( channel_core_id );
 
-    let a = CachePadded::new(A {
-        number: vec![42; DATA_SIZE],
-    });
+    let a = CachePadded::new(A::default());
 
     let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<CachePadded<A>>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
 
     let start = get_unix_nano();
-    let mut count = 0;
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            //a = msg;
-            count += 1;
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
-    assert!(count == trip_number);
 
     let end = get_unix_nano();
     let ave = (end - start) / trip_number as u64;
@@ -270,30 +247,20 @@ fn round_trip_kanal(
 
     let (tx, rx, handle) = setup_channel_kanal( channel_core_id );
 
-    let a = A {
-        number: vec![42; DATA_SIZE],
-    };
+    let a = A::default();
 
     let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
 
     let start = get_unix_nano();
-    let mut count = 0;
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            //a = msg;
-            count += 1;
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
-    assert!(count == trip_number);
     let end = get_unix_nano();
     let ave = (end - start) / trip_number as u64;
 
@@ -338,30 +305,20 @@ fn round_trip_flume(
 
     let (tx, rx, handle) = setup_channel_flume( channel_core_id );
 
-    let a = A {
-        number: vec![42; DATA_SIZE],
-    };
+    let a = A::default();
 
     let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<A>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
 
     let start = get_unix_nano();
-    let mut count = 0;
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
-        while let Ok(_) = rx.recv() {
-            //a = msg;
-            count += 1;
-            break;
-        }
+        let _ = rx.recv().unwrap();
     }
-    assert!(count == trip_number);
     let end = get_unix_nano();
     let ave = (end - start) / trip_number as u64;
 
@@ -380,7 +337,7 @@ fn round_trip_flume(
 
 fn main() -> Result<()> {
     let trip_numbers = vec![1_000,];
-    let core_pairs = vec![
+    let core_pairs = [
         (0, 0),
         (0, 1),
         (0, 2),

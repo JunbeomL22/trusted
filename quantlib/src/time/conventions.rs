@@ -70,26 +70,13 @@ impl PaymentFrequency {
         // append the tail
         let tail = &str_type[str_type.len() - 1..];
         // concat the head and tail
-        let result = head + tail;
-        result
+        head + tail
     }
 }
 
-impl ToString for PaymentFrequency {
-    fn to_string(&self) -> String {
-        match *self {
-            PaymentFrequency::Daily => "1D".to_string(),
-            PaymentFrequency::Weekly => "1W".to_string(),
-            PaymentFrequency::BiWeekly => "2W".to_string(),
-            PaymentFrequency::SemiMonthly => "2W".to_string(),
-            PaymentFrequency::Monthly => "1M".to_string(),
-            PaymentFrequency::SemiQuarterly => "2M".to_string(),
-            PaymentFrequency::Quarterly => "3M".to_string(),
-            PaymentFrequency::TriAnnually => "4M".to_string(),
-            PaymentFrequency::SemiAnnually => "6M".to_string(),
-            PaymentFrequency::Annually => "1Y".to_string(),
-            PaymentFrequency::None => "None".to_string(),
-        }
+impl std::fmt::Display for PaymentFrequency {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 

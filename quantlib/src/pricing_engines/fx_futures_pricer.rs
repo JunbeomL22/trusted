@@ -53,8 +53,8 @@ impl PricerTrait for FxFuturesPricer {
             )),
         };
         
-        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(&maturity)?;
-        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(&maturity)?;
+        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
+        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
 
         let npv = fx_rate * underlying_discount / futures_discount;
         Ok(npv)
@@ -67,8 +67,8 @@ impl PricerTrait for FxFuturesPricer {
 
     fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         let average_trade_price = instrument.get_average_trade_price();
-        let futures_currency = instrument.get_currency().clone();
-        let underlying_currency = instrument.get_underlying_currency()?.clone();
+        let futures_currency = *instrument.get_currency();
+        let underlying_currency = *instrument.get_underlying_currency()?;
         let maturity = match instrument.get_maturity() {
             Some(maturity) => maturity,
             None => return Err(anyhow!(
@@ -80,8 +80,8 @@ impl PricerTrait for FxFuturesPricer {
             )),
         };
 
-        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(&maturity)?;
-        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(&maturity)?;
+        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
+        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
 
         let mut res: HashMap<Currency, Real> = HashMap::new();
         res.insert(futures_currency, - futures_discount * average_trade_price);
@@ -94,25 +94,18 @@ impl PricerTrait for FxFuturesPricer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::currency::{Currency, FxCode};
+    use crate::currency::Currency;
     use crate::data::vector_data::VectorData;
-    use crate::definitions::Real;
     use crate::instruments::fx_futures::FxFutures;
     use crate::parameters::zero_curve::ZeroCurve;
     use crate::pricing_engines::fx_futures_pricer::FxFuturesPricer;
     use crate::evaluation_date::EvaluationDate;
-    use crate::instrument::InstrumentTrait;
     use crate::instrument::Instrument;
     use crate::pricing_engines::pricer::PricerTrait;
-    use crate::pricing_engines::npv_result::NpvResult;
     use std::rc::Rc;
     use std::cell::RefCell;
-    use time::{
-        OffsetDateTime,
-        macros::datetime,
-    };
+    use time::macros::datetime;
     use anyhow::Result;
-    use std::collections::HashMap;
     use ndarray::array;
 
     #[test]

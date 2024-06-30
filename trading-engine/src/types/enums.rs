@@ -6,17 +6,12 @@ pub trait FromI8 {
         Self: Sized;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
 pub enum OrderSide {
     Buy = 1,
+    #[default]
     NoSide = 0,
     Sell = -1,
-}
-
-impl Default for OrderSide {
-    fn default() -> Self {
-        OrderSide::NoSide
-    }
 }
 
 impl FromI8 for OrderSide {

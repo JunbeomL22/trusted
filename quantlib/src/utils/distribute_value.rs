@@ -3,10 +3,10 @@ use crate::utils::find_index::binary_search_index;
 use anyhow::{Result, anyhow};
 
 pub fn distribute_value_on_vector(
-    vector: &mut Vec<Real>,
+    vector: &mut [Real],
     value: Real,
     value_location: Real,
-    vector_location: & Vec<Real>,
+    vector_location: &[Real],
 ) -> Result<()> {
     let n = vector.len();
     if n != vector_location.len() {
@@ -25,7 +25,7 @@ pub fn distribute_value_on_vector(
     } else if value_location >= vector_location[n - 1] {
         vector[n - 1] += value;
     } else {
-        let index = binary_search_index(&vector_location, value_location);
+        let index = binary_search_index(vector_location, value_location);
         let right_weight = (value_location - vector_location[index]) / (vector_location[index + 1] - vector_location[index]);
         let left_weight = 1.0 - right_weight;
         vector[index] += left_weight * value;

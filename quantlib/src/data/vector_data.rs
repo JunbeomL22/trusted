@@ -3,8 +3,6 @@ use crate::definitions::{Real, Time};
 use crate::time::{calendars::nullcalendar::NullCalendar, calendar_trait::CalendarTrait};
 use time::OffsetDateTime;
 use std::fmt;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
@@ -51,7 +49,7 @@ impl VectorData {
         code: String,
     ) -> Result<VectorData> {
         // sanity check first
-        if dates == None && times == None {
+        if dates.is_none() && times.is_none() {
             return Err(anyhow!(
                 "dates and times are both None"
             ));
@@ -87,37 +85,35 @@ impl VectorData {
             let res = VectorData {
                 value,
                 dates: Some(dates.to_vec()),
-                times: times,
+                times,
                 market_datetime: Some(market_datetime),
-                currency: currency,
-                name: name,
-                code: code,
+                currency,
+                name,
+                code,
             };
             Ok(res)
-        } else {
-            if let Some(times) = times {
-                if value.len() != times.len() {
-                    return Err(anyhow!(
-                        "The length of value and times must be the same\n\
-                        value: {:?}, times: {:?}",
-                        value,
-                        times,
-                    ));
-                } else {
-                    let res = VectorData {
-                        value,
-                        dates,
-                        times: times,
-                        market_datetime,
-                        currency: currency,
-                        name,
-                        code,
-                    };
-                    Ok(res)
-                }
+        } else if let Some(times) = times {
+            if value.len() != times.len() {
+                return Err(anyhow!(
+                    "The length of value and times must be the same\n\
+                    value: {:?}, times: {:?}",
+                    value,
+                    times,
+                ));
             } else {
-                return Err(anyhow!("dates and times are both None"));
+                let res = VectorData {
+                    value,
+                    dates,
+                    times,
+                    market_datetime,
+                    currency,
+                    name,
+                    code,
+                };
+                Ok(res)
             }
+        } else {
+            return Err(anyhow!("dates and times are both None"));
         }
     }
 

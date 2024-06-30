@@ -17,6 +17,7 @@ pub struct SurfaceData {
 }
 
 impl SurfaceData {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         spot: Option<Real>,
         value: Array2<Real>,

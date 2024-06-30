@@ -1,9 +1,7 @@
-use std::fs::File;
-use std::io::{Write, Read};
 use serde::{Serialize, Deserialize};
 use anyhow::{Result, Context};
-use etherparse::{Ethernet2Header, Ipv4Header, UdpHeader, PacketHeaders, SlicedPacket};
-use pcap::{Capture, Device};
+use etherparse::SlicedPacket;
+use pcap::Capture;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PacketPayload {
@@ -11,7 +9,6 @@ struct PacketPayload {
 }
 
 const PCAP_FILE: &str = "data/small_20231228105204.pcap";
-const PAYLOADS_FILE: &str = "data/payloads.bin";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open the PCAP file
@@ -24,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if count > 10 {
             break;
         }
-        match SlicedPacket::from_ethernet(&packet.data) {
+        match SlicedPacket::from_ethernet(packet.data) {
             Err(value) => println!("Err {:?}", value),
             Ok(value) => {
                 println!("---");

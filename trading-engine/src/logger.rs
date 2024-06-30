@@ -87,16 +87,14 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         let _ = writer.get_mut().sync_all();
                         *writer = OpenOptions::new()
                             .create(true)
-                            .write(true)
                             .append(true)
                             .open(file_name)
-                            .map(|file| BufWriter::new(file))
+                            .map(BufWriter::new)
                             .unwrap();
                     } else {
                         writer = Some(BufWriter::new(
                             OpenOptions::new()
                                 .create(true)
-                                .write(true)
                                 .append(true)
                                 .open(&file_name)
                                 .map_err(|e| anyhow!("Failed to open file: {} [{}]", file_name.display(), e))
@@ -139,7 +137,7 @@ impl TimeZone {
             TimeZone::Local => {
                 let local = chrono::Local::now();
                 let offset = local.offset().local_minus_utc() / 3600;
-                offset as i32
+                offset
             }
             TimeZone::Seoul => 9,
             TimeZone::Japan => 9,

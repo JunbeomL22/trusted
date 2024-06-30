@@ -18,7 +18,7 @@ pub struct NpvResult {
 
 impl std::fmt::Debug for NpvResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "")?;
+        writeln!(f)?;
         write!(f, "    npv: ")?;
         write_number_with_commas(f, self.npv)?;
         writeln!(f)?;
@@ -32,7 +32,8 @@ impl std::fmt::Debug for NpvResult {
             write_number_with_commas(f, *amount)?;
             writeln!(f, ")")?;
         }
-        writeln!(f, "")?;
+
+        writeln!(f)?;
         
         let mut keys = self.cashflow_probabilities.keys().collect::<Vec<&usize>>();
         keys.sort();

@@ -30,7 +30,7 @@ pub fn from_period_string_to_float(period: &str) -> Result<Time> {
             "min" => result += value / (365.25 * 24.0 * 60.0),
             "sec" => result += value / (365.25 * 24.0 * 60.0 * 60.0),
             _ => {
-                return Err(anyhow!(
+                Err(anyhow!(
                             "{}:{} (from_period_string_to_float) Invalid unit", 
                             file!(), line!()
                         ))?;
@@ -128,11 +128,11 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
                     datetime.offset(),
                 );
             },
-            "W" => new_datetime = new_datetime + Duration::weeks(value),
-            "D" => new_datetime = new_datetime + Duration::days(value),
-            "h" => new_datetime = new_datetime + Duration::hours(value),
-            "min" => new_datetime = new_datetime + Duration::minutes(value),
-            "sec" => new_datetime = new_datetime + Duration::seconds(value),
+            "W" => new_datetime += Duration::weeks(value),
+            "D" => new_datetime += Duration::days(value),
+            "h" => new_datetime += Duration::hours(value),
+            "min" => new_datetime += Duration::minutes(value),
+            "sec" => new_datetime += Duration::seconds(value),
             _ => panic!("Invalid unit"),
         }
     }
@@ -192,11 +192,11 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
                     datetime.offset(),
                 );   
             },
-            "W" => new_datetime = new_datetime - Duration::weeks(value),
-            "D" => new_datetime = new_datetime - Duration::days(value),
-            "h" => new_datetime = new_datetime - Duration::hours(value),
-            "min" => new_datetime = new_datetime - Duration::minutes(value),
-            "sec" => new_datetime = new_datetime - Duration::seconds(value),
+            "W" => new_datetime -= Duration::weeks(value),
+            "D" => new_datetime -= Duration::days(value),
+            "h" => new_datetime -= Duration::hours(value),
+            "min" => new_datetime -= Duration::minutes(value),
+            "sec" => new_datetime -= Duration::seconds(value),
             _ => panic!("Invalid unit"),
         }
     }
@@ -236,8 +236,8 @@ pub fn add_period_date(date: &Date, duration: &str) -> Date {
                 };
                 new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
             },
-            "W" => new_date = new_date + Duration::weeks(value as i64),
-            "D" => new_date = new_date + Duration::days(value as i64),
+            "W" => new_date += Duration::weeks(value as i64),
+            "D" => new_date += Duration::days(value as i64),
             _ => panic!("Invalid unit"),
         }
     }
@@ -277,8 +277,8 @@ pub fn sub_period_date(date: &Date, duration: &str) -> Date {
                 };
                 new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
             },
-            "W" => new_date = new_date - Duration::weeks(value as i64),
-            "D" => new_date = new_date - Duration::days(value as i64),
+            "W" => new_date -= Duration::weeks(value as i64),
+            "D" => new_date -= Duration::days(value as i64),
             _ => panic!("Invalid unit"),
         }
     }

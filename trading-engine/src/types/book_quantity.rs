@@ -46,7 +46,7 @@ impl<T: Precision> BookQuantity<T> {
 
     pub fn from_iovalue(iovalue: u64) -> Self {
         BookQuantity {
-            iovalue: iovalue,
+            iovalue,
             _precision: PhantomData,
         }
     }

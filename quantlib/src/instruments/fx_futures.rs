@@ -40,6 +40,7 @@ impl Default for FxFutures {
 }
 
 impl FxFutures {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,
@@ -53,8 +54,8 @@ impl FxFutures {
         code: String,
     ) -> FxFutures {
         let fx_code = FxCode::new(
-            underlying_currency.clone(),
-            currency.clone(),
+            underlying_currency,
+            currency,
         );
         FxFutures {
             average_trade_price,
@@ -110,7 +111,7 @@ impl InstrumentTrait for FxFutures {
     }
 
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
-        vec![self.fx_code.clone()]
+        vec![self.fx_code]
     }
 
 }

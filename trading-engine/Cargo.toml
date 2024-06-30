@@ -7,6 +7,10 @@ edition = "2021"
 name = "trading_engine"
 
 [[bench]]
+name = "wrapper_performance"
+harness = false
+
+[[bench]]
 name = "book_price"
 harness = false
 

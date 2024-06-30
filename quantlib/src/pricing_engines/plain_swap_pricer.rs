@@ -82,8 +82,8 @@ impl PricerTrait for PlainSwapPricer {
                 fixed_res += amount * discount_factor;
             }
             if eval_date.date() <= payment_date.date() {
-                cashflow_amounts.insert(count, (payment_date.clone(), amount.clone()));
-                cashflow_probabilities.insert(count, (payment_date.clone(), 1.0));
+                cashflow_amounts.insert(count, (*payment_date, *amount));
+                cashflow_probabilities.insert(count, (*payment_date, 1.0));
                 count += 1;
             }     
         }
@@ -94,8 +94,8 @@ impl PricerTrait for PlainSwapPricer {
                 floating_res += amount * discount_factor;
             }
             if eval_date.date() <= payment_date.date() {
-                cashflow_amounts.insert(count, (payment_date.clone(), amount * floating_to_fixed_fx));
-                cashflow_probabilities.insert(count, (payment_date.clone(), 1.0));
+                cashflow_amounts.insert(count, (*payment_date, amount * floating_to_fixed_fx));
+                cashflow_probabilities.insert(count, (*payment_date, 1.0));
                 count += 1;
             }
         }
@@ -185,11 +185,11 @@ impl PricerTrait for PlainSwapPricer {
         let floating_amount = floating_res * instrument.get_unit_notional();
         let mut res: HashMap<Currency, Real> = HashMap::new();
 
-        res.entry(fixed_currency.clone())
+        res.entry(*fixed_currency)
             .and_modify(|v| *v += fixed_amount)
             .or_insert(fixed_amount);
 
-        res.entry(floating_currency.clone())
+        res.entry(*floating_currency)
             .and_modify(|v| *v += floating_amount)
             .or_insert(floating_amount);
 

@@ -80,7 +80,7 @@ impl EvaluationDate {
     }
 
     pub fn get_date_clone(&self) -> OffsetDateTime {
-        self.date.clone()
+        self.date
     }
 
     pub fn get_date(&self) -> &OffsetDateTime {

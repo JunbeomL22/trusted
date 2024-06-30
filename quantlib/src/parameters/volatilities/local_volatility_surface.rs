@@ -41,7 +41,9 @@ pub struct LocalVolatilitySurface {
     borrowing_curve: Rc<RefCell<ZeroCurve>>,
     //
     stickyness_type: StickynessType,
+    #[allow(dead_code)]
     lv_interpolator: VolatilityInterplator,
+    #[allow(dead_code)]
     local_volatility: BilinearInterpolator,
     //
     name: String,
@@ -49,6 +51,7 @@ pub struct LocalVolatilitySurface {
 }
 
 impl LocalVolatilitySurface {
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         market_price: Rc<RefCell<MarketPrice>>,
@@ -236,9 +239,10 @@ impl LocalVolatilitySurface {
         }
         
         let mut f_interpolators: Vec<LinearInterpolator1D> = Vec::new();
-        for i in 0..self.imvol_maturity_dates.len() {
+        //for i in 0..self.imvol_maturity_dates.len() {
+        for (i, fwd_moneyness) in forward_monenyess_array.iter().enumerate().take(self.imvol_maturity_dates.len()) {
             let interp = LinearInterpolator1D::new(
-                forward_monenyess_array[i].to_owned(),
+                fwd_moneyness.to_owned(),
                 self.interpolated_imvol.row(i).to_owned(),
                 ExtraPolationType::Flat,
                 true,

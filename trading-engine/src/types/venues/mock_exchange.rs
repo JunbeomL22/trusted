@@ -5,7 +5,7 @@ use serde::{
 };
 use crate::types::venue::VenueTrait;
 use ustr::Ustr;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
@@ -17,7 +17,7 @@ impl VenueTrait for Mock {
     fn check_order_id(&self, _: &str) -> bool { true }
 }
 
-#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Copy)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Copy, Default)]
 pub struct MockOrderId {
     id: u64,
 }
@@ -34,29 +34,12 @@ impl PartialEq<u64> for MockOrderId {
     }
 }
 
-
-impl Default for MockOrderId {
-    fn default() -> Self {
-        MockOrderId {
-            id: 0,
-        }
-    }
-}
-
-
 impl Serialize for MockOrderId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: serde::Serializer,
     {
         self.id.serialize(serializer)
     }
-}
-
-fn order_id_from_str<'de, D>(deserializer: D) -> Result<Ustr, D::Error>
-where D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(Ustr::from(&*s))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash)]
@@ -80,5 +63,5 @@ fn account_id_from_str<'de, D>(deserializer: D) -> Result<Ustr, D::Error>
 where D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(Ustr::from(&*s))
+    Ok(Ustr::from(&s))
 }

@@ -49,6 +49,7 @@ impl Default for VanillaOption {
 }
 
 impl VanillaOption {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         strike: Real,
         unit_notional: Real,
@@ -66,7 +67,7 @@ impl VanillaOption {
         code: String,
     ) -> VanillaOption {
         let quanto_fx_code = if currency != underlying_currency {
-            Some(FxCode::new(underlying_currency.clone(), currency.clone()))
+            Some(FxCode::new(underlying_currency, currency))
         } else {
             None
         };

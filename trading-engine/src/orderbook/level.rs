@@ -24,7 +24,7 @@ impl<T: Precision + Clone + Debug, S: Precision + Clone + Debug> Level<T, S> {
     #[must_use]
     pub fn initialize(book_price: BookPrice<T>) -> Self {
         Level {
-            book_price: book_price,
+            book_price,
             orders: BTreeMap::new(),
             arraival_order: Vec::new(), // *optimizable* assign with capacityk
         }
@@ -34,10 +34,10 @@ impl<T: Precision + Clone + Debug, S: Precision + Clone + Debug> Level<T, S> {
     pub fn initialize_with_order(order: BookOrder<T, S>) -> Self {
         let mut orders = BTreeMap::new();
         let order_clone = order.clone();
-        orders.insert(order.order_id.clone(), order);
+        orders.insert(order.order_id, order);
         Level {
             book_price: order_clone.price,
-            orders: orders,
+            orders,
             arraival_order: vec![order_clone.order_id],
         }
     }
@@ -51,11 +51,11 @@ impl<T: Precision + Clone + Debug, S: Precision + Clone + Debug> Level<T, S> {
                 self,
                 order,
             );
-            return Err(lazy_error());
+            Err(lazy_error())
         } else {
-            self.arraival_order.push(order.order_id.clone());
+            self.arraival_order.push(order.order_id);
             self.orders.insert(order.order_id, order);
-            return Ok(())
+            Ok(())
         }
     }
 

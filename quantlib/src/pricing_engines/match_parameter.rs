@@ -168,17 +168,17 @@ impl MatchParameter {
                             "({}:{}) Issuer name is not found for {} ({})", 
                             file!(), line!(),
                             instrument.get_name(), instrument.get_code()))?.clone(),
-                    instrument.get_issuer_type().with_context(
+                    *instrument.get_issuer_type().with_context(
                         || anyhow!(
                             "({}:{}) Issuer type is not found for {} ({})", 
                             file!(), line!(),
-                            instrument.get_name(), instrument.get_code()))?.clone(),
-                    instrument.get_credit_rating().with_context(
+                            instrument.get_name(), instrument.get_code()))?,
+                    *instrument.get_credit_rating().with_context(
                         || anyhow!(
                             "({}:{}) Credit rating is not found for {} ({})", 
                             file!(), line!(),
-                            instrument.get_name(), instrument.get_code()))?.clone(),
-                    instrument.get_currency().clone(),
+                            instrument.get_name(), instrument.get_code()))?,
+                    *instrument.get_currency(),
                 )) {
                     Some(curve_name) => Ok(curve_name),
                     None => Ok(&self.dummy_string),

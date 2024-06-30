@@ -41,6 +41,7 @@ impl Default for Futures {
 }
 
 impl Futures {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,

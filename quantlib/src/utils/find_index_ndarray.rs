@@ -23,7 +23,13 @@ pub fn binary_search_index_ndarray<T: PartialOrd + Copy>(arr: &Array1<T>, value:
     }
 
     // Adjusts low to ensure the condition arr[index] <= value < arr[index+1]
-    if arr[low] < value { low } else { if low == 0 { 0 } else { low - 1 } }
+    if arr[low] < value { 
+        low 
+    } else if low == 0 { 
+        0 
+    } else { 
+        low - 1 
+    }
 }
 
 /// This is an ndarray version of the vectorized binary search index

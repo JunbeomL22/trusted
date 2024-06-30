@@ -3,7 +3,7 @@ use crate::time::constants::{EASTER_MONDAYS, FIRST_EASTER_MONDAY, LAST_EASTER_MO
 use log::warn;
 
 pub trait Holidays {
-    fn is_last_business_day_of_year(&self, _date: &OffsetDateTime) -> bool { return false}
+    fn is_last_business_day_of_year(&self, _date: &OffsetDateTime) -> bool { false }
     fn is_holiday(&self, date: &OffsetDateTime) -> bool;
     fn is_temporary_holiday(&self, date: &OffsetDateTime) -> bool;
 
@@ -26,11 +26,9 @@ pub trait Holidays {
         }
 
         if is_orthodox {
-            let res = dd == EASTER_MONDAYS[0][year as usize - FIRST_EASTER_MONDAY] - 3;
-            return res;
+            dd == EASTER_MONDAYS[0][year as usize - FIRST_EASTER_MONDAY] - 3
         } else {
-            let res = dd == EASTER_MONDAYS[1][year as usize - FIRST_EASTER_MONDAY] - 3;
-            return res;
+            dd == EASTER_MONDAYS[1][year as usize - FIRST_EASTER_MONDAY] - 3
         }
     }
 }

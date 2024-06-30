@@ -49,6 +49,7 @@ pub struct PricerFactory {
 }
 
 impl PricerFactory {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
         fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
@@ -211,7 +212,7 @@ impl PricerFactory {
         let und_curr = instrument.get_underlying_currency()?;
         let quanto = match und_curr == curr {
             false => {
-                let fx_code = FxCode::new(und_curr.clone(), curr.clone());
+                let fx_code = FxCode::new(*und_curr, *curr);
                 let underlying_code = instrument.get_underlying_codes()[0].clone();
                 let key = (underlying_code, fx_code);
                 let quanto = self.quantos.get(&key)
@@ -337,7 +338,7 @@ impl PricerFactory {
         let floating_to_fixed_fx = match fx_code {
             None => None,
             Some(fx_code) => {
-                let fx = self.fxs.get(&fx_code)
+                let fx = self.fxs.get(fx_code)
                     .ok_or_else(|| anyhow::anyhow!(
                         "({}:{}) failed to get FX of {}.\nself.fxs does not have {:?}",
                         file!(), line!(), instrument.get_code(), fx_code,

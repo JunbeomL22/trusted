@@ -14,16 +14,11 @@ pub trait Precision {
     fn check_precision_bound() -> bool { Self::precision() <= MAX_IO_PRECISION }
 
     #[inline]
-    fn check_f64price_bound(price: f64) -> bool { 
-        (PRICE_MIN <= price) && ( price <= PRICE_MAX )
-    }
+    fn check_f64price_bound(price: f64) -> bool { (PRICE_MIN..=PRICE_MAX).contains(&price) }
 
     #[inline]
-    fn check_f64quantity_bound(quantity: f64) -> bool {
-        (QUANTITY_MIN <= quantity) && (quantity <= QUANTITY_MAX)
-    }
+    fn check_f64quantity_bound(quantity: f64) -> bool { (QUANTITY_MIN..=QUANTITY_MAX).contains(&quantity) }
 
-    #[must_use]
     fn price_f64_to_i64(value: f64) -> Result<i64>;
 
     #[must_use]
@@ -32,7 +27,6 @@ pub trait Precision {
         value as f64 / MAX_IO_MULTIPLIER
     }
     
-    #[must_use]
     fn quantity_f64_to_u64(value: f64) -> Result<u64>;
 
     #[must_use]

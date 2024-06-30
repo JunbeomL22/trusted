@@ -30,7 +30,7 @@ impl Default for InstrumentInfo {
 
 impl std::fmt::Debug for InstrumentInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "")?;
+        writeln!(f)?;
         writeln!(f, "    name: {:?},", self.name)?;
         writeln!(f, "    code: {:?},", self.code)?;
         writeln!(f, "    instrument_type: {:?},", self.instrument_type)?;
@@ -55,10 +55,7 @@ impl InstrumentInfo {
         unit_notional: Real,
         maturity: Option<&OffsetDateTime>,
     ) -> InstrumentInfo {
-        let maturity = match maturity {
-            Some(maturity) => Some(maturity.clone()),
-            None => None,
-        };
+        let maturity = maturity.cloned();
 
         InstrumentInfo {
             name,

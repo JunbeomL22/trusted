@@ -34,27 +34,14 @@ use rayon::prelude::*;
 use anyhow::{
     Result,
     anyhow,
-    bail,
-    Context,
 };
 use time::OffsetDateTime;
-use tracing::info;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct InstrumentCategory {
     pub type_names: Option<Vec<String>>,
     pub currency: Option<Vec<Currency>>,
     pub underlying_codes: Option<Vec<String>>,
-}
-
-impl Default for InstrumentCategory {
-    fn default() -> InstrumentCategory {
-        InstrumentCategory {
-            type_names: None,
-            currency: None,
-            underlying_codes: None,
-        }
-    }
 }
 
 impl InstrumentCategory {
@@ -90,7 +77,7 @@ impl InstrumentCategory {
         }
         // check underlying codes are the same (not inclusion)
         if let Some(underlying_codes) = &self.underlying_codes {
-            if underlying_codes_inp.len() > 0 &&
+            if !underlying_codes_inp.is_empty() &&
             underlying_codes.iter().collect::<Vec<&String>>() != underlying_codes_inp {
                 res = false;
             }
@@ -177,6 +164,7 @@ impl EngineGenerator {
         Ok(self)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn with_data(
         &mut self,
         fx_data: HashMap<FxCode, ValueData>,
@@ -251,18 +239,18 @@ impl EngineGenerator {
 
     /// spawn threads to create engine and calculate
     pub fn calculate(&mut self) -> Result<()> {
-        let mut shared_results = Arc::new(Mutex::new(HashMap::<String, CalculationResult>::new()));
+        let shared_results = Arc::new(Mutex::new(HashMap::<String, CalculationResult>::new()));
         let dt = self.evaluation_date.get_date_clone();
         let calc_res: Result<()> = self.instrument_group_vec.par_iter().enumerate().map(
             |(group_id, instrument_group)| {
-                let mut engine = Engine::builder(
+                let engine = Engine::builder(
                     group_id,
                     self.calculation_configuration.clone(),
-                    dt.clone(),
+                    dt,
                     self.match_parameter.clone(),
                 );
         
-                let mut engine = match engine.with_instruments(instrument_group.clone()) {
+                let engine = match engine.with_instruments(instrument_group.clone()) {
                     Ok(engine) => engine,
                     Err(e) => return Err(e),
                 };
@@ -281,14 +269,9 @@ impl EngineGenerator {
                     Ok(engine) => engine,
                     Err(e) => return Err(e),
                 };
-                 
-                if let Err(e) = engine.initialize_pricers() {
-                    return Err(e.into());
-                }
-        
-                if let Err(e) = engine.calculate() {
-                    return Err(e.into());
-                }
+                
+                engine.initialize_pricers()?;
+                engine.calculate()?;
         
                 let result = engine.get_calculation_result();
                 let mut mut_res = shared_results.lock().unwrap();
@@ -301,7 +284,8 @@ impl EngineGenerator {
             }
         ).collect();
 
-        self.calculation_results = shared_results.lock().unwrap().clone();
+        //self.calculation_results = shared_results.lock().unwrap().clone();
+        self.calculation_results.clone_from(&shared_results.lock().unwrap());
 
         match calc_res {
             Ok(_) => Ok(()),
