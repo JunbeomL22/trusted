@@ -1,44 +1,26 @@
 use anyhow::{Result, anyhow};
 use enum_dispatch::enum_dispatch;
 
-pub const MAX_IO_PRECISION: u8 = 9;
-//
-pub const MAX_IO_MULTIPLIER_NINE_SYSTEM: f64 = 1_000_000_000.0; // 10.0**MAX_IO_PrecisionTrait
+// ZERO SYSTEM
+pub const MAX_IO_MULTIPLIER_ZERO_SYSTEM: f64 = 1.0; // 10.0 ** 0
+pub const PRICE_MAX_ZERO_SYSTEM: f64 = 9_223_372_036_000_000_000.0 // i64::MAX rounded to f64
+pub const PRICE_MIN_ZERO_SYSTEM: f64 = -9_223_372_036_000_000_000.0 // i64::MIN rounded to f64
+pub const QUANTITY_MAX_ZERO_SYSTEM: f64 = 18_446_744_072_000_000_000.0 // u64::MAX rounded to f64
+pub const QUANTITY_MIN_ZERO_SYSTEM: f64 = 0.0;
+// SIX SYSTEM
+pub const MAX_IO_MULTIPLIER_SIX_SYSTEM: f64 = 1_000_000.0; // 10.0 ** SIX
+pub const PRICE_MAX_SIX_SYSTEM: f64 = 9_223_372_036_000.0; // i64::MAX / 1000_000
+pub const PRICE_MIN_SIX_SYSTEM: f64 = -9_223_372_036_000.0; // i64::MIN / 1000_000
+pub const QUANTITY_MAX_SIX_SYSTEM: f64 = 18_446_744_072_000.0; // u64::MAX / 1000_000
+pub const QUANTITY_MIN_SIX_SYSTEM: f64 = 0.0;
+
+// NINE SYSTEM
+pub const MAX_IO_MULTIPLIER_NINE_SYSTEM: f64 = 1_000_000_000.0; // 10.0 ** NINE
 pub const PRICE_MAX_NINE_SYSTEM: f64 = 9_223_372_036.0; // i64::MAX / 1000_000_000
 pub const PRICE_MIN_NINE_SYSTEM: f64 = -9_223_372_036.0; // i64::MIN / 1000_000_000
 pub const QUANTITY_MAX_NINE_SYSTEM: f64 = 18_446_744_073.0; // u64::MAX / 1000_000_000
 pub const QUANTITY_MIN_NINE_SYSTEM: f64 = 0.0;
 //
-
-#[enum_dispatch]
-pub trait PrecisionTrait {
-    fn precision() -> u8;
-
-    #[inline]
-    fn check_precision_bound() -> bool { Self::precision() <= MAX_IO_PRECISION }
-
-    #[inline]
-    fn check_f64price_bound(price: f64) -> bool { (PRICE_MIN..=PRICE_MAX).contains(&price) }
-
-    #[inline]
-    fn check_f64quantity_bound(quantity: f64) -> bool { (QUANTITY_MIN..=QUANTITY_MAX).contains(&quantity) }
-
-    fn price_f64_to_i64(value: f64) -> Result<i64>;
-
-    #[must_use]
-    #[inline]
-    fn price_i64_to_f64(value: i64) -> f64 {
-        value as f64 / MAX_IO_MULTIPLIER
-    }
-    
-    fn quantity_f64_to_u64(value: f64) -> Result<u64>;
-
-    #[must_use]
-    #[inline]
-    fn quantity_u64_to_f64(value: u64) -> f64 {
-        value as f64 / MAX_IO_MULTIPLIER
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 /// 0, 2, 3, precision are only used for performance reasons
@@ -46,10 +28,10 @@ pub enum Precision {
     #[default]
     Prec0Max0, // all quantity in KRX
     // the following precisions are based on 9 max precision
-    Prec2Max9, // fx futures, index futures, bond in KRX
-    Prec3Max9, // repo, 3M risk-free futures
-    Prec6Max9, // bond yield in KRX
-    Prec0Max9, // stock and stock futures in KRX
+    Prec2Max6, // fx futures, index futures, bond in KRX
+    Prec3Max6, // repo, 3M risk-free futures
+    Prec6Max6, // bond yield in KRX
+    Prec0Max6, // stock and stock futures in KRX
     
 }
 
@@ -59,10 +41,10 @@ impl Precision {
     pub fn precision(&self) -> u8 {
         match self {
             Precision::Prec0Max0 => 0,
-            Precision::Prec2Max9 => 2,
-            Precision::Prec3Max9 => 3,
-            Precision::Prec6Max9 => 6,
-            Precision::Prec0Max9 => 0,
+            Precision::Prec2Max6 => 2,
+            Precision::Prec3Max6 => 3,
+            Precision::Prec6Max6 => 6,
+            Precision::Prec0Max6 => 0,
         }
     }
 
