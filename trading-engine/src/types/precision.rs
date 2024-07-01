@@ -91,19 +91,22 @@ impl Precision {
         }
         
         match self {
-            Precision::Prec0Max0 => Ok((value.round() as i64)),
+            Precision::Prec0Max0 => Ok(value.round() as i64),
             // different from the original implementation
             Precision::Prec2Max9 => Ok((value * 100.0).round() as i64 * 10_000_000_i64),
             Precision::Prec3Max9 => Ok((value * 1_000.0).round() as i64 * 1_000_000_i64),
             Precision::Prec6Max9 => Ok((value * 1_000_000.0).round() as i64 * 1_000_i64),
-            Precision::Prec0Max9 => Ok((value.round() as i64) * 1_000_000_000_i64)),
+            Precision::Prec0Max9 => Ok((value.round() as i64) * 1_000_000_000_i64),
         }
     }
 
     #[inline]
     #[must_use]
     pub fn price_i64_to_f64(&self, value: i64) -> f64 {
-        value as f64 / MAX_IO_MULTIPLIER
+        match self {
+            Precision::Prec0Max0 => value as f64,
+            _ => value as f64 / MAX_IO_MULTIPLIER,
+        }
     }
 
     #[inline]
@@ -115,9 +118,20 @@ impl Precision {
         }
 
         match self {
-            Precision::Prec0 => Ok((value.round() as u64) * 1_000_000_000_u64),
-            Precision::Prec2 => Ok((value * 100.0).round() as u64 * 10_000_000_u64),
-            Precision::Prec3 => Ok((value * 1_000.0).round() as u64 * 1_000_000_u64),
+            Precision::Prec0Max0 => Ok(value.round() as u64),
+            Precision::Prec2Max9 => Ok((value * 100.0).round() as u64 * 10_000_000_u64),
+            Precision::Prec3Max9 => Ok((value * 1_000.0).round() as u64 * 1_000_000_u64),
+            Precision::Prec6Max9 => Ok((value * 1_000_000.0).round() as u64 * 1_000_u64),
+            Precision::Prec0Max9 => Ok((value.round() as u64) * 1_000_000_000_u64),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn quantity_u64_to_f64(&self, value: u64) -> f64 {
+        match self {
+            Precision::Prec0Max0 => value as f64,
+            _ => value as f64 / MAX_IO_MULTIPLIER,
         }
     }
 }

@@ -28,19 +28,19 @@ fn bench_make_book_price(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("book_price_to_f64");
 
     let price_str = "123456789.123456789";
-    let prec2 = Precision::Prec2;
+    let prec2 = Precision::Prec2Max9;
 
     bgroup.bench_function("make book price by original implementation", |b| {
         b.iter(|| {
             let val_f64 = price_str.parse::<f64>().unwrap();
-            BookPrice::<Prec2>::new(val_f64).expect("Failed to create BookPrice")
+            let _ = BookPrice::<Prec2>::new(val_f64).expect("Failed to create BookPrice");
         });
     });
 
     bgroup.bench_function("make book price by enum implementation", |b| {
         b.iter(|| {
             let val_f64 = price_str.parse::<f64>().unwrap();
-            TestPrice::new(val_f64, prec2).expect("Failed to create TestPrice")
+            let _ = TestPrice::new(val_f64, prec2).expect("Failed to create TestPrice");
         });
     });
 
