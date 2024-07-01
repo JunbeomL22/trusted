@@ -2,11 +2,13 @@ use anyhow::{Result, anyhow};
 use enum_dispatch::enum_dispatch;
 
 pub const MAX_IO_PRECISION: u8 = 9;
-pub const MAX_IO_MULTIPLIER: f64 = 1_000_000_000.0; // 10.0**MAX_IO_PrecisionTrait
-pub const PRICE_MAX: f64 = 9_223_372_036.0; // i64::MAX / 1000_000_000
-pub const PRICE_MIN: f64 = -9_223_372_036.0; // i64::MIN / 1000_000_000
-pub const QUANTITY_MAX: f64 = 18_446_744_073.0; // u64::MAX / 1000_000_000
-pub const QUANTITY_MIN: f64 = 0.0;
+//
+pub const MAX_IO_MULTIPLIER_NINE_SYSTEM: f64 = 1_000_000_000.0; // 10.0**MAX_IO_PrecisionTrait
+pub const PRICE_MAX_NINE_SYSTEM: f64 = 9_223_372_036.0; // i64::MAX / 1000_000_000
+pub const PRICE_MIN_NINE_SYSTEM: f64 = -9_223_372_036.0; // i64::MIN / 1000_000_000
+pub const QUANTITY_MAX_NINE_SYSTEM: f64 = 18_446_744_073.0; // u64::MAX / 1000_000_000
+pub const QUANTITY_MIN_NINE_SYSTEM: f64 = 0.0;
+//
 
 #[enum_dispatch]
 pub trait PrecisionTrait {
