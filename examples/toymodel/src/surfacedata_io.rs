@@ -12,7 +12,7 @@ use quantlib::definitions::Real;
 use quantlib::utils::string_arithmetic::add_period;
 use ndarray::{array, Array1, Array2};
 
-#[allow(clippy::excessive_precision)]
+#[allow(clippy::excessive_PrecisionTrait)]
 pub fn surfacedata_io() -> Result<()> {
     let parameter_datetime = datetime!(2021-01-01 17:00:00 +09:00);
     let close_price = 350.0;

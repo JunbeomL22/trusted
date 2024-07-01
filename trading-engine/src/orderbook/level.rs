@@ -2,7 +2,7 @@ use crate::data::book_order::BookOrder;
 use crate::types::{
     venue::OrderId,
     book_price::BookPrice,
-    precision::Precision,
+    precision::PrecisionTrait,
 };
 use crate::warn;
 //
@@ -12,15 +12,15 @@ use std::fmt::Debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Level
-<T: Precision + Clone + Debug, 
- S: Precision + Clone + Debug> 
+<T: PrecisionTrait + Clone + Debug, 
+ S: PrecisionTrait + Clone + Debug> 
 {
     pub book_price: BookPrice<T>,
     pub orders: BTreeMap<OrderId, BookOrder<T, S>>,
     arraival_order: Vec<OrderId>,
 }
 
-impl<T: Precision + Clone + Debug, S: Precision + Clone + Debug> Level<T, S> {
+impl<T: PrecisionTrait + Clone + Debug, S: PrecisionTrait + Clone + Debug> Level<T, S> {
     #[must_use]
     pub fn initialize(book_price: BookPrice<T>) -> Self {
         Level {
@@ -108,7 +108,7 @@ impl<T: Precision + Clone + Debug, S: Precision + Clone + Debug> Level<T, S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::precision::{
+    use crate::types::PrecisionTrait::{
         Prec0,
         Prec2,
     };

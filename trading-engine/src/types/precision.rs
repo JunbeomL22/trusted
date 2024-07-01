@@ -1,13 +1,15 @@
 use anyhow::{Result, anyhow};
+use enum_dispatch::enum_dispatch;
 
 pub const MAX_IO_PRECISION: u8 = 9;
-pub const MAX_IO_MULTIPLIER: f64 = 1_000_000_000.0; // 10.0**MAX_IO_PRECISION
+pub const MAX_IO_MULTIPLIER: f64 = 1_000_000_000.0; // 10.0**MAX_IO_PrecisionTrait
 pub const PRICE_MAX: f64 = 9_223_372_036.0; // i64::MAX / 1000_000_000
 pub const PRICE_MIN: f64 = -9_223_372_036.0; // i64::MIN / 1000_000_000
 pub const QUANTITY_MAX: f64 = 18_446_744_073.0; // u64::MAX / 1000_000_000
 pub const QUANTITY_MIN: f64 = 0.0;
 
-pub trait Precision {
+#[enum_dispatch]
+pub trait PrecisionTrait {
     fn precision() -> u8;
 
     #[inline]
@@ -36,6 +38,94 @@ pub trait Precision {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// 0, 2, 3, precision are only used for performance reasons
+pub enum Precision {
+    #[default]
+    Prec0Max0, // all quantity in KRX
+    // the following precisions are based on 9 max precision
+    Prec2Max9, // fx futures, index futures, bond in KRX
+    Prec3Max9, // repo, 3M risk-free futures
+    Prec6Max9, // bond yield in KRX
+    Prec0Max9, // stock and stock futures in KRX
+    
+}
+
+impl Precision {
+    #[inline]
+    #[must_use]
+    pub fn precision(&self) -> u8 {
+        match self {
+            Precision::Prec0Max0 => 0,
+            Precision::Prec2Max9 => 2,
+            Precision::Prec3Max9 => 3,
+            Precision::Prec6Max9 => 6,
+            Precision::Prec0Max9 => 0,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn check_f64price_bound(&self, price: f64) -> bool {
+        match self {
+            Precision::Prec0Max0 => true,
+            _ => (PRICE_MIN..=PRICE_MAX).contains(&price),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn check_f64quantity_bound(&self, quantity: f64) -> bool {
+        match self {
+            Precision::Prec0Max0 => true,
+            _ => (QUANTITY_MIN..=QUANTITY_MAX).contains(&quantity),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn price_f64_to_i64(&self, value: f64) -> Result<i64> {
+        if !self.check_f64price_bound(value) {
+            let error = || anyhow!("price: {price} out of bound (called from {precision})", price = value, precision = self.precision());
+            return Err(error());
+        }
+        
+        match self {
+            Precision::Prec0Max0 => Ok((value.round() as i64)),
+            // different from the original implementation
+            Precision::Prec2Max9 => Ok((value * 100.0).round() as i64 * 10_000_000_i64),
+            Precision::Prec3Max9 => Ok((value * 1_000.0).round() as i64 * 1_000_000_i64),
+            Precision::Prec6Max9 => Ok((value * 1_000_000.0).round() as i64 * 1_000_i64),
+            Precision::Prec0Max9 => Ok((value.round() as i64) * 1_000_000_000_i64)),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn price_i64_to_f64(&self, value: i64) -> f64 {
+        value as f64 / MAX_IO_MULTIPLIER
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn quantity_f64_to_u64(&self, value: f64) -> Result<u64> {
+        if !self.check_f64quantity_bound(value) {
+            let error = || anyhow!("quantity: {qnt} out of bound (called from {precision})", qnt = value, precision = self.precision());
+            return Err(error());
+        }
+
+        match self {
+            Precision::Prec0 => Ok((value.round() as u64) * 1_000_000_000_u64),
+            Precision::Prec2 => Ok((value * 100.0).round() as u64 * 10_000_000_u64),
+            Precision::Prec3 => Ok((value * 1_000.0).round() as u64 * 1_000_000_u64),
+        }
+    }
+}
+
+
+
+
+
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec0;
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec1;
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec2;
@@ -47,7 +137,7 @@ pub trait Precision {
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec8;
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)] pub struct Prec9;
 
-impl Precision for Prec0 {
+impl PrecisionTrait for Prec0 {
     #[inline]
     fn precision() -> u8 { 0 }
 
@@ -72,7 +162,7 @@ impl Precision for Prec0 {
     }
 }
 
-impl Precision for Prec1 {
+impl PrecisionTrait for Prec1 {
     #[inline]
     fn precision() -> u8 { 1 }
 
@@ -99,7 +189,7 @@ impl Precision for Prec1 {
     }
 }
 
-impl Precision for Prec2 {
+impl PrecisionTrait for Prec2 {
     #[inline]
     fn precision() -> u8 { 2 }
 
@@ -126,7 +216,7 @@ impl Precision for Prec2 {
     }
 }
 
-impl Precision for Prec3 {
+impl PrecisionTrait for Prec3 {
     #[inline]
     fn precision() -> u8 { 3 }
 
@@ -152,7 +242,7 @@ impl Precision for Prec3 {
     }
 }
 
-impl Precision for Prec4 {
+impl PrecisionTrait for Prec4 {
     #[inline]
     fn precision() -> u8 { 4 }
 
@@ -178,7 +268,7 @@ impl Precision for Prec4 {
     }
 }
 
-impl Precision for Prec5 {
+impl PrecisionTrait for Prec5 {
     #[inline]
     fn precision() -> u8 { 5 }
 
@@ -205,7 +295,7 @@ impl Precision for Prec5 {
     }
 }
 
-impl Precision for Prec6 {
+impl PrecisionTrait for Prec6 {
     #[inline]
     fn precision() -> u8 { 6 }
 
@@ -231,7 +321,7 @@ impl Precision for Prec6 {
     }
 }
 
-impl Precision for Prec7 {
+impl PrecisionTrait for Prec7 {
     #[inline]
     fn precision() -> u8 { 7 }
 
@@ -258,7 +348,7 @@ impl Precision for Prec7 {
     }
 }
 
-impl Precision for Prec8 {
+impl PrecisionTrait for Prec8 {
     #[inline]
     fn precision() -> u8 { 8 }
 
@@ -286,7 +376,7 @@ impl Precision for Prec8 {
 }
 
 
-impl Precision for Prec9 {
+impl PrecisionTrait for Prec9 {
     #[inline]
     fn precision() -> u8 { 9 }
 
@@ -320,17 +410,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_precision() {
-        assert_eq!(Prec0::precision(), 0);
-        assert_eq!(Prec1::precision(), 1);
-        assert_eq!(Prec2::precision(), 2);
-        assert_eq!(Prec3::precision(), 3);
-        assert_eq!(Prec4::precision(), 4);
-        assert_eq!(Prec5::precision(), 5);
-        assert_eq!(Prec6::precision(), 6);
-        assert_eq!(Prec7::precision(), 7);
-        assert_eq!(Prec8::precision(), 8);
-        assert_eq!(Prec9::precision(), 9);
+    fn test_PrecisionTrait() {
+        assert_eq!(Prec0::PrecisionTrait(), 0);
+        assert_eq!(Prec1::PrecisionTrait(), 1);
+        assert_eq!(Prec2::PrecisionTrait(), 2);
+        assert_eq!(Prec3::PrecisionTrait(), 3);
+        assert_eq!(Prec4::PrecisionTrait(), 4);
+        assert_eq!(Prec5::PrecisionTrait(), 5);
+        assert_eq!(Prec6::PrecisionTrait(), 6);
+        assert_eq!(Prec7::PrecisionTrait(), 7);
+        assert_eq!(Prec8::PrecisionTrait(), 8);
+        assert_eq!(Prec9::PrecisionTrait(), 9);
     }
 
     #[test]

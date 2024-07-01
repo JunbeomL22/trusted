@@ -1,6 +1,6 @@
 use crate::types::{
     enums::OrderSide,
-    precision::Precision,
+    precision::PrecisionTrait,
     book_price::BookPrice,
     venue::OrderId,
 };
@@ -15,13 +15,13 @@ use anyhow::Result;
 
 #[derive(Debug, Clone, Default)]
 pub struct HalfBook
-<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> {
+<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug> {
     pub order_side: OrderSide,
     pub levels: BTreeMap<BookPrice<T>, Level<T, S>>,
     pub cache: HashMap<OrderId, BookPrice<T>>,
 }
 
-impl<T: Precision + Clone + Debug + Ord, S: Precision + Clone + Debug> HalfBook<T, S> {
+impl<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug> HalfBook<T, S> {
     #[must_use]
     pub fn initialize(order_side: OrderSide) -> Self {
         HalfBook {

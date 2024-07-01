@@ -1,16 +1,16 @@
-use crate::types::precision::Precision;
+use crate::types::precision::PrecisionTrait;
 //
 use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BookPrice<T: Precision + Clone> {
+pub struct BookPrice<T: PrecisionTrait + Clone> {
     pub iovalue: i64,
     _precision: PhantomData<T>
 }
 
-impl<T: Precision + Clone> std::default::Default for BookPrice<T> {
+impl<T: PrecisionTrait + Clone> std::default::Default for BookPrice<T> {
     fn default() -> Self {
         BookPrice {
             iovalue: 0,
@@ -19,7 +19,9 @@ impl<T: Precision + Clone> std::default::Default for BookPrice<T> {
     }
 }
 
-impl<T: Precision + Clone> BookPrice<T> {
+impl<T: PrecisionTrait + Clone> BookPrice<T> {
+    #[must_use]
+    #[inline]
     pub fn new(val: f64) -> Result<Self> {
         Ok(
             BookPrice {

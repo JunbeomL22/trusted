@@ -9,8 +9,8 @@ use ustr::Ustr;
 use ryu;
 use std::fmt::Write;
 use itoa;
-use trading_engine::types::precision::{
-    Precision,
+use trading_engine::types::PrecisionTrait::{
+    PrecisionTrait,
     Prec2,
 };
 use chrono::prelude::*;

@@ -1,5 +1,5 @@
 use crate::types::{
-    precision::Precision,
+    precision::PrecisionTrait,
     book_price::BookPrice,
     book_quantity::BookQuantity,
     venue::OrderId,
@@ -12,7 +12,7 @@ use std::fmt::Debug;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookOrder
-<T: Precision + Clone + Debug, S: Precision + Clone + Debug> {
+<T: PrecisionTrait + Clone + Debug, S: PrecisionTrait + Clone + Debug> {
     pub price: BookPrice<T>,
     pub quantity: BookQuantity<S>,
     pub order_side: OrderSide, // should I keep this? book also has its side
@@ -22,7 +22,7 @@ pub struct BookOrder
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::precision::{
+    use crate::types::PrecisionTrait::{
         Prec3,
         Prec0,
     };
