@@ -99,15 +99,15 @@ impl<T: MockTrait> F64Phantom<T> {
 }
 
 fn main() {
-    let enum_instance = MyEnumABC::A(A { a: 0xAA });
+    let enum_instance = MyEnum16_32_64::A(0xAAAA);
     println!("MyEnumABC::A");
     print_struct_info(enum_instance);
 
-    let enum_instance = MyEnumACB::B(B { b: 0xBBBBBBBB });
+    let enum_instance = MyEnum16_64_32::B(0xBBBBBBBBBBBBBBBB);
 
     println!("MyEnumACB::B");
     print_struct_info(enum_instance);
-    let instance = MyStruct { a: 0xAA, b: 0xBBBBBBBB, c: 0xCCCC };
+    let instance = MyStruct16_64_8 { b: 0xBBBB, a: 0xAA, c: 0xCC };
     
     print_struct_info(instance);
 

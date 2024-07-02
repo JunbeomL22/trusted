@@ -301,7 +301,7 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 
@@ -326,7 +326,7 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 }
@@ -346,7 +346,7 @@ pub struct Logger {
 
 impl Logger {
     pub fn finalize() {
-        let _ = LOG_SENDER.send(LogMessage::Close);
+        let _ = LOG_SENDER.try_send(LogMessage::Close);
         if let Some(handler) = LOGGER_HANDLER.lock().unwrap().take() {
             let _ = handler.join();
         }

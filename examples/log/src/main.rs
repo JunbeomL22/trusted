@@ -9,7 +9,7 @@ use trading_engine::{
     info,
 };
 use trading_engine::utils::timer::get_unix_nano;
-
+use std::thread::sleep;
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
 
@@ -52,14 +52,13 @@ fn main() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 100_000;
+    let iteration = 50_000;
     
     let test_struct = TestStruct::default();
 
-    for _ in 0..10 {
+    for _ in 0..3 {
         info!("warm up")
     }
-    
 
     let __guard = Guard {
         ts: get_unix_nano(),

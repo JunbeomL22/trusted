@@ -10,6 +10,10 @@ ftlog = []
 mylogger = []
 fast_log = []
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
 [dependencies]
 log = "0.4"
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }
