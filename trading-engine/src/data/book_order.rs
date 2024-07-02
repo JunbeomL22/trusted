@@ -39,7 +39,7 @@ mod tests {
     fn test_book_order() {
         let price = BookPrice::<Prec3>::new(100.1234).unwrap();
         let quantity = BookQuantity::<Prec0>::new(100.0).unwrap();
-        let _order_id = MockOrderId::new(Ustr::from("1"));
+        let _order_id = MockOrderId::new(1);
         let order_id = OrderId::MockOrderId(_order_id);
         let order_side = OrderSide::Buy;
 
