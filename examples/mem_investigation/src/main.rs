@@ -23,17 +23,17 @@ pub enum MyEnum16_64_32 {
 #[repr(C)]
 #[derive(Serialize, Deserialize)]
 struct MyStruct64_8_16 {
-    b: u64,
-    a: u8,
+    a: u64,
+    b: u8,
     c: u16,
 }
 
 #[repr(C)]
 #[derive(Serialize, Deserialize)]
-struct MyStruct16_64_8 {
-    b: u16,
-    a: u64,
-    c: u8,
+struct MyStruct8_64_16 {
+    a: u8,
+    b: u64,
+    c: u16,
 }
 
 #[repr(C)]
@@ -107,8 +107,10 @@ fn main() {
 
     println!("MyEnumACB::B");
     print_struct_info(enum_instance);
-    let instance = MyStruct16_64_8 { b: 0xBBBB, a: 0xAA, c: 0xCC };
-    
+
+
+    let instance = MyStruct8_64_16 { a: 0xAA, b: 0xAAAAAAAAAAAAAAAA, c: 0xCCCC };
+    println!("MyStruct8_64_16");
     print_struct_info(instance);
 
     let f64_instance = F64 { val: 3.14 };

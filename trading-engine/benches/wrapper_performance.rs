@@ -10,7 +10,7 @@ pub struct F64 {
 #[derive(Clone)]
 pub struct F64Pad {
     pub val: f64,
-    _pad: u8,I
+    _pad: u8,
 }
 
 #[derive(Clone)]
