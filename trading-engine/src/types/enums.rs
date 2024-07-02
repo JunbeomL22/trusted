@@ -6,7 +6,7 @@ pub trait FromI8 {
         Self: Sized;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord)]
 pub enum OrderSide {
     Buy = 1,
     #[default]

@@ -1,8 +1,10 @@
 use crate::types::{
+    base::{
+        OrderId,
+        BookPrice,
+        BookQuantity,
+    },
     enums::OrderSide,
-    precision::PrecisionTrait,
-    book_price::BookPrice,
-    venue::OrderId,
 };
 use crate::data::book_order::BookOrder;
 use crate::orderbook::level::Level;
@@ -14,14 +16,13 @@ use anyhow::Result;
 
 
 #[derive(Debug, Clone, Default)]
-pub struct HalfBook
-<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug> {
+pub struct HalfBook {
     pub order_side: OrderSide,
-    pub levels: BTreeMap<BookPrice<T>, Level<T, S>>,
-    pub cache: HashMap<OrderId, BookPrice<T>>,
+    pub levels: BTreeMap<BookPrice, Level>,
+    pub cache: HashMap<OrderId, BookPrice>,
 }
 
-impl<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug> HalfBook<T, S> {
+impl HalfBook {
     #[must_use]
     pub fn initialize(order_side: OrderSide) -> Self {
         HalfBook {
@@ -32,7 +33,7 @@ impl<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug>
     }
 
     #[must_use]
-    pub fn initialize_with_order(order: BookOrder<T, S>) -> Self {
+    pub fn initialize_with_order(order: BookOrder) -> Self {
         let mut levels = BTreeMap::new();
         let price = order.price.clone();
         let level = Level::initialize_with_order(order.clone());
@@ -60,8 +61,8 @@ impl<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug>
         self.levels.is_empty()
     }
 
-    pub fn add_order(&mut self, order: BookOrder<T, S>) -> Result<()> {
-        self.cache.insert(order.order_id, order.price.clone());
+    pub fn add_order(&mut self, order: BookOrder) -> Result<()> {
+        self.cache.insert(order.order_id, order.price);
 
         match self.levels.get_mut(&order.price) {
             Some(level) => {
@@ -69,7 +70,7 @@ impl<T: PrecisionTrait + Clone + Debug + Ord, S: PrecisionTrait + Clone + Debug>
             },
             None => {
                 let level = Level::initialize_with_order(order.clone());
-                self.levels.insert(order.price.clone(), level);
+                self.levels.insert(order.price, level);
             }
         }
 

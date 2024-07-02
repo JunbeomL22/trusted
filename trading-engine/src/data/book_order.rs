@@ -1,56 +1,64 @@
-use crate::types::{
-    precision::PrecisionTrait,
-    book_price::BookPrice,
-    book_quantity::BookQuantity,
-    venue::OrderId,
+use crate::types::base::{
+    OrderId,
+    BookPrice,
+    BookQuantity,
 };
+use crate::types::precision::PrecisionHelper;
 use crate::types::enums::OrderSide;
 //
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookOrder
-<T: PrecisionTrait + Clone + Debug, S: PrecisionTrait + Clone + Debug> {
-    pub price: BookPrice<T>,
-    pub quantity: BookQuantity<S>,
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BookOrder {
+    pub price: BookPrice,
+    pub quantity: BookQuantity,
     pub order_side: OrderSide, // should I keep this? book also has its side
     pub order_id: OrderId,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::PrecisionTrait::{
-        Prec3,
-        Prec0,
-    };
-    use crate::types::book_price::BookPrice;
-    use crate::types::book_quantity::BookQuantity;
-    use crate::types::{
-        venue::OrderId,
-        venues::mock_exchange::MockOrderId,
-    };
-    use crate::types::enums::OrderSide;
-
-    #[test]
-    fn test_book_order() {
-        let price = BookPrice::<Prec3>::new(100.1234).unwrap();
-        let quantity = BookQuantity::<Prec0>::new(100.0).unwrap();
-        let _order_id = MockOrderId::new(1);
-        let order_id = OrderId::MockOrderId(_order_id);
-        let order_side = OrderSide::Buy;
-
-        let book_order = BookOrder {
+impl BookOrder {
+    pub fn new(
+        price: BookPrice,
+        quantity: BookQuantity,
+        order_side: OrderSide,
+        order_id: OrderId,
+    ) -> Self {
+        Self {
             price,
             quantity,
             order_side,
             order_id,
+        }
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_book_order() {
+        use crate::types::enums::OrderSide;
+        use crate::types::base::{
+            OrderId,
+            BookPrice,
+            BookQuantity,
         };
-        assert_eq!(book_order.price.as_f64(), 100.123);
-        assert_eq!(book_order.quantity.as_f64(), 100.0);
-        assert_eq!(book_order.order_side, OrderSide::Buy);
-        assert_eq!(book_order.order_id, 1);
+        use super::*;
+
+        let price: BookPrice = 100;
+        let quantity: BookQuantity = 100;
+        let order_side: OrderSide = OrderSide::Buy;
+        let order_id: OrderId = 1;
+
+        let book_order = BookOrder::new(price, quantity, order_side, order_id);
+
+        assert_eq!(book_order.price, price);
+        assert_eq!(book_order.quantity, quantity);
+        assert_eq!(book_order.order_side, order_side);
+        assert_eq!(book_order.order_id, order_id);
     }
 }
