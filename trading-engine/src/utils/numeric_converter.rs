@@ -1,11 +1,15 @@
-use itoa::Buffer as IntegerBuffer;
-use crate::types::precision::PrecisionHelper;
 use crate::types::base::NumReprCfg;
 use anyhow::{Result, bail};
 use core::arch::x86_64::{
     _mm_cvtsi128_si64, _mm_lddqu_si128, _mm_madd_epi16, _mm_maddubs_epi16, _mm_packus_epi32,
     _mm_set1_epi8, _mm_set_epi16, _mm_set_epi8, _mm_sub_epi16,
 };
+
+fn div_rem(dividend: i64, divisor: i64) -> (i64, i64) {
+    let quotient = dividend / divisor;
+    let remainder = dividend - (quotient * divisor);
+    (quotient, remainder)
+}
 
 pub fn parse_16_chars_simd_c16(s: &str) -> u64 {
     let d: &mut [u8; 16] = &mut b"0000000000000000".clone();
@@ -59,36 +63,37 @@ pub fn parse_8_chars(s: &str) -> u64 { // no need to benchmark this, to be used 
 
 #[derive(Debug, Clone)]
 pub struct IntegerConverter {
+    cfg: NumReprCfg,
     positive_digit_buffer: String,
+    buffer_ptr: *mut u8,
+    first_dest_ptr: *mut u8,
+    second_dest_ptr: *mut u8,
     buffer_length: usize,
     //
     input_first_head_location: usize,
-    input_first_tail_location: usize,
     input_second_head_location: Option<usize>,
-    input_second_tail_location: Option<usize>,
-    //
-    buffer_first_head_location: usize,
-    buffer_first_tail_location: usize,
-    buffer_second_head_location: Option<usize>,
-    buffer_second_tail_location: Option<usize>,
-
 }
 
 impl Default for IntegerConverter {
     fn default() -> IntegerConverter {
+        let buffer = "0".repeat(8);
+        let buffer_ptr = buffer.as_ptr() as *mut u8;
+        let first_dest_ptr = unsafe {
+            buffer_ptr.add(0)
+        };
+        let second_dest_ptr = unsafe {
+            buffer_ptr.add(0)
+        };
         IntegerConverter {
-            positive_digit_buffer: String::new(),
+            cfg: NumReprCfg::default(),
+            positive_digit_buffer: buffer,
+            buffer_ptr,
+            first_dest_ptr,
+            second_dest_ptr,
             buffer_length: 0,
             //
             input_first_head_location: 0,
-            input_first_tail_location: 0,
             input_second_head_location: None,
-            input_second_tail_location: None,
-            //
-            buffer_first_head_location: 0,
-            buffer_first_tail_location: 0,
-            buffer_second_head_location: None,
-            buffer_second_tail_location: None,
         }
     }
 }
@@ -109,7 +114,7 @@ impl IntegerConverter {
         } else if digit_size <= 16 {
             16
         } else {
-            bail!("Invalid total_length: {}", cfg.total_length);
+            bail!("Invalid total_length: {:?}", cfg);
         };
         let input_first_head_location = match cfg.include_negative {
             true => 1,
@@ -132,86 +137,80 @@ impl IntegerConverter {
             None
         };
 
-        let buffer_second_tail_location = if input_second_tail_location.is_some() {
-            Some(buffer_length - 1)
-        } else {
-            None
+        let buffer = "0".repeat(buffer_length);
+        let buffer_ptr = buffer.as_ptr() as *mut u8;
+        let first_dest_ptr = unsafe {
+            buffer_ptr.add(buffer_first_head_location)
+        };
+        let second_dest_ptr = unsafe {
+            match cfg.decimal_point_length {
+                0 => first_dest_ptr,
+                _ => buffer_ptr.add(buffer_second_head_location.unwrap())
+            }
         };
 
         Ok(IntegerConverter {
-            positive_digit_buffer: "0".repeat(buffer_length),
+            cfg,
+            positive_digit_buffer: buffer,
+            buffer_ptr,
+            first_dest_ptr,
+            second_dest_ptr,
             buffer_length,
             //
             input_first_head_location,
-            input_first_tail_location,
             input_second_head_location,
-            input_second_tail_location,
-            //
-            buffer_first_head_location,
-            buffer_first_tail_location,
-            buffer_second_head_location,
-            buffer_second_tail_location,
         })
     }
         
         
+    #[inline]
     pub fn to_u64(&mut self, value: &str) -> Result<u64> {
         unsafe {
-            // Ensure the lengths match to avoid buffer overflow or underflow
-            let src_len = self.input_first_tail_location - self.input_first_head_location + 1;
-            let dest_len = self.buffer_first_tail_location - self.buffer_first_head_location + 1;
-            assert_eq!(src_len, dest_len, "Source and destination lengths must match.");
+            // Cache value pointer
+            let value_ptr = value.as_ptr();
+
+            let src_ptr = value_ptr.add(self.input_first_head_location);
+            
+            std::ptr::copy_nonoverlapping(src_ptr, self.first_dest_ptr, self.cfg.digit_length);
         
-            // Get pointers to the start of the source and destination slices
-            let src_ptr = value.as_ptr().add(self.input_first_head_location);
-            let dest_ptr = self.positive_digit_buffer.as_mut_ptr().add(self.buffer_first_head_location);
-        
-            // Copy from source to destination
-            std::ptr::copy(src_ptr, dest_ptr, src_len);
-        
-            // Repeat for the second range if it exists
-            if let (Some(input_second_head_location), Some(buffer_second_head_location), Some(input_second_tail_location), Some(buffer_second_tail_location)) = (
-                self.input_second_head_location,
-                self.buffer_second_head_location,
-                self.input_second_tail_location,
-                self.buffer_second_tail_location,
-            ) {
-                let src_len = input_second_tail_location - input_second_head_location + 1;
-                let dest_len = buffer_second_tail_location - buffer_second_head_location + 1;
-                assert_eq!(src_len, dest_len, "Source and destination lengths must match.");
-        
-                let src_ptr = value.as_ptr().add(input_second_head_location);
-                let dest_ptr = self.positive_digit_buffer.as_mut_ptr().add(buffer_second_head_location);
-        
-                std::ptr::copy(src_ptr, dest_ptr, src_len);
+            // decimal range copy (if exists)
+            if let Some(input_second_head) = self.input_second_head_location {
+                let src_ptr = value_ptr.add(input_second_head);
+                
+                std::ptr::copy_nonoverlapping(src_ptr, self.second_dest_ptr, self.cfg.decimal_point_length);
             }
         }
-        /*
-        self.positive_digit_buffer.replace_range(
-            self.buffer_first_head_location..=self.buffer_first_tail_location,
-            &value[self.input_first_head_location..=self.input_first_tail_location]
-        );
 
-        if self.buffer_second_head_location.is_some() {
-            self.positive_digit_buffer.replace_range(
-                self.buffer_second_head_location.unwrap()..=self.buffer_second_tail_location.unwrap(),
-                &value[self.input_second_head_location.unwrap()..=self.input_second_tail_location.unwrap()]
-            );
-        }
-         */
         if self.buffer_length == 8 {
             Ok(parse_8_chars(&self.positive_digit_buffer))
         } else {
-            Ok(parse_16_chars_simd_c16(&self.positive_digit_buffer.as_str()))
+            let (upper_digits, lower_digits) = self.positive_digit_buffer.as_str().split_at(8);
+            Ok(parse_8_chars(upper_digits) * 100000000 + parse_8_chars(lower_digits))
         }
     }
 
+    #[inline]
     pub fn to_i64(&mut self, value: &str) -> Result<i64> {
         if value.starts_with('-') {
             Ok((!self.to_u64(value)? + 1) as i64)
         } else {
             Ok(self.to_u64(value)? as i64)
         }
+    }
+
+    #[inline]
+    pub fn to_f64_from_i64(&mut self, value: i64) -> f64 {
+        value as f64 / 10_f64.powi(self.cfg.decimal_point_length as i32)
+    }
+
+    #[inline]
+    pub fn normalized_f64_from_i64(&mut self, value: i64, add_normalizer: u32) -> f64 {
+        let normalizer = self.cfg.decimal_point_length as u32 + add_normalizer;
+        let denominator = 10_f64.powi(normalizer as i32);
+
+        let (quotient, remainder) = div_rem(value, 10_i64.pow(normalizer));
+
+        quotient as f64 + (remainder as f64 / denominator)
     }
 }
 
@@ -235,9 +234,21 @@ mod tests {
         let mut converter = IntegerConverter::new(cfg).unwrap();
         
         let val = converter.to_u64("000001234.56")?;
-        dbg!(&converter);
         assert_eq!(val, 123456);
 
+        let cfg = NumReprCfg::new(
+            11,
+            0,
+            false,
+            11,
+        )?;
+
+        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let val_str = "10000123456";
+        let val = converter.to_u64(val_str)?;
+        
+        assert_eq!(val, 10_000_123_456);
+        
         Ok(())
     }
 }

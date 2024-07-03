@@ -292,6 +292,21 @@ fn bench_custom_numeric_converter(
     let mut bgroup = c.benchmark_group("custom_numeric_converter");
 
     let cfg = NumReprCfg::new(
+        11,
+    0,
+    false,
+        11,
+    ).unwrap();
+
+    let mut converter = IntegerConverter::new(cfg).unwrap();
+    let val_str = "00000123456";
+    bgroup.bench_function("str_to_u64_integer", |b| {
+        b.iter(|| {
+            let _ = converter.to_u64(val_str).unwrap();
+        });
+    });
+
+    let cfg = NumReprCfg::new(
         8,
         3,
         true,
@@ -300,14 +315,6 @@ fn bench_custom_numeric_converter(
 
     let mut converter = IntegerConverter::new(cfg).unwrap();
 
-    let val_str = "000001234.563";
-
-    bgroup.bench_function("str_to_u64", |b| {
-        b.iter(|| {
-            let _ = converter.to_u64(val_str).unwrap();
-        });
-    });
-
     let val_str = "-00001234.563";
     bgroup.bench_function("str_to_i64", |b| {
         b.iter(|| {
@@ -315,18 +322,17 @@ fn bench_custom_numeric_converter(
         });
     });
 
-    let var_str = "0000123400001234";
+    let val_i64 = converter.to_i64(val_str).unwrap();
 
-    bgroup.bench_function("parse_16_chars_simd_c16", |b| {
+    bgroup.bench_function("i64_to_f64", |b| {
         b.iter(|| {
-            let _ = parse_16_chars_simd_c16(var_str);
+            let _ = converter.to_f64_from_i64(val_i64);
         });
     });
 
-    let val_str = "1234";
-    bgroup.bench_function("bit-operation", |b| {
+    bgroup.bench_function("normalized i64_to_f64", |b| {
         b.iter(|| {
-            let _ = parse_8_chars(val_str);
+            let _ = converter.normalized_f64_from_i64(val_i64, 3);
         });
     });
 
