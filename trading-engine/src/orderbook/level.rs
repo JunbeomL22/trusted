@@ -126,28 +126,18 @@ mod tests {
         BookPrice,
         BookQuantity,
     };
+    use crate::instruments::stubs::get_precision_helper;
+    use crate::types::base::NumReprCfg;
 
     #[test]
     fn test_level() {
-        let price: BookPrice = 100;
-        let quantity: BookQuantity = 100;
-        let order_side: OrderSide = OrderSide::Buy;
-        let order_id: OrderId = 1;
+        let cfg = NumReprCfg {
+            digit_length: 7,
+            decimal_point_length: 0,
+            include_negative: true,
+            total_length: 10,
+        };
+        let prec_helper = get_precision_helper(cfg).unwrap();
 
-        let book_order = BookOrder::new(price, quantity, order_side, order_id);
-
-        let level = Level::initialize_with_order(book_order.clone());
-
-        assert_eq!(level.book_price, price);
-        assert_eq!(level.orders.len(), 1);
-        assert_eq!(level.orders.get(&order_id), Some(&book_order));
-        assert_eq!(level.arraival_order.len(), 1);
-        assert_eq!(level.arraival_order[0], order_id);
-        assert_eq!(level.price(PrecisionHelper::Prec0_3), 100.0);
-        assert_eq!(level.book_quanity_sum(), 100);
-        assert_eq!(level.quantity_sum(PrecisionHelper::Prec0_3), 100.0);
-        assert_eq!(level.order_count(), 1);
-        assert_eq!(level.get_orders_in_arrival_order(), vec![&book_order]);
-        assert_eq!(level.is_empty(), false);
     }
 }

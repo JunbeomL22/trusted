@@ -9,12 +9,10 @@ use ustr::Ustr;
 use ryu;
 use std::fmt::Write;
 use itoa;
-use trading_engine::types::PrecisionTrait::{
-    PrecisionTrait,
-    Prec2,
-};
+use trading_engine::types::precision::PrecisionHelper;
 use chrono::prelude::*;
 use time::format_description::well_known::Rfc3339;
+
 
 fn bench_intger_and_float(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("integer_and_float");
@@ -201,7 +199,12 @@ fn bench_str_to_number(
     let mut bgroup = c.benchmark_group("string_to_number");
 
     let u64_str = "1234567890";
+
+    let f64_str = "123456.12";
+    let f64_bytes = f64_str.as_bytes();
     
+    
+
     bgroup.bench_function("str_to_i32", |b| {
         b.iter(|| {
             black_box(u64_str.parse::<i32>().unwrap())
@@ -260,21 +263,21 @@ fn bench_string_to_i64(
 
     let f64_str = "123456.12";
 
-    let prec = Prec2 {};
+    let prec = PrecisionHelper::Prec2_3;
 
     bgroup.bench_function("str_to_i64", |b| {
         b.iter(|| {
             let val_f64 = f64_str.parse::<f64>().unwrap();
-            let val_i64 = Prec2::price_f64_to_i64(val_f64).unwrap();
+            let val_i64 = prec.price_f64_to_i64(val_f64).unwrap();
         });
     });
 
     let val_f64 = f64_str.parse::<f64>().unwrap();
-    let val_i64 = Prec2::price_f64_to_i64(val_f64).unwrap();
+    let val_i64 = prec.price_f64_to_i64(val_f64).unwrap();
     let mut buffer = ryu::Buffer::new();
     bgroup.bench_function("i64_to_str", |b| {
         b.iter(|| {
-            let val_f64 = Prec2::price_i64_to_f64(val_i64);
+            let val_f64 = prec.price_i64_to_f64(val_i64);
             let printed = buffer.format(val_f64);
         });
     });
@@ -284,6 +287,7 @@ fn bench_string_to_i64(
 
 criterion_group!(
     benches, 
+    bench_str_to_number,
     bench_intger_and_float,
     bench_datetime_formatter,
     bench_integer_to_string,

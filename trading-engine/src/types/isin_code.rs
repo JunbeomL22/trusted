@@ -13,6 +13,14 @@ pub struct IsinCode {
     isin: Ustr,
 }
 
+impl Default for IsinCode {
+    fn default() -> Self {
+        IsinCode {
+            isin: Ustr::from(""),
+        }
+    }
+}
+
 impl Serialize for IsinCode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: serde::Serializer,

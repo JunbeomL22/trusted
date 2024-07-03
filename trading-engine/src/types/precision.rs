@@ -1,3 +1,4 @@
+use crate::types::base::NumReprCfg;
 use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
 // zero system constant
@@ -25,6 +26,7 @@ const PRICE_MIN_NINE_SYSTEM: f64 = -9_223_372_036.0; // i64::MIN / 1_000_000_000
 const QUANTITY_MAX_NINE_SYSTEM: f64 = 18_446_744_073.0; // u64::MAX / 1_000_000_000
 const QUANTITY_MIN_NINE_SYSTEM: f64 = 0.0;
 
+/// 4 byte
 /// book price creation hendler
 /// in the order of frequency of use
 /// Preci_j means for number having i precisions where nominated by 9 precision in mind
@@ -162,12 +164,26 @@ impl PrecisionHelper {
             PrecisionHelper::Prec9_9 => value as f64 / MAX_IO_MULTIPLIER_NINE_SYSTEM,
         }
     }
+
+    #[inline]
+    #[must_use]
+    pub fn price_str_to_i64(&self, value: &str) -> Result<i64> {
+        self.price_f64_to_i64(value.parse::<f64>()?)
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn quantity_str_to_u64(&self, value: &str) -> Result<u64> {
+        self.quantity_f64_to_u64(value.parse::<f64>()?)
+    }
+
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lexical_core;
 
     #[test]
     fn test_precision() -> Result<()> {
@@ -245,6 +261,26 @@ mod tests {
         assert_eq!(ioi64, 8_243_456_109_832_235_568);
         assert_eq!(reversed_quantity, 8_243_456_109_832.235_568);
     
+        Ok(())
+    }
+
+    #[test]
+    fn test_str_to_integer() -> Result<()> {
+        let prec0 = PrecisionHelper::Prec0_3;
+        let prec2 = PrecisionHelper::Prec2_3;
+        let prec3 = PrecisionHelper::Prec3_3;
+        let prec6 = PrecisionHelper::Prec6_6;
+        let prec9 = PrecisionHelper::Prec9_9;
+
+        let price_str = "018989989898989898.000";
+        let quantity_str = "018989989898989898.000";
+
+        let price_f64 = price_str.parse::<f64>()?;
+        println!("price_f64: {:.9}", price_f64);
+        let x = "5999999999999.555";
+        let x = x.parse::<f64>()?;
+        println!("price_f64: {:.9}", x);
+
         Ok(())
     }
 }

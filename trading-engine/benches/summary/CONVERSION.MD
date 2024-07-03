@@ -19,8 +19,8 @@
 | u64 (unix_nano)           | custom_conv (String)      | 337 ns           | 217 ns | 
 | u32                       | to_string                 | 50 ns            | 37 ns | 
 | u64 (unix_nano)           | to_string                 | 42 ns            | 35 ns | 
-| u32                       | iota                      | 2 ns             | 2 ns |
-| u64                       | iota                      | 2 ns             | 2ns |
+| u32                       | itoa                      | 2 ns             | 2 ns |
+| u64                       | itoa                      | 2 ns             | 2 ns |
 | f64                       | to_string                 | 144 ns           | 105 ns |
 | f64                       | ryu                       | 35 ns            | 27 ns |
 | u32 | as f32 | 324 ps | 377 ps | 

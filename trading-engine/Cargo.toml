@@ -75,3 +75,7 @@ fixed = "1.27"
 rust_decimal = "1.35"
 rust_decimal_macros = "1.34"
 thiserror = "1.0"
+[dependencies.lexical-core]
+version = "0.8.5"
+default-features = false
+features = ["write-integers", "write-floats", "parse-integers", "parse-floats"]

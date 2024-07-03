@@ -52,11 +52,11 @@ fn main() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 50_000;
+    let iteration = 100_000;
     
     let test_struct = TestStruct::default();
 
-    for _ in 0..3 {
+    for _ in 0..5 {
         info!("warm up")
     }
 

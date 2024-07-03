@@ -4,6 +4,7 @@
 Memory alignment depends on the most strict variable. Consider:
 
 ```Rust
+#[repr(C)]
 pub struct A {
     a: u8,
     b: u64,

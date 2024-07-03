@@ -6,6 +6,17 @@ use quantlib::util::type_name;
 use serde::{Serialize, Deserialize};    
 use serde_json::json;
 
+pub struct MiniStruct {
+    pub a: bool,
+}
+
+#[repr(C)]
+pub enum MyEnum {
+    A(u8),
+    B(u8),
+    C(u8),
+}
+
 #[repr(C)]
 pub enum MyEnum16_32_64 {
     A(u16),
@@ -99,6 +110,14 @@ impl<T: MockTrait> F64Phantom<T> {
 }
 
 fn main() {
+    let mini_instance = MiniStruct { a: true };
+    println!("MiniStruct");
+    print_struct_info(mini_instance);
+
+    let enum_instance = MyEnum::A(1);
+    println!("MyEnum::A");
+    print_struct_info(enum_instance);
+
     let enum_instance = MyEnum16_32_64::A(0xAAAA);
     println!("MyEnumABC::A");
     print_struct_info(enum_instance);

@@ -1,5 +1,64 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
+fn bench_remainder(c: &mut Criterion) {
+    let mut group = c.benchmark_group("100 remainder");
+    let vec_i32: Vec<i32> = (1..=100).collect();
+    group.bench_function("remainder i32", |b| b.iter(|| {
+        let mut remainder = 1;
+        for i in vec_i32.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    let vec_i64: Vec<i64> = (1..=100).collect();
+    group.bench_function("remainder i64", |b| b.iter(|| {
+        let mut remainder = 1;
+        for i in vec_i64.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    let vec_u32: Vec<u32> = (1..=100).collect();
+    group.bench_function("remainder u32", |b| b.iter(|| {
+        let mut remainder = 1;
+        for i in vec_u32.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    let vec_u64: Vec<u64> = (1..=100).collect();
+    group.bench_function("remainder u64", |b| b.iter(|| {
+        let mut remainder = 1;
+        for i in vec_u64.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    let vec_f32: Vec<f32> = (1..=100).map(|x| x as f32).collect();
+    group.bench_function("remainder f32", |b| b.iter(|| {
+        let mut remainder = 1.0;
+        for i in vec_f32.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    let vec_f64: Vec<f64> = (1..=100).map(|x| x as f64).collect();
+    group.bench_function("remainder f64", |b| b.iter(|| {
+        let mut remainder = 1.0;
+        for i in vec_f64.iter() {
+            remainder %= i;
+        }
+        remainder
+    }));
+
+    group.finish();
+}
+
 fn bench_addition(c: &mut Criterion) {
     let mut group = c.benchmark_group("100 addition");
     let vec_i32: Vec<i32> = (1..=100).collect();
@@ -179,6 +238,8 @@ fn bench_division(c: &mut Criterion) {
 
 criterion_group!(
     benches, 
-    bench_multiply, bench_division,
+    bench_remainder, 
+    //bench_addition,
+    //bench_multiply, bench_division,
 );
 criterion_main!(benches);

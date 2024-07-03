@@ -9,10 +9,12 @@ pub type AccountId = Ustr;
 
 pub type TraderId = Ustr;
 
-#[derive(Debug, Clone, Serialize, Copy, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NumberRepresentationConfigurations {
-    pub precision: u8,
-    pub length: u8,
+#[derive(Default, Debug, Clone, Serialize, Copy, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NumReprCfg {
+    pub digit_length: u8,
+    pub decimal_point_length: u8,
+    pub include_negative: bool,
+    pub total_length: u8,
 }
 
 pub type BookPrice = i64;

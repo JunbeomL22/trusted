@@ -6,7 +6,7 @@ use serde::{
 };
 use ustr::Ustr;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Default, PartialEq, Eq)]
 pub struct KRX;
 
 impl VenueTrait for KRX {

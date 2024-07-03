@@ -14,11 +14,17 @@ use enum_dispatch::enum_dispatch;
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[enum_dispatch(VenueTrait)]
 pub enum Venue {
     Mock(Mock),
     KRX(KRX),
+}
+
+impl Default for Venue {
+    fn default() -> Self {
+        Venue::Mock(Mock)
+    }
 }
 
 #[enum_dispatch]

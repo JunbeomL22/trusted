@@ -8,7 +8,7 @@ use ustr::Ustr;
 use anyhow::Result;
 
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Default, PartialEq, Eq)]
 pub struct Mock;
 
 impl VenueTrait for Mock {
