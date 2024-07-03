@@ -14,7 +14,7 @@ pub enum PrecisionCreationError {
         .0, .1, .2, .3
     
     )]
-    SizeError(u8, u8, bool, u8),
+    SizeError(usize, usize, bool, usize),
     #[error(
         "get_precision_helper => invalid precision: \n\
         digit_length: {:?}\n\
@@ -23,7 +23,7 @@ pub enum PrecisionCreationError {
         total_length: {:?}",
         .0, .1, .2, .3
     )]
-    InvalidPrecision(u8, u8, bool, u8),
+    InvalidPrecision(usize, usize, bool, usize),
     #[error(
         "get_precision_helper => too big digit-length: \n\
         digit_length: {:?}\n\
@@ -32,7 +32,7 @@ pub enum PrecisionCreationError {
         total_length: {:?}",
         .0, .1, .2, .3
     )]
-    DigitLength(u8, u8, bool, u8),
+    DigitLength(usize, usize, bool, usize),
 }
 
 pub fn get_precision_helper(cfg: NumReprCfg) -> Result<PrecisionHelper> {
@@ -43,20 +43,7 @@ pub fn get_precision_helper(cfg: NumReprCfg) -> Result<PrecisionHelper> {
         total_length,
     } = cfg;
 
-    let mut check_size: u8 = if decimal_point_length == 0 {
-        digit_length
-    } else {
-        digit_length + decimal_point_length + 1
-    };
-
-    check_size += if include_negative { 1 } else { 0 };
-
-    if check_size != total_length {
-        let error = || PrecisionCreationError::SizeError(
-            digit_length, decimal_point_length, include_negative, total_length
-        );
-        return Err(error().into());
-    } else if decimal_point_length == 0 {
+    if decimal_point_length == 0 {
         if (0..=15).contains(&digit_length) {
             Ok(PrecisionHelper::Prec0_3)
         } else if (16..=18).contains(&digit_length) {

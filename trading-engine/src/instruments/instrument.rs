@@ -17,10 +17,10 @@ pub enum Instrument {
 pub trait InstrumentTrait {
     fn get_price_num_repr_cfg(&self) -> NumReprCfg;
     fn get_quantity_num_repr_cfg(&self) -> NumReprCfg;
-    fn get_price_precision(&self) -> u8;
-    fn get_price_length(&self) -> u8;
-    fn get_quantity_precision(&self) -> u8;
-    fn get_quantity_length(&self) -> u8;
+    fn get_price_precision(&self) -> usize;
+    fn get_price_length(&self) -> usize;
+    fn get_quantity_precision(&self) -> usize;
+    fn get_quantity_length(&self) -> usize;
     fn get_isin_code(&self) -> &IsinCode;
     fn get_venue(&self) -> Venue;
 }

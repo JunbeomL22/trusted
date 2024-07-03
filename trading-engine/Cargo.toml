@@ -46,6 +46,13 @@ harness = false
 name = "hashmap"
 harness = false
 
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+#target-cpu = "native"
+
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

@@ -11,8 +11,10 @@ mylogger = []
 fast_log = []
 
 [profile.release]
+lto = true
 codegen-units = 1
-lto = "fat"
+opt-level = 3
+target-cpu = "native"
 
 [dependencies]
 log = "0.4"

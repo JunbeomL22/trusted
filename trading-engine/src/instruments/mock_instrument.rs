@@ -69,19 +69,19 @@ impl InstrumentTrait for MockInstrument {
 
     #[inline]
     #[must_use]
-    fn get_price_precision(&self) -> u8 { self.price_repr_cfg.decimal_point_length }
+    fn get_price_precision(&self) -> usize { self.price_repr_cfg.decimal_point_length }
 
     #[inline]
     #[must_use]
-    fn get_quantity_precision(&self) -> u8 { self.quantity_repr_cfg.decimal_point_length }
+    fn get_quantity_precision(&self) -> usize { self.quantity_repr_cfg.decimal_point_length }
 
     #[inline]
     #[must_use]
-    fn get_price_length(&self) -> u8 { self.price_repr_cfg.total_length }
+    fn get_price_length(&self) -> usize { self.price_repr_cfg.total_length }
 
     #[inline]
     #[must_use]
-    fn get_quantity_length(&self) -> u8 { self.quantity_repr_cfg.total_length }
+    fn get_quantity_length(&self) -> usize { self.quantity_repr_cfg.total_length }
 
     #[inline]
     #[must_use]
