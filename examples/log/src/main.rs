@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 1_000_000;
+    let iteration = 100_000;
     
     let test_struct = TestStruct::default();
 

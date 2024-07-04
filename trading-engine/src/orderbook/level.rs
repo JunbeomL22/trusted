@@ -68,7 +68,7 @@ impl Level {
         self.orders.get(&order_id)
     }
 
-    
+    /*
     #[must_use]
     #[inline]
     pub fn price(&self, converter: &mut IntegerConverter) -> f64 {
@@ -89,7 +89,7 @@ impl Level {
             .map(|order| prec_helper.quantity_u64_to_f64(order.quantity))   
             .sum()
     }
-    
+     */
 
     #[must_use]
     #[inline]
