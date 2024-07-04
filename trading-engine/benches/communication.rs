@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 //use std::sync::mpsc::{channel, Sender, Receiver};
-//use crossbeam_channel::{unbounded, Sender, Receiver};
-use kanal::{unbounded, Sender, Receiver};
+use crossbeam_channel::{unbounded, Sender, Receiver};
+//use kanal::{unbounded, Sender, Receiver};
 use std::thread;
 use ustr::Ustr;
 use core_affinity::{self, CoreId};

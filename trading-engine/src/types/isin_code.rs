@@ -1,39 +1,14 @@
 use crate::utils::checkers;
-use ustr::Ustr;
+use flexstr::LocalStr;
 use anyhow::{Result, anyhow};
 use serde::{
     Serialize, 
     Deserialize,
-    de::Deserializer,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Default)]
 pub struct IsinCode {
-    #[serde(deserialize_with = "from_str")]
-    isin: Ustr,
-}
-
-impl Default for IsinCode {
-    fn default() -> Self {
-        IsinCode {
-            isin: Ustr::from(""),
-        }
-    }
-}
-
-impl Serialize for IsinCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: serde::Serializer,
-    {
-        self.isin.serialize(serializer)
-    }
-}
-
-fn from_str<'de, D>(deserializer: D) -> Result<Ustr, D::Error>
-where D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(Ustr::from(&s))
+    isin: LocalStr,
 }
 
 impl IsinCode {
@@ -42,7 +17,7 @@ impl IsinCode {
                 checkers::contains_white_space(isin)? &&
                 checkers::is_ascii(isin)? {
             true => Ok(IsinCode {
-                isin: Ustr::from(isin),
+                isin: LocalStr::from(isin),
             }),
             false => {
                 let lazy_error = || anyhow!("Invalid ISIN code: {}", isin);

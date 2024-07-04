@@ -1,6 +1,4 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use lazy_format::{lazy_format, write};
-use joinery::JoinableIterator;
 use trading_engine::utils::timer::{
     get_unix_nano,
     convert_unix_nano_to_datetime_format,
