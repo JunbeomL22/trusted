@@ -272,6 +272,7 @@ fn bench_custom_numeric_converter(
         decimal_point_length: 0,
         is_signed: false,
         total_length: 11,
+        float_normalizer: None,
     };
 
     let mut converter = IntegerConverter::new(cfg).unwrap();
@@ -287,6 +288,7 @@ fn bench_custom_numeric_converter(
         decimal_point_length: 3,
         is_signed: true,
         total_length: 13,
+        float_normalizer: None,
     };
     let mut converter = IntegerConverter::new(cfg).unwrap();
 
@@ -303,6 +305,7 @@ fn bench_custom_numeric_converter(
         decimal_point_length: 3,
         is_signed: true,
         total_length: 20,
+        float_normalizer: Some(3),
     };
     let mut converter = IntegerConverter::new(cfg).unwrap();
     bgroup.bench_function("str_to_i64_long_integer", |b| {
@@ -314,7 +317,7 @@ fn bench_custom_numeric_converter(
     let val_i64 = -1234567890;
     bgroup.bench_function("normalized i64_to_f64", |b| {
         b.iter(|| {
-            let _ = converter.normalized_f64_from_i64(val_i64, 3);
+            let _ = converter.normalized_f64_from_i64(val_i64);
         });
     });
 

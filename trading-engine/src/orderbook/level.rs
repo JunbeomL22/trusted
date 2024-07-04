@@ -68,13 +68,13 @@ impl Level {
         self.orders.get(&order_id)
     }
 
-    /*
+    
     #[must_use]
     #[inline]
     pub fn price(&self, converter: &mut IntegerConverter) -> f64 {
         converter.to_f64_from_i64(self.book_price)
     }
-
+    /*
     pub fn book_quanity_sum(&self) -> u64 {
         warn!("book_quanity_sum is deprecated. Use quantity_sum instead.");
         self.orders

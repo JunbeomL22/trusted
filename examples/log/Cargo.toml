@@ -10,12 +10,6 @@ ftlog = []
 mylogger = []
 fast_log = []
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-target-cpu = "native"
-
 [dependencies]
 log = "0.4"
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing"] }

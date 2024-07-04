@@ -13,6 +13,7 @@ pub struct NumReprCfg {
     pub decimal_point_length: usize,
     pub is_signed: bool,
     pub total_length: usize,
+    pub float_normalizer: Option<i32>,
 }
 
 impl NumReprCfg {
@@ -379,9 +380,7 @@ impl IntegerConverter {
     #[inline]
     pub fn to_i64(&mut self, value: &str) -> i64 {
         unsafe {
-            // Cache value pointer
             let value_ptr = value.as_ptr();
-            //let src_ptr = value_ptr.add(self.input_first_head_location);
             copy_nonoverlapping(
                 value_ptr.add(self.input_first_head_location),
                 self.first_dest_ptr, 
@@ -392,7 +391,6 @@ impl IntegerConverter {
             if let Some(input_second_head) = self.input_second_head_location {
                 //let src_ptr = value_ptr.add(input_second_head);
                 copy_nonoverlapping(
-                    //src_ptr, 
                     value_ptr.add(input_second_head),
                     self.second_dest_ptr, 
                     self.numcfg.decimal_point_length
@@ -534,13 +532,19 @@ impl IntegerConverter {
     }
 
     #[inline]
-    pub fn normalized_f64_from_i64(&mut self, value: i64, add_normalizer: u32) -> f64 {
-        let normalizer = self.numcfg.decimal_point_length as u32 + add_normalizer;
-        let denominator = 10_f64.powi(normalizer as i32);
+    pub fn normalized_f64_from_i64(&mut self, value: i64) -> f64 {
+        match self.numcfg.float_normalizer {
+            Some(normalizer) => {
+                let added_normalizer = normalizer + self.numcfg.decimal_point_length as i32;
+                let denominator = 10_f64.powi(added_normalizer);
+                let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
 
-        let (quotient, remainder) = div_rem(value, 10_i64.pow(normalizer));
-
-        quotient as f64 + (remainder as f64 / denominator)
+                quotient as f64 + (remainder as f64 / denominator)
+            },
+            None => {
+                self.to_f64_from_i64(value)
+            }
+        }
     }
 }
 
@@ -564,6 +568,7 @@ mod tests {
             decimal_point_length: 2,
             is_signed: true,
             total_length: 12,
+            float_normalizer: None,
         };
         let mut converter = IntegerConverter::new(cfg).unwrap();
         
@@ -578,6 +583,7 @@ mod tests {
             decimal_point_length: 0,
             is_signed: false,
             total_length: 11,
+            float_normalizer: None,
         };
 
         let mut converter = IntegerConverter::new(cfg).unwrap();
@@ -591,6 +597,7 @@ mod tests {
             decimal_point_length: 1,
             is_signed: true,
             total_length: 18,
+            float_normalizer: None,
         };
 
         let mut converter = IntegerConverter::new(cfg_for_big_number).unwrap();
@@ -600,15 +607,6 @@ mod tests {
         let val_i64 = converter.to_i64(val_str);
         assert_eq!(val_i64, -9_111_100_001_234_563);
 
-        println!("val_f64 with 1: {:?}", converter.to_f64_from_i64(val_i64));
-        println!("val_f64 with 2: {:?}", converter.normalized_f64_from_i64(val_i64, 2));
-        println!("val_f64 with 3: {:?}", converter.normalized_f64_from_i64(val_i64, 3));
-        println!("val_f64 with 4: {:?}", converter.normalized_f64_from_i64(val_i64, 4));
-        println!("val_f64 with 5: {:?}", converter.normalized_f64_from_i64(val_i64, 5));
-        println!("val_f64 with 6: {:?}", converter.normalized_f64_from_i64(val_i64, 6));
-        println!("val_f64 with 7: {:?}", converter.normalized_f64_from_i64(val_i64, 7));
-        println!("val_f64 with 8: {:?}", converter.normalized_f64_from_i64(val_i64, 8));
-        println!("val_f64 with 9: {:?}", converter.normalized_f64_from_i64(val_i64, 9));
 
         let val_str = "-091110000123456.3";
         let val_i64 = converter.to_i64(val_str);
