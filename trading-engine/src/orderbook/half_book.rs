@@ -48,19 +48,23 @@ impl HalfBook {
     }
 
     #[must_use]
+    #[inline]
     pub fn len(&self) -> usize {
         self.levels.len()
     }
 
+    #[inline]
     pub fn clear(&mut self) {
         self.levels.clear();
         self.cache.clear();
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.levels.is_empty()
     }
 
+    #[inline]
     pub fn add_order(&mut self, order: BookOrder) -> Result<()> {
         self.cache.insert(order.order_id, order.price);
 

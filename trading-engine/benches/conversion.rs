@@ -9,11 +9,16 @@ use ustr::Ustr;
 use ryu;
 use std::fmt::Write;
 use itoa;
-use trading_engine::types::precision::PrecisionHelper;
 use chrono::prelude::*;
 use time::format_description::well_known::Rfc3339;
-use trading_engine::types::base::NumReprCfg;
-use trading_engine::utils::numeric_converter::{IntegerConverter, parse_8_chars, parse_16_chars_simd_c16};
+use trading_engine::utils::numeric_converter::NumReprCfg;
+use trading_engine::utils::numeric_converter::{
+    IntegerConverter, 
+    parse_8_chars, 
+    parse_16_chars_by_split,
+    parse_16_chars_with_u128,
+    parse_32_chars_by_split,
+};
 
 fn bench_intger_and_float(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("integer_and_float");
@@ -257,79 +262,56 @@ fn bench_str_to_number(
     bgroup.finish();
 }
 
-fn bench_string_to_i64(
-    c: &mut Criterion,
-) {
-    let mut bgroup = c.benchmark_group("string_to_i64");
-
-    let f64_str = "123456.12";
-
-    let prec = PrecisionHelper::Prec2_3;
-
-    bgroup.bench_function("str_to_i64", |b| {
-        b.iter(|| {
-            let val_f64 = f64_str.parse::<f64>().unwrap();
-            let val_i64 = prec.price_f64_to_i64(val_f64).unwrap();
-        });
-    });
-
-    let val_f64 = f64_str.parse::<f64>().unwrap();
-    let val_i64 = prec.price_f64_to_i64(val_f64).unwrap();
-    let mut buffer = ryu::Buffer::new();
-    bgroup.bench_function("i64_to_str", |b| {
-        b.iter(|| {
-            let val_f64 = prec.price_i64_to_f64(val_i64);
-            let printed = buffer.format(val_f64);
-        });
-    });
-
-    bgroup.finish();
-}
-
 fn bench_custom_numeric_converter(
     c: &mut Criterion,
 ) {
     let mut bgroup = c.benchmark_group("custom_numeric_converter");
 
-    let cfg = NumReprCfg::new(
-        11,
-    0,
-    false,
-        11,
-    ).unwrap();
+    let cfg = NumReprCfg {
+        digit_length: 11,
+        decimal_point_length: 0,
+        is_signed: false,
+        total_length: 11,
+    };
 
     let mut converter = IntegerConverter::new(cfg).unwrap();
     let val_str = "00000123456";
-    bgroup.bench_function("str_to_u64_integer", |b| {
+    bgroup.bench_function("str_to_u64", |b| {
         b.iter(|| {
-            let _ = converter.to_u64(val_str).unwrap();
+            let _ = converter.to_u64(val_str);
         });
     });
 
-    let cfg = NumReprCfg::new(
-        8,
-        3,
-        true,
-        13,
-    ).unwrap();
-
+    let cfg = NumReprCfg {
+        digit_length: 8,
+        decimal_point_length: 3,
+        is_signed: true,
+        total_length: 13,
+    };
     let mut converter = IntegerConverter::new(cfg).unwrap();
 
     let val_str = "-00001234.563";
     bgroup.bench_function("str_to_i64", |b| {
         b.iter(|| {
-            let _ = converter.to_i64(val_str).unwrap();
+            let _ = converter.to_i64(val_str);
         });
     });
-
-    let val_i64 = converter.to_i64(val_str).unwrap();
-
-    bgroup.bench_function("i64_to_f64", |b| {
+    
+    let val_str = "-111111100001234.563";
+    let cfg = NumReprCfg {
+        digit_length: 15,
+        decimal_point_length: 3,
+        is_signed: true,
+        total_length: 20,
+    };
+    let mut converter = IntegerConverter::new(cfg).unwrap();
+    bgroup.bench_function("str_to_i64_long_integer", |b| {
         b.iter(|| {
-            let _ = converter.to_f64_from_i64(val_i64);
+            let _ = converter.to_i64(val_str);
         });
     });
 
+    let val_i64 = -1234567890;
     bgroup.bench_function("normalized i64_to_f64", |b| {
         b.iter(|| {
             let _ = converter.normalized_f64_from_i64(val_i64, 3);
@@ -338,9 +320,44 @@ fn bench_custom_numeric_converter(
 
     bgroup.finish();
 }
+
+fn bench_parsing(c: &mut Criterion) {
+    let mut bgroup = c.benchmark_group("parsing");
+
+    let s = "00001234";
+    bgroup.bench_function("parse_8_chars", |b| {
+        b.iter(|| {
+            let _ = parse_8_chars(s);
+        });
+    });
+    
+    let s = "0000123456789012";
+    bgroup.bench_function("parse_16_chars_with_u128", |b| {
+        b.iter(|| {
+            let _ = parse_16_chars_with_u128(s);
+        });
+    });
+
+    bgroup.bench_function("parse_16_chars_by_split", |b| {
+        b.iter(|| {
+            let _ = parse_16_chars_by_split(s);
+        });
+    });
+
+    let s = "00000000000000940000123400001234";
+    bgroup.bench_function("parse_32_chars_by_split", |b| {
+        b.iter(|| {
+            let _ = parse_32_chars_by_split(s);
+        });
+    });
+
+    bgroup.finish();
+}
+
 criterion_group!(
     benches, 
     bench_custom_numeric_converter,
+    bench_parsing,
     /*
     bench_str_to_number,
     bench_intger_and_float,

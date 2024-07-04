@@ -268,6 +268,17 @@ macro_rules! log_debug {
 }
 
 #[macro_export]
+macro_rules! log_error {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $struct);
+    }};
+}
+
+
+#[macro_export]
 macro_rules! log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
         $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);

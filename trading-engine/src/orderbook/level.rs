@@ -1,12 +1,6 @@
 use crate::data::book_order::BookOrder;
-use crate::types::{
-    base::{
-        OrderId,
-        BookPrice,
-    },
-    precision::PrecisionHelper,
-};
-use crate::warn;
+use crate::types::base::{OrderId, BookPrice};
+use crate::utils::numeric_converter::IntegerConverter;
 //
 use std::collections::BTreeMap;
 use anyhow::{Result, anyhow};
@@ -74,10 +68,11 @@ impl Level {
         self.orders.get(&order_id)
     }
 
+    
     #[must_use]
     #[inline]
-    pub fn price(&self, prec_helper: PrecisionHelper) -> f64 {
-        prec_helper.price_i64_to_f64(self.book_price)
+    pub fn price(&self, converter: &mut IntegerConverter) -> f64 {
+        converter.to_f64_from_i64(self.book_price)
     }
 
     pub fn book_quanity_sum(&self) -> u64 {
@@ -94,6 +89,7 @@ impl Level {
             .map(|order| prec_helper.quantity_u64_to_f64(order.quantity))   
             .sum()
     }
+    
 
     #[must_use]
     #[inline]
@@ -126,18 +122,46 @@ mod tests {
         BookPrice,
         BookQuantity,
     };
-    use crate::instruments::stubs::get_precision_helper;
-    use crate::types::base::NumReprCfg;
+    use crate::utils::numeric_converter::{
+        NumReprCfg,
+        IntegerConverter,
+    };
 
     #[test]
     fn test_level() {
         let cfg = NumReprCfg {
             digit_length: 7,
-            decimal_point_length: 0,
-            include_negative: true,
-            total_length: 10,
+            decimal_point_length: 2,
+            is_signed: true,
+            total_length: 11,
         };
-        let prec_helper = get_precision_helper(cfg).unwrap();
+
+        let mut conevrter = IntegerConverter::new(cfg).unwrap();
+        let price_str = "5000111.19";
+        let bp = conevrter.to_i64(price_str);
+        
+        let order = BookOrder {
+            order_id: 1,
+            price: bp,
+            quantity: 100,
+            order_side: OrderSide::Buy,
+        };
+
+        let mut level = Level::initialize_with_order(order.clone());
+        assert_eq!(level.order_count(), 1);
+        assert_eq!(level.is_empty(), false);
+
+        let order2 = BookOrder {
+            order_id: 2,
+            price: bp,
+            quantity: 200,
+            order_side: OrderSide::Buy,
+        };
+
+        level.add_order(order2.clone()).unwrap();
+        assert_eq!(level.order_count(), 2);
+        assert_eq!(level.is_empty(), false);
+
 
     }
 }

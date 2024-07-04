@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use hashbrown::HashMap as HashbrownHashMap;
+use rustc_hash::FxHashMap;  
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -8,6 +9,8 @@ fn bench_hashmap(c: &mut Criterion) {
 
     let mut map = HashMap::new();
     let mut brown_map = HashbrownHashMap::new();
+    let mut fx_map = FxHashMap::default();
+
     bgroup.bench_function("std::HashMap 1000 insertion", |b| {
         b.iter(|| {
             
@@ -25,6 +28,14 @@ fn bench_hashmap(c: &mut Criterion) {
         });
     });
 
+    bgroup.bench_function("rustc_hash::FxHashMap 1000 insertion", |b| {
+        b.iter(|| {
+            for i in 0..1000 {
+                fx_map.insert(i, i+1);
+            }
+        });
+    });
+
     bgroup.finish();
 
 }
@@ -37,22 +48,35 @@ fn bench_search_time(c: &mut Criterion) {
         map.insert(i, i+1);
     }
 
-    bgroup.bench_function("std::HashMap search after 100_000 insertion", |b| {
+    bgroup.bench_function("std::HashMap search after 1_000_000 insertion", |b| {
         b.iter(|| {
-            for i in 0..100_000 {
+            for i in 0..1_000_000 {
                 map.get(&i);
             }
         });
     });
 
     let mut map = HashbrownHashMap::new();
-    for i in 0..100_000 {
+    for i in 0..1_000_000 {
         map.insert(i, i+1);
     }
 
-    bgroup.bench_function("hashbrown::HashMap search after 100_000 insertion", |b| {
+    bgroup.bench_function("hashbrown::HashMap search after 1_000_000 insertion", |b| {
         b.iter(|| {
-            for i in 0..100_000 {
+            for i in 0..1_000_000 {
+                map.get(&i);
+            }
+        });
+    });
+
+    let mut map = FxHashMap::default();
+    for i in 0..1_000_000 {
+        map.insert(i, i+1);
+    }
+
+    bgroup.bench_function("rustc_hash::FxHashMap search after 1_000_000 insertion", |b| {
+        b.iter(|| {
+            for i in 0..1_000_000 {
                 map.get(&i);
             }
         });
@@ -61,6 +85,10 @@ fn bench_search_time(c: &mut Criterion) {
     bgroup.finish();
 }
 
-criterion_group!(benches, bench_hashmap, bench_search_time);
+criterion_group!(
+    benches, 
+    bench_search_time,
+    bench_hashmap, 
+);
 
 criterion_main!(benches);

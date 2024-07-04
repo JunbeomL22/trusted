@@ -3,7 +3,7 @@ use crate::types::{
     venue::Venue,
 };
 use crate::instruments::instrument::InstrumentTrait;
-use crate::types::base::NumReprCfg;
+use crate::utils::numeric_converter::NumReprCfg;
 use time::OffsetDateTime;
 use serde::{Serialize, Deserialize};
 

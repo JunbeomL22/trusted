@@ -1,6 +1,6 @@
 use crate::instruments::mock_instrument::MockInstrument;
+use crate::utils::numeric_converter::NumReprCfg;
 use crate::types::{
-    base::NumReprCfg,
     isin_code::IsinCode,
     venue::Venue,
 };

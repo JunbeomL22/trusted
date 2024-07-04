@@ -3,7 +3,6 @@ use crate::types::base::{
     BookPrice,
     BookQuantity,
 };
-use crate::types::precision::PrecisionHelper;
 use crate::types::enums::OrderSide;
 //
 use serde::{Deserialize, Serialize};
