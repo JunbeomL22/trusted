@@ -132,12 +132,14 @@ mod tests {
         let cfg = NumReprCfg {
             digit_length: 7,
             decimal_point_length: 2,
+            drop_decimal_point: false,
             is_signed: true,
             total_length: 11,
+            float_normalizer: None,
         };
 
         let mut conevrter = IntegerConverter::new(cfg).unwrap();
-        let price_str = "5000111.19";
+        let price_str = b"05000111.19";
         let bp = conevrter.to_i64(price_str);
         
         let order = BookOrder {

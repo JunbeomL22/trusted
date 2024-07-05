@@ -14,6 +14,7 @@ pub struct NumReprCfg {
     pub is_signed: bool,
     pub total_length: usize,
     pub float_normalizer: Option<i32>,
+    pub drop_decimal_point: bool,
 }
 
 impl NumReprCfg {
@@ -52,12 +53,12 @@ fn div_rem(dividend: i64, divisor: i64) -> (i64, i64) {
 }
 
 #[inline]
-pub fn parse_16_chars_by_split(s: &str) -> u64 {
+pub fn parse_16_chars_by_split(s: &[u8]) -> u64 {
     let (upper_digits, lower_digits) = s.split_at(8);
     parse_8_chars(upper_digits) * 10_000_000 + parse_8_chars(lower_digits)
 }
 
-pub fn parse_8_chars(s: &str) -> u64 { // no need to benchmark this, to be used later
+pub fn parse_8_chars(s: &[u8]) -> u64 { // no need to benchmark this, to be used later
     let s = s.as_ptr() as *const _;
     let mut chunk = 0;
     unsafe {
@@ -82,12 +83,12 @@ pub fn parse_8_chars(s: &str) -> u64 { // no need to benchmark this, to be used 
 }
 
 #[inline]
-pub fn parse_32_chars_by_split(s: &str) -> u64 {
+pub fn parse_32_chars_by_split(s: &[u8]) -> u64 {
     let (upper_digits, lower_digits) = s.split_at(16);
     parse_16_chars_with_u128(upper_digits) * 10_000_000_000_000_000 + parse_16_chars_with_u128(lower_digits)
 }
 
-pub fn parse_16_chars_with_u128(s: &str) -> u64 {
+pub fn parse_16_chars_with_u128(s: &[u8]) -> u64 {
     let s = s.as_ptr() as *const u128;
     let mut chunk = 0_u128;
     unsafe {
@@ -116,12 +117,13 @@ pub fn parse_16_chars_with_u128(s: &str) -> u64 {
     chunk as u64
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct IntegerConverter {
     numcfg: NumReprCfg,
     positive_digit_buffer: String,
-    //buffer_ptr: *mut u8,
+    #[serde(skip)]
     first_dest_ptr: *mut u8,
+    #[serde(skip)]
     second_dest_ptr: *mut u8,
     buffer_length: usize,
     //
@@ -161,27 +163,31 @@ impl IntegerConverter {
             bail!("IntegerConverter parse by bit operations based only on little endian")
         }
 
-        let mut digit_size = numcfg.total_length;
+        let mut all_digit_size = numcfg.total_length;
         if numcfg.is_signed {
-            digit_size -= 1;
+            all_digit_size -= 1;
         }
 
-        if numcfg.decimal_point_length > 0 {
-            digit_size -= 1; // take out "."
+        if numcfg.decimal_point_length > 0  {
+            all_digit_size -= 1; // take out "."
         }
 
-        let buffer_length = if digit_size <= 8 {
+        if numcfg.drop_decimal_point {
+            all_digit_size = numcfg.digit_length;
+        }
+
+        let buffer_length = if all_digit_size <= 8 {
             8
-        } else if digit_size <= 16 {
+        } else if all_digit_size <= 16 {
             16
-        } else if digit_size <= 18 {
-            log_warn!("long digit", number_config = numcfg, digit_size = digit_size);
+        } else if all_digit_size <= 18 {
+            log_warn!("long digit", number_config = numcfg, all_digit_size = all_digit_size);
             32
         } else {
             log_error!(
                 "unsupported digit size", 
                 number_config = numcfg, 
-                digit_size = digit_size,
+                digit_size = all_digit_size,
                 message = "number show digit is larger than 18 digits is over the capacity of u64 type",
             );
             bail!("unsupported digit size")
@@ -191,15 +197,21 @@ impl IntegerConverter {
             true => 1,
             false => 0,
         };
-        let input_first_tail_location = numcfg.total_length - numcfg.decimal_point_length - 1 - input_first_head_location;
+        let input_first_tail_location = if !numcfg.drop_decimal_point {
+            numcfg.total_length - numcfg.decimal_point_length - 1 - input_first_head_location
+        } else if numcfg.decimal_point_length > 0 {
+            numcfg.digit_length - 1 - input_first_head_location - 1
+        } else {
+            numcfg.digit_length - 1 - input_first_head_location
+        };
 
-        let input_second_head_location = if numcfg.decimal_point_length > 0 {
+        let input_second_head_location = if (numcfg.decimal_point_length > 0) && !numcfg.drop_decimal_point {
             Some(input_first_tail_location + 2)
         } else {
             None
         };
 
-        let buffer_first_head_location = buffer_length - digit_size;
+        let buffer_first_head_location = buffer_length - all_digit_size;
 
         let buffer_first_tail_location = buffer_first_head_location + numcfg.digit_length - 1;
 
@@ -214,12 +226,15 @@ impl IntegerConverter {
         let first_dest_ptr = unsafe {
             buffer_ptr.add(buffer_first_head_location)
         };
-        let second_dest_ptr = unsafe {
+        let second_dest_ptr = if !numcfg.drop_decimal_point {
             match numcfg.decimal_point_length {
                 0 => first_dest_ptr,
-                _ => buffer_ptr.add(buffer_second_head_location.unwrap())
+                _ => unsafe { buffer_ptr.add(buffer_second_head_location.unwrap()) },
             }
+        } else {
+            first_dest_ptr
         };
+    
 
         Ok(IntegerConverter {
             numcfg,
@@ -235,7 +250,7 @@ impl IntegerConverter {
     }   
         
     #[inline]
-    pub fn to_u64(&mut self, value: &str) -> u64 {
+    pub fn to_u64(&mut self, value: &[u8]) -> u64 {
         unsafe {
             // Cache value pointer
             let value_ptr = value.as_ptr();
@@ -378,15 +393,15 @@ impl IntegerConverter {
     }
 
     #[inline]
-    pub fn to_i64(&mut self, value: &str) -> i64 {
+    pub fn to_i64(&mut self, value: &[u8]) -> i64 {
+        let value_ptr = value.as_ptr();
         unsafe {
-            let value_ptr = value.as_ptr();
             copy_nonoverlapping(
                 value_ptr.add(self.input_first_head_location),
                 self.first_dest_ptr, 
                 self.numcfg.digit_length
             );
-        
+            
             // decimal range copy (if exists)
             if let Some(input_second_head) = self.input_second_head_location {
                 //let src_ptr = value_ptr.add(input_second_head);
@@ -519,11 +534,20 @@ impl IntegerConverter {
             //parse_16_chars_with_u128(upper_digits) * 10_000_000_000_000_000 + parse_16_chars_with_u128(lower_digits)
         };
 
+        let is_negative = unsafe {
+            (!((*value_ptr == b'-') as u64)).wrapping_add(1)
+        };
+        let abs_value = ((!val_u64).wrapping_add(1) & is_negative).wrapping_add(val_u64 & !is_negative);
+        //let abs_value = ((!val_u64 + 1) & is_negative) + (val_u64 & !is_negative);
+            
+        abs_value as i64
+        /*
         if value.starts_with("-") {
             (!val_u64 + 1) as i64
         } else {
             val_u64 as i64
         }
+         */
     }
 
     #[inline]
@@ -553,10 +577,10 @@ mod tests {
     use super::*;
     #[test]
     fn test_chars_parser() {
-        let s = "00001234";
+        let s = b"00001234";
         assert_eq!(parse_8_chars(s), 1_234);
 
-        let s = "00000000000012340000123400001234";
+        let s = b"00000000000012340000123400001234";
         let val = parse_32_chars_by_split(s);
         assert_eq!(val, 12_340_000_123_400_001_234);
     }
@@ -566,28 +590,30 @@ mod tests {
         let cfg = NumReprCfg {
             digit_length: 8,
             decimal_point_length: 2,
+            drop_decimal_point: false,
             is_signed: true,
             total_length: 12,
             float_normalizer: None,
         };
         let mut converter = IntegerConverter::new(cfg).unwrap();
         
-        let val = converter.to_u64("000001234.56");
+        let val = converter.to_u64(b"000001234.56");
         assert_eq!(val, 123_456);
 
-        let val_i64 = converter.to_i64("-10001234.56");
+        let val_i64 = converter.to_i64(b"-10001234.56");
         assert_eq!(val_i64, -1_000_123_456);
 
         let cfg = NumReprCfg {
             digit_length: 11,
             decimal_point_length: 0,
+            drop_decimal_point: false,
             is_signed: false,
             total_length: 11,
             float_normalizer: None,
         };
 
         let mut converter = IntegerConverter::new(cfg).unwrap();
-        let val_str = "10000123456";
+        let val_str = b"10000123456";
         let val = converter.to_u64(val_str);
         
         assert_eq!(val, 10_000_123_456);
@@ -595,6 +621,7 @@ mod tests {
         let cfg_for_big_number = NumReprCfg {
             digit_length: 15,
             decimal_point_length: 1,
+            drop_decimal_point: false,
             is_signed: true,
             total_length: 18,
             float_normalizer: None,
@@ -602,15 +629,37 @@ mod tests {
 
         let mut converter = IntegerConverter::new(cfg_for_big_number).unwrap();
 
-        let val_str = "-911110000123456.3";
+        let val_str = b"-911110000123456.3";
 
         let val_i64 = converter.to_i64(val_str);
         assert_eq!(val_i64, -9_111_100_001_234_563);
 
 
-        let val_str = "-091110000123456.3";
+        let val_str = b"-091110000123456.3";
         let val_i64 = converter.to_i64(val_str);
         assert_eq!(val_i64, -911_100_001_234_563);
+
+        Ok(())
+    }
+
+    #[test]
+    fn drop_decimal_point() -> Result<()> {
+        let cfg = NumReprCfg {
+            digit_length: 11,
+            decimal_point_length: 3,
+            drop_decimal_point: true,
+            is_signed: true,
+            total_length: 16,
+            float_normalizer: None,
+        };
+
+        let mut converter = IntegerConverter::new(cfg).unwrap();
+
+        let val_str = b"-10000123456.001";
+        let val = converter.to_i64(val_str);
+        
+        assert_eq!(val, -10_000_123_456);
+
         Ok(())
     }
 }

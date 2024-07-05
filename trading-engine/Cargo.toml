@@ -15,10 +15,6 @@ name = "wrapper_performance"
 harness = false
 
 [[bench]]
-name = "book_price"
-harness = false
-
-[[bench]]
 name = "float"
 harness = false
 

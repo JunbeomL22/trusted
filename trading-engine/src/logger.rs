@@ -62,6 +62,21 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         } 
                     }
                 },
+                LogMessage::FlushingMessage(lazy_message) => {
+                    let message = lazy_message.eval();
+                    message_queue.push(message);
+
+                    if let Some(ref mut writer) = writer {
+                        let output = message_queue.join("");
+                        writer.write_all(output.as_bytes()).unwrap();
+                        if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                            println!("{}", output);
+                        }
+                        message_queue.clear();
+                        last_flush_time = get_unix_nano();
+                    } 
+                    
+                },
                 LogMessage::StaticString(message) => {
                     let buffer_size = message_queue.len();
                     let timestamp = get_unix_nano();
@@ -342,6 +357,101 @@ macro_rules! log_fn_json {
     }};
 }
 
+#[macro_export]
+macro_rules! flushing_log_info {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Info, $topic, $struct);
+    }};
+}
+
+#[macro_export]
+macro_rules! flushing_log_debug {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Debug, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Debug, $topic, $struct);
+    }};
+}
+
+#[macro_export]
+macro_rules! flushing_log_error {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Error, $topic, $struct);
+    }};
+}
+
+
+#[macro_export]
+macro_rules! flushing_log_trace {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        $crate::flushing_log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
+    }};
+}
+
+#[macro_export]
+macro_rules! flushing_log_fn_json {
+    ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        let max_log_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+        if $level <= max_log_level {
+            let timestamp = $crate::timer::get_unix_nano();
+            let func = move || {
+                let json_obj = $crate::serde_json::json!({
+                    $(
+                        stringify!($key): $value,
+                    )+
+                });
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let json_msg = $crate::serde_json::json!({
+                    "timestamp": $crate::timer::convert_unix_nano_to_datetime_format(timestamp, timezone),
+                    "level": $level.to_string(),
+                    "src": format!("{}:{}", file!(), line!()),
+                    "topic": $topic,
+                    "data": json_obj,
+                });
+
+                json_msg.to_string() + "\n"
+            };
+
+            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).unwrap();
+        }
+    }};
+
+    // In case of structs
+    ($level:expr, $topic:expr, $struct:expr) => {{
+        let current_level = $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+        if $level <= current_level {
+            let timestamp = $crate::timer::get_unix_nano();
+            let func = move || {
+                let json_obj = $crate::serde_json::to_value($struct).unwrap_or_else(|e| {
+                    $crate::serde_json::json!({ "error": format!("serialization error: {}", e) })
+                });
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let json_msg = $crate::serde_json::json!({
+                    "timestamp": $crate::timer::convert_unix_nano_to_datetime_format(timestamp, timezone),
+                    "level": $level.to_string(),
+                    "src": format!("{}:{}", file!(), line!()),
+                    "topic": $topic,
+                    "data": json_obj,
+                });
+
+                json_msg.to_string() + "\n"
+            };
+
+            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).unwrap();
+        }
+    }};
+}
+
 pub struct LoggerGuard;
 
 impl Drop for LoggerGuard {
@@ -406,6 +516,7 @@ impl Logger {
 
 pub enum LogMessage {
     LazyMessage(LazyMessage),
+    FlushingMessage(LazyMessage),
     StaticString(&'static str),
     SetFile(PathBuf),
     SetCore,

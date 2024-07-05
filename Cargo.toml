@@ -7,9 +7,9 @@ members = [
     "examples/*",
 ]
 
-#[profile.release]
+[profile.release]
 #lto = true
-#opt-level = 3
+opt-level = 3
 #codegen-units = 1
 
 [workspace.dependencies]

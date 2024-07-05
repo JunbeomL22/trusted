@@ -268,13 +268,14 @@ fn bench_custom_numeric_converter(
     let cfg = NumReprCfg {
         digit_length: 11,
         decimal_point_length: 0,
+        drop_decimal_point: false,
         is_signed: false,
         total_length: 11,
         float_normalizer: None,
     };
 
     let mut converter = IntegerConverter::new(cfg).unwrap();
-    let val_str = "00000123456";
+    let val_str = b"00000123456";
     bgroup.bench_function("str_to_u64", |b| {
         b.iter(|| {
             let _ = converter.to_u64(val_str);
@@ -284,23 +285,25 @@ fn bench_custom_numeric_converter(
     let cfg = NumReprCfg {
         digit_length: 8,
         decimal_point_length: 3,
+        drop_decimal_point: false,
         is_signed: true,
         total_length: 13,
         float_normalizer: None,
     };
     let mut converter = IntegerConverter::new(cfg).unwrap();
 
-    let val_str = "-00001234.563";
+    let val_str = b"-00001234.563";
     bgroup.bench_function("str_to_i64", |b| {
         b.iter(|| {
             let _ = converter.to_i64(val_str);
         });
     });
     
-    let val_str = "-111111100001234.563";
+    let val_str = b"-111111100001234.563";
     let cfg = NumReprCfg {
         digit_length: 15,
         decimal_point_length: 3,
+        drop_decimal_point: false,
         is_signed: true,
         total_length: 20,
         float_normalizer: Some(3),
@@ -325,14 +328,14 @@ fn bench_custom_numeric_converter(
 fn bench_parsing(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("parsing");
 
-    let s = "00001234";
+    let s = b"00001234";
     bgroup.bench_function("parse_8_chars", |b| {
         b.iter(|| {
             let _ = parse_8_chars(s);
         });
     });
     
-    let s = "0000123456789012";
+    let s = b"0000123456789012";
     bgroup.bench_function("parse_16_chars_with_u128", |b| {
         b.iter(|| {
             let _ = parse_16_chars_with_u128(s);
@@ -345,7 +348,7 @@ fn bench_parsing(c: &mut Criterion) {
         });
     });
 
-    let s = "00000000000000940000123400001234";
+    let s = b"00000000000000940000123400001234";
     bgroup.bench_function("parse_32_chars_by_split", |b| {
         b.iter(|| {
             let _ = parse_32_chars_by_split(s);
