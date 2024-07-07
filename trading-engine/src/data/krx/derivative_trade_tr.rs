@@ -16,10 +16,13 @@ use std::str::from_utf8_unchecked;
 pub struct G703F {
     isin_code_slice: Slice,
     timestamp_slice: Slice,
+    //
     trade_price_slice: Slice,
     trade_quantity_slice: Slice,
+    //
     near_month_trade_price_slice: Slice,
     far_month_trade_price_slice: Slice,
+    //
     trade_type_slice: Slice,
     //
     ask_price_slice_vec: Vec<Slice>,
@@ -61,48 +64,6 @@ impl Default for G703F {
             //
             ask_price_slice_vec: vec![
                 Slice { start: 172, end: 181 },
-                Slice { start: 218, end: 227 },
-                Slice { start: 264, end: 273 },
-                Slice { start: 310, end: 319 },
-                Slice { start: 356, end: 365 },
-            ],
-            bid_price_slice_vec: vec![
-                Slice { start: 163, end: 172 },
-                Slice { start: 209, end: 218 },
-                Slice { start: 254, end: 263 },
-                Slice { start: 300, end: 309 },
-                Slice { start: 346, end: 355 },
-            ],
-            //
-            ask_quantity_slice_vec: vec![
-                Slice { start: 181, end: 190 },
-                Slice { start: 227, end: 236 },
-                Slice { start: 273, end: 282 },
-                Slice { start: 319, end: 328 },
-                Slice { start: 365, end: 374 },
-            ],
-            bid_quantity_slice_vec: vec![
-                Slice { start: 172, end: 181 },
-                Slice { start: 218, end: 227 },
-                Slice { start: 264, end: 273 },
-                Slice { start: 310, end: 319 },
-                Slice { start: 356, end: 365 },
-            ],
-            //
-            ask_order_count_slice_vec: vec![
-                Slice { start: 190, end: 199 },
-                Slice { start: 236, end: 245 },
-                Slice { start: 282, end: 291 },
-                Slice { start: 328, end: 337 },
-                Slice { start: 374, end: 383 },
-            ],
-            bid_order_count_slice_vec: vec![
-                Slice { start: 199, end: 208 },
-                Slice { start: 245, end: 254 },
-                Slice { start: 291, end: 300 },
-                Slice { start: 337, end: 346 },
-                Slice { start: 383, end: 392 },
-            ],
         }    
 }
 impl G703F {
