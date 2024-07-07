@@ -888,6 +888,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "examples-parser"
+version = "0.1.0"
+
+[[package]]
 name = "examples-prototype"
 version = "0.1.0"
 dependencies = [
@@ -2676,6 +2680,7 @@ dependencies = [
  "ryu",
  "serde",
  "serde_json",
+ "smallvec",
  "thiserror",
  "time",
  "ustr",

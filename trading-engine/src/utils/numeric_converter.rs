@@ -2,10 +2,14 @@ use crate::{
     log_warn,
     log_error,
 };
-use serde::{Serialize, Deserialize};
+use serde::{
+    Serialize, 
+    Deserialize,
+    de::Deserializer,
+};
 use anyhow::{Result, bail, anyhow};
-use std::ptr::copy_nonoverlapping;
-use std::mem::size_of_val;
+use std::ptr::read_unaligned;
+use std::cell::UnsafeCell;
 
 #[derive(Default, Debug, Clone, Serialize, Copy, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NumReprCfg {
@@ -58,82 +62,91 @@ pub fn parse_16_chars_by_split(s: &[u8]) -> u64 {
     parse_8_chars(upper_digits) * 10_000_000 + parse_8_chars(lower_digits)
 }
 
-pub fn parse_8_chars(s: &[u8]) -> u64 { // no need to benchmark this, to be used later
-    let s = s.as_ptr() as *const _;
-    let mut chunk = 0;
-    unsafe {
-        copy_nonoverlapping(s, &mut chunk, size_of_val(&chunk));
-    }
+#[inline(always)]
+pub fn parse_8_chars(s: &[u8]) -> u64 { 
+    debug_assert!(s.len() >= 8, "Input slice must be at least 8 bytes long(pasre_8_chars)");
+
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
 
     let lower_digits = (chunk & 0x0f000f000f000f00) >> 8;
     let upper_digits = (chunk & 0x000f000f000f000f) * 10;
-    let chunk = lower_digits + upper_digits;
+    chunk = lower_digits + upper_digits;
 
     // 2-byte mask trick (works on 2 pairs of two digits)
     let lower_digits = (chunk & 0x00ff000000ff0000) >> 16;
     let upper_digits = (chunk & 0x000000ff000000ff) * 100;
-    let chunk = lower_digits + upper_digits;
+    chunk = lower_digits + upper_digits;
 
     // 4-byte mask trick (works on a pair of four digits)
     let lower_digits = (chunk & 0x0000ffff00000000) >> 32;
     let upper_digits = (chunk & 0x000000000000ffff) * 10000;
-    let chunk = lower_digits + upper_digits;    
+    chunk = lower_digits + upper_digits;    
 
     chunk
 }
 
+
 #[inline]
 pub fn parse_32_chars_by_split(s: &[u8]) -> u64 {
-    let (upper_digits, lower_digits) = s.split_at(16);
-    parse_16_chars_with_u128(upper_digits) * 10_000_000_000_000_000 + parse_16_chars_with_u128(lower_digits)
+    parse_16_chars_with_u128(&s[16..]) + parse_16_chars_with_u128(&s[..16]) * 10_000_000_000_000_000
 }
 
+#[inline(always)]
 pub fn parse_16_chars_with_u128(s: &[u8]) -> u64 {
-    let s = s.as_ptr() as *const u128;
-    let mut chunk = 0_u128;
-    unsafe {
-        copy_nonoverlapping(s, &mut chunk, size_of_val(&chunk));
-    }
+    debug_assert!(s.len() >= 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
+    let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
+
     // 1-byte mask trick (works on 8 pairs of single digits)
     let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
     let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-    let chunk = lower_digits + upper_digits;
-
+    chunk = lower_digits + upper_digits;
     // 2-byte mask trick (works on 4 pairs of two digits)
     let lower_digits = (chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
     let upper_digits = (chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-    let chunk = lower_digits + upper_digits;
-
+    chunk = lower_digits + upper_digits;
     // 4-byte mask trick (works on 2 pairs of four digits)
     let lower_digits = (chunk & 0x0000ffff000000000000ffff00000000) >> 32;
     let upper_digits = (chunk & 0x000000000000ffff000000000000ffff) * 10000;
-    let chunk = lower_digits + upper_digits;
-    
+    chunk = lower_digits + upper_digits;
     // 8-byte mask trick (works on a pair of eight digits)
     let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
     let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
-    let chunk = lower_digits + upper_digits;
-    
+    chunk = lower_digits + upper_digits;
+    // 
     chunk as u64
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct IntegerConverter {
     numcfg: NumReprCfg,
-    positive_digit_buffer: String,
+    positive_digit_buffer: Vec<u8>,
     #[serde(skip)]
-    first_dest_ptr: *mut u8,
+    first_dest_ptr: UnsafeCell<*mut u8>,
     #[serde(skip)]
-    second_dest_ptr: *mut u8,
+    second_dest_ptr: UnsafeCell<*mut u8>,
     buffer_length: usize,
     //
     input_first_head_location: usize,
     input_second_head_location: Option<usize>,
 }
 
+
+impl<'de> Deserialize<'de> for IntegerConverter {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Step 1: Deserialize NumReprCfg
+        let numcfg = NumReprCfg::deserialize(deserializer)?;
+
+        // Step 2: Call IntegerConverter::new with the deserialized NumReprCfg
+        IntegerConverter::new(numcfg).map_err(serde::de::Error::custom)
+    }
+}
+
 impl Default for IntegerConverter {
     fn default() -> IntegerConverter {
-        let buffer = "0".repeat(8);
+        let buffer = vec![0u8; 8];
         let buffer_ptr = buffer.as_ptr() as *mut u8;
         let first_dest_ptr = unsafe {
             buffer_ptr.add(0)
@@ -144,9 +157,8 @@ impl Default for IntegerConverter {
         IntegerConverter {
             numcfg: NumReprCfg::default(),
             positive_digit_buffer: buffer,
-            //buffer_ptr,
-            first_dest_ptr,
-            second_dest_ptr,
+            first_dest_ptr: UnsafeCell::new(first_dest_ptr),
+            second_dest_ptr : UnsafeCell::new(second_dest_ptr),
             buffer_length: 0,
             //
             input_first_head_location: 0,
@@ -154,6 +166,14 @@ impl Default for IntegerConverter {
         }
     }
 }
+
+impl Clone for IntegerConverter {
+    fn clone(&self) -> Self {
+        IntegerConverter::new(self.numcfg).unwrap()
+    }
+}
+
+unsafe impl Send for IntegerConverter {}
 
 impl IntegerConverter {
     pub fn new (numcfg: NumReprCfg) -> Result<IntegerConverter> {
@@ -221,7 +241,8 @@ impl IntegerConverter {
             None
         };
 
-        let buffer = "0".repeat(buffer_length);
+        //let buffer = "0".repeat(buffer_length);
+        let buffer = vec![b'0'; buffer_length];
         let buffer_ptr = buffer.as_ptr() as *mut u8;
         let first_dest_ptr = unsafe {
             buffer_ptr.add(buffer_first_head_location)
@@ -239,9 +260,9 @@ impl IntegerConverter {
         Ok(IntegerConverter {
             numcfg,
             positive_digit_buffer: buffer,
-            //buffer_ptr,
-            first_dest_ptr,
-            second_dest_ptr,
+            //
+            first_dest_ptr: UnsafeCell::new(first_dest_ptr),
+            second_dest_ptr: UnsafeCell::new(second_dest_ptr),
             buffer_length,
             //
             input_first_head_location,
@@ -249,305 +270,42 @@ impl IntegerConverter {
         })
     }   
         
-    #[inline]
-    pub fn to_u64(&mut self, value: &[u8]) -> u64 {
+    #[inline(always)]
+    fn copy_to_buffer(&mut self, value: &[u8]) {
         unsafe {
-            // Cache value pointer
             let value_ptr = value.as_ptr();
-            //let src_ptr = value_ptr.add(self.input_first_head_location);
-            copy_nonoverlapping(
-                //src_ptr,
-                value_ptr.add(self.input_first_head_location),
-                self.first_dest_ptr, 
+            
+            value_ptr.add(self.input_first_head_location).copy_to_nonoverlapping(
+                *self.first_dest_ptr.get(),
                 self.numcfg.digit_length
             );
-        
+
             // decimal range copy (if exists)
             if let Some(input_second_head) = self.input_second_head_location {
-                //let src_ptr = value_ptr.add(input_second_head);
-                copy_nonoverlapping(
-                    //src_ptr, 
-                    value_ptr.add(input_second_head),
-                    self.second_dest_ptr, 
+                value_ptr.add(input_second_head).copy_to_nonoverlapping(
+                    *self.second_dest_ptr.get(),
                     self.numcfg.decimal_point_length
                 );
             }
-        }
-
-        if self.buffer_length == 8 {
-            //parse_8_chars(&self.positive_digit_buffer)
-            let mut chunk = 0;
-            unsafe {
-                copy_nonoverlapping(
-                    self.positive_digit_buffer.as_str().as_ptr() as *const u64, 
-                    &mut chunk, 
-                    size_of_val(&chunk));
-            }
-
-            let lower_digits = (chunk & 0x0f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 2 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on a pair of four digits)
-            let lower_digits = (chunk & 0x0000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;    
-
-            chunk
-        } else if self.buffer_length == 16 {
-            //parse_16_chars_with_u128(&self.positive_digit_buffer)
-            //let s = s.as_ptr() as *const u128;
-            let mut chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    self.positive_digit_buffer.as_str().as_ptr() as *const u128,
-                    &mut chunk,
-                    size_of_val(&chunk));
-            }
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let chunk = lower_digits + upper_digits;
-            
-            chunk as u64
-        } else {
-            //parse_32_chars_by_split(&self.positive_digit_buffer)
-            let (upper_part, lower_part) = self.positive_digit_buffer.as_str().split_at(16);
-            let mut chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    upper_part.as_ptr() as *const u128,
-                    &mut chunk,
-                    size_of_val(&chunk));
-            }
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let chunk = lower_digits + upper_digits;
-
-            let mut second_chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    lower_part.as_ptr() as *const u128,
-                    &mut second_chunk,
-                    size_of_val(&chunk));
-            }
-
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (second_chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (second_chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let second_chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (second_chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (second_chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let second_chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (second_chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (second_chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let second_chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (second_chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (second_chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let second_chunk = lower_digits + upper_digits;
-
-            chunk as u64 * 10_000_000_000_000_000 + second_chunk as u64
         }
     }
 
-    #[inline]
+    #[inline(always)]
+    pub fn to_u64(&mut self, value: &[u8]) -> u64 {
+        self.copy_to_buffer(value);
+        match self.buffer_length {
+            16 => parse_16_chars_with_u128(&self.positive_digit_buffer),
+            32 => parse_32_chars_by_split(&self.positive_digit_buffer),
+            _ => parse_8_chars(&self.positive_digit_buffer),
+        }
+    }
+     
+    #[inline(always)]
     pub fn to_i64(&mut self, value: &[u8]) -> i64 {
-        let value_ptr = value.as_ptr();
-        unsafe {
-            copy_nonoverlapping(
-                value_ptr.add(self.input_first_head_location),
-                self.first_dest_ptr, 
-                self.numcfg.digit_length
-            );
-            
-            // decimal range copy (if exists)
-            if let Some(input_second_head) = self.input_second_head_location {
-                //let src_ptr = value_ptr.add(input_second_head);
-                copy_nonoverlapping(
-                    value_ptr.add(input_second_head),
-                    self.second_dest_ptr, 
-                    self.numcfg.decimal_point_length
-                );
-            }
+        match value[0] == b'-' {
+            false => self.to_u64(value) as i64,
+            _ => (!self.to_u64(value)).wrapping_add(1) as i64,
         }
-
-        let val_u64 = if self.buffer_length == 8 {
-            //parse_8_chars(&self.positive_digit_buffer)
-            let mut chunk = 0;
-            unsafe {
-                copy_nonoverlapping(
-                    self.positive_digit_buffer.as_str().as_ptr() as *const u64, 
-                    &mut chunk, 
-                    size_of_val(&chunk));
-            }
-
-            let lower_digits = (chunk & 0x0f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 2 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on a pair of four digits)
-            let lower_digits = (chunk & 0x0000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;    
-
-            chunk
-        } else if self.buffer_length == 16 {
-            //parse_16_chars_with_u128(&self.positive_digit_buffer)
-            //let s = s.as_ptr() as *const u128;
-            let mut chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    self.positive_digit_buffer.as_str().as_ptr() as *const u128,
-                    &mut chunk,
-                    size_of_val(&chunk));
-            }
-
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let chunk = lower_digits + upper_digits;
-            
-            chunk as u64
-        } else {
-            //parse_32_chars_by_split(&self.positive_digit_buffer)
-            //let s = self.positive_digit_buffer.as_str();
-            let (upper_part, lower_part) = self.positive_digit_buffer.as_str().split_at(16);
-            let mut chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    upper_part.as_ptr() as *const u128,
-                    &mut chunk,
-                    size_of_val(&chunk));
-            }
-
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let chunk = lower_digits + upper_digits;
-
-            let mut second_chunk = 0_u128;
-            unsafe {
-                copy_nonoverlapping(
-                    lower_part.as_ptr() as *const u128,
-                    &mut second_chunk,
-                    size_of_val(&chunk));
-            }
-
-            // 1-byte mask trick (works on 8 pairs of single digits)
-            let lower_digits = (second_chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
-            let upper_digits = (second_chunk & 0x000f000f000f000f000f000f000f000f) * 10;
-            let second_chunk = lower_digits + upper_digits;
-
-            // 2-byte mask trick (works on 4 pairs of two digits)
-            let lower_digits = (second_chunk & 0x00ff000000ff000000ff000000ff0000) >> 16;
-            let upper_digits = (second_chunk & 0x000000ff000000ff000000ff000000ff) * 100;
-            let second_chunk = lower_digits + upper_digits;
-
-            // 4-byte mask trick (works on 2 pairs of four digits)
-            let lower_digits = (second_chunk & 0x0000ffff000000000000ffff00000000) >> 32;
-            let upper_digits = (second_chunk & 0x000000000000ffff000000000000ffff) * 10000;
-            let second_chunk = lower_digits + upper_digits;
-            
-            // 8-byte mask trick (works on a pair of eight digits)
-            let lower_digits = (second_chunk & 0x00000000ffffffff0000000000000000) >> 64;
-            let upper_digits = (second_chunk & 0x000000000000000000000000ffffffff) * 100000000;
-            let second_chunk = lower_digits + upper_digits;
-
-            chunk as u64 * 10_000_000_000_000_000 + second_chunk as u64
-            //parse_16_chars_with_u128(upper_digits) * 10_000_000_000_000_000 + parse_16_chars_with_u128(lower_digits)
-        };
-
-        let is_negative = unsafe {
-            (!((*value_ptr == b'-') as u64)).wrapping_add(1)
-        };
-        let abs_value = ((!val_u64).wrapping_add(1) & is_negative).wrapping_add(val_u64 & !is_negative);
-        //let abs_value = ((!val_u64 + 1) & is_negative) + (val_u64 & !is_negative);
-            
-        abs_value as i64
-        /*
-        if value.starts_with("-") {
-            (!val_u64 + 1) as i64
-        } else {
-            val_u64 as i64
-        }
-         */
     }
 
     #[inline]

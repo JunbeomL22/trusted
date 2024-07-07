@@ -1,33 +1,15 @@
-use crate::types::venues::{
-    krx::{
-        KRX,
-        KrxTraderId,
-        KrxAccountId,
-    },
-    mock_exchange::{
-        Mock,
-        MockTraderId,
-        MockAccountId,
-    },
-};
 use enum_dispatch::enum_dispatch;
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[enum_dispatch(VenueTrait)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
 pub enum Venue {
-    Mock(Mock),
-    KRX(KRX),
+    #[default]
+    Undefined,
+    KRX,
 }
 
-impl Default for Venue {
-    fn default() -> Self {
-        Venue::Mock(Mock)
-    }
-}
 
-#[enum_dispatch]
 pub trait VenueTrait {
     fn check_account_id(&self, _: &str) -> bool {
         unimplemented!("check_account not implemented")
