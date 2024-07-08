@@ -1,6 +1,7 @@
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
 
+pub type UnixNano = u64;
 /// if we encounter a venue using non u64 type OrderId, we must change this to enum OrderId.
 /// I leave this primitive for performance reasons.
 pub type OrderId = u64; 
@@ -20,6 +21,7 @@ pub struct Slice {
     pub start: usize,
     pub end: usize,
 }
+
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]

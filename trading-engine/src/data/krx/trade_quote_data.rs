@@ -1,4 +1,4 @@
-use crate::data::trade_tick_data::TradeTickData;
+use crate::data::trade_quote_data::TradeTickData;
 use crate::types::{
     venue::Venue,
     base::Slice,

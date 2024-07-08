@@ -92,8 +92,11 @@ impl Default for TimeStampConverter {
 }
 
 unsafe impl Sync for DerivativeConverter {}
-
 unsafe impl Sync for TimeStampConverter {}
 
+pub struct KrxNumericConverter {
+    pub derivative_converter: DerivativeConverter,
+    pub timestamp_converter: TimeStampConverter,
+}
 pub static KRX_DERIVATIVE_CONVERTER: Lazy<DerivativeConverter> = Lazy::new(|| DerivativeConverter::default());
 pub static KRX_TIMESTAMP_CONVERTER: Lazy<TimeStampConverter> = Lazy::new(|| TimeStampConverter::default());

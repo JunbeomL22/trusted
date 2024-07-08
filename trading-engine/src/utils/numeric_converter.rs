@@ -87,12 +87,12 @@ pub fn parse_8_chars(s: &[u8]) -> u64 {
 
 
 #[inline]
-pub fn parse_32_chars_by_split(s: &[u8]) -> u64 {
+pub fn parse_32_chars_by_split(s: &[u8]) -> u128 {
     parse_16_chars_with_u128(&s[16..]) + parse_16_chars_with_u128(&s[..16]) * 10_000_000_000_000_000
 }
 
 #[inline(always)]
-pub fn parse_16_chars_with_u128(s: &[u8]) -> u64 {
+pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
     debug_assert!(s.len() >= 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
     let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
 
@@ -113,7 +113,7 @@ pub fn parse_16_chars_with_u128(s: &[u8]) -> u64 {
     let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
     chunk = lower_digits + upper_digits;
     // 
-    chunk as u64
+    chunk as u128
 }
 
 #[derive(Debug, Serialize)]
@@ -294,8 +294,8 @@ impl IntegerConverter {
     pub fn to_u64(&mut self, value: &[u8]) -> u64 {
         self.copy_to_buffer(value);
         match self.buffer_length {
-            16 => parse_16_chars_with_u128(&self.positive_digit_buffer),
-            32 => parse_32_chars_by_split(&self.positive_digit_buffer),
+            16 => parse_16_chars_with_u128(&self.positive_digit_buffer) as u64,
+            32 => parse_32_chars_by_split(&self.positive_digit_buffer) as u64,
             _ => parse_8_chars(&self.positive_digit_buffer),
         }
     }
