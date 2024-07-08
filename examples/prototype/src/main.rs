@@ -1,17 +1,12 @@
-use std::fs::File;
-use std::io::{Write, Read};
-use serde::{Serialize, Deserialize};
 use anyhow::{Result, Context};
-use etherparse::{Ethernet2Header, Ipv4Header, UdpHeader, PacketHeaders, SlicedPacket};
-use pcap::{Capture, Device};
-
-#[derive(Serialize, Deserialize, Debug)]
-struct PacketPayload {
-    pub payload: Vec<u8>,
-}
+use pcap::Capture;
+use pnet::packet::ethernet::{EthernetPacket};
+use pnet::packet::ip::IpNextHeaderProtocols;
+use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::udp::UdpPacket;
+use pnet::packet::Packet;
 
 const PCAP_FILE: &str = "data/small_20231228105204.pcap";
-const PAYLOADS_FILE: &str = "data/payloads.bin";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open the PCAP file
@@ -24,11 +19,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if count > 10 {
             break;
         }
-        match SlicedPacket::from_ethernet(&packet.data) {
-            Err(value) => println!("Err {:?}", value),
-            Ok(value) => {
-                println!("---");
-                println!("{:?}", String::from_utf8_lossy(value.ether_payload().unwrap().payload));
+        if let Some(ethernet_packet) = EthernetPacket::new(packet.data) { 
+            if ethernet_packet.get_ethertype() == pnet::packet::ethernet::EtherTypes::Ipv4 {
+                // Parse the IPv4 packet
+                if let Some(ipv4_packet) = Ipv4Packet::new(ethernet_packet.payload()) {
+                    // Check if the IPv4 packet contains a TCP segment
+                    if ipv4_packet.get_next_level_protocol() == IpNextHeaderProtocols::Udp {
+                        // Parse the TCP segment
+                        if let Some(tcp_packet) = UdpPacket::new(ipv4_packet.payload()) {
+                            // Extract and print the TCP payload
+                            let payload = tcp_packet.payload();
+                            println!("---");
+                            println!("UDP Payload: {:?}", String::from_utf8_lossy(payload));
+                        }
+                    } 
+                }
             }
         }
     }
