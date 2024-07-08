@@ -20,3 +20,11 @@ pub struct Slice {
     pub start: usize,
     pub end: usize,
 }
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct OrderData {
+    book_price: BookPrice,
+    book_quantity: BookQuantity,
+    order_count: OrderCount,   
+}

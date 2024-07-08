@@ -302,8 +302,8 @@ impl IntegerConverter {
      
     #[inline(always)]
     pub fn to_i64(&mut self, value: &[u8]) -> i64 {
-        match value[0] == b'-' {
-            false => self.to_u64(value) as i64,
+        match value[0] != b'-' {
+            true => self.to_u64(value) as i64,
             _ => (!self.to_u64(value)).wrapping_add(1) as i64,
         }
     }
