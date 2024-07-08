@@ -4,6 +4,7 @@ use pnet::packet::ethernet::{EthernetPacket};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::udp::UdpPacket;
+use pnet::packet::tcp::TcpPacket;
 use pnet::packet::Packet;
 
 const PCAP_FILE: &str = "data/small_20231228105204.pcap";
@@ -26,13 +27,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Check if the IPv4 packet contains a TCP segment
                     if ipv4_packet.get_next_level_protocol() == IpNextHeaderProtocols::Udp {
                         // Parse the TCP segment
-                        if let Some(tcp_packet) = UdpPacket::new(ipv4_packet.payload()) {
+                        if let Some(udp_packet) = UdpPacket::new(ipv4_packet.payload()) {
                             // Extract and print the TCP payload
-                            let payload = tcp_packet.payload();
+                            let payload = udp_packet.payload();
                             println!("---");
                             println!("UDP Payload: {:?}", String::from_utf8_lossy(payload));
                         }
+                    } else if ipv4_packet.get_next_level_protocol() == IpNextHeaderProtocols::Tcp {
+                        // Parse the TCP segment
+                        if let Some(tcp_packet) = TcpPacket::new(ipv4_packet.payload()) {
+                            // Extract and print the TCP payload
+                            let payload = tcp_packet.payload();
+                            println!("---");
+                            println!("TCP Payload: {:?}", String::from_utf8_lossy(payload));
+                        }
                     } 
+                } else {
+                            println!("---");
+                            println!("Non IPv4 Packet.");
                 }
             }
         }
