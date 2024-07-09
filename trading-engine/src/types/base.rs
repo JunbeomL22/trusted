@@ -14,7 +14,7 @@ pub type BookPrice = i64;
 // 수량
 pub type BookQuantity = u64;
 // 건수
-pub type OrderCount = u64;
+pub type OrderCount = u32;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Slice {
@@ -23,10 +23,9 @@ pub struct Slice {
 }
 
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct OrderData {
-    book_price: BookPrice,
-    book_quantity: BookQuantity,
-    order_count: OrderCount,   
+    pub order_count: OrderCount,
+    pub book_price: BookPrice,
+    pub book_quantity: BookQuantity,
 }

@@ -3,9 +3,7 @@ use trading_engine::utils::timer::{
     get_unix_nano,
     convert_unix_nano_to_datetime_format,
 };
-use ustr::Ustr;
 use ryu;
-use std::fmt::Write;
 use itoa;
 use chrono::prelude::*;
 use time::format_description::well_known::Rfc3339;
@@ -275,6 +273,7 @@ fn bench_custom_numeric_converter(
 
     let mut converter = IntegerConverter::new(cfg).unwrap();
     let val_str = b"010000123";
+
     bgroup.bench_function("small-number str_to_u64 (010000123)", |b| {
         b.iter(|| {
             converter.to_u64(black_box(val_str))
@@ -303,7 +302,13 @@ fn bench_custom_numeric_converter(
     };
     let mut converter = IntegerConverter::new(cfg).unwrap();
 
-    let val_str = b"-12345678.9";
+    let val_str = b"012345678.9";
+   
+    bgroup.bench_function("mid-size str_to_u64 (-1234567.89)", |b| {
+        b.iter(|| {
+            converter.to_u64(black_box(val_str))            
+        });
+    });
    
     bgroup.bench_function("mid-size str_to_i64 (-1234567.89)", |b| {
         b.iter(|| {

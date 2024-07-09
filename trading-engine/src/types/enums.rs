@@ -1,44 +1,62 @@
 use serde::{Deserialize, Serialize};
-
-pub trait FromI8 {
-    fn from_i8(value: i8) -> Option<Self>
-    where
-        Self: Sized;
+use anyhow::{Result, anyhow};
+pub trait FromU8 {
+    fn from_u8(v: u8) -> Result<Self> where Self: Sized;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord)]
 pub enum OrderSide {
-    Buy = 1,
     #[default]
     NoSide = 0,
-    Sell = -1,
+    Sell = 1,
+    Buy = 2,
 }
 
-impl FromI8 for OrderSide {
-    fn from_i8(v: i8) -> Option<Self> {
+impl FromU8 for OrderSide {
+    fn from_u8(v: u8) -> Result<Self> {
         match v {
-            1 => Some(OrderSide::Buy),
-            0 => Some(OrderSide::NoSide),
-            -1 => Some(OrderSide::Sell),
-            _ => None,
+            0 => Ok(OrderSide::NoSide),
+            1 => Ok(OrderSide::Sell),
+            2 => Ok(OrderSide::Buy),
+            _ => Err(anyhow!("Invalid OrderSide in from_u8")),
         }
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum BookType { 
     L1 = 1,
+    #[default]
     L2 = 2,
     L3 = 3,
 }
 
-impl FromI8 for BookType {
-    fn from_i8(v: i8) -> Option<Self> {
+impl FromU8 for BookType {
+    fn from_u8(v: u8) -> Result<Self> {
         match v {
-            1 => Some(BookType::L1),
-            2 => Some(BookType::L2),
-            3 => Some(BookType::L3),
-            _ => None,
+            1 => Ok(BookType::L1),
+            2 => Ok(BookType::L2),
+            3 => Ok(BookType::L3),
+            _ => Err(anyhow!("Invalid BookType in from_u8")),
         }
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TradeType {
+    #[default]
+    Undefined = 0,
+    Sell = 1,
+    Buy = 2,
+}
+
+impl FromU8 for TradeType {
+    fn from_u8(v: u8) -> Result<Self> {
+        match v {
+            0 => Ok(TradeType::Undefined),
+            1 => Ok(TradeType::Sell),
+            2 => Ok(TradeType::Buy),
+            _ => Err(anyhow!("Invalid TradeType in from_u8")),
+        }
+    }
+}

@@ -1,56 +1,74 @@
 use crate::utils::checkers;
-use flexstr::LocalStr;
 use anyhow::{Result, anyhow};
 use serde::{
     Serialize, 
     Deserialize,
 };
+use std::str::from_utf8_unchecked;
 
 #[derive(Debug, Clone, Eq, Hash, Deserialize, Serialize, Default)]
 pub struct IsinCode {
-    isin: LocalStr,
+    isin: [u8; 12],
 }
 
 impl IsinCode {
-    pub fn new(isin: &str) -> Result<Self> {
+    pub fn new(isin: &[u8]) -> Result<Self> {
         if !checkers::valid_isin_code_length(isin) {
-            let err = || anyhow!("Invalid ISIN code: invalid length: {}", isin);
+            let err = || anyhow!("Invalid ISIN code: invalid length: {:?}", isin);
             return Err(err());
         }
 
         if checkers::contains_white_space(isin) {
-            let err = || anyhow!("Invalid ISIN code: contains white space: {}", isin);
+            let err = || anyhow!("Invalid ISIN code: contains white space: {:?}", isin);
             return Err(err());
         }
 
         if !checkers::is_ascii(isin) {
-            let err = || anyhow!("Invalid ISIN code: not ascii: {}", isin);
+            let err = || anyhow!("Invalid ISIN code: not ascii: {:?}", isin);
             return Err(err());
         }
 
-        Ok(IsinCode { isin: LocalStr::from(isin) } )
+        Ok(IsinCode { isin: unsafe { *isin.as_ptr().cast::<[u8; 12]>() } })
     }
 
     pub fn as_str(&self) -> &str {
-        self.isin.as_str()
+        unsafe { from_utf8_unchecked(&self.isin) }        
+    }
+}
+
+impl From<&str> for IsinCode {
+    fn from(isin: &str) -> Self {
+        IsinCode { isin: isin.as_bytes().try_into().unwrap() }
     }
 }
 
 impl PartialEq<&str> for IsinCode {
     fn eq(&self, other: &&str) -> bool {
-        self.isin.as_str() == *other
+        self.isin == other.as_bytes()
     }
 }
 
 impl PartialEq<IsinCode> for &str {
     fn eq(&self, other: &IsinCode) -> bool {
-        *self == other.isin.as_str()
+        self.as_bytes() == other.isin.as_slice()
     }
 }
 
 impl PartialEq<IsinCode> for IsinCode {
     fn eq(&self, other: &IsinCode) -> bool {
-        self.isin.as_str() == other.isin.as_str()
+        self.isin == other.isin
+    }
+}
+
+impl PartialEq<Vec<u8>> for IsinCode {
+    fn eq(&self, other: &Vec<u8>) -> bool {
+        self.isin == other.as_slice()
+    }
+}
+
+impl PartialEq<IsinCode> for Vec<u8> {
+    fn eq(&self, other: &IsinCode) -> bool {
+        *self == other.isin
     }
 }
 
@@ -61,40 +79,40 @@ mod tests {
 
     #[test]
     fn test_isin_code() -> Result<()> {
-        let isin = "KR7005930003";
+        let isin = b"KR7005930003";
         let isin_code = IsinCode::new(isin).expect("failed to create IsinCode");
         
-        assert_eq!(isin_code.as_str(), isin);
+        assert_eq!(isin_code, isin.to_vec());
         Ok(())
     }
 
     #[test]
     fn test_isin_code_invalid() {
-        let isin = "KR7005930003 ";
+        let isin = b"KR7005930003 ";
         let isin_code = IsinCode::new(isin);
         assert!(isin_code.is_err());
     }
 
     #[test]
     fn test_paraility() -> Result<()> {
-        let isin = "KR7005930003";
+        let isin = b"KR7005930003";
         let isin_code = IsinCode::new(isin).expect("failed to create IsinCode");
         
-        assert_eq!(isin_code, isin);
-        assert_eq!(isin, isin_code);
+        assert_eq!(isin_code, isin.to_vec());
+        assert_eq!(isin.to_vec(), isin_code);
         assert_eq!(isin_code, isin_code);
         Ok(())
     }
 
     #[test]
     fn test_hash_map() -> Result<()> {
-        let isin = "KR7005930003";
+        let isin = b"KR7005930003";
         let isin_code = IsinCode::new(isin).expect("failed to create IsinCode");
         
         let mut map = FxHashMap::default();
         map.insert(isin_code.clone(), 1);
 
-        let test_key = IsinCode::new("KR7005930003").expect("failed to create IsinCode");
+        let test_key = IsinCode::new(b"KR7005930003").expect("failed to create IsinCode");
         assert_eq!(map.get(&test_key), Some(&1));
         Ok(())
     }

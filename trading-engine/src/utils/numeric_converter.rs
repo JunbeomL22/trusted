@@ -83,6 +83,7 @@ pub fn parse_8_chars(s: &[u8]) -> u64 {
     chunk = lower_digits + upper_digits;    
 
     chunk
+    
 }
 
 
@@ -119,6 +120,7 @@ pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
 #[derive(Debug, Serialize)]
 pub struct IntegerConverter {
     numcfg: NumReprCfg,
+    decimal_point_length_i32: i32, // for powi
     positive_digit_buffer: Vec<u8>,
     #[serde(skip)]
     first_dest_ptr: UnsafeCell<*mut u8>,
@@ -130,7 +132,6 @@ pub struct IntegerConverter {
     input_second_head_location: Option<usize>,
 }
 
-
 impl<'de> Deserialize<'de> for IntegerConverter {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -138,7 +139,6 @@ impl<'de> Deserialize<'de> for IntegerConverter {
     {
         // Step 1: Deserialize NumReprCfg
         let numcfg = NumReprCfg::deserialize(deserializer)?;
-
         // Step 2: Call IntegerConverter::new with the deserialized NumReprCfg
         IntegerConverter::new(numcfg).map_err(serde::de::Error::custom)
     }
@@ -156,6 +156,7 @@ impl Default for IntegerConverter {
         };
         IntegerConverter {
             numcfg: NumReprCfg::default(),
+            decimal_point_length_i32: 0,
             positive_digit_buffer: buffer,
             first_dest_ptr: UnsafeCell::new(first_dest_ptr),
             second_dest_ptr : UnsafeCell::new(second_dest_ptr),
@@ -232,7 +233,6 @@ impl IntegerConverter {
         };
 
         let buffer_first_head_location = buffer_length - all_digit_size;
-
         let buffer_first_tail_location = buffer_first_head_location + numcfg.digit_length - 1;
 
         let buffer_second_head_location = if input_second_head_location.is_some() {
@@ -259,6 +259,7 @@ impl IntegerConverter {
 
         Ok(IntegerConverter {
             numcfg,
+            decimal_point_length_i32: numcfg.decimal_point_length as i32,
             positive_digit_buffer: buffer,
             //
             first_dest_ptr: UnsafeCell::new(first_dest_ptr),
@@ -299,25 +300,35 @@ impl IntegerConverter {
             _ => parse_8_chars(&self.positive_digit_buffer),
         }
     }
-     
+    
     #[inline(always)]
     pub fn to_i64(&mut self, value: &[u8]) -> i64 {
         match value[0] != b'-' {
-            true => self.to_u64(value) as i64,
-            _ => (!self.to_u64(value)).wrapping_add(1) as i64,
+            false => (!self.to_u64(value)).wrapping_add(1) as i64,
+            _ => self.to_u64(value) as i64,
         }
     }
 
     #[inline]
     pub fn to_f64_from_i64(&mut self, value: i64) -> f64 {
-        value as f64 / 10_f64.powi(self.numcfg.decimal_point_length as i32)
+        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
+    }
+
+    #[inline]
+    pub fn to_f64_from_i32(&mut self, value: i32) -> f64 {
+        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
+    }
+
+    #[inline]
+    pub fn to_f64_from_u32(&mut self, value: u32) -> f64 {
+        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
     }
 
     #[inline]
     pub fn normalized_f64_from_i64(&mut self, value: i64) -> f64 {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
-                let added_normalizer = normalizer + self.numcfg.decimal_point_length as i32;
+                let added_normalizer = normalizer + self.decimal_point_length_i32;
                 let denominator = 10_f64.powi(added_normalizer);
                 let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
 
@@ -329,6 +340,44 @@ impl IntegerConverter {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NumericConverter {
+    pub price: IntegerConverter,
+    pub quantity: IntegerConverter,
+    pub order_count: IntegerConverter,
+}
+
+impl OrderConverter {
+    pub fn to_book_price(&self, val: &[u8]) -> BookPrice {
+        self.price.to_i64(val)
+    }
+
+    pub fn to_book_quantity(&self, val: &[u8]) -> BookQuantity {
+        self.quantity.to_u64(val)
+    }
+
+    pub fn to_order_count(&self, val: &[u8]) -> OrderCount {
+        assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
+        self.order_count.to_u64(val) as u32
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimeStampConverter {
+    pub converter: IntegerConverter,
+}
+
+impl TimeStampConverter {
+    pub fn to_timestamp(&mut self, val: &[u8]) -> u64 {
+        self.converter.to_u64(val)
+    }
+}
+
+unsafe impl Sync for NumericConverter {}
+
+unsafe impl Sync for TimeStampConverter {}
+
 
 #[cfg(test)]
 mod tests {

@@ -1378,6 +1378,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
+name = "joinery"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d8bde02bbf44a562cf068a8ff4a68842df387e302a03a4de4a57fcf82ec377"
+
+[[package]]
 name = "jpeg-decoder"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1421,6 +1427,12 @@ dependencies = [
  "chrono",
  "lazy_static",
 ]
+
+[[package]]
+name = "lazy_format"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e479e99b287d578ed5f6cd4c92cdf48db219088adb9c5b14f7c155b71dfba792"
 
 [[package]]
 name = "lazy_static"
@@ -2745,11 +2757,12 @@ dependencies = [
  "flexstr",
  "hashbrown 0.14.5",
  "itoa",
+ "joinery",
+ "lazy_format",
  "minstant",
  "once_cell",
  "parking_lot",
  "quanta",
- "rstest",
  "rust_decimal",
  "rust_decimal_macros",
  "rustc-hash",
