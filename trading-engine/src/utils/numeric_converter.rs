@@ -62,7 +62,45 @@ pub fn parse_16_chars_by_split(s: &[u8]) -> u64 {
     parse_8_chars(upper_digits) * 10_000_000 + parse_8_chars(lower_digits)
 }
 
-#[inline(always)]
+#[inline]
+pub fn parse_4_chars(s: &[u8]) -> u32 {
+    debug_assert!(s.len() >= 4, "Input slice must be at least 4 bytes long (parse_4_chars)");
+
+    let mut chunk: u32 = unsafe { read_unaligned(s.as_ptr() as *const u32) };
+
+    let lower_digits = (chunk & 0x0f000f00) >> 8;
+    let upper_digits = (chunk & 0x000f000f) * 10;
+    chunk = lower_digits + upper_digits;
+
+    // 2-byte mask trick (works on 2 pairs of two digits)
+    let lower_digits = (chunk & 0x00ff0000) >> 16;
+    let upper_digits = (chunk & 0x000000ff) * 100;
+    chunk = lower_digits + upper_digits;
+
+    chunk
+}
+
+#[inline]
+pub fn parse_5_chars(s: &[u8]) -> u32 {
+    debug_assert!(s.len() >= 5, "Input slice must be at least 5 bytes long (parse_5_chars)");
+
+    let mut chunk: u32 = unsafe { read_unaligned(s[1..].as_ptr() as *const u32) };
+
+    let lower_digits = (chunk & 0x0f000f00) >> 8;
+    let upper_digits = (chunk & 0x000f000f) * 10;
+    chunk = lower_digits + upper_digits;
+
+    // 2-byte mask trick (works on 2 pairs of two digits)
+    let lower_digits = (chunk & 0x00ff0000) >> 16;
+    let upper_digits = (chunk & 0x000000ff) * 100;
+    chunk = lower_digits + upper_digits;
+
+    let biggest_digit = (s[0] - b'0') as u32 * 10_000;
+    chunk + biggest_digit
+}
+
+//#[inline(always)]
+#[inline]
 pub fn parse_8_chars(s: &[u8]) -> u64 { 
     debug_assert!(s.len() >= 8, "Input slice must be at least 8 bytes long(pasre_8_chars)");
 
@@ -83,7 +121,6 @@ pub fn parse_8_chars(s: &[u8]) -> u64 {
     chunk = lower_digits + upper_digits;    
 
     chunk
-    
 }
 
 
@@ -92,7 +129,8 @@ pub fn parse_32_chars_by_split(s: &[u8]) -> u128 {
     parse_16_chars_with_u128(&s[16..]) + parse_16_chars_with_u128(&s[..16]) * 10_000_000_000_000_000
 }
 
-#[inline(always)]
+//#[inline(always)]
+#[inline]
 pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
     debug_assert!(s.len() >= 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
     let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
