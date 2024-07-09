@@ -1,7 +1,7 @@
 use crate::utils::numeric_converter::{
     NumReprCfg,
     IntegerConverter,
-    NumericConverter,
+    OrderConverter,
     TimeStampConverter,
 };
 use crate::types::base::{
@@ -12,7 +12,7 @@ use crate::types::base::{
 use serde::{Serialize, Deserialize};
 use once_cell::sync::Lazy;
 
-pub static KRX_DERIVATIVE_CONVERTER: Lazy<NumericConverter> = Lazy::new(|| {
+pub static KRX_DERIVATIVE_CONVERTER: Lazy<OrderConverter> = Lazy::new(|| {
     let price_cfg = NumReprCfg {
         digit_length: 5,
         decimal_point_length: 2,
@@ -49,7 +49,7 @@ pub static KRX_DERIVATIVE_CONVERTER: Lazy<NumericConverter> = Lazy::new(|| {
     let order_count = IntegerConverter::new(count_cfg)
         .expect("failed to create order count converter");
 
-    NumericConverter {
+    OrderConverter {
         price,
         quantity,
         order_count,
@@ -57,7 +57,7 @@ pub static KRX_DERIVATIVE_CONVERTER: Lazy<NumericConverter> = Lazy::new(|| {
 });
 
 
-pub static KRX_TIMESTAMP_CONVERTER: Lazy<KrxTimeStampConverter> = Lazy::new(|| {
+pub static KRX_TIMESTAMP_CONVERTER: Lazy<TimeStampConverter> = Lazy::new(|| {
     let time_cfg = NumReprCfg {
         digit_length: 12,
         decimal_point_length: 0,
@@ -70,7 +70,5 @@ pub static KRX_TIMESTAMP_CONVERTER: Lazy<KrxTimeStampConverter> = Lazy::new(|| {
     let time_converter = IntegerConverter::new(time_cfg)
         .expect("failed to create time converter");
 
-    TimeStampConverter {
-        time_converter,
-    }
+    TimeStampConverter { converter: time_converter }
 });

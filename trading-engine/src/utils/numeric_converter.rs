@@ -2,6 +2,11 @@ use crate::{
     log_warn,
     log_error,
 };
+use crate::types::base::{
+    BookPrice,
+    BookQuantity,
+    OrderCount,
+};
 use serde::{
     Serialize, 
     Deserialize,
@@ -49,58 +54,20 @@ impl NumReprCfg {
 }
 
 
-#[inline]
+#[inline(always)]
 fn div_rem(dividend: i64, divisor: i64) -> (i64, i64) {
     let quotient = dividend / divisor;
     let remainder = dividend - (quotient * divisor);
     (quotient, remainder)
 }
 
-#[inline]
+#[inline(always)]
 pub fn parse_16_chars_by_split(s: &[u8]) -> u64 {
     let (upper_digits, lower_digits) = s.split_at(8);
     parse_8_chars(upper_digits) * 10_000_000 + parse_8_chars(lower_digits)
 }
 
-#[inline]
-pub fn parse_4_chars(s: &[u8]) -> u32 {
-    debug_assert!(s.len() >= 4, "Input slice must be at least 4 bytes long (parse_4_chars)");
-
-    let mut chunk: u32 = unsafe { read_unaligned(s.as_ptr() as *const u32) };
-
-    let lower_digits = (chunk & 0x0f000f00) >> 8;
-    let upper_digits = (chunk & 0x000f000f) * 10;
-    chunk = lower_digits + upper_digits;
-
-    // 2-byte mask trick (works on 2 pairs of two digits)
-    let lower_digits = (chunk & 0x00ff0000) >> 16;
-    let upper_digits = (chunk & 0x000000ff) * 100;
-    chunk = lower_digits + upper_digits;
-
-    chunk
-}
-
-#[inline]
-pub fn parse_5_chars(s: &[u8]) -> u32 {
-    debug_assert!(s.len() >= 5, "Input slice must be at least 5 bytes long (parse_5_chars)");
-
-    let mut chunk: u32 = unsafe { read_unaligned(s[1..].as_ptr() as *const u32) };
-
-    let lower_digits = (chunk & 0x0f000f00) >> 8;
-    let upper_digits = (chunk & 0x000f000f) * 10;
-    chunk = lower_digits + upper_digits;
-
-    // 2-byte mask trick (works on 2 pairs of two digits)
-    let lower_digits = (chunk & 0x00ff0000) >> 16;
-    let upper_digits = (chunk & 0x000000ff) * 100;
-    chunk = lower_digits + upper_digits;
-
-    let biggest_digit = (s[0] - b'0') as u32 * 10_000;
-    chunk + biggest_digit
-}
-
-//#[inline(always)]
-#[inline]
+#[inline(always)]
 pub fn parse_8_chars(s: &[u8]) -> u64 { 
     debug_assert!(s.len() >= 8, "Input slice must be at least 8 bytes long(pasre_8_chars)");
 
@@ -123,14 +90,17 @@ pub fn parse_8_chars(s: &[u8]) -> u64 {
     chunk
 }
 
+#[inline]
+pub fn parse_9_chars(s: &[u8]) -> u64 {
+    parse_8_chars(&s[1..]) + (s[0] - b'0') as u64 * 100_000_000
+}
 
 #[inline]
 pub fn parse_32_chars_by_split(s: &[u8]) -> u128 {
     parse_16_chars_with_u128(&s[16..]) + parse_16_chars_with_u128(&s[..16]) * 10_000_000_000_000_000
 }
 
-//#[inline(always)]
-#[inline]
+#[inline(always)]
 pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
     debug_assert!(s.len() >= 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
     let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
@@ -149,7 +119,7 @@ pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
     chunk = lower_digits + upper_digits;
     // 8-byte mask trick (works on a pair of eight digits)
     let lower_digits = (chunk & 0x00000000ffffffff0000000000000000) >> 64;
-    let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100000000;
+    let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100_000_000;
     chunk = lower_digits + upper_digits;
     // 
     chunk as u128
@@ -235,21 +205,23 @@ impl IntegerConverter {
             all_digit_size = numcfg.digit_length;
         }
 
-        let buffer_length = if all_digit_size <= 8 {
-            8
-        } else if all_digit_size <= 16 {
-            16
-        } else if all_digit_size <= 18 {
-            log_warn!("long digit", number_config = numcfg, all_digit_size = all_digit_size);
-            32
-        } else {
-            log_error!(
-                "unsupported digit size", 
-                number_config = numcfg, 
-                digit_size = all_digit_size,
-                message = "number show digit is larger than 18 digits is over the capacity of u64 type",
-            );
-            bail!("unsupported digit size")
+        let buffer_length = match all_digit_size {
+            0..=8 => 8,
+            9 => 9,
+            10..=16 => 16,
+            17..=18 => {
+                log_warn!("long digit", number_config = numcfg, all_digit_size = all_digit_size);
+                32
+            },
+            _ => {
+                log_error!(
+                    "unsupported digit size", 
+                    number_config = numcfg, 
+                    digit_size = all_digit_size,
+                    message = "number show digit is larger than 18 digits is over the capacity of u64 type",
+                );
+                bail!("unsupported digit size");
+            }
         };
          
         let input_first_head_location = match numcfg.is_signed {
@@ -333,36 +305,37 @@ impl IntegerConverter {
     pub fn to_u64(&mut self, value: &[u8]) -> u64 {
         self.copy_to_buffer(value);
         match self.buffer_length {
+            8 => parse_8_chars(&self.positive_digit_buffer),
             16 => parse_16_chars_with_u128(&self.positive_digit_buffer) as u64,
             32 => parse_32_chars_by_split(&self.positive_digit_buffer) as u64,
-            _ => parse_8_chars(&self.positive_digit_buffer),
+            _ => parse_9_chars(&self.positive_digit_buffer),
         }
     }
     
     #[inline(always)]
     pub fn to_i64(&mut self, value: &[u8]) -> i64 {
-        match value[0] != b'-' {
+        match value[0] == b'0' {
             false => (!self.to_u64(value)).wrapping_add(1) as i64,
             _ => self.to_u64(value) as i64,
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn to_f64_from_i64(&mut self, value: i64) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_point_length_i32)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn to_f64_from_i32(&mut self, value: i32) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_point_length_i32)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn to_f64_from_u32(&mut self, value: u32) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_point_length_i32)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn normalized_f64_from_i64(&mut self, value: i64) -> f64 {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
@@ -380,22 +353,22 @@ impl IntegerConverter {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct NumericConverter {
+pub struct OrderConverter {
     pub price: IntegerConverter,
     pub quantity: IntegerConverter,
     pub order_count: IntegerConverter,
 }
 
 impl OrderConverter {
-    pub fn to_book_price(&self, val: &[u8]) -> BookPrice {
+    pub fn to_book_price(&mut self, val: &[u8]) -> BookPrice {
         self.price.to_i64(val)
     }
 
-    pub fn to_book_quantity(&self, val: &[u8]) -> BookQuantity {
+    pub fn to_book_quantity(&mut self, val: &[u8]) -> BookQuantity {
         self.quantity.to_u64(val)
     }
 
-    pub fn to_order_count(&self, val: &[u8]) -> OrderCount {
+    pub fn to_order_count(&mut self, val: &[u8]) -> OrderCount {
         assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
         self.order_count.to_u64(val) as u32
     }
@@ -412,7 +385,7 @@ impl TimeStampConverter {
     }
 }
 
-unsafe impl Sync for NumericConverter {}
+unsafe impl Sync for OrderConverter {}
 
 unsafe impl Sync for TimeStampConverter {}
 
@@ -428,6 +401,24 @@ mod tests {
         let s = b"00000000000012340000123400001234";
         let val = parse_32_chars_by_split(s);
         assert_eq!(val, 12_340_000_123_400_001_234);
+    }
+    #[test]
+    fn test_parse_small_number() {
+        let cfg = NumReprCfg {
+            digit_length: 4,
+            decimal_point_length: 1,
+            drop_decimal_point: false,
+            is_signed: true,
+            total_length: 7,
+            float_normalizer: None,
+        };
+        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let val = converter.to_u64(b"01234.5");
+        assert_eq!(
+            val, 12345,
+            "convert failed: {:?}",
+            std::str::from_utf8(&converter.positive_digit_buffer).unwrap()
+        );
     }
 
     #[test]

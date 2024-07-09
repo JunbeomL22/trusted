@@ -160,9 +160,11 @@ impl Default for IFMSRPD0037 {
                 Slice { start: 351, end: 356 },
                 Slice { start: 397, end: 402 },
             ],
+        }
     }
 }
 
+/*
 impl IFMSRPD0037 {
     pub fn to_trade_quote_date(&self, payload: &[u8]) -> TradeQuoteData {
         let converter = &KRX_DERIVATIVE_CONVERTER;
@@ -195,3 +197,4 @@ impl IFMSRPD0037 {
                 order_count: converter.to_order_count(&payload[ifmsrpd0037.bid_order_count_slice_vec[i].start..ifmsr
     }
 }
+ */
