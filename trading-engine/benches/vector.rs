@@ -261,9 +261,38 @@ fn bench_push(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_copy_element(c: &mut Criterion) {
+    let mut group = c.benchmark_group("copy element 8 u8");
+    let mut dest: SmallVec::<[u8; 8]> = smallvec![0; 8];
+    
+    let mut src = [0; 8];
+    for i in 0..8 {
+        src[i] = i as u8;
+    }
+
+    group.bench_function("smallvec copy element", |b| {
+        b.iter(|| {
+            for i in 0..8 {
+                dest[i] = black_box(src[i]);
+            }
+        });
+    });
+
+    let mut dest2 = vec![0; 8];
+    group.bench_function("vector copy element", |b| {
+        b.iter(|| {
+            for i in 0..8 {
+                dest2[i] = black_box(i as u8);
+            }
+        });
+    });
+
+    group.finish();
+}
 criterion_group!(
     benches, 
-    bench_creation,
-    bench_push,
+    bench_copy_element,
+    //bench_creation,
+    //bench_push,
 );
 criterion_main!(benches);

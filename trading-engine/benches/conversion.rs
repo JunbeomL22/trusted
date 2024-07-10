@@ -10,11 +10,18 @@ use time::format_description::well_known::Rfc3339;
 use trading_engine::utils::numeric_converter::NumReprCfg;
 use trading_engine::utils::numeric_converter::{
     IntegerConverter, 
+    parse_char,
+    parse_2_chars,
+    parse_3_chars,
+    parse_4_chars,
+    parse_5_chars,
+    parse_6_chars,
+    parse_7_chars,
     parse_8_chars,
-    parse_9_chars, 
-    parse_16_chars_by_split,
-    parse_16_chars_with_u128,
-    parse_32_chars_by_split,
+    parse_9_chars,
+    parse_10_chars,
+    parse_under16,
+    parse_under8,
 };
 
 
@@ -399,47 +406,89 @@ fn bench_parsing(c: &mut Criterion) {
         });
     });
 
-    let s = b"00001234";
-    bgroup.bench_function("parse_8_chars (00001234)", |b| {
+    let s = b"123";
+    bgroup.bench_function("parse_3_chars (123)", |b| {
+        b.iter(|| {
+            parse_3_chars(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("parse_under8 (123)", |b| {
+        b.iter(|| {
+            parse_under8(black_box(s), 3)
+        });
+    });
+
+    let s = b"12345";
+    bgroup.bench_function("parse_5_chars (12345)", |b| {
+        b.iter(|| {
+            parse_5_chars(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("parse_under8 (12345)", |b| {
+        b.iter(|| {
+            parse_under8(black_box(s), 5)
+        });
+    });
+
+    let s = b"1234567";
+    bgroup.bench_function("parse_7_chars (1234567)", |b| {
+        b.iter(|| {
+            parse_7_chars(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("parse_under8 (1234567)", |b| {
+        b.iter(|| {
+            parse_under8(black_box(s), 7)
+        });
+    });
+
+    let s = b"12345678";
+    bgroup.bench_function("parse_8_chars (12345678)", |b| {
         b.iter(|| {
             parse_8_chars(black_box(s))
         });
     });
 
-    let s = b"000012345";
-    bgroup.bench_function("parse_9_chars (000012345)", |b| {
+    bgroup.bench_function("parse_under8 (12345678)", |b| {
+        b.iter(|| {
+            parse_under8(black_box(s), 8)
+        });
+    });
+
+    let s = b"123456789";
+    bgroup.bench_function("parse_9_chars (123456789)", |b| {
         b.iter(|| {
             parse_9_chars(black_box(s))
         });
     });
 
-    let s = b"0000123456789012";
-    bgroup.bench_function("parse_16_chars_with_u128 (0000123456789012)", |b| {
+    bgroup.bench_function("parse_under16 (123456789)", |b| {
         b.iter(|| {
-            parse_16_chars_with_u128(black_box(s))
+            parse_under16(black_box(s), 9)
         });
     });
 
-
-    bgroup.bench_function("parse_16_chars_by_split", |b| {
+    let s = b"1234567890";
+    bgroup.bench_function("parse_10_chars (1234567890)", |b| {
         b.iter(|| {
-            parse_16_chars_by_split(black_box(s))
+            parse_10_chars(black_box(s))
         });
     });
 
-    let s = b"00000000000000940000123400001234";
-    bgroup.bench_function("parse_32_chars_by_split", |b| {
+    bgroup.bench_function("parse_under16 (1234567890)", |b| {
         b.iter(|| {
-            parse_32_chars_by_split(black_box(s))
+            parse_under16(black_box(s), 10)
         });
     });
-
     bgroup.finish();
 }
 
 criterion_group!(
     benches, 
-    bench_custom_numeric_converter,
+    //bench_custom_numeric_converter,
     bench_parsing,
     /*
     bench_str_to_number,

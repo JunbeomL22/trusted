@@ -68,11 +68,7 @@ pub fn parse_16_chars_by_split(s: &[u8]) -> u64 {
 }
 
 #[inline(always)]
-pub fn parse_8_chars(s: &[u8]) -> u64 { 
-    debug_assert!(s.len() >= 8, "Input slice must be at least 8 bytes long(pasre_8_chars)");
-
-    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
-
+pub fn u8_chunk_to_u64_decimal(mut chunk: u64) -> u64 {
     let lower_digits = (chunk & 0x0f000f000f000f00) >> 8;
     let upper_digits = (chunk & 0x000f000f000f000f) * 10;
     chunk = lower_digits + upper_digits;
@@ -85,27 +81,13 @@ pub fn parse_8_chars(s: &[u8]) -> u64 {
     // 4-byte mask trick (works on a pair of four digits)
     let lower_digits = (chunk & 0x0000ffff00000000) >> 32;
     let upper_digits = (chunk & 0x000000000000ffff) * 10000;
-    chunk = lower_digits + upper_digits;    
+    chunk = lower_digits + upper_digits;
 
     chunk
 }
 
-#[inline]
-pub fn parse_9_chars(s: &[u8]) -> u64 {
-    parse_8_chars(&s[1..]) + (s[0] - b'0') as u64 * 100_000_000
-}
-
-#[inline]
-pub fn parse_32_chars_by_split(s: &[u8]) -> u128 {
-    parse_16_chars_with_u128(&s[16..]) + parse_16_chars_with_u128(&s[..16]) * 10_000_000_000_000_000
-}
-
 #[inline(always)]
-pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
-    debug_assert!(s.len() >= 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
-    let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
-
-    // 1-byte mask trick (works on 8 pairs of single digits)
+pub fn u8_chunk_to_u128_decimal(mut chunk: u128) -> u128 {
     let lower_digits = (chunk & 0x0f000f000f000f000f000f000f000f00) >> 8;
     let upper_digits = (chunk & 0x000f000f000f000f000f000f000f000f) * 10;
     chunk = lower_digits + upper_digits;
@@ -122,7 +104,152 @@ pub fn parse_16_chars_with_u128(s: &[u8]) -> u128 {
     let upper_digits = (chunk & 0x000000000000000000000000ffffffff) * 100_000_000;
     chunk = lower_digits + upper_digits;
     // 
-    chunk as u128
+    chunk
+}
+#[inline(always)]
+pub fn parse_under8_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u64 {
+    debug_assert!(length <= 8, "parse_under8: length must be less than or equal to 8");
+    // ex) u = "123.45", length = 5, point_location = 3
+    // "123.45" => "??123.45"
+    let mut chunk: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
+    if point_length == 0 {
+        return u8_chunk_to_u64_decimal(chunk);
+    }
+
+    // "??123.45" => "123.4500"
+    chunk <<= 64 - (length * 8);
+    println!("chunk: {:?}", std::str::from_utf8(&chunk.to_le_bytes()).unwrap());
+    // "123.4500" => "12345000"
+    let point_mask = 0xffff_ffff_ffff_ffff << (8 - point_length) * 8;
+    let decimal_mask = 0xffff_ffff_ffff_ffff >> point_length * 8;
+    println!("mask: 0x{:16x}", point_mask);
+    println!("point: 0x{:16x}", chunk & point_mask);
+    chunk = (chunk & point_mask) + ((chunk & !point_mask) 
+    
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_under8(u: &[u8], length: usize) -> u64 {
+    debug_assert!(length <= 8, "parse_under8: length must be less than or equal to 8");
+    let mut chunk: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
+    chunk <<= 64 - (length * 8);
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_under16(u: &[u8], length: usize) -> u128 {
+    debug_assert!(length <= 16, "parse_under16: length must be less than or equal to 16");
+    let mut chunk: u128 = unsafe { read_unaligned(u.as_ptr() as *const u128) };
+    chunk <<= 128 - (length * 8);
+    u8_chunk_to_u128_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_char(s: &[u8]) -> u64 {
+    (s[0] & 0x0f) as u64
+}
+
+#[inline(always)]
+pub fn parse_2_chars(s: &[u8]) -> u64 {
+    // "12" => "??????21"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "??????21" => "21111111"
+    chunk <<= 48; 
+    // "21111111" => "21000000"
+    //chunk &= 0xffff000000000000;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_3_chars(s: &[u8]) -> u64 {
+    // "123" => "?????321"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "?????321" => "32111111"
+    chunk <<= 40;
+    // "32111111" => "32111000"
+    //chunk &= 0xffffff0000000000;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_4_chars(s: &[u8]) -> u64 {
+    // "1234" => "????4321"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "????4321" => "43211111"
+    chunk <<= 32;
+    // "43211111" => "43210000"
+    //chunk &= 0xffffffff00000000;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_5_chars(s: &[u8]) -> u64 {
+    // "12345" => "???54321"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "???54321" => "54321111"
+    chunk <<= 24;
+    // "54321111" => "54321000"
+    //chunk &= 0xffffffffff000000;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_6_chars(s: &[u8]) -> u64 {
+    // "123456" => "??654321"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "??654321" => "65432111"
+    chunk <<= 16;
+    // "65432111" => "65432100"
+    //chunk &= 0xffffffffffff0000;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_7_chars(s: &[u8]) -> u64 {
+    // "1234567" => "?7654321"
+    let mut chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    // "?7654321" => "76543211"
+    chunk <<= 8;
+    // "76543211" => "76543210"
+    //chunk &= 0xffffffffffffff00;
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_8_chars(s: &[u8]) -> u64 {
+    // "12345678" => "87654321"
+    let chunk: u64 = unsafe { read_unaligned(s.as_ptr() as *const u64) };
+    u8_chunk_to_u64_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_9_chars(s: &[u8]) -> u128 {
+    // "123456789" => "???????987654321"
+    let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
+    // "???????987654321" => "9876543211111111"
+    chunk <<= 56;
+    // "9876543211111111" => "9876543210000000"
+    //chunk &= 0xffffffffffffffffff00000000000000;
+    u8_chunk_to_u128_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_10_chars(s: &[u8]) -> u128 {
+    // "1234567890" => "??????0987654321"
+    let mut chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
+    // "??????0987654321" => "09876543211111111"
+    chunk <<= 48;
+    // "09876543211111111" => "09876543210000000"
+    //chunk &= 0xffffffffffffffffffff000000000000;
+    u8_chunk_to_u128_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_16_chars(s: &[u8]) -> u128 {
+    debug_assert!(s.len() == 16, "Input slice must be at least 16 bytes long (parse_16_chars_with_u128)");
+    let chunk: u128 = unsafe { read_unaligned(s.as_ptr() as *const u128) };
+    u8_chunk_to_u128_decimal(chunk)
 }
 
 #[derive(Debug, Serialize)]
@@ -305,10 +432,10 @@ impl IntegerConverter {
     pub fn to_u64(&mut self, value: &[u8]) -> u64 {
         self.copy_to_buffer(value);
         match self.buffer_length {
-            8 => parse_8_chars(&self.positive_digit_buffer),
-            16 => parse_16_chars_with_u128(&self.positive_digit_buffer) as u64,
-            32 => parse_32_chars_by_split(&self.positive_digit_buffer) as u64,
-            _ => parse_9_chars(&self.positive_digit_buffer),
+            _ => parse_8_chars(&self.positive_digit_buffer),
+            //16 => parse_16_chars_with_u128(&self.positive_digit_buffer) as u64,
+            //32 => parse_32_chars_by_split(&self.positive_digit_buffer) as u64,
+            //_ => parse_9_chars(&self.positive_digit_buffer),
         }
     }
     
@@ -395,12 +522,55 @@ mod tests {
     use super::*;
     #[test]
     fn test_chars_parser() {
-        let s = b"00001234";
-        assert_eq!(parse_8_chars(s), 1_234);
+        let s = b"1";
+        let val = parse_char(s);
+        assert_eq!(val, 1);
 
-        let s = b"00000000000012340000123400001234";
-        let val = parse_32_chars_by_split(s);
-        assert_eq!(val, 12_340_000_123_400_001_234);
+        let s = b"12";
+        let val = parse_2_chars(s);
+        assert_eq!(val, 12);
+
+        let s = b"123";
+        let val = parse_3_chars(s);
+        assert_eq!(val, 123);
+
+        let s = b"1234";
+        let val = parse_4_chars(s);
+        assert_eq!(val, 1234);
+
+        let s = b"12345";
+        let val = parse_5_chars(s);
+        assert_eq!(val, 12345);
+
+        let s = b"123456";
+        let val = parse_6_chars(s);
+        assert_eq!(val, 123456);
+
+        let s = b"1234567";
+        let val = parse_7_chars(s);
+        assert_eq!(val, 1234567);
+
+        let s = b"12345678";
+        let val = parse_8_chars(s);
+        assert_eq!(val, 12345678);
+
+        let s = b"123456789";
+        let val = parse_9_chars(s);
+        assert_eq!(val, 123456789);
+
+        let s = b"1234567890";
+        //let val = parse_10_chars(s);
+        let val = parse_under16(s, 10);
+        assert_eq!(val, 1234567890);
+
+        let s = b"1234.56";
+        let val = parse_under8_with_floating_point(s, 7, 2);
+        assert_eq!(val, 123456);
+
+        let s = b"1234.567";
+        let val = parse_under8_with_floating_point(s, 8, 3);
+        assert_eq!(val, 1234567);
+
     }
     #[test]
     fn test_parse_small_number() {
