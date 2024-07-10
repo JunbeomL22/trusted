@@ -10,18 +10,10 @@ use time::format_description::well_known::Rfc3339;
 use trading_engine::utils::numeric_converter::NumReprCfg;
 use trading_engine::utils::numeric_converter::{
     IntegerConverter, 
-    parse_char,
-    parse_2_chars,
-    parse_3_chars,
-    parse_4_chars,
-    parse_5_chars,
-    parse_6_chars,
-    parse_7_chars,
-    parse_8_chars,
-    parse_9_chars,
-    parse_10_chars,
     parse_under16,
     parse_under8,
+    parse_under8_with_floating_point,
+    parse_under16_with_floating_point,
 };
 
 
@@ -399,20 +391,21 @@ fn bench_custom_numeric_converter(
 
 fn bench_parsing(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("parsing");
-    let s = "100123456.1";
-    bgroup.bench_function("parse_by_std", |b| {
+    let s = b"12345.67";
+    bgroup.bench_function("parse_under8_with_floating_point (12345.67)", |b| {
         b.iter(|| {
-            black_box(s).parse::<f64>().unwrap()
+            parse_under8_with_floating_point(black_box(s), 8, 2)
+        });
+    });
+
+    let s = b"012345678.901";
+    bgroup.bench_function("parse_under16_with_floating_point (012345678.901)", |b| {
+        b.iter(|| {
+            parse_under16_with_floating_point(black_box(s), 13, 3)
         });
     });
 
     let s = b"123";
-    bgroup.bench_function("parse_3_chars (123)", |b| {
-        b.iter(|| {
-            parse_3_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under8 (123)", |b| {
         b.iter(|| {
             parse_under8(black_box(s), 3)
@@ -420,12 +413,6 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"12345";
-    bgroup.bench_function("parse_5_chars (12345)", |b| {
-        b.iter(|| {
-            parse_5_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under8 (12345)", |b| {
         b.iter(|| {
             parse_under8(black_box(s), 5)
@@ -433,12 +420,6 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"1234567";
-    bgroup.bench_function("parse_7_chars (1234567)", |b| {
-        b.iter(|| {
-            parse_7_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under8 (1234567)", |b| {
         b.iter(|| {
             parse_under8(black_box(s), 7)
@@ -446,12 +427,6 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"12345678";
-    bgroup.bench_function("parse_8_chars (12345678)", |b| {
-        b.iter(|| {
-            parse_8_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under8 (12345678)", |b| {
         b.iter(|| {
             parse_under8(black_box(s), 8)
@@ -459,12 +434,6 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"123456789";
-    bgroup.bench_function("parse_9_chars (123456789)", |b| {
-        b.iter(|| {
-            parse_9_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under16 (123456789)", |b| {
         b.iter(|| {
             parse_under16(black_box(s), 9)
@@ -472,17 +441,12 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"1234567890";
-    bgroup.bench_function("parse_10_chars (1234567890)", |b| {
-        b.iter(|| {
-            parse_10_chars(black_box(s))
-        });
-    });
-
     bgroup.bench_function("parse_under16 (1234567890)", |b| {
         b.iter(|| {
             parse_under16(black_box(s), 10)
         });
     });
+
     bgroup.finish();
 }
 
