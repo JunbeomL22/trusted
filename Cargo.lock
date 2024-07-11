@@ -2755,7 +2755,6 @@ dependencies = [
  "enum_dispatch",
  "fixed",
  "flexstr",
- "hashbrown 0.14.5",
  "itoa",
  "joinery",
  "lazy_format",

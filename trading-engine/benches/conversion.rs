@@ -406,44 +406,37 @@ fn bench_parsing(c: &mut Criterion) {
     });
 
     let s = b"123";
-    bgroup.bench_function("parse_under8 (123)", |b| {
+    bgroup.bench_function("parse_under8_with_floating_point (123)", |b| {
         b.iter(|| {
-            parse_under8(black_box(s), 3)
+            parse_under8_with_floating_point(black_box(s), 3, 0)
         });
     });
 
     let s = b"12345";
-    bgroup.bench_function("parse_under8 (12345)", |b| {
+    bgroup.bench_function("parse_under8_with_floating_point (12345)", |b| {
         b.iter(|| {
-            parse_under8(black_box(s), 5)
+            parse_under8_with_floating_point(black_box(s), 5, 0)
         });
     });
 
-    let s = b"1234567";
-    bgroup.bench_function("parse_under8 (1234567)", |b| {
+    let s = b"123456.7";
+    bgroup.bench_function("parse_under8_with_floating_point (123456.7)", |b| {
         b.iter(|| {
-            parse_under8(black_box(s), 7)
+            parse_under8_with_floating_point(black_box(s), 8, 1)
         });
     });
 
-    let s = b"12345678";
-    bgroup.bench_function("parse_under8 (12345678)", |b| {
+    let s = b"123456.78";
+    bgroup.bench_function("parse_under16_with_floating_point (123456.78)", |b| {
         b.iter(|| {
-            parse_under8(black_box(s), 8)
+            parse_under16_with_floating_point(black_box(s), 9, 2)
         });
     });
 
-    let s = b"123456789";
-    bgroup.bench_function("parse_under16 (123456789)", |b| {
+    let s = b"123456.789";
+    bgroup.bench_function("parse_under16_with_floating_point (123456.789)", |b| {
         b.iter(|| {
-            parse_under16(black_box(s), 9)
-        });
-    });
-
-    let s = b"1234567890";
-    bgroup.bench_function("parse_under16 (1234567890)", |b| {
-        b.iter(|| {
-            parse_under16(black_box(s), 10)
+            parse_under16_with_floating_point(black_box(s), 10, 3)
         });
     });
 

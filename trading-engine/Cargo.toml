@@ -61,7 +61,6 @@ lazy_format = "2.0"
 minstant = "0.1"
 quanta = "0.12"
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing", "local-offset"] }
-hashbrown = "0.14"
 enum_dispatch = "0.3"
 arc-swap = "1.7"
 ustr = "1.0"

@@ -107,11 +107,13 @@ pub fn parse_under8_with_floating_point(u: &[u8], length: usize, point_length: u
     // ex) u = "123.45", length = 5, point_location = 3
     // "123.45" => "??123.45"
     let mut chunk: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
-    if point_length == 0 { return u8_chunk_to_u64_decimal(chunk); }
     // "??123.45" => "123.4500"
     chunk <<= 64 - (length * 8);
     // "123.4500" => "12345000"
-    let point_mask = 0xffff_ffff_ffff_ffff << (8 - point_length) * 8;
+    let point_mask = match point_length {
+        0 => 0x0000_0000_0000_0000,
+        _ => 0xffff_ffff_ffff_ffff << (8 - point_length) * 8,
+    };
     let decimal_mask = !point_mask;
    
     chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
@@ -124,16 +126,44 @@ pub fn parse_under16_with_floating_point(u: &[u8], length: usize, point_length: 
     // ex) u = "123.45", length = 5, point_location = 3
     // "123.45" => "??123.45"
     let mut chunk: u128 = unsafe { read_unaligned(u.as_ptr() as *const u128) };
-    if point_length == 0 { return u8_chunk_to_u128_decimal(chunk); }
     // "??123.45" => "123.4500"
     chunk <<= 128 - (length * 8);
     // "123.4500" => "12345000"
-    let point_mask = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff << (16 - point_length) * 8;
+    let point_mask = match point_length {
+        0 => 0x0000_0000_0000_0000_0000_0000_0000_0000,
+        _ => 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff << (16 - point_length) * 8,
+    };
     let decimal_mask = !point_mask;
    
     chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
     u8_chunk_to_u128_decimal(chunk)
 }
+
+
+#[inline(always)]
+pub fn parse_under32_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u128 {
+    debug_assert!((16..=32).contains(&length), "parse_under32: length must be less than or equal to 32");
+    let point_location = length - point_length - 1;
+    let left_point_length = if point_location >= 15 { 0 } else { 15 - point_location };
+    let right_point_length = if point_location <= 15 {0} else { point_location};
+    
+    let (upper, lower) = u.split_at(16);
+    println!("upper: {:?}, lower: {:?}", std::str::from_utf8(&upper), std::str::from_utf8(lower));
+    println!("left_point_length: {}, right_point_length: {}", left_point_length, right_point_length);
+    let upper_val = parse_under16_with_floating_point(upper, 16, left_point_length);
+    let right_part_buffer = if point_location <= 15 { 1 } else { 0 };
+    let lower_val = parse_under16_with_floating_point(lower, length - 16 + right_part_buffer, right_point_length);
+    dbg!(upper_val, lower_val);
+
+    let power_val = if point_location <= 16 {
+        10u128.pow((length - 16) as u32)
+    } else {
+        10u128.pow((length - 17) as u32)
+    };
+
+    upper_val * power_val + lower_val
+}
+
 
 #[inline(always)]
 pub fn parse_under8(u: &[u8], length: usize) -> u64 {
@@ -149,6 +179,13 @@ pub fn parse_under16(u: &[u8], length: usize) -> u128 {
     let mut chunk: u128 = unsafe { read_unaligned(u.as_ptr() as *const u128) };
     chunk <<= 128 - (length * 8);
     u8_chunk_to_u128_decimal(chunk)
+}
+
+#[inline(always)]
+pub fn parse_under32(u: &[u8], length: usize) -> u128 {
+    debug_assert!((16..=32).contains(&length), "parse_under32: length must be less than or equal to 32");
+    let (upper, lower) = u.split_at(16);
+    parse_under16(upper, 16) * 10u128.pow((length-16) as u32) + parse_under16(lower, length - 16)
 }
 
 #[derive(Debug, Serialize)]
@@ -473,6 +510,38 @@ mod tests {
         let s = b"012345678.901";
         let val = parse_under16_with_floating_point(s, 13, 3);
         assert_eq!(val, 12345678901);
+
+        let s = b"12345678901234567890";
+        let val = parse_under32(s, 20);
+        assert_eq!(val, 12345678901234567890);
+
+        let s = b"1234567.";
+        let val = parse_under8_with_floating_point(s, 8, 0);
+        assert_eq!(val, 1234567);
+
+        let s = b"123456789.";
+        let val = parse_under16_with_floating_point(s, 10, 0);
+        assert_eq!(val, 123456789);
+
+        let s = b".123456789";
+        let val = parse_under16_with_floating_point(s, 10, 9);
+        assert_eq!(val, 123456789);
+
+        let s = b"123456789012345.123456";
+        let val = parse_under32_with_floating_point(s, 22, 6);
+        assert_eq!(val, 123456789012345123456);
+
+        let s = b"12345.6789012345123456";
+        let val = parse_under32_with_floating_point(s, 22, 16);
+        assert_eq!(val, 123456789012345123456);
+
+        let s = b"1234567890123456.123456789012345";
+        let val = parse_under32_with_floating_point(s, 32, 15);
+        assert_eq!(val, 1234567890123456123456789012345);
+
+        let s = b"123456789012345.6123456789012345";
+        let val = parse_under32_with_floating_point(s, 32, 16);
+        assert_eq!(val, 1234567890123456123456789012345);
 
     }
     #[test]
