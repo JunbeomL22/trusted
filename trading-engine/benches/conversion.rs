@@ -256,132 +256,108 @@ fn bench_str_to_number(
     bgroup.finish();
 }
 
-fn bench_custom_numeric_converter(
+fn bench_integer_converter(
     c: &mut Criterion,
 ) {
-    let mut bgroup = c.benchmark_group("custom_numeric_converter");
+    let mut bgroup = c.benchmark_group("integer_converter");
 
     let cfg = NumReprCfg {
         digit_length: 5,
-        decimal_point_length: 2,
+        decimal_point_length: 0,
+        is_signed: false,
+        total_length: 5,
+        float_normalizer: None,
         drop_decimal_point: false,
+    };
+
+    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+
+    let s = b"12345";
+
+    bgroup.bench_function("converter.to_i64 (12345)", |b| {
+        b.iter(|| {
+            converter.to_i64(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("converter.to_u64 (12345)", |b| {
+        b.iter(|| {
+            converter.to_u64(black_box(s))
+        });
+    });
+
+
+    let num_cfg = NumReprCfg {
+        digit_length: 5,
+        decimal_point_length: 3,
         is_signed: true,
         total_length: 9,
         float_normalizer: None,
+        drop_decimal_point: false,
     };
-    let mut converter = IntegerConverter::new(cfg).unwrap();
 
-    let val_str = b"-12345.67";
+    let mut converter = IntegerConverter::new(num_cfg).expect("failed to create IntegerConverter");
 
-    bgroup.bench_function("small-number str_to_i64 (-12_345.67)", |b| {
+    let s = b"-12345.67";
+    bgroup.bench_function("converter.to_i64 (-12345.67)", |b| {
         b.iter(|| {
-            converter.to_i64(black_box(val_str))
+            converter.to_i64(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("converter.to_u64 (-12345.67)", |b| {
+        b.iter(|| {
+            converter.to_u64(black_box(s))
         });
     });
 
     let cfg = NumReprCfg {
-        digit_length: 7,
-        decimal_point_length: 1,
-        drop_decimal_point: false,
-        is_signed: true,
-        total_length: 10,
-        float_normalizer: None,
-    };
-
-    let mut converter = IntegerConverter::new(cfg).unwrap();
-    let val_str = b"01000012.3";
-
-    bgroup.bench_function("small-number str_to_u64 (010_000_12.3)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(val_str))
-        });
-    });
-
-    bgroup.bench_function("small-number str_to_i64 negative (-10_000_12.3)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(b"-1000012.3"))
-        });
-    });
-
-    let cfg = NumReprCfg {
-        digit_length: 14,
-        decimal_point_length: 2,
-        drop_decimal_point: false,
+        digit_length: 9,
+        decimal_point_length: 0,
         is_signed: false,
-        total_length: 17,
+        total_length: 9,
         float_normalizer: None,
-    };
-    let mut converter = IntegerConverter::new(cfg).unwrap();
-    let val_str = b"12345678901234.56";
-
-    bgroup.bench_function("mid-size str_to_u64 (12_345_678_901_234.56)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(val_str))
-        });
-    });
-
-    bgroup.bench_function("mid-size str_to_i64 (12_345_678_901_234.56)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(val_str))
-        });
-    });
-
-
-    let cfg = NumReprCfg {
-        digit_length: 8,
-        decimal_point_length: 1,
         drop_decimal_point: false,
-        is_signed: true,
-        total_length: 11,
-        float_normalizer: None,
     };
-    let mut converter = IntegerConverter::new(cfg).unwrap();
-
-    let val_str = b"012345678.9";
-   
-    bgroup.bench_function("mid-size str_to_u64 (-1_234_567.89)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(val_str))            
-        });
-    });
-   
-    bgroup.bench_function("mid-size str_to_i64 (-1_234_567.89)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(val_str))            
-        });
-    });
-
-    let cfg = NumReprCfg {
-        digit_length: 8,
-        decimal_point_length: 3,
-        drop_decimal_point: false,
-        is_signed: true,
-        total_length: 13,
-        float_normalizer: None,
-    };
-    let mut converter = IntegerConverter::new(cfg).unwrap();
-    let val_str = b"-12345678.912";
-
-    bgroup.bench_function("mid-size str_to_i64 (-1_234_567.891)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(val_str))
-        });
-    });
-
     
-    let val_str = b"-111_111_100_001_234.563";
-    let cfg = NumReprCfg {
-        digit_length: 15,
-        decimal_point_length: 3,
-        drop_decimal_point: false,
-        is_signed: true,
-        total_length: 20,
-        float_normalizer: Some(3),
-    };
-    let mut converter = IntegerConverter::new(cfg).unwrap();
-    bgroup.bench_function("long-integr str_to_i64 (-111_111_100_001_234.563)", |b| {
+    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+
+    let s = b"123456789";
+
+    bgroup.bench_function("converter.to_i64 (123456789)", |b| {
         b.iter(|| {
-            converter.to_i64(black_box(val_str))
+            converter.to_i64(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("converter.to_u64 (123456789)", |b| {
+        b.iter(|| {
+            converter.to_u64(black_box(s))
+        });
+    });
+
+    let cfg = NumReprCfg {
+        digit_length: 18,
+        decimal_point_length: 4, 
+        is_signed: false, 
+        total_length: 22,
+        float_normalizer: None,
+        drop_decimal_point: true, 
+    };
+
+    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+
+    let s = b"123456789012345678.000";
+
+    bgroup.bench_function("converter.to_i64 (123456789012345678.000)", |b| {
+        b.iter(|| {
+            converter.to_i64(black_box(s))
+        });
+    });
+
+    bgroup.bench_function("converter.to_u64 (123456789012345678.000)", |b| {
+        b.iter(|| {
+            converter.to_u64(black_box(s))
         });
     });
 
@@ -452,6 +428,7 @@ fn bench_parsing(c: &mut Criterion) {
 criterion_group!(
     benches, 
     //bench_custom_numeric_converter,
+    bench_integer_converter,
     bench_parsing,
     /*
     bench_str_to_number,
