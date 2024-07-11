@@ -14,8 +14,9 @@ use serde::{
 };
 use anyhow::{Result, bail, anyhow};
 use std::ptr::read_unaligned;
-use std::cell::UnsafeCell;
 
+/// decimal_point_length includes the decimal point itself
+/// ex) 123.45 => digit_length: 3, decimal_point_length: 3, total_length: 6
 #[derive(Default, Debug, Clone, Serialize, Copy, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NumReprCfg {
     pub digit_length: usize,
@@ -28,11 +29,7 @@ pub struct NumReprCfg {
 
 impl NumReprCfg {
     pub fn check_validity(&self) -> Result<()> {
-        let mut check_size: usize = if self.decimal_point_length == 0 {
-            self.digit_length
-        } else {
-            self.digit_length + self.decimal_point_length + 1
-        };
+        let mut check_size = self.digit_length + self.decimal_point_length;
     
         check_size += if self.is_signed { 1 } else { 0 };
     
@@ -103,65 +100,83 @@ pub fn u8_chunk_to_u128_decimal(mut chunk: u128) -> u128 {
 
 #[inline(always)]
 pub fn parse_under8_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u64 {
-    debug_assert!(length <= 8, "parse_under8: length must be less than or equal to 8");
-    // ex) u = "123.45", length = 5, point_location = 3
-    // "123.45" => "??123.45"
-    let mut chunk: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
-    // "??123.45" => "123.4500"
-    chunk <<= 64 - (length * 8);
-    // "123.4500" => "12345000"
-    let point_mask = match point_length {
-        0 => 0x0000_0000_0000_0000,
-        _ => 0xffff_ffff_ffff_ffff << (8 - point_length) * 8,
-    };
-    let decimal_mask = !point_mask;
-   
-    chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
-    u8_chunk_to_u64_decimal(chunk)
+    debug_assert!((1..=8).contains(&length), "parse_under8: length must be less than or equal to 8");
+    match point_length {
+        // ex) u = "12345"
+        0 => parse_under8(u, length),
+        // ex) u = "12345."
+        1 => parse_under8(&u[..(length - 1)], length - 1),
+        _ => {
+            // ex) u = "123.45", length = 6, point_length = 3,
+            // "123.45" => "??123.45"
+            let mut chunk: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
+            // "??123.45" => "123.4500"
+            chunk <<= 64 - (length * 8);
+            // "123.4500" => "12345000"
+            
+            let point_mask = 0xffff_ffff_ffff_ffff << (9 - point_length) * 8;
+            let decimal_mask = !point_mask;
+            chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
+            u8_chunk_to_u64_decimal(chunk)
+        },
+    }
 }
 
 #[inline(always)]
-pub fn parse_under16_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u128 {
-    debug_assert!(length <= 16, "parse_under16: length must be less than or equal to 16");
-    // ex) u = "123.45", length = 5, point_location = 3
-    // "123.45" => "??123.45"
-    let mut chunk: u128 = unsafe { read_unaligned(u.as_ptr() as *const u128) };
-    // "??123.45" => "123.4500"
-    chunk <<= 128 - (length * 8);
-    // "123.4500" => "12345000"
-    let point_mask = match point_length {
-        0 => 0x0000_0000_0000_0000_0000_0000_0000_0000,
-        _ => 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff << (16 - point_length) * 8,
-    };
-    let decimal_mask = !point_mask;
-   
-    chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
-    u8_chunk_to_u128_decimal(chunk)
+pub fn parse_under16_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u64 {
+    debug_assert!((1..=16).contains(&length), "parse_under16: length must be less than or equal to 16");
+    match point_length {
+        0 => parse_under16(u, length) as u64,
+        1 => parse_under16(&u[..(length - 1)], length - 1) as u64,
+        _ => {
+            let mut chunk: u128 = unsafe { read_unaligned(u.as_ptr() as *const u128) };
+            chunk <<= 128 - (length * 8);
+            let point_mask = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff << (17 - point_length) * 8;
+            let decimal_mask = !point_mask;
+            chunk = (chunk & point_mask) + ((chunk & (decimal_mask >> 8)) << 8);
+            u8_chunk_to_u128_decimal(chunk) as u64
+        },
+    }
 }
 
-
 #[inline(always)]
-pub fn parse_under32_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u128 {
+pub fn parse_under32_with_floating_point(u: &[u8], length: usize, point_length: usize) -> u64 {
     debug_assert!((16..=32).contains(&length), "parse_under32: length must be less than or equal to 32");
-    let point_location = length - point_length - 1;
-    let left_point_length = if point_location >= 15 { 0 } else { 15 - point_location };
-    let right_point_length = if point_location <= 15 {0} else { point_location};
-    
-    let (upper, lower) = u.split_at(16);
-    println!("upper: {:?}, lower: {:?}", std::str::from_utf8(&upper), std::str::from_utf8(lower));
-    println!("left_point_length: {}, right_point_length: {}", left_point_length, right_point_length);
-    let upper_val = parse_under16_with_floating_point(upper, 16, left_point_length);
-    let right_part_buffer = if point_location <= 15 { 1 } else { 0 };
-    let lower_val = parse_under16_with_floating_point(lower, length - 16 + right_part_buffer, right_point_length);
-    dbg!(upper_val, lower_val);
 
-    let power_val = if point_location <= 16 {
-        10u128.pow((length - 16) as u32)
-    } else {
-        10u128.pow((length - 17) as u32)
-    };
+    match point_length {
+        0 => parse_under32(u, length) as u64,
+        1 => parse_under32(&u[..(length - 1)], length - 1) as u64,
+        _ => {
+            let point_location = length - point_length;
+            let left_point_length = if point_location > 16 { 0 } else { 16 - point_location };
+            let right_point_length = if point_location < 16 { 0 } else { point_length };
+            // 
+            let (upper, lower) = u.split_at(16);
 
-    upper_val * power_val + lower_val
+            let upper_val = parse_under16_with_floating_point(upper, 16, left_point_length);
+            let lower_val = parse_under16_with_floating_point(lower, length - 16, right_point_length);
+
+            let power_val = if point_location <= 15 {
+                10u128.pow((length - 16) as u32)
+            } else {
+                10u128.pow((length - 17) as u32)
+            };
+            /*
+            dbg!(
+                std::str::from_utf8(upper).unwrap(), 
+                std::str::from_utf8(lower).unwrap(),
+                upper_val, 
+                lower_val, 
+                point_location, 
+                length, 
+                left_point_length,
+                right_point_length,
+                power_val,
+            );
+             */
+            upper_val * power_val as u64 + lower_val
+        },
+    }
 }
 
 
@@ -191,16 +206,14 @@ pub fn parse_under32(u: &[u8], length: usize) -> u128 {
 #[derive(Debug, Serialize)]
 pub struct IntegerConverter {
     numcfg: NumReprCfg,
-    decimal_point_length_i32: i32, // for powi
-    positive_digit_buffer: Vec<u8>,
+    is_signed: bool,
+    start_index: usize,
+    end_index: usize,
+    decimal_point_length: usize,
+    decimal_point_length_i32: i32,
+    parsing_length: usize,
     #[serde(skip)]
-    first_dest_ptr: UnsafeCell<*mut u8>,
-    #[serde(skip)]
-    second_dest_ptr: UnsafeCell<*mut u8>,
-    buffer_length: usize,
-    //
-    input_first_head_location: usize,
-    input_second_head_location: Option<usize>,
+    parser: fn(&[u8], usize, usize) -> u64,
 }
 
 impl<'de> Deserialize<'de> for IntegerConverter {
@@ -217,24 +230,15 @@ impl<'de> Deserialize<'de> for IntegerConverter {
 
 impl Default for IntegerConverter {
     fn default() -> IntegerConverter {
-        let buffer = vec![0u8; 8];
-        let buffer_ptr = buffer.as_ptr() as *mut u8;
-        let first_dest_ptr = unsafe {
-            buffer_ptr.add(0)
-        };
-        let second_dest_ptr = unsafe {
-            buffer_ptr.add(0)
-        };
         IntegerConverter {
             numcfg: NumReprCfg::default(),
+            is_signed: false,
+            start_index: 0,
+            end_index: 0,
+            decimal_point_length: 0,
             decimal_point_length_i32: 0,
-            positive_digit_buffer: buffer,
-            first_dest_ptr: UnsafeCell::new(first_dest_ptr),
-            second_dest_ptr : UnsafeCell::new(second_dest_ptr),
-            buffer_length: 0,
-            //
-            input_first_head_location: 0,
-            input_second_head_location: None,
+            parsing_length: 0,
+            parser: parse_under16_with_floating_point,
         }
     }
 }
@@ -250,31 +254,34 @@ unsafe impl Send for IntegerConverter {}
 impl IntegerConverter {
     pub fn new (numcfg: NumReprCfg) -> Result<IntegerConverter> {
         numcfg.check_validity()?;
-
         if !cfg!(target_endian = "little") {
             bail!("IntegerConverter parse by bit operations based only on little endian")
         }
 
         let mut all_digit_size = numcfg.total_length;
-        if numcfg.is_signed {
+        
+        let start_index = if numcfg.is_signed {
             all_digit_size -= 1;
-        }
+            1
+        } else {
+            0
+        };
 
-        if numcfg.decimal_point_length > 0  {
-            all_digit_size -= 1; // take out "."
-        }
+        let decimal_point_length = if numcfg.drop_decimal_point {
+            all_digit_size -= numcfg.decimal_point_length;   
+            0
+        } else {
+            numcfg.decimal_point_length
+        };
 
-        if numcfg.drop_decimal_point {
-            all_digit_size = numcfg.digit_length;
-        }
+        let end_index = all_digit_size;
 
-        let buffer_length = match all_digit_size {
-            0..=8 => 8,
-            9 => 9,
-            10..=16 => 16,
+        let parser = match all_digit_size {
+            0..=8 => parse_under8_with_floating_point,
+            9..=16 => parse_under16_with_floating_point,
             17..=18 => {
                 log_warn!("long digit", number_config = numcfg, all_digit_size = all_digit_size);
-                32
+                parse_under32_with_floating_point
             },
             _ => {
                 log_error!(
@@ -286,100 +293,37 @@ impl IntegerConverter {
                 bail!("unsupported digit size");
             }
         };
-         
-        let input_first_head_location = match numcfg.is_signed {
-            true => 1,
-            false => 0,
-        };
-        let input_first_tail_location = if !numcfg.drop_decimal_point {
-            numcfg.total_length - numcfg.decimal_point_length - 1 - input_first_head_location
-        } else if numcfg.decimal_point_length > 0 {
-            numcfg.digit_length - 1 - input_first_head_location - 1
-        } else {
-            numcfg.digit_length - 1 - input_first_head_location
-        };
-
-        let input_second_head_location = if (numcfg.decimal_point_length > 0) && !numcfg.drop_decimal_point {
-            Some(input_first_tail_location + 2)
-        } else {
-            None
-        };
-
-        let buffer_first_head_location = buffer_length - all_digit_size;
-        let buffer_first_tail_location = buffer_first_head_location + numcfg.digit_length - 1;
-
-        let buffer_second_head_location = if input_second_head_location.is_some() {
-            Some(buffer_first_tail_location + 1)
-        } else {
-            None
-        };
-
-        //let buffer = "0".repeat(buffer_length);
-        let buffer = vec![b'0'; buffer_length];
-        let buffer_ptr = buffer.as_ptr() as *mut u8;
-        let first_dest_ptr = unsafe {
-            buffer_ptr.add(buffer_first_head_location)
-        };
-        let second_dest_ptr = if !numcfg.drop_decimal_point {
-            match numcfg.decimal_point_length {
-                0 => first_dest_ptr,
-                _ => unsafe { buffer_ptr.add(buffer_second_head_location.unwrap()) },
-            }
-        } else {
-            first_dest_ptr
-        };
-    
 
         Ok(IntegerConverter {
             numcfg,
-            decimal_point_length_i32: numcfg.decimal_point_length as i32,
-            positive_digit_buffer: buffer,
-            //
-            first_dest_ptr: UnsafeCell::new(first_dest_ptr),
-            second_dest_ptr: UnsafeCell::new(second_dest_ptr),
-            buffer_length,
-            //
-            input_first_head_location,
-            input_second_head_location,
+            is_signed: numcfg.is_signed,
+            start_index,
+            end_index,
+            decimal_point_length,
+            decimal_point_length_i32: decimal_point_length as i32,
+            parsing_length: all_digit_size,
+            parser,
         })
     }   
-        
-    #[inline(always)]
-    fn copy_to_buffer(&mut self, value: &[u8]) {
-        unsafe {
-            let value_ptr = value.as_ptr();
-            
-            value_ptr.add(self.input_first_head_location).copy_to_nonoverlapping(
-                *self.first_dest_ptr.get(),
-                self.numcfg.digit_length
-            );
-
-            // decimal range copy (if exists)
-            if let Some(input_second_head) = self.input_second_head_location {
-                value_ptr.add(input_second_head).copy_to_nonoverlapping(
-                    *self.second_dest_ptr.get(),
-                    self.numcfg.decimal_point_length
-                );
-            }
-        }
-    }
 
     #[inline(always)]
     pub fn to_u64(&mut self, value: &[u8]) -> u64 {
-        self.copy_to_buffer(value);
-        match self.buffer_length {
-            _ => parse_under8(&self.positive_digit_buffer, self.numcfg.digit_length),
-            //16 => parse_16_chars_with_u128(&self.positive_digit_buffer) as u64,
-            //32 => parse_32_chars_by_split(&self.positive_digit_buffer) as u64,
-            //_ => parse_9_chars(&self.positive_digit_buffer),
-        }
+        (self.parser)(
+            &value[self.start_index..self.end_index], 
+            self.parsing_length,
+            self.decimal_point_length,
+        )
     }
     
     #[inline(always)]
     pub fn to_i64(&mut self, value: &[u8]) -> i64 {
-        match value[0] == b'0' {
-            false => (!self.to_u64(value)).wrapping_add(1) as i64,
-            _ => self.to_u64(value) as i64,
+        if self.is_signed {
+            match value[0] == b'0' {
+                false => (!self.to_u64(value)).wrapping_add(1) as i64,
+                _ => self.to_u64(value) as i64,
+            }
+        } else {
+            self.to_u64(value) as i64
         }
     }
 
@@ -459,107 +403,96 @@ mod tests {
     #[test]
     fn test_chars_parser() {
         let s = b"1";
-        let val = parse_under8(s, 1);
+        let val = parse_under8_with_floating_point(s, 1, 0);
+        assert_eq!(val, 1);
+        let val = parse_under16_with_floating_point(s, 1, 0);
         assert_eq!(val, 1);
 
-        let s = b"12";
-        let val = parse_under8(s, 2);
-        assert_eq!(val, 12);
-
-        let s = b"123";
-        let val = parse_under8(s, 3);
-        assert_eq!(val, 123);
-
-        let s = b"1234";
-        let val = parse_under8(s, 4);
-        assert_eq!(val, 1234);
-
-        let s = b"12345";
-        let val = parse_under8(s, 5);
-        assert_eq!(val, 12345);
-
-        let s = b"123456";
-        let val = parse_under8(s, 6);
+        let s = b".123456";
+        let val = parse_under8_with_floating_point(s, 7, 7);
+        assert_eq!(val, 123456);
+        let val = parse_under16_with_floating_point(s, 7, 7);
         assert_eq!(val, 123456);
 
-        let s = b"1234567";
-        let val = parse_under8(s, 7);
+        let s = b"123456.";
+        let val = parse_under8_with_floating_point(s, 7, 1);
+        assert_eq!(val, 123456);
+        let val = parse_under16_with_floating_point(s, 7, 1);
+        assert_eq!(val, 123456);
+
+        let s = b".1234567";
+        let val = parse_under8_with_floating_point(s, 8, 8);
+        assert_eq!(val, 1234567);
+        let val = parse_under16_with_floating_point(s, 8, 8);
+        assert_eq!(val, 1234567);
+
+        let s = b"1234567.";
+        let val = parse_under8_with_floating_point(s, 8, 1);
+        assert_eq!(val, 1234567);
+        let val = parse_under16_with_floating_point(s, 8, 1);
         assert_eq!(val, 1234567);
 
         let s = b"12345678";
-        let val = parse_under8(s, 8);
+        let val = parse_under8_with_floating_point(s, 8, 0);
+        assert_eq!(val, 12345678);
+        let val = parse_under16_with_floating_point(s, 8, 0);
         assert_eq!(val, 12345678);
 
-        let s = b"123456789";
-        let val = parse_under16(s, 9);
-        assert_eq!(val, 123456789);
+        let s = b".12345678901234567";
+        let val = parse_under32_with_floating_point(s, 18, 18);
+        assert_eq!(val, 12345678901234567);
+        
+        let s = b"12345678901234567.";
+        let val = parse_under32_with_floating_point(s, 18, 1);
+        assert_eq!(val, 12345678901234567);
 
-        let s = b"1234567890";
-        //let val = parse_10_chars(s);
-        let val = parse_under16(s, 10);
-        assert_eq!(val, 1234567890);
 
-        let s = b"1234.56";
-        let val = parse_under8_with_floating_point(s, 7, 2);
-        assert_eq!(val, 123456);
+        let s = b"123456789012345678.";
+        let val = parse_under32_with_floating_point(s, 19, 1);
+        assert_eq!(val, 123456789012345678);
 
-        let s = b"1234.567";
-        let val = parse_under8_with_floating_point(s, 8, 3);
-        assert_eq!(val, 1234567);
+        let s = b"1234567890123456789";
+        let val = parse_under32_with_floating_point(s, 19, 0);
+        assert_eq!(val, 1234567890123456789);
 
-        let s = b"012345678.901";
-        let val = parse_under16_with_floating_point(s, 13, 3);
-        assert_eq!(val, 12345678901);
+        let s = b"123456789012345.678";
+        let val = parse_under32_with_floating_point(s, 19, 4);
+        assert_eq!(val, 123456789012345678);
 
-        let s = b"12345678901234567890";
-        let val = parse_under32(s, 20);
-        assert_eq!(val, 12345678901234567890);
+        let s = b"1234567890123456.78";
+        let val = parse_under32_with_floating_point(s, 19, 3);
+        assert_eq!(val, 123456789012345678);
 
-        let s = b"1234567.";
-        let val = parse_under8_with_floating_point(s, 8, 0);
-        assert_eq!(val, 1234567);
+        let s = b"12345678901234567.8";
+        let val = parse_under32_with_floating_point(s, 19, 2);
+        assert_eq!(val, 123456789012345678);
 
-        let s = b"123456789.";
-        let val = parse_under16_with_floating_point(s, 10, 0);
-        assert_eq!(val, 123456789);
+        let s = b"00001234.5";
+        let val = parse_under16_with_floating_point(s, 10, 2);
+        assert_eq!(val, 12345);
 
-        let s = b".123456789";
-        let val = parse_under16_with_floating_point(s, 10, 9);
-        assert_eq!(val, 123456789);
-
-        let s = b"123456789012345.123456";
-        let val = parse_under32_with_floating_point(s, 22, 6);
-        assert_eq!(val, 123456789012345123456);
-
-        let s = b"12345.6789012345123456";
-        let val = parse_under32_with_floating_point(s, 22, 16);
-        assert_eq!(val, 123456789012345123456);
-
-        let s = b"1234567890123456.123456789012345";
-        let val = parse_under32_with_floating_point(s, 32, 15);
-        assert_eq!(val, 1234567890123456123456789012345);
-
-        let s = b"123456789012345.6123456789012345";
-        let val = parse_under32_with_floating_point(s, 32, 16);
-        assert_eq!(val, 1234567890123456123456789012345);
+        let s = b"000012345.6789012345";
+        let val = parse_under32_with_floating_point(s, 20, 11);
+        assert_eq!(val, 123456789012345);
 
     }
     #[test]
     fn test_parse_small_number() {
         let cfg = NumReprCfg {
             digit_length: 4,
-            decimal_point_length: 1,
+            decimal_point_length: 2,
             drop_decimal_point: false,
             is_signed: true,
             total_length: 7,
             float_normalizer: None,
         };
         let mut converter = IntegerConverter::new(cfg).unwrap();
-        let val = converter.to_u64(b"01234.5");
+        let s = b"01234.5";
+        let val = converter.to_u64(s);
         assert_eq!(
-            val, 12345,
+            val, 12_345,
             "convert failed: {:?}",
-            std::str::from_utf8(&converter.positive_digit_buffer).unwrap()
+            std::str::from_utf8(s).unwrap(),
         );
     }
 
@@ -567,18 +500,19 @@ mod tests {
     fn test_integer_converter() -> Result<()> {
         let cfg = NumReprCfg {
             digit_length: 8,
-            decimal_point_length: 2,
+            decimal_point_length: 3,
             drop_decimal_point: false,
             is_signed: true,
             total_length: 12,
             float_normalizer: None,
         };
         let mut converter = IntegerConverter::new(cfg).unwrap();
-        
-        let val = converter.to_u64(b"000001234.56");
+        let s = b"000001234.56";
+        let val = converter.to_u64(s);
         assert_eq!(val, 123_456);
 
-        let val_i64 = converter.to_i64(b"-10001234.56");
+        let s = b"-10001234.56";
+        let val_i64 = converter.to_i64(s);
         assert_eq!(val_i64, -1_000_123_456);
 
         let cfg = NumReprCfg {
@@ -598,7 +532,7 @@ mod tests {
         
         let cfg_for_big_number = NumReprCfg {
             digit_length: 15,
-            decimal_point_length: 1,
+            decimal_point_length: 2,
             drop_decimal_point: false,
             is_signed: true,
             total_length: 18,
@@ -624,7 +558,7 @@ mod tests {
     fn drop_decimal_point() -> Result<()> {
         let cfg = NumReprCfg {
             digit_length: 11,
-            decimal_point_length: 3,
+            decimal_point_length: 4,
             drop_decimal_point: true,
             is_signed: true,
             total_length: 16,

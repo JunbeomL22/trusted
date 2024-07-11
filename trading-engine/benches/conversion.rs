@@ -10,10 +10,9 @@ use time::format_description::well_known::Rfc3339;
 use trading_engine::utils::numeric_converter::NumReprCfg;
 use trading_engine::utils::numeric_converter::{
     IntegerConverter, 
-    parse_under16,
-    parse_under8,
     parse_under8_with_floating_point,
     parse_under16_with_floating_point,
+    parse_under32_with_floating_point,
 };
 
 
@@ -394,21 +393,14 @@ fn bench_parsing(c: &mut Criterion) {
     let s = b"12345.67";
     bgroup.bench_function("parse_under8_with_floating_point (12345.67)", |b| {
         b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 8, 2)
+            parse_under8_with_floating_point(black_box(s), 8, 3)
         });
     });
 
     let s = b"012345678.901";
     bgroup.bench_function("parse_under16_with_floating_point (012345678.901)", |b| {
         b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 13, 3)
-        });
-    });
-
-    let s = b"123";
-    bgroup.bench_function("parse_under8_with_floating_point (123)", |b| {
-        b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 3, 0)
+            parse_under16_with_floating_point(black_box(s), 13, 4)
         });
     });
 
@@ -419,24 +411,38 @@ fn bench_parsing(c: &mut Criterion) {
         });
     });
 
+    let s = b"123456789";
+    bgroup.bench_function("parse_under16_with_floating_point (123456789)", |b| {
+        b.iter(|| {
+            parse_under16_with_floating_point(black_box(s), 9, 0)
+        });
+    });
+
     let s = b"123456.7";
     bgroup.bench_function("parse_under8_with_floating_point (123456.7)", |b| {
         b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 8, 1)
+            parse_under8_with_floating_point(black_box(s), 8, 2)
         });
     });
 
     let s = b"123456.78";
     bgroup.bench_function("parse_under16_with_floating_point (123456.78)", |b| {
         b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 9, 2)
+            parse_under16_with_floating_point(black_box(s), 9, 3)
         });
     });
 
     let s = b"123456.789";
     bgroup.bench_function("parse_under16_with_floating_point (123456.789)", |b| {
         b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 10, 3)
+            parse_under16_with_floating_point(black_box(s), 10, 4)
+        });
+    });
+
+    let s = b"012345678901234.5678901234567890";
+    bgroup.bench_function("parse_under32_with_floating_point (1234.56789012345678901)", |b| {
+        b.iter(|| {
+            parse_under32_with_floating_point(black_box(s), 22, 18)
         });
     });
 
