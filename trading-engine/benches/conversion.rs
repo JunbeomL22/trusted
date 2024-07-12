@@ -14,6 +14,8 @@ use trading_engine::utils::numeric_converter::{
     parse_under16_with_floating_point,
     parse_under32_with_floating_point,
 };
+use trading_engine::data::trade_quote::TradeQuoteData;
+use trading_engine::data::krx::derivative_trade::IFMSRPD0037;
 
 
 fn bench_intger_and_float(c: &mut Criterion) {
@@ -270,7 +272,7 @@ fn bench_integer_converter(
         drop_decimal_point: false,
     };
 
-    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+    let converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
 
     let s = b"12345";
 
@@ -296,7 +298,7 @@ fn bench_integer_converter(
         drop_decimal_point: false,
     };
 
-    let mut converter = IntegerConverter::new(num_cfg).expect("failed to create IntegerConverter");
+    let converter = IntegerConverter::new(num_cfg).expect("failed to create IntegerConverter");
 
     let s = b"-12345.67";
     bgroup.bench_function("converter.to_i64 (-12345.67)", |b| {
@@ -320,7 +322,7 @@ fn bench_integer_converter(
         drop_decimal_point: false,
     };
     
-    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+    let converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
 
     let s = b"123456789";
 
@@ -345,7 +347,7 @@ fn bench_integer_converter(
         drop_decimal_point: true, 
     };
 
-    let mut converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
+    let converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
 
     let s = b"123456789012345678.000";
 
@@ -425,8 +427,25 @@ fn bench_parsing(c: &mut Criterion) {
     bgroup.finish();
 }
 
+fn bench_parse_g730f(c: &mut Criterion) {
+    let mut bgroup = c.benchmark_group("parse_g730f");
+
+    let mut test_data_vec = b"G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380".to_vec();
+    test_data_vec.push(255);
+    let test_data = test_data_vec.as_slice();
+    let interface = IFMSRPD0037::default();
+    bgroup.bench_function("parse_g730f", |b| {
+        b.iter(|| {
+            interface.to_trade_quote_date(black_box(test_data))
+        });
+    });
+
+    bgroup.finish();
+}
+
 criterion_group!(
     benches, 
+    bench_parse_g730f,
     //bench_custom_numeric_converter,
     bench_integer_converter,
     bench_parsing,

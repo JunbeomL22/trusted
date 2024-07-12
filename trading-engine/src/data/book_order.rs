@@ -50,7 +50,7 @@ mod tests {
 
         let price: BookPrice = 100;
         let quantity: BookQuantity = 100;
-        let order_side: OrderSide = OrderSide::Buy;
+        let order_side: OrderSide = OrderSide::Bid;
         let order_id: OrderId = 1;
 
         let book_order = BookOrder::new(price, quantity, order_side, order_id);

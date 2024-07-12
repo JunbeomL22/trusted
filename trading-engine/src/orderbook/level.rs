@@ -146,7 +146,7 @@ mod tests {
             order_id: 1,
             price: bp,
             quantity: 100,
-            order_side: OrderSide::Buy,
+            order_side: OrderSide::Bid,
         };
 
         let mut level = Level::initialize_with_order(order.clone());
@@ -157,7 +157,7 @@ mod tests {
             order_id: 2,
             price: bp,
             quantity: 200,
-            order_side: OrderSide::Buy,
+            order_side: OrderSide::Bid,
         };
 
         level.add_order(order2.clone()).unwrap();

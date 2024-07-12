@@ -252,6 +252,9 @@ impl Clone for IntegerConverter {
 unsafe impl Send for IntegerConverter {}
 
 impl IntegerConverter {
+    pub fn get_config(&self) -> &NumReprCfg {
+        &self.numcfg
+    }
     pub fn new (numcfg: NumReprCfg) -> Result<IntegerConverter> {
         numcfg.check_validity()?;
         if !cfg!(target_endian = "little") {
@@ -307,7 +310,7 @@ impl IntegerConverter {
     }   
 
     #[inline(always)]
-    pub fn to_u64(&mut self, value: &[u8]) -> u64 {
+    pub fn to_u64(&self, value: &[u8]) -> u64 {
         (self.parser)(
             &value[self.start_index..self.end_index], 
             self.parsing_length,
@@ -316,7 +319,7 @@ impl IntegerConverter {
     }
     
     #[inline(always)]
-    pub fn to_i64(&mut self, value: &[u8]) -> i64 {
+    pub fn to_i64(&self, value: &[u8]) -> i64 {
         if self.is_signed {
             match value[0] == b'0' {
                 false => (!self.to_u64(value)).wrapping_add(1) as i64,
@@ -328,7 +331,7 @@ impl IntegerConverter {
     }
 
     #[inline(always)]
-    pub fn to_f64_from_i64(&mut self, value: i64) -> f64 {
+    pub fn to_f64_from_i64(&self, value: i64) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_point_length_i32)
     }
 
@@ -367,15 +370,15 @@ pub struct OrderConverter {
 }
 
 impl OrderConverter {
-    pub fn to_book_price(&mut self, val: &[u8]) -> BookPrice {
+    pub fn to_book_price(&self, val: &[u8]) -> BookPrice {
         self.price.to_i64(val)
     }
 
-    pub fn to_book_quantity(&mut self, val: &[u8]) -> BookQuantity {
+    pub fn to_book_quantity(& self, val: &[u8]) -> BookQuantity {
         self.quantity.to_u64(val)
     }
 
-    pub fn to_order_count(&mut self, val: &[u8]) -> OrderCount {
+    pub fn to_order_count(& self, val: &[u8]) -> OrderCount {
         assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
         self.order_count.to_u64(val) as u32
     }
@@ -387,14 +390,14 @@ pub struct TimeStampConverter {
 }
 
 impl TimeStampConverter {
-    pub fn to_timestamp(&mut self, val: &[u8]) -> u64 {
+    pub fn to_timestamp(& self, val: &[u8]) -> u64 {
         self.converter.to_u64(val)
     }
 }
 
-unsafe impl Sync for OrderConverter {}
+//unsafe impl Sync for OrderConverter {}
 
-unsafe impl Sync for TimeStampConverter {}
+//unsafe impl Sync for TimeStampConverter {}
 
 
 #[cfg(test)]

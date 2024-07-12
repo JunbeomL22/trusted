@@ -1,22 +1,26 @@
-use crate::data::trade_quote_data::TradeQuoteData;
+use crate::data::trade_quote::TradeQuoteData;
 use crate::types::{
     venue::Venue,
     base::{
         Slice,
-        BookPrice,
-        BookQuantity,
-        OrderCount,
-        OrderData,
+        OrderBase,
     },
     isin_code::IsinCode,
     enums::TradeType,
+};
+use crate::utils::numeric_converter::{
+    OrderConverter,
+    TimeStampConverter,
 };
 use crate::data::krx::krx_converter::{
     KRX_DERIVATIVE_CONVERTER,
     KRX_TIMESTAMP_CONVERTER,
 };
-use anyhow::Result;
-use std::str::from_utf8_unchecked;
+use anyhow::{
+    Result,
+    anyhow,
+};
+
 
 /// Message Structure:
 /// (Derivatives) trade + best 5 level Bid/Ask
@@ -80,121 +84,166 @@ use std::str::from_utf8_unchecked;
 /// | Bid Price_Valid Counts           | Int        | 5      | 430           |
 /// | End Keyword                      | String     | 1      | 431           |
 /// +----------------------------------+------------+--------+---------------+
+/// ex) G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380�"
 #[derive(Debug, Clone)]
 pub struct IFMSRPD0037 {
+    order_converter: OrderConverter,
+    timestamp_converter: TimeStampConverter,
+    payload_length: usize,
     isin_code_slice: Slice,
     timestamp_slice: Slice,
     //
     trade_price_slice: Slice,
     trade_quantity_slice: Slice,
     //
-    near_month_trade_price_slice: Slice,
+    // near_month_trade_price_slice: Slice,
     //
     trade_type_slice: Slice,
     //
-    ask_price_slice_vec: Vec<Slice>,
-    bid_price_slice_vec: Vec<Slice>,
+    quote_level: usize, // 5 in this case
+    quote_start_index: usize, // 172 in this case
     //
-    ask_quantity_slice_vec: Vec<Slice>,
-    bid_quantity_slice_vec: Vec<Slice>,
-    //
-    ask_order_count_slice_vec: Vec<Slice>,
-    bid_order_count_slice_vec: Vec<Slice>,
-    //
+    //spread_products_list: Vec<IsinCode>,
 }
 
 impl Default for IFMSRPD0037 {
     fn default() -> Self {
         IFMSRPD0037 {
+            order_converter: OrderConverter::get_krx_derivative_converter(),
+            timestamp_converter: OrderConverter::krx_timestamp_converter(),
+            payload_length: 431,
             isin_code_slice: Slice { start: 17, end: 29 },
             timestamp_slice: Slice { start: 35, end: 47 },
             //
             trade_price_slice: Slice { start: 47, end: 56 },
             trade_quantity_slice: Slice { start: 56, end: 65 },
             //
-            near_month_trade_price_slice: Slice { start: 65, end: 74 },
+            // near_month_trade_price_slice: Slice { start: 65, end: 74 },
             //
             trade_type_slice: Slice { start: 153, end: 154 },
             //
-            ask_price_slice_vec: vec![
-                Slice { start: 172, end: 181 },
-                Slice { start: 218, end: 227 },
-                Slice { start: 264, end: 273 },
-                Slice { start: 310, end: 319 },
-                Slice { start: 356, end: 365 },
-            ],
-            bid_price_slice_vec: vec![
-                Slice { start: 181, end: 190 },
-                Slice { start: 227, end: 236 },
-                Slice { start: 273, end: 282 },
-                Slice { start: 319, end: 328 },
-                Slice { start: 365, end: 374 },
-            ],
+            quote_level: 5,
+            quote_start_index: 172,
             //
-            ask_quantity_slice_vec: vec![
-                Slice { start: 190, end: 199 },
-                Slice { start: 236, end: 245 },
-                Slice { start: 282, end: 291 },
-                Slice { start: 328, end: 337 },
-                Slice { start: 374, end: 383 },
-            ],
-            bid_quantity_slice_vec: vec![
-                Slice { start: 199, end: 208 },
-                Slice { start: 245, end: 254 },
-                Slice { start: 291, end: 300 },
-                Slice { start: 337, end: 346 },
-                Slice { start: 383, end: 392 },
-            ],
-            //
-            ask_order_count_slice_vec: vec![
-                Slice { start: 208, end: 213 },
-                Slice { start: 254, end: 259 },
-                Slice { start: 300, end: 305 },
-                Slice { start: 346, end: 351 },
-                Slice { start: 392, end: 397 },
-            ],
-            bid_order_count_slice_vec: vec![
-                Slice { start: 213, end: 218 },
-                Slice { start: 259, end: 264 },
-                Slice { start: 305, end: 310 },
-                Slice { start: 351, end: 356 },
-                Slice { start: 397, end: 402 },
-            ],
         }
     }
 }
 
-/*
+
 impl IFMSRPD0037 {
-    pub fn to_trade_quote_date(&self, payload: &[u8]) -> TradeQuoteData {
-        let converter = &KRX_DERIVATIVE_CONVERTER;
-        let timestamp_converter = &KRX_TIMESTAMP_CONVERTER;
-        
+    pub fn to_trade_quote_date(&self, payload: &[u8]) -> Result<TradeQuoteData> {
+        if payload.len() != self.payload_length {
+            let err = || anyhow!(
+                "Invalid payload length: {}\n\
+                message:\n\
+                {:?}", 
+                payload.len(),
+                std::str::from_utf8(payload),
+            );
+            return Err(err());
+        }
+
+        if payload[self.payload_length - 1] != 255 {
+            let err = || anyhow!(
+                "Invalid end keyword: {}\n\
+                message:\n\
+                {:?}", 
+                payload[self.payload_length - 1],
+                std::str::from_utf8(payload),
+            );
+            return Err(err());
+        }
+
+        //let converter = &KRX_DERIVATIVE_CONVERTER;
+        //let timestamp_converter = &KRX_TIMESTAMP_CONVERTER;
+        let converter = &self.order_converter;
+        let timestamp_converter = &self.timestamp_converter;
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+        let or_ln = converter.order_count.get_config().total_length;
         //
         let venue = Venue::KRX;
 
-        let isin_code = IsinCode { isin: payload[self.isin_code_slice.start..self.isin_code_slice.end] };
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
-        let timestemp = timestamp_converter.to_timestamp(payload[self.timestamp_slice.start..self.timestamp_slice.end]);
-
-        let trade_price = converter.to_price(payload[self.trade_price_slice.start..self.trade_price_slice.end]);
-
-        let trade_quantity = converter.to_quantity(&payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end]);
-        trade_quote_data.near_month_trade_price = converter.to_price(&payload[ifmsrpd0037.near_month_trade_price_slice.start..ifmsrpd0037.near_month_trade_price_slice.end]);
-        trade_quote_data.trade_type = match payload[ifmsrpd0037.trade_type_slice.start] {
-            b'2' => Some(TradeType::Buy),
-            b'1' => Some(TradeType::Sell),
+        let timestamp = timestamp_converter.to_timestamp(&payload[self.timestamp_slice.start..self.timestamp_slice.end]);
+        let trade_price = converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
+        let trade_quantity = converter.to_book_quantity(&payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end]);
+        
+        let trade_type = match &payload[self.trade_type_slice.start..self.trade_type_slice.end] {
+            b"2" => Some(TradeType::Buy),
+            b"1" => Some(TradeType::Sell),
             _ => Some(TradeType::Undefined),
         };
         //
-        for i in 0..5 {
-            trade_quote_data.ask_order_data.push(OrderData {
-                order_count: converter.to_order_count(&payload[ifmsrpd0037.ask_order_count_slice_vec[i].start..ifmsrpd0037.ask_order_count_slice_vec[i].end]),
-                book_price: converter.to_price(&payload[ifmsrpd0037.ask_price_slice_vec[i].start..ifmsrpd0037.ask_price_slice_vec[i].end]),
-                book_quantity: converter.to_quantity(&payload[ifmsrpd0037.ask_quantity_slice_vec[i].start..ifmsrpd0037.ask_quantity_slice_vec[i].end]),
-            });
-            trade_quote_data.bid_order_data.push(OrderData {
-                order_count: converter.to_order_count(&payload[ifmsrpd0037.bid_order_count_slice_vec[i].start..ifmsr
-    }
+        
+        let mut ask_order_data = Vec::with_capacity(self.quote_level);
+        let mut bid_order_data = Vec::with_capacity(self.quote_level);
+
+        let mut st_idx_marker = self.quote_start_index;
+        // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
+        for _ in 0..self.quote_level {
+            let sell_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            let buy_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            let sell_quantity = converter.to_book_quantity(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            let buy_quantity = converter.to_book_quantity(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            let sell_order_count = converter.to_order_count(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            let buy_order_count = converter.to_order_count(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            //
+            let sell_order = OrderBase {
+                book_price: sell_price,
+                book_quantity: sell_quantity,
+                order_count: sell_order_count,
+            };
+
+            let buy_order = OrderBase {
+                book_price: buy_price,
+                book_quantity: buy_quantity,
+                order_count: buy_order_count,
+            };
+
+            ask_order_data.push(sell_order);
+            bid_order_data.push(buy_order);
+        }
+
+        Ok(
+            TradeQuoteData {
+                venue,
+                isin_code,
+                timestamp,
+                trade_price,
+                trade_quantity,
+                trade_type,
+                ask_order_data,
+                bid_order_data,
+            }
+        )
+    }            
 }
- */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn show_me_the_memory() -> Result<()> {
+        let mut test_data_vec = b"G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380".to_vec();
+        test_data_vec.push(255);
+        let test_data = test_data_vec.as_slice();
+        let ifmsrpd0037 = IFMSRPD0037::default();
+        
+        let trade_quote_data = ifmsrpd0037.to_trade_quote_date(test_data).expect("failed to convert to TradeQuoteData");
+        println!("\n* G703F parsing for isin code: {:?}\n", trade_quote_data.isin_code.as_str());
+        dbg!(trade_quote_data);
+        assert_eq!(1, 1);
+
+        Ok(())
+    }   
+}

@@ -8,7 +8,7 @@ members = [
 ]
 
 [profile.release]
-#lto = true #// this helps in parsing
+#1to = true #// this helps in parsing
 opt-level = 3
 #codegen-units = 1
 

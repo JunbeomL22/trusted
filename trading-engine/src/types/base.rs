@@ -24,7 +24,7 @@ pub struct Slice {
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct OrderData {
+pub struct OrderBase {
     pub order_count: OrderCount,
     pub book_price: BookPrice,
     pub book_quantity: BookQuantity,

@@ -12,6 +12,14 @@ pub struct IsinCode {
 }
 
 impl IsinCode {
+    pub fn from_u8_unchecked(isin: [u8; 12]) -> Self {
+        IsinCode { isin: isin }
+    }
+
+    pub fn as_str(&self) -> &str {
+        unsafe { from_utf8_unchecked(&self.isin) }        
+    }
+
     pub fn new(isin: &[u8]) -> Result<Self> {
         if !checkers::valid_isin_code_length(isin) {
             let err = || anyhow!("Invalid ISIN code: invalid length: {:?}", isin);
@@ -31,15 +39,6 @@ impl IsinCode {
         Ok(IsinCode { isin: unsafe { *isin.as_ptr().cast::<[u8; 12]>() } })
     }
 
-    pub fn as_str(&self) -> &str {
-        unsafe { from_utf8_unchecked(&self.isin) }        
-    }
-}
-
-impl From<&str> for IsinCode {
-    fn from(isin: &str) -> Self {
-        IsinCode { isin: isin.as_bytes().try_into().unwrap() }
-    }
 }
 
 impl PartialEq<&str> for IsinCode {
@@ -63,6 +62,18 @@ impl PartialEq<IsinCode> for IsinCode {
 impl PartialEq<Vec<u8>> for IsinCode {
     fn eq(&self, other: &Vec<u8>) -> bool {
         self.isin == other.as_slice()
+    }
+}
+
+impl PartialEq<&[u8]> for IsinCode {
+    fn eq(&self, other: &&[u8]) -> bool {
+        self.isin == *other
+    }
+}
+
+impl PartialEq<[u8; 12]> for IsinCode {
+    fn eq(&self, other: &[u8; 12]) -> bool {
+        self.isin == *other
     }
 }
 
