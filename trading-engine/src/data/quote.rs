@@ -18,7 +18,7 @@ impl QuoteData {
     pub fn with_capacity(n: usize) -> Self {
         QuoteData {
             venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]),
+            isin_code: unsafe { IsinCode::from_u8_unchecked(&[0; 12]) },
             timestamp: 0,
             ask_order_data: Vec::with_capacity(n),
             bid_order_data: Vec::with_capacity(n),

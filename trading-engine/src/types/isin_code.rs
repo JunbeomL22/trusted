@@ -28,8 +28,10 @@ impl PartialEq<[u8; 12]> for IsinCode {
 }
 
 impl IsinCode {
-    pub fn from_u8_unchecked(isin: [u8; 12]) -> Self {
-        IsinCode { isin }
+    /// # Safety
+    /// This function is unsafe because it does not check the validity of the input.
+    pub unsafe fn from_u8_unchecked(isin: &[u8]) -> Self {
+        IsinCode { isin: *isin.as_ptr().cast::<[u8; 12]>() }
     }
 
     pub fn as_str(&self) -> &str {

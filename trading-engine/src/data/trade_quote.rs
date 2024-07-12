@@ -6,8 +6,8 @@ use crate::types::{
 };
 
 use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TradeQuoteData {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TradeQuoteData<const N: usize> {
     //data_code: LocalStr, // this will be sent to another thread anyway
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
@@ -20,32 +20,16 @@ pub struct TradeQuoteData {
     // near_month_trade_price: BookPrice, // far month trade price is not necessary
     // far_month_trade_price: Option<BookPrice>,
     //
-    pub ask_order_data: Vec<OrderBase>,
-    pub bid_order_data: Vec<OrderBase>,
+    pub ask_order_data: [OrderBase; N],
+    pub bid_order_data: [OrderBase; N],
 }
 
-impl Default for TradeQuoteData {
+impl Default for TradeQuoteData<5> {
     fn default() -> Self {
         TradeQuoteData {
             //data_code: LocalStr::from(""),
-            venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]),
-            timestamp: 0,
-            trade_price: 0,
-            trade_quantity: 0,
-            trade_type: None,
-            ask_order_data: Vec::new(),
-            bid_order_data: Vec::new(),
-        }
-    }
-}
-
-impl TradeQuoteData {
-    pub fn with_capacity(n: usize) -> Self {
-        TradeQuoteData {
-            //data_code: LocalStr::from(""),
-            venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]),
+            venue: Venue::default(),
+            isin_code: IsinCode::default(),
             timestamp: 0,
             trade_price: 0,
             trade_quantity: 0,
@@ -53,8 +37,8 @@ impl TradeQuoteData {
             trade_type: None,
             //is_spread_product: false,
             //near_month_trade_price: 0,
-            ask_order_data: Vec::with_capacity(n),
-            bid_order_data: Vec::with_capacity(n),
+            ask_order_data: [OrderBase::default(); 5],
+            bid_order_data: [OrderBase::default(); 5],
         }
     }
 }

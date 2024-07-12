@@ -22,7 +22,7 @@ impl Default for TradeData {
         TradeData {
             //data_code: LocalStr::from(""),
             venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]),
+            isin_code: unsafe { IsinCode::from_u8_unchecked(&[0; 12]) },
             timestamp: 0,
             trade_price: 0,
             trade_quantity: 0,
@@ -36,7 +36,7 @@ impl TradeData {
         TradeData {
             //data_code: LocalStr::from(""),
             venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]),
+            isin_code: unsafe { IsinCode::from_u8_unchecked(&[0; 12]) },
             timestamp: 0,
             trade_price: 0,
             trade_quantity: 0,

@@ -7,6 +7,7 @@ use crate::types::{
 };
 use crate::utils::numeric_converter::{OrderConverter, TimeStampConverter};
 use anyhow::{anyhow, Result};
+use once_cell::sync::Lazy;
 
 /// Message Structure:
 /// (Derivatives) trade + best 5 level Bid/Ask
@@ -119,7 +120,8 @@ impl Default for IFMSRPD0037 {
 }
 
 impl IFMSRPD0037 {
-    pub fn to_trade_quote_date(&self, payload: &[u8]) -> Result<TradeQuoteData> {
+    pub fn to_trade_quote_date(&self, payload: &[u8]) -> Result<TradeQuoteData<5>> {
+        
         if payload.len() != self.payload_length {
             let err = || {
                 anyhow!(
@@ -146,27 +148,26 @@ impl IFMSRPD0037 {
             return Err(err());
         }
 
-        //let converter = &KRX_DERIVATIVE_CONVERTER;
-        //let timestamp_converter = &KRX_TIMESTAMP_CONVERTER;
         let converter = &self.order_converter;
         let timestamp_converter = &self.timestamp_converter;
-
+        
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = converter.order_count.get_config().total_length;
         //
         let venue = Venue::KRX;
 
-        let isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let timestamp = unsafe {
+            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+        };
 
-        let timestamp = timestamp_converter
-            .to_timestamp(&payload[self.timestamp_slice.start..self.timestamp_slice.end]);
         let trade_price = converter
             .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
-        let trade_quantity = converter.to_book_quantity(
-            &payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end],
-        );
+        
+        let trade_quantity = unsafe {
+            converter.to_book_quantity_unchecked(&payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end])
+        };
 
         let trade_type = match &payload[self.trade_type_slice.start..self.trade_type_slice.end] {
             b"2" => Some(TradeType::Buy),
@@ -175,49 +176,86 @@ impl IFMSRPD0037 {
         };
         //
 
-        let mut ask_order_data = Vec::with_capacity(self.quote_level);
-        let mut bid_order_data = Vec::with_capacity(self.quote_level);
+        let mut ask_order_data = [OrderBase::default(); 5];
+        let mut bid_order_data = [OrderBase::default(); 5];
 
         let mut st_idx_marker = self.quote_start_index;
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         unsafe {
-            for _ in 0..self.quote_level {
-                let sell_price =
-                    converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-                st_idx_marker += pr_ln;
-                let buy_price =
-                    converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-                st_idx_marker += pr_ln;
-                let sell_quantity = converter
-                    .to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-                st_idx_marker += qn_ln;
-                let buy_quantity = converter
-                    .to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-                st_idx_marker += qn_ln;
-                let sell_order_count = converter
-                    .to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
-                st_idx_marker += or_ln;
-                let buy_order_count = converter
-                    .to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
-                st_idx_marker += or_ln;
-                //
-                let sell_order = OrderBase {
-                    book_price: sell_price,
-                    book_quantity: sell_quantity,
-                    order_count: sell_order_count,
-                };
+            // i = 0
+            ask_order_data[0].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            bid_order_data[0].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
 
-                let buy_order = OrderBase {
-                    book_price: buy_price,
-                    book_quantity: buy_quantity,
-                    order_count: buy_order_count,
-                };
+            ask_order_data[0].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            bid_order_data[0].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            ask_order_data[0].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            bid_order_data[0].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
 
-                ask_order_data.push(sell_order);
-                bid_order_data.push(buy_order);
-            }
+            // i = 1
+            ask_order_data[1].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            bid_order_data[1].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+
+            ask_order_data[1].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            bid_order_data[1].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            ask_order_data[1].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            bid_order_data[1].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+
+            // i = 2
+            ask_order_data[2].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            bid_order_data[2].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+
+            ask_order_data[2].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            bid_order_data[2].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            ask_order_data[2].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            bid_order_data[2].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+
+            // i = 3
+            ask_order_data[3].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            bid_order_data[3].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+
+            ask_order_data[3].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            bid_order_data[3].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            ask_order_data[3].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            bid_order_data[3].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+
+            // i = 4
+            ask_order_data[4].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+            bid_order_data[4].book_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+            st_idx_marker += pr_ln;
+
+            ask_order_data[4].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            bid_order_data[4].book_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+            st_idx_marker += qn_ln;
+            ask_order_data[4].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+            st_idx_marker += or_ln;
+            bid_order_data[4].order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
         }
-
         Ok(TradeQuoteData {
             venue,
             isin_code,
