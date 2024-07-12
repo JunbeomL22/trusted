@@ -1,5 +1,5 @@
-use crate::definitions::Real;
 use crate::currency::Currency;
+use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
 //
 use serde::{Deserialize, Serialize};
@@ -12,12 +12,8 @@ pub struct Cash {
 }
 
 impl Cash {
-    pub fn new(
-        currency: Currency,
-        name: String,
-        code: String,
-    ) -> Self {
-        Cash { 
+    pub fn new(currency: Currency, name: String, code: String) -> Self {
+        Cash {
             currency,
             name,
             code,

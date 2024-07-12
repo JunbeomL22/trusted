@@ -1,11 +1,7 @@
 use crate::types::{
-    isin_code::IsinCode,
-    base::{
-        BookPrice,
-        BookQuantity,
-        OrderBase,
-    },
+    base::{BookPrice, BookQuantity},
     enums::TradeType,
+    isin_code::IsinCode,
     venue::Venue,
 };
 
@@ -15,7 +11,7 @@ pub struct TradeData {
     //data_code: LocalStr, // this will be sent to another thread anyway
     venue: Venue,
     isin_code: IsinCode, // this can be spread product
-    timestamp: u64, // HHMMSSuuuuuu
+    timestamp: u64,      // HHMMSSuuuuuu
     trade_price: BookPrice,
     trade_quantity: BookQuantity,
     trade_type: Option<TradeType>,
@@ -26,7 +22,7 @@ impl Default for TradeData {
         TradeData {
             //data_code: LocalStr::from(""),
             venue: Venue::KRX,
-            isin_code: IsinCode::from_u8_unchecked([0; 12]), 
+            isin_code: IsinCode::from_u8_unchecked([0; 12]),
             timestamp: 0,
             trade_price: 0,
             trade_quantity: 0,
@@ -36,7 +32,7 @@ impl Default for TradeData {
 }
 
 impl TradeData {
-    pub fn with_capacity(n: usize) -> Self {
+    pub fn with_capacity(_n: usize) -> Self {
         TradeData {
             //data_code: LocalStr::from(""),
             venue: Venue::KRX,

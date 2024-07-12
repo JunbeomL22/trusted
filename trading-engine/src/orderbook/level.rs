@@ -1,14 +1,13 @@
 use crate::data::book_order::BookOrder;
-use crate::types::base::{OrderId, BookPrice};
+use crate::types::base::{BookPrice, OrderId};
 use crate::utils::numeric_converter::IntegerConverter;
 //
+use anyhow::{anyhow, Result};
 use std::collections::BTreeMap;
-use anyhow::{Result, anyhow};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Default)]
-pub struct Level
-{
+pub struct Level {
     pub book_price: BookPrice,
     pub orders: BTreeMap<OrderId, BookOrder>,
     arraival_order: Vec<OrderId>,
@@ -40,13 +39,15 @@ impl Level {
 
     pub fn add_order(&mut self, order: BookOrder) -> Result<()> {
         if self.book_price != order.price {
-            let lazy_error = || anyhow!(
-                "Price mismatch\n
+            let lazy_error = || {
+                anyhow!(
+                    "Price mismatch\n
                 level: {:?}\n
                 input_order: {:?}",
-                self,
-                order,
-            );
+                    self,
+                    order,
+                )
+            };
             Err(lazy_error())
         } else {
             self.arraival_order.push(order.order_id);
@@ -55,7 +56,6 @@ impl Level {
         }
     }
 
-    #[must_use]
     #[inline]
     pub fn remove_order(&mut self, order_id: OrderId) {
         self.orders.remove(&order_id);
@@ -68,7 +68,6 @@ impl Level {
         self.orders.get(&order_id)
     }
 
-    
     #[must_use]
     #[inline]
     pub fn price(&self, converter: &mut IntegerConverter) -> f64 {
@@ -86,7 +85,7 @@ impl Level {
     pub fn quantity_sum(&self, prec_helper: PrecisionHelper) -> f64 {
         self.orders
             .values()
-            .map(|order| prec_helper.quantity_u64_to_f64(order.quantity))   
+            .map(|order| prec_helper.quantity_u64_to_f64(order.quantity))
             .sum()
     }
      */
@@ -110,38 +109,30 @@ impl Level {
     pub fn is_empty(&self) -> bool {
         self.orders.is_empty()
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::base::{BookPrice, BookQuantity, OrderId};
     use crate::types::enums::OrderSide;
-    use crate::types::base::{
-        OrderId,
-        BookPrice,
-        BookQuantity,
-    };
-    use crate::utils::numeric_converter::{
-        NumReprCfg,
-        IntegerConverter,
-    };
+    use crate::utils::numeric_converter::{IntegerConverter, NumReprCfg};
 
     #[test]
     fn test_level() {
         let cfg = NumReprCfg {
             digit_length: 7,
-            decimal_point_length: 2,
+            decimal_point_length: 3,
             drop_decimal_point: false,
             is_signed: true,
             total_length: 11,
             float_normalizer: None,
         };
 
-        let mut conevrter = IntegerConverter::new(cfg).unwrap();
+        let conevrter = IntegerConverter::new(cfg).unwrap();
         let price_str = b"05000111.19";
         let bp = conevrter.to_i64(price_str);
-        
+
         let order = BookOrder {
             order_id: 1,
             price: bp,
@@ -163,7 +154,5 @@ mod tests {
         level.add_order(order2.clone()).unwrap();
         assert_eq!(level.order_count(), 2);
         assert_eq!(level.is_empty(), false);
-
-
     }
 }

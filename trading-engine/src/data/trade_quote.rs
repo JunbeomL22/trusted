@@ -1,11 +1,7 @@
 use crate::types::{
-    isin_code::IsinCode,
-    base::{
-        BookPrice,
-        BookQuantity,
-        OrderBase,
-    },
+    base::{BookPrice, BookQuantity, OrderBase},
     enums::TradeType,
+    isin_code::IsinCode,
     venue::Venue,
 };
 
@@ -15,7 +11,7 @@ pub struct TradeQuoteData {
     //data_code: LocalStr, // this will be sent to another thread anyway
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
-    pub timestamp: u64, // HHMMSSuuuuuu
+    pub timestamp: u64,      // HHMMSSuuuuuu
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
     pub trade_type: Option<TradeType>,
@@ -73,5 +69,5 @@ mod tests {
         let trade_quote_data = TradeQuoteData::default();
         print_struct_info(trade_quote_data);
         assert_eq!(1, 1);
-    }   
+    }
 }

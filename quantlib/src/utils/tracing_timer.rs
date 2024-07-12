@@ -1,6 +1,6 @@
 use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tracing_subscriber::fmt::time::FormatTime;
 use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::time::FormatTime;
 
 #[derive(Debug, Clone)]
 pub struct CustomOffsetTime {
@@ -9,8 +9,7 @@ pub struct CustomOffsetTime {
 
 impl CustomOffsetTime {
     pub fn new(hours: i8, minutes: i8, seconds: i8) -> Self {
-        let offset = UtcOffset::from_hms(hours, minutes, seconds)
-            .expect("Invalid offset");
+        let offset = UtcOffset::from_hms(hours, minutes, seconds).expect("Invalid offset");
         Self { offset }
     }
 }

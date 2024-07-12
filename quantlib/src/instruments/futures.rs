@@ -1,11 +1,10 @@
-use crate::definitions::Real;
 use crate::currency::Currency;
+use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
 //
-use time::OffsetDateTime;
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
-
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct Futures {
@@ -69,7 +68,6 @@ impl Futures {
             code,
         }
     }
-
 }
 
 impl InstrumentTrait for Futures {

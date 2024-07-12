@@ -1,8 +1,8 @@
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::holiday::Holidays;
-use serde::{Serialize, Deserialize};
-use time::{Date, Month, Weekday, UtcOffset, OffsetDateTime};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use time::{Date, Month, OffsetDateTime, UtcOffset, Weekday};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum UnitedStatesType {
@@ -26,11 +26,12 @@ impl UnitedStatesType {
 
     fn is_washington_birthday(&self, date: &OffsetDateTime) -> bool {
         let (y, m, d, w, _) = self.unpack(date);
-        
+
         if y >= 1971 {
             (15..=21).contains(&d) && w == Weekday::Monday && m == Month::February
         } else {
-            (d == 22 || (d == 23 && w == Weekday::Monday) || (d == 21 && w == Weekday::Friday)) && m == Month::February
+            (d == 22 || (d == 23 && w == Weekday::Monday) || (d == 21 && w == Weekday::Friday))
+                && m == Month::February
         }
     }
 
@@ -40,7 +41,8 @@ impl UnitedStatesType {
         if y >= 1971 {
             d >= 25 && w == Weekday::Monday && m == Month::May
         } else {
-            (d == 30 || (d == 31 && w == Weekday::Monday) || (d == 29 && w == Weekday::Friday)) && m == Month::May
+            (d == 30 || (d == 31 && w == Weekday::Monday) || (d == 29 && w == Weekday::Friday))
+                && m == Month::May
         }
     }
 
@@ -52,7 +54,7 @@ impl UnitedStatesType {
 
     fn is_columbus_day(&self, date: &OffsetDateTime) -> bool {
         let (y, m, d, w, _) = self.unpack(date);
-        
+
         (8..=14).contains(&d) && w == Weekday::Monday && m == Month::October && y >= 1971
     }
 
@@ -70,9 +72,10 @@ impl UnitedStatesType {
     fn is_juneteenth(&self, date: &OffsetDateTime, move_to_friday: bool) -> bool {
         // declared in 2021, but only observed by exchanges since 2022
         let (y, m, d, w, _) = self.unpack(date);
-        (d == 19 
-            || (d == 20 && w == Weekday::Monday) 
-            || ((d == 18 && w == Weekday::Friday) && move_to_friday)) && (m == Month::June && y >= 2022)
+        (d == 19
+            || (d == 20 && w == Weekday::Monday)
+            || ((d == 18 && w == Weekday::Friday) && move_to_friday))
+            && (m == Month::June && y >= 2022)
     }
 
     fn goverment_bond_holiday(&self, date: &OffsetDateTime) -> bool {
@@ -90,16 +93,18 @@ impl UnitedStatesType {
         || self.is_columbus_day(date)// Columbus Day (second Monday in October)
         || self.is_veterans_day_no_saturday(date)// Veteran's Day (Monday if Sunday)
         || ((22..=28).contains(&d) && w == Weekday::Thursday && m == Month::November) //Thanksgiving Day (fourth Thursday in November)
-        || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)// Christmas (Monday if Sunday or Friday if Saturday)
+        || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)
+        // Christmas (Monday if Sunday or Friday if Saturday)
         {
-            return true
-        } 
+            return true;
+        }
         // special closings
         if (y == 2018 && m == Month::December && d == 5) // President Bush's Funeral
         || (y == 2012 && m == Month::October && d == 30) // Hurricane Sandy
-        || (y == 2004 && m == Month::June && d == 11) // President Reagan's funeral
+        || (y == 2004 && m == Month::June && d == 11)
+        // President Reagan's funeral
         {
-            return true
+            return true;
         }
         false
     }
@@ -107,12 +112,14 @@ impl UnitedStatesType {
 
 impl Holidays for UnitedStatesType {
     #[allow(unused_variables)]
-    fn is_temporary_holiday(&self, date: &OffsetDateTime) -> bool { false }
+    fn is_temporary_holiday(&self, date: &OffsetDateTime) -> bool {
+        false
+    }
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
         // united states holidays are very much hard coded since there are many calendar types: nyse, settlement, government bond, federal reserve
         if self.is_temporary_holiday(date) {
-            return true
+            return true;
         }
 
         match self {
@@ -130,12 +137,13 @@ impl Holidays for UnitedStatesType {
                 || self.is_columbus_day(date)// Columbus Day (second Monday in October)
                 || self.is_veterans_day_no_saturday(date)// Veteran's Day (Monday if Sunday or Friday if Saturday)
                 || ((22..=28).contains(&d) && w == Weekday::Thursday && m == Month::November)// Thanksgiving Day (fourth Thursday in November)
-                || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)// Christmas (Monday if Sunday or Friday if Saturday)
+                || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)
+                // Christmas (Monday if Sunday or Friday if Saturday)
                 {
-                    return true 
+                    return true;
                 }
                 false
-            },
+            }
             UnitedStatesType::Nyse => {
                 let (y, m, d, w, dd) = self.unpack(date);
                 if ((d == 1 || (d == 2 && w == Weekday::Monday)) && m == Month::January) // New Year's Day (possibly moved to Monday if on Sunday)
@@ -146,14 +154,16 @@ impl Holidays for UnitedStatesType {
                 || ((d == 4 || (d == 5 && w == Weekday::Monday) || (d == 3 && w == Weekday::Friday)) && m == Month::July)// Independence Day (Monday if Sunday or Friday if Saturday)
                 || self.is_labor_day(date) // Labor Day (first Monday in September)
                 || ((22..=28).contains(&d) && w == Weekday::Thursday && m == Month::November)// Thanksgiving Day (fourth Thursday in November)
-                || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)// Christmas (Monday if Sunday or Friday if Saturday)
+                || ((d == 25 || (d == 26 && w == Weekday::Monday) || (d == 24 && w == Weekday::Friday)) && m == Month::December)
+                // Christmas (Monday if Sunday or Friday if Saturday)
                 {
-                    return true
+                    return true;
                 }
                 if (y >= 1998 && (15..=21).contains(&d) && w == Weekday::Monday && m == Month::January) // Martin Luther King's birthday (third Monday in January)
-                || ((y <= 1968 || (y <= 1980 && y % 4 == 0)) && m == Month::November && d <= 7 && w == Weekday::Tuesday) // Presidential election days
+                || ((y <= 1968 || (y <= 1980 && y % 4 == 0)) && m == Month::November && d <= 7 && w == Weekday::Tuesday)
+                // Presidential election days
                 {
-                    return true
+                    return true;
                 }
                 // Special closings
                 if (y == 2018 && m == Month::December && d == 5) // President Bush's Funeral
@@ -175,21 +185,20 @@ impl Holidays for UnitedStatesType {
                 || (y == 1963 && m == Month::November && d == 25) // Funeral of President Kennedy
                 || (y == 1961 && m == Month::May && d == 29) // Day before Decoration Day
                 || (y == 1958 && m == Month::December && d == 26) // Day after Christmas
-                || ((y == 1954 || y == 1956 || y == 1965) && m == Month::December && d == 24) // Christmas Eve
+                || ((y == 1954 || y == 1956 || y == 1965) && m == Month::December && d == 24)
+                // Christmas Eve
                 {
-                    return true
+                    return true;
                 }
                 false
-            },
-            UnitedStatesType::GovernmentBond => {
-                self.goverment_bond_holiday(date)
-            },
+            }
+            UnitedStatesType::GovernmentBond => self.goverment_bond_holiday(date),
             UnitedStatesType::Sofr => {
                 // so far (that is, up to 2023 at the time of this change) SOFR never fixed
                 // on Good Friday.  We're extrapolating that pattern.  This might change if
                 // a fixing on Good Friday occurs in future years.
                 if self.is_good_friday(date, false) {
-                    return true
+                    return true;
                 }
                 // otherwise it follows the same as UnitedStatesType::GovernmentBond
                 self.goverment_bond_holiday(date)
@@ -206,10 +215,11 @@ impl Holidays for UnitedStatesType {
                     || self.is_columbus_day(date) // Columbus Day (second Monday in October)
                     || self.is_veterans_day_no_saturday(date) // Veteran's Day (Monday if Sunday)
                     || ((22..=28).contains(&d) && w == Weekday::Thursday && m == Month::November) // Thanksgiving Day (fourth Thursday in November)
-                    || ((d == 25 || (d == 26 && w == Weekday::Monday)) && m == Month::December) // Christmas (Monday if Sunday)
-                    {
-                        return true
-                    }
+                    || ((d == 25 || (d == 26 && w == Weekday::Monday)) && m == Month::December)
+                // Christmas (Monday if Sunday)
+                {
+                    return true;
+                }
                 false
             }
         }
@@ -224,7 +234,6 @@ pub struct UnitedStates {
     holiday_adder: Vec<Date>,
     holiday_remover: Vec<Date>,
 }
-
 
 impl UnitedStates {
     pub fn new(specific_type: UnitedStatesType) -> Self {
@@ -247,9 +256,9 @@ impl UnitedStates {
 impl CalendarTrait for UnitedStates {
     fn calendar_name(&self) -> &String {
         &self.name
-    }   
-    
-    fn add_holidays(&mut self, date: &Date) -> Result<()>{
+    }
+
+    fn add_holidays(&mut self, date: &Date) -> Result<()> {
         self.holiday_adder.push(*date);
         Ok(())
     }
@@ -275,7 +284,7 @@ impl CalendarTrait for UnitedStates {
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
         let date = date.to_offset(self.utc_offset);
-        
+
         self._is_holiday(&date)
     }
 
@@ -284,14 +293,16 @@ impl CalendarTrait for UnitedStates {
         self._is_weekend(&date)
     }
 
-    fn display_holidays(&self,
-                        start_date: &OffsetDateTime,
-                        end_date: &OffsetDateTime,
-                        include_weekend: bool) {
+    fn display_holidays(
+        &self,
+        start_date: &OffsetDateTime,
+        end_date: &OffsetDateTime,
+        include_weekend: bool,
+    ) {
         let start_date = start_date.to_offset(self.utc_offset);
         let end_date = end_date.to_offset(self.utc_offset);
 
-        self._display_holidays( &start_date, &end_date, include_weekend);
+        self._display_holidays(&start_date, &end_date, include_weekend);
     }
 }
 
@@ -303,7 +314,7 @@ mod tests {
     fn test_united_states_name() {
         let us = UnitedStates::new(UnitedStatesType::Settlement);
         assert_eq!(us.calendar_name(), "United States (Settlement)");
-        
+
         let us = UnitedStates::new(UnitedStatesType::Nyse);
         assert_eq!(us.calendar_name(), "United States (Nyse)");
 
@@ -314,7 +325,7 @@ mod tests {
     #[test]
     fn test_united_states_holidays() {
         use time::macros::datetime;
-        
+
         let us = UnitedStates::new(UnitedStatesType::Settlement);
         let date = datetime!(2022-1-1 00:00:00 -5:00);
 
@@ -322,5 +333,4 @@ mod tests {
         assert_eq!(us.is_removed_holiday(&date), false);
         assert_eq!(us.is_added_holiday(&date), false);
     }
-
 }

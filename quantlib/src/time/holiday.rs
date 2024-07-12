@@ -1,9 +1,11 @@
-use time::{OffsetDateTime, Weekday, Month};
 use crate::time::constants::{EASTER_MONDAYS, FIRST_EASTER_MONDAY, LAST_EASTER_MONDAY};
 use log::warn;
+use time::{Month, OffsetDateTime, Weekday};
 
 pub trait Holidays {
-    fn is_last_business_day_of_year(&self, _date: &OffsetDateTime) -> bool { false }
+    fn is_last_business_day_of_year(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
     fn is_holiday(&self, date: &OffsetDateTime) -> bool;
     fn is_temporary_holiday(&self, date: &OffsetDateTime) -> bool;
 
@@ -20,7 +22,7 @@ pub trait Holidays {
     fn is_good_friday(&self, date: &OffsetDateTime, is_orthodox: bool) -> bool {
         let (year, _, _, _, dd) = self.unpack(date);
 
-        if (year < FIRST_EASTER_MONDAY as i32) || (year as usize> LAST_EASTER_MONDAY) {
+        if (year < FIRST_EASTER_MONDAY as i32) || (year as usize > LAST_EASTER_MONDAY) {
             warn!("Good Friday is not available for the year {}", year);
             return false;
         }
@@ -35,6 +37,10 @@ pub trait Holidays {
 
 pub struct NullCalendarType {}
 impl Holidays for NullCalendarType {
-    fn is_holiday(&self, _date: &OffsetDateTime) -> bool { false }
-    fn is_temporary_holiday(&self, _date: &OffsetDateTime) -> bool { false }
+    fn is_holiday(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
+    fn is_temporary_holiday(&self, _date: &OffsetDateTime) -> bool {
+        false
+    }
 }

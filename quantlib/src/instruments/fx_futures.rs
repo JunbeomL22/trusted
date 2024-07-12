@@ -1,10 +1,10 @@
-use crate::definitions::Real;
 use crate::currency::{Currency, FxCode};
+use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
 //
-use time::OffsetDateTime;
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FxFutures {
@@ -53,10 +53,7 @@ impl FxFutures {
         name: String,
         code: String,
     ) -> FxFutures {
-        let fx_code = FxCode::new(
-            underlying_currency,
-            currency,
-        );
+        let fx_code = FxCode::new(underlying_currency, currency);
         FxFutures {
             average_trade_price,
             first_trade_date,
@@ -113,5 +110,4 @@ impl InstrumentTrait for FxFutures {
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
         vec![self.fx_code]
     }
-
 }

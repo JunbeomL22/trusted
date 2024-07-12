@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
 use crate::time::calendar_trait::CalendarTrait;
-use time::{Date, OffsetDateTime};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use time::{Date, OffsetDateTime};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NullCalendar {
@@ -47,9 +47,13 @@ impl CalendarTrait for NullCalendar {
         &self.name
     }
 
-    fn add_holidays(&mut self, _date: &Date) -> Result<()> { Ok(()) }
+    fn add_holidays(&mut self, _date: &Date) -> Result<()> {
+        Ok(())
+    }
 
-    fn remove_holidays(&mut self, _date: &Date) -> Result<()> { Ok(()) }
+    fn remove_holidays(&mut self, _date: &Date) -> Result<()> {
+        Ok(())
+    }
 
     fn display_holidays(
         &self,
@@ -61,16 +65,15 @@ impl CalendarTrait for NullCalendar {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::macros::{date, datetime};
-    use crate::utils::string_arithmetic::add_period;
-    use crate::time::calendars::nullcalendar::NullCalendar;
     use crate::definitions::Time;
-    use time::Month;
+    use crate::time::calendars::nullcalendar::NullCalendar;
     use crate::time::conventions::DayCountConvention;
+    use crate::utils::string_arithmetic::add_period;
+    use time::macros::{date, datetime};
+    use time::Month;
 
     #[test]
     fn test_is_weekend() {
@@ -102,16 +105,25 @@ mod tests {
     fn test_last_day_of_month() {
         let calendar = NullCalendar::default();
 
-        assert_eq!(calendar.last_day_of_month(2021, Month::February), date!(2021-02-28)); // 2021 is not a leap year
-        assert_eq!(calendar.last_day_of_month(2020, Month::February), date!(2020-02-29)); // 2020 is a leap year
-        assert_eq!(calendar.last_day_of_month(2021, Month::December), date!(2021-12-31)); // December always has 31 days
+        assert_eq!(
+            calendar.last_day_of_month(2021, Month::February),
+            date!(2021 - 02 - 28)
+        ); // 2021 is not a leap year
+        assert_eq!(
+            calendar.last_day_of_month(2020, Month::February),
+            date!(2020 - 02 - 29)
+        ); // 2020 is a leap year
+        assert_eq!(
+            calendar.last_day_of_month(2021, Month::December),
+            date!(2021 - 12 - 31)
+        ); // December always has 31 days
     }
 
     #[test]
     fn test_get_time_difference() {
         let calendar = NullCalendar::default();
 
-        // one year 
+        // one year
         let start_date = datetime!(2021-12-3 00:00:00 UTC); // Friday, 3rd December 2021
         let end_date = datetime!(2021-12-4 00:00:00 UTC); // Saturday, 4th December 2021
         let res = calendar.get_time_difference(&start_date, &end_date);
@@ -138,10 +150,10 @@ mod tests {
         );
 
         // one year difference where the start_date is leap_year with different offset
-        let start_date = datetime!(2020-01-01 00:00:00 UTC); 
-        let end_date = datetime!(2021-01-01 00:00:00 -06:00); 
+        let start_date = datetime!(2020-01-01 00:00:00 UTC);
+        let end_date = datetime!(2021-01-01 00:00:00 -06:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
-        let expected: Time = 1.0 + 0.25 / 365.; 
+        let expected: Time = 1.0 + 0.25 / 365.;
         assert!(
             (res - expected).abs() < 1e-5,
             "calculated time difference from {} to {} = {}, expected = {}",
@@ -152,8 +164,8 @@ mod tests {
         );
 
         // one year and one day difference where the start_date is leap_year with different offset
-        let start_date = datetime!(2020-01-02 00:00:00 UTC); 
-        let end_date = datetime!(2021-01-01 00:00:00 -06:00); 
+        let start_date = datetime!(2020-01-02 00:00:00 UTC);
+        let end_date = datetime!(2021-01-01 00:00:00 -06:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
         let expected: Time = 1.0 + 0.25 / 365. - 1.0 / 366.; // leap_year
         assert!(
@@ -166,8 +178,8 @@ mod tests {
         );
 
         // one year and one day difference where the start_date is leap_year with different offset
-        let start_date = datetime!(2020-01-01 00:00:00 UTC); 
-        let end_date = datetime!(2021-01-02 00:00:00 -06:00); 
+        let start_date = datetime!(2020-01-01 00:00:00 UTC);
+        let end_date = datetime!(2021-01-02 00:00:00 -06:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
         let expected: Time = 1.0 + 0.25 / 365. + 1.0 / 365.; // leap_year
         assert!(
@@ -178,22 +190,20 @@ mod tests {
             res,
             expected
         );
-
     }
 
     #[test]
     fn test_act_act_isda() {
         let calendar = NullCalendar::default();
         let start_date = datetime!(2021-01-01 0:0:0 UTC);
-        
+
         for i in 1..=100 {
             let end_date = add_period(&start_date, &format!("{}Y", i));
-            let result = calendar.year_fraction(
-                &start_date, 
-                &end_date, 
-                &DayCountConvention::ActActIsda
-            ).expect("Failed to calculate year fraction");
-            assert!((result - i as Time).abs() < 1e-5,
+            let result = calendar
+                .year_fraction(&start_date, &end_date, &DayCountConvention::ActActIsda)
+                .expect("Failed to calculate year fraction");
+            assert!(
+                (result - i as Time).abs() < 1e-5,
                 "calculated year_fraction from {} to {} = {}, expected = {}",
                 start_date,
                 end_date,

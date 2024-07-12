@@ -12,7 +12,9 @@ pub fn binary_search_index_ndarray<T: PartialOrd + Copy>(arr: &Array1<T>, value:
         } else if arr[mid] < value {
             low = mid + 1;
         } else {
-            if mid == 0 { break; } // Prevents underflow
+            if mid == 0 {
+                break;
+            } // Prevents underflow
             high = mid - 1;
         }
     }
@@ -23,17 +25,20 @@ pub fn binary_search_index_ndarray<T: PartialOrd + Copy>(arr: &Array1<T>, value:
     }
 
     // Adjusts low to ensure the condition arr[index] <= value < arr[index+1]
-    if arr[low] < value { 
-        low 
-    } else if low == 0 { 
-        0 
-    } else { 
-        low - 1 
+    if arr[low] < value {
+        low
+    } else if low == 0 {
+        0
+    } else {
+        low - 1
     }
 }
 
 /// This is an ndarray version of the vectorized binary search index
-pub fn vectorized_search_index_for_sorted_ndarray<T: PartialOrd + Copy>(arr: &Array1<T>, search_arr: &Array1<T>) -> Vec<usize> {
+pub fn vectorized_search_index_for_sorted_ndarray<T: PartialOrd + Copy>(
+    arr: &Array1<T>,
+    search_arr: &Array1<T>,
+) -> Vec<usize> {
     let length = search_arr.len();
     let mut result = vec![0; length];
     if length <= 2 {
@@ -42,7 +47,7 @@ pub fn vectorized_search_index_for_sorted_ndarray<T: PartialOrd + Copy>(arr: &Ar
         }
     } else {
         let first_index = binary_search_index_ndarray(arr, search_arr[0]);
-        let last_index = binary_search_index_ndarray(arr, search_arr[search_arr.len()-1]);
+        let last_index = binary_search_index_ndarray(arr, search_arr[search_arr.len() - 1]);
 
         let mut j = first_index;
         for i in 0..length {
@@ -52,7 +57,7 @@ pub fn vectorized_search_index_for_sorted_ndarray<T: PartialOrd + Copy>(arr: &Ar
                 result[i] = last_index;
             } else {
                 while j < last_index {
-                    if search_arr[i] >= arr[j] && search_arr[i] < arr[j+1] {
+                    if search_arr[i] >= arr[j] && search_arr[i] < arr[j + 1] {
                         result[i] = j;
                         break;
                     }
@@ -86,7 +91,7 @@ mod tests {
         let search_arr = Array1::from(vec![0.5, 5.0, 10.0]);
         let index = vectorized_search_index_for_sorted_ndarray(&arr, &search_arr);
         assert_eq!(
-            index, 
+            index,
             vec![0, 1, 3],
             "\nSearching location of 0.5, 5.0, 10.0 in [1.0, 2.0, 6.0, 9.0, 11.0] should be [0, 2, 3], but got {:?}", 
             index

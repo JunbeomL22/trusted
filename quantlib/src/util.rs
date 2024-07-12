@@ -1,6 +1,6 @@
+use crate::definitions::Integer;
 use ndarray::Array1;
 use time::OffsetDateTime;
-use crate::definitions::Integer;
 
 pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDateTime {
     if d1 < d2 {
@@ -12,7 +12,7 @@ pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDat
 
 //use crate::definitions::Real;
 /// This return the type name of a variable (only name, not the full path)
-/// 
+///
 /// # Examples
 /// ```
 /// use quantlib::util::type_name;
@@ -21,15 +21,16 @@ pub fn min_offsetdatetime(d1: &OffsetDateTime, d2: &OffsetDateTime) -> OffsetDat
 /// let s: String = "hello".to_string();
 /// assert_eq!(type_name(&s), "String");
 /// ```
-/// 
+///
 pub fn type_name<T>(_: &T) -> &'static str {
     let full_name = std::any::type_name::<T>();
     let parts: Vec<&str> = full_name.split("::").collect();
     parts.last().unwrap_or(&full_name)
 }
 
-pub fn is_ndarray_sorted<T>(arr: &Array1<T>) -> bool 
-where T: PartialOrd
+pub fn is_ndarray_sorted<T>(arr: &Array1<T>) -> bool
+where
+    T: PartialOrd,
 {
     for i in 0..arr.len() - 1 {
         if arr[i] > arr[i + 1] {
@@ -43,7 +44,7 @@ pub fn to_yyyymmdd_int(dt: &OffsetDateTime) -> Integer {
     let year = dt.year() as Integer;
     let month = dt.month() as Integer;
     let day = dt.day() as Integer;
-    
+
     year * 10000 + month * 100 + day
 }
 
@@ -61,8 +62,8 @@ pub fn format_duration(secs: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::macros::datetime;
     use ndarray::array;
+    use time::macros::datetime;
 
     #[test]
     fn test_type_name() {
@@ -124,5 +125,4 @@ mod tests {
         let dt10 = datetime!(2005-05-05 00:00:00 UTC);
         assert_eq!(to_yyyymmdd_int(&dt10), 20050505);
     }
-
 }

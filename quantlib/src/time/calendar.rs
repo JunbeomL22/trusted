@@ -1,10 +1,8 @@
-use enum_dispatch;
-use serde::{Serialize, Deserialize};
 use crate::time::calendars::{
-    southkorea::SouthKorea,
-    unitedstates::UnitedStates,
-    nullcalendar::NullCalendar,
+    nullcalendar::NullCalendar, southkorea::SouthKorea, unitedstates::UnitedStates,
 };
+use enum_dispatch;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[enum_dispatch::enum_dispatch(CalendarTrait)]
@@ -19,4 +17,3 @@ impl Default for Calendar {
         Calendar::NullCalendar(NullCalendar::default())
     }
 }
-

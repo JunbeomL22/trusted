@@ -1,11 +1,11 @@
 use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
+use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
 use crate::instrument::InstrumentTrait;
-use crate::enums::{OptionType, OptionDailySettlementType, OptionExerciseType};
 //
-use time::OffsetDateTime;
-use serde::{Serialize, Deserialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 //
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VanillaOption {
@@ -100,11 +100,11 @@ impl InstrumentTrait for VanillaOption {
     fn get_name(&self) -> &String {
         &self.name
     }
-    
+
     fn get_type_name(&self) -> &'static str {
         match self.option_type {
             OptionType::Call => "VanillaCall",
-            OptionType::Put => "VanillaPut"
+            OptionType::Put => "VanillaPut",
         }
     }
 

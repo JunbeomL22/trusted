@@ -1,9 +1,11 @@
 use crate::definitions::Real;
-use serde::{Deserialize, Serialize};
 use enum_dispatch::enum_dispatch;
+use serde::{Deserialize, Serialize};
 
 pub trait VolatilityInterplatorTrait {
-    fn interpolate(&self) -> Real {0.0}
+    fn interpolate(&self) -> Real {
+        0.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

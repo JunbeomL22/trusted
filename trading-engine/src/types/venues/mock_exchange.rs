@@ -1,20 +1,21 @@
-use serde::{
-    Serialize, 
-    Deserialize,
-    de::Deserializer,
-};
 use crate::types::venue::VenueTrait;
-use ustr::Ustr;
 use anyhow::Result;
-
+use serde::{de::Deserializer, Deserialize, Serialize};
+use ustr::Ustr;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Default, PartialEq, Eq)]
 pub struct Mock;
 
 impl VenueTrait for Mock {
-    fn check_account_id(&self, _: &str) -> bool { true }
-    fn check_trader_id(&self, _: &str) -> bool { true }
-    fn check_order_id(&self, _: &str) -> bool { true }
+    fn check_account_id(&self, _: &str) -> bool {
+        true
+    }
+    fn check_trader_id(&self, _: &str) -> bool {
+        true
+    }
+    fn check_order_id(&self, _: &str) -> bool {
+        true
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Copy, Default)]
@@ -36,7 +37,8 @@ impl PartialEq<u64> for MockOrderId {
 
 impl Serialize for MockOrderId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         self.id.serialize(serializer)
     }
@@ -46,21 +48,23 @@ impl Serialize for MockOrderId {
 pub struct MockAccountId(u64);
 
 #[derive(Debug, Clone, Deserialize, Hash)]
-pub struct MockTraderId { 
+pub struct MockTraderId {
     #[serde(deserialize_with = "account_id_from_str")]
     id: Ustr,
 }
 
 impl Serialize for MockTraderId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         self.id.serialize(serializer)
     }
 }
 
 fn account_id_from_str<'de, D>(deserializer: D) -> Result<Ustr, D::Error>
-where D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
     Ok(Ustr::from(&s))

@@ -1,8 +1,8 @@
-use std::sync::{Arc, Mutex};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::thread;
-use parking_lot::Mutex as ParkingLotMutex;
 use crossbeam_utils::CachePadded;
+use parking_lot::Mutex as ParkingLotMutex;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 #[derive(Clone)]
 pub struct CachePaddedA {
@@ -38,7 +38,8 @@ fn bench_arc_mutex_access_group(c: &mut Criterion) {
                             .map(|_| {
                                 let a_clone = Arc::clone(&shared_a);
                                 thread::spawn(move || {
-                                    for _ in 0..access_number { // Dereference `access_number` here
+                                    for _ in 0..access_number {
+                                        // Dereference `access_number` here
                                         let locked_a = a_clone.lock().unwrap();
                                         black_box(&locked_a.number);
                                         //black_box(&locked_a.string);
@@ -58,15 +59,12 @@ fn bench_arc_mutex_access_group(c: &mut Criterion) {
     group.finish();
 }
 
-
 fn bench_arc_parking_lot_mutex_access_group(c: &mut Criterion) {
     let mut group = c.benchmark_group("Arc<parking_lot::Mutex<A>>");
     let thread_numbers = vec![1, 3, 5, 7, 9];
     let access_numbers = vec![100_000];
 
-    let a = A {
-        number: 42,
-    };
+    let a = A { number: 42 };
 
     group.sample_size(20);
     for thread_number in &thread_numbers {
@@ -82,7 +80,8 @@ fn bench_arc_parking_lot_mutex_access_group(c: &mut Criterion) {
                             .map(|_| {
                                 let a_clone = Arc::clone(&shared_a);
                                 thread::spawn(move || {
-                                    for _ in 0..access_number { // Dereference `access_number` here
+                                    for _ in 0..access_number {
+                                        // Dereference `access_number` here
                                         let locked_a = a_clone.lock();
                                         black_box(&locked_a.number);
                                         //black_box(&locked_a.string);
@@ -103,7 +102,8 @@ fn bench_arc_parking_lot_mutex_access_group(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches, 
+    benches,
     bench_arc_parking_lot_mutex_access_group,
-    bench_arc_mutex_access_group);
+    bench_arc_mutex_access_group
+);
 criterion_main!(benches);

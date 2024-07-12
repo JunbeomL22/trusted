@@ -1,22 +1,16 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use trading_engine::utils::timer::{
-    get_unix_nano,
-    convert_unix_nano_to_datetime_format,
-};
-use ryu;
-use itoa;
 use chrono::prelude::*;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use itoa;
+use ryu;
 use time::format_description::well_known::Rfc3339;
+use trading_engine::data::krx::derivative_trade::IFMSRPD0037;
+use trading_engine::data::trade_quote::TradeQuoteData;
 use trading_engine::utils::numeric_converter::NumReprCfg;
 use trading_engine::utils::numeric_converter::{
-    IntegerConverter, 
-    parse_under8_with_floating_point,
-    parse_under16_with_floating_point,
-    parse_under32_with_floating_point,
+    parse_under16_with_floating_point, parse_under32_with_floating_point,
+    parse_under8_with_floating_point, IntegerConverter,
 };
-use trading_engine::data::trade_quote::TradeQuoteData;
-use trading_engine::data::krx::derivative_trade::IFMSRPD0037;
-
+use trading_engine::utils::timer::{convert_unix_nano_to_datetime_format, get_unix_nano};
 
 fn bench_intger_and_float(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("integer_and_float");
@@ -28,51 +22,35 @@ fn bench_intger_and_float(c: &mut Criterion) {
     let f64_var: f64 = 123456789.0;
 
     bgroup.bench_function("u32 as f32", |b| {
-        b.iter(|| {
-            black_box(u32_var as f32)
-        });
+        b.iter(|| black_box(u32_var as f32));
     });
 
     bgroup.bench_function("u32 as f64", |b| {
-        b.iter(|| {
-            black_box(u32_var as f64)
-        });
+        b.iter(|| black_box(u32_var as f64));
     });
 
     bgroup.bench_function("u64 as f32", |b| {
-        b.iter(|| {
-            black_box(u64_var as f32)
-        });
+        b.iter(|| black_box(u64_var as f32));
     });
 
     bgroup.bench_function("u64 as f64", |b| {
-        b.iter(|| {
-            black_box(u64_var as f64)
-        });
+        b.iter(|| black_box(u64_var as f64));
     });
 
     bgroup.bench_function("f32 as u32", |b| {
-        b.iter(|| {
-            black_box(f32_var as u32)
-        });
+        b.iter(|| black_box(f32_var as u32));
     });
 
     bgroup.bench_function("f32 as u64", |b| {
-        b.iter(|| {
-            black_box(f32_var as u64)
-        });
+        b.iter(|| black_box(f32_var as u64));
     });
 
     bgroup.bench_function("f64 as u32", |b| {
-        b.iter(|| {
-            black_box(f64_var as u32)
-        });
+        b.iter(|| black_box(f64_var as u32));
     });
 
     bgroup.bench_function("f64 as u64", |b| {
-        b.iter(|| {
-            black_box(f64_var as u64)
-        });
+        b.iter(|| black_box(f64_var as u64));
     });
 
     bgroup.finish();
@@ -81,8 +59,7 @@ fn bench_intger_and_float(c: &mut Criterion) {
 fn bench_datetime_formatter(c: &mut Criterion) {
     let unix_nano = get_unix_nano();
     let chrono_dt = DateTime::<Local>::from(Local.timestamp_nanos(unix_nano as i64));
-    let offset = time::UtcOffset::from_hms(9,0,0)
-        .expect("failed to create UtcOffset");
+    let offset = time::UtcOffset::from_hms(9, 0, 0).expect("failed to create UtcOffset");
 
     let time_dt = time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
         .expect("failed to convert to OffsetDateTime")
@@ -99,7 +76,7 @@ fn bench_datetime_formatter(c: &mut Criterion) {
 
     bgroup.bench_function("chrono::DateTime Local -> to_string", |b| {
         b.iter(|| chrono_dt.to_string());
-    }); 
+    });
 
     bgroup.bench_function("time::OffsetDatetime utc -> to_string", |b| {
         b.iter(|| time_now.to_string());
@@ -107,24 +84,26 @@ fn bench_datetime_formatter(c: &mut Criterion) {
 
     bgroup.bench_function("time::OffsetDatetime utc -> Rfc3339", |b| {
         b.iter(|| {
-            time_now.format(&Rfc3339).unwrap_or_else(|_| String::from("failed to format"))
+            time_now
+                .format(&Rfc3339)
+                .unwrap_or_else(|_| String::from("failed to format"))
         });
     });
 
     bgroup.bench_function("time::OffsetDatetime Local -> to_string", |b| {
-        b.iter(|| { time_dt.to_string() });
+        b.iter(|| time_dt.to_string());
     });
 
     bgroup.bench_function("time::OffsetDatetime Local -> Rfc3339", |b| {
         b.iter(|| {
-            time_dt.format(&Rfc3339).unwrap_or_else(|_| String::from("failed to format"))
+            time_dt
+                .format(&Rfc3339)
+                .unwrap_or_else(|_| String::from("failed to format"))
         });
     });
 
     bgroup.bench_function("convert_unix_nano_to_datetime_format", |b| {
-        b.iter(|| {
-            convert_unix_nano_to_datetime_format(unix_nano, 9)
-        });
+        b.iter(|| convert_unix_nano_to_datetime_format(unix_nano, 9));
     });
 
     let unix_nano = minstant::Instant::now().as_unix_nanos(&minstant::Anchor::new());
@@ -137,25 +116,19 @@ fn bench_datetime_formatter(c: &mut Criterion) {
     bgroup.finish();
 }
 
-fn bench_integer_to_string(
-    c: &mut Criterion,
-) {
+fn bench_integer_to_string(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("u64_to_ustr");
 
     let var: u32 = 12345678;
 
     bgroup.bench_function("u32_to_std_string", |b| {
-        b.iter(|| {
-            black_box(var.to_string())
-        });
+        b.iter(|| black_box(var.to_string()));
     });
 
     let var: u64 = 1234567890;
 
     bgroup.bench_function("u64_to_std_string", |b| {
-        b.iter(|| {
-            black_box(var.to_string())
-        });
+        b.iter(|| black_box(var.to_string()));
     });
 
     let mut itoa_buffer = itoa::Buffer::new();
@@ -174,17 +147,13 @@ fn bench_integer_to_string(
     bgroup.finish();
 }
 
-fn bench_float_to_string(
-    c: &mut Criterion,
-) {
+fn bench_float_to_string(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("f64_to_ustr");
 
     let var: f64 = 1234567890.0;
-    
+
     bgroup.bench_function("f64_to_std_string", |b| {
-        b.iter(|| {
-            black_box(var.to_string())
-        });
+        b.iter(|| black_box(var.to_string()));
     });
 
     let mut buffer = ryu::Buffer::new();
@@ -197,9 +166,7 @@ fn bench_float_to_string(
     bgroup.finish();
 }
 
-fn bench_str_to_number(
-    c: &mut Criterion,
-) {
+fn bench_str_to_number(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("string_to_number");
 
     let u64_str = "1234567890";
@@ -208,59 +175,41 @@ fn bench_str_to_number(
     let f64_bytes = f64_str.as_bytes();
 
     bgroup.bench_function("str_to_i32", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<i32>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<i32>().unwrap()));
     });
 
     bgroup.bench_function("str_to_i64", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<i64>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<i64>().unwrap()));
     });
 
     bgroup.bench_function("str_to_i128", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<i128>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<i128>().unwrap()));
     });
 
     bgroup.bench_function("str_to_u32", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<u32>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<u32>().unwrap()));
     });
 
     bgroup.bench_function("str_to_u64", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<u64>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<u64>().unwrap()));
     });
 
     bgroup.bench_function("str_to_u128", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<u128>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<u128>().unwrap()));
     });
 
     bgroup.bench_function("str_to_f32", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<f32>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<f32>().unwrap()));
     });
 
     bgroup.bench_function("str_to_f64", |b| {
-        b.iter(|| {
-            black_box(u64_str.parse::<f64>().unwrap())
-        });
+        b.iter(|| black_box(u64_str.parse::<f64>().unwrap()));
     });
 
     bgroup.finish();
 }
 
-fn bench_integer_converter(
-    c: &mut Criterion,
-) {
+fn bench_integer_converter(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("integer_converter");
 
     let cfg = NumReprCfg {
@@ -277,17 +226,12 @@ fn bench_integer_converter(
     let s = b"12345";
 
     bgroup.bench_function("converter.to_i64 (12345)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(s))
-        });
+        b.iter(|| converter.to_i64(black_box(s)));
     });
 
     bgroup.bench_function("converter.to_u64 (12345)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(s))
-        });
+        b.iter(|| converter.to_u64(black_box(s)));
     });
-
 
     let num_cfg = NumReprCfg {
         digit_length: 5,
@@ -302,15 +246,11 @@ fn bench_integer_converter(
 
     let s = b"-12345.67";
     bgroup.bench_function("converter.to_i64 (-12345.67)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(s))
-        });
+        b.iter(|| converter.to_i64(black_box(s)));
     });
 
     bgroup.bench_function("converter.to_u64 (-12345.67)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(s))
-        });
+        b.iter(|| converter.to_u64(black_box(s)));
     });
 
     let cfg = NumReprCfg {
@@ -321,30 +261,26 @@ fn bench_integer_converter(
         float_normalizer: None,
         drop_decimal_point: false,
     };
-    
+
     let converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
 
     let s = b"123456789";
 
     bgroup.bench_function("converter.to_i64 (123456789)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(s))
-        });
+        b.iter(|| converter.to_i64(black_box(s)));
     });
 
     bgroup.bench_function("converter.to_u64 (123456789)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(s))
-        });
+        b.iter(|| converter.to_u64(black_box(s)));
     });
 
     let cfg = NumReprCfg {
         digit_length: 18,
-        decimal_point_length: 4, 
-        is_signed: false, 
+        decimal_point_length: 4,
+        is_signed: false,
         total_length: 22,
         float_normalizer: None,
-        drop_decimal_point: true, 
+        drop_decimal_point: true,
     };
 
     let converter = IntegerConverter::new(cfg).expect("failed to create IntegerConverter");
@@ -352,15 +288,11 @@ fn bench_integer_converter(
     let s = b"123456789012345678.000";
 
     bgroup.bench_function("converter.to_i64 (123456789012345678.000)", |b| {
-        b.iter(|| {
-            converter.to_i64(black_box(s))
-        });
+        b.iter(|| converter.to_i64(black_box(s)));
     });
 
     bgroup.bench_function("converter.to_u64 (123456789012345678.000)", |b| {
-        b.iter(|| {
-            converter.to_u64(black_box(s))
-        });
+        b.iter(|| converter.to_u64(black_box(s)));
     });
 
     bgroup.finish();
@@ -370,59 +302,46 @@ fn bench_parsing(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("parsing");
     let s = b"12345.67";
     bgroup.bench_function("parse_under8_with_floating_point (12345.67)", |b| {
-        b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 8, 3)
-        });
+        b.iter(|| parse_under8_with_floating_point(black_box(s), 8, 3));
     });
 
     let s = b"012345678.901";
     bgroup.bench_function("parse_under16_with_floating_point (012345678.901)", |b| {
-        b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 13, 4)
-        });
+        b.iter(|| parse_under16_with_floating_point(black_box(s), 13, 4));
     });
 
     let s = b"12345";
     bgroup.bench_function("parse_under8_with_floating_point (12345)", |b| {
-        b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 5, 0)
-        });
+        b.iter(|| parse_under8_with_floating_point(black_box(s), 5, 0));
     });
 
     let s = b"123456789";
     bgroup.bench_function("parse_under16_with_floating_point (123456789)", |b| {
-        b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 9, 0)
-        });
+        b.iter(|| parse_under16_with_floating_point(black_box(s), 9, 0));
     });
 
     let s = b"123456.7";
     bgroup.bench_function("parse_under8_with_floating_point (123456.7)", |b| {
-        b.iter(|| {
-            parse_under8_with_floating_point(black_box(s), 8, 2)
-        });
+        b.iter(|| parse_under8_with_floating_point(black_box(s), 8, 2));
     });
 
     let s = b"123456.78";
     bgroup.bench_function("parse_under16_with_floating_point (123456.78)", |b| {
-        b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 9, 3)
-        });
+        b.iter(|| parse_under16_with_floating_point(black_box(s), 9, 3));
     });
 
     let s = b"123456.789";
     bgroup.bench_function("parse_under16_with_floating_point (123456.789)", |b| {
-        b.iter(|| {
-            parse_under16_with_floating_point(black_box(s), 10, 4)
-        });
+        b.iter(|| parse_under16_with_floating_point(black_box(s), 10, 4));
     });
 
     let s = b"012345678901234.5678901234567890";
-    bgroup.bench_function("parse_under32_with_floating_point (1234.56789012345678901)", |b| {
-        b.iter(|| {
-            parse_under32_with_floating_point(black_box(s), 22, 18)
-        });
-    });
+    bgroup.bench_function(
+        "parse_under32_with_floating_point (1234.56789012345678901)",
+        |b| {
+            b.iter(|| parse_under32_with_floating_point(black_box(s), 22, 18));
+        },
+    );
 
     bgroup.finish();
 }
@@ -435,16 +354,14 @@ fn bench_parse_g730f(c: &mut Criterion) {
     let test_data = test_data_vec.as_slice();
     let interface = IFMSRPD0037::default();
     bgroup.bench_function("parse_g730f", |b| {
-        b.iter(|| {
-            interface.to_trade_quote_date(black_box(test_data))
-        });
+        b.iter(|| interface.to_trade_quote_date(black_box(test_data)));
     });
 
     bgroup.finish();
 }
 
 criterion_group!(
-    benches, 
+    benches,
     bench_parse_g730f,
     //bench_custom_numeric_converter,
     bench_integer_converter,

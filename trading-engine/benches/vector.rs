@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion, black_box};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use smallvec::{smallvec, SmallVec};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -12,39 +12,35 @@ fn bench_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("creation 10 u32");
     group.bench_function("smallvec creation", |b| {
         b.iter(|| {
-            SmallVec::<[u32; 10]>::from(
-                [
-                    black_box(0),
-                    black_box(1),
-                    black_box(2),
-                    black_box(3),
-                    black_box(4),
-                    black_box(5),
-                    black_box(6),
-                    black_box(7),
-                    black_box(8),
-                    black_box(9),
-                ]
-            )
+            SmallVec::<[u32; 10]>::from([
+                black_box(0),
+                black_box(1),
+                black_box(2),
+                black_box(3),
+                black_box(4),
+                black_box(5),
+                black_box(6),
+                black_box(7),
+                black_box(8),
+                black_box(9),
+            ])
         });
     });
 
     group.bench_function("vector creation", |b| {
         b.iter(|| {
-            Vec::<u32>::from(
-                [
-                    black_box(0),
-                    black_box(1),
-                    black_box(2),
-                    black_box(3),
-                    black_box(4),
-                    black_box(5),
-                    black_box(6),
-                    black_box(7),
-                    black_box(8),
-                    black_box(9),
-                ]
-            )
+            Vec::<u32>::from([
+                black_box(0),
+                black_box(1),
+                black_box(2),
+                black_box(3),
+                black_box(4),
+                black_box(5),
+                black_box(6),
+                black_box(7),
+                black_box(8),
+                black_box(9),
+            ])
         });
     });
     group.finish();
@@ -53,7 +49,7 @@ fn bench_creation(c: &mut Criterion) {
     group.bench_function("smallvec creation", |b| {
         b.iter(|| {
             for i in 0..10 {
-                let x: SmallVec::<[Mock; 10]> = smallvec![black_box(Mock { a: i, b: i, c: i }); 10];
+                let x: SmallVec<[Mock; 10]> = smallvec![black_box(Mock { a: i, b: i, c: i }); 10];
             }
         });
     });
@@ -67,9 +63,7 @@ fn bench_creation(c: &mut Criterion) {
     });
 
     group.finish();
-
 }
-
 
 fn bench_push(c: &mut Criterion) {
     let mut group = c.benchmark_group("push 10 u32");
@@ -155,11 +149,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = SmallVec::<[Mock; 10]>::new();
             for i in 0..10 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -168,11 +158,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = Vec::<Mock>::new();
             for i in 0..10 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -181,11 +167,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = SmallVec::<[Mock; 10]>::with_capacity(10);
             for i in 0..10 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -194,11 +176,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = Vec::<Mock>::with_capacity(10);
             for i in 0..10 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -210,11 +188,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = SmallVec::<[Mock; 1024]>::new();
             for i in 0..1024 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -223,11 +197,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = Vec::<Mock>::new();
             for i in 0..1024 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -236,11 +206,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = SmallVec::<[Mock; 1024]>::with_capacity(1024);
             for i in 0..1024 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -249,11 +215,7 @@ fn bench_push(c: &mut Criterion) {
         b.iter(|| {
             let mut v = Vec::<Mock>::with_capacity(1024);
             for i in 0..1024 {
-                v.push(black_box(Mock {
-                    a: i,
-                    b: i,
-                    c: i,
-                }));
+                v.push(black_box(Mock { a: i, b: i, c: i }));
             }
         });
     });
@@ -263,8 +225,8 @@ fn bench_push(c: &mut Criterion) {
 
 fn bench_copy_element(c: &mut Criterion) {
     let mut group = c.benchmark_group("copy element 8 u8");
-    let mut dest: SmallVec::<[u8; 8]> = smallvec![0; 8];
-    
+    let mut dest: SmallVec<[u8; 8]> = smallvec![0; 8];
+
     let mut src = [0; 8];
     for i in 0..8 {
         src[i] = i as u8;
@@ -290,7 +252,7 @@ fn bench_copy_element(c: &mut Criterion) {
     group.finish();
 }
 criterion_group!(
-    benches, 
+    benches,
     bench_copy_element,
     //bench_creation,
     //bench_push,

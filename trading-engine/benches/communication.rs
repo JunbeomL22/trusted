@@ -1,11 +1,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 //use std::sync::mpsc::{channel, Sender, Receiver};
-use crossbeam_channel::{unbounded, Sender, Receiver};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 //use kanal::{unbounded, Sender, Receiver};
-use std::thread;
-use ustr::Ustr;
 use core_affinity::{self, CoreId};
 use once_cell::sync::Lazy;
+use std::thread;
+use ustr::Ustr;
 
 #[derive(Clone)]
 struct A {
@@ -13,9 +13,8 @@ struct A {
     string: Ustr,
 }
 
-pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
-    core_affinity::get_core_ids().expect("Failed to get core IDs")
-});
+pub static CORE_IDS: Lazy<Vec<CoreId>> =
+    Lazy::new(|| core_affinity::get_core_ids().expect("Failed to get core IDs"));
 
 fn setup_channel() -> (Sender<A>, Receiver<A>, thread::JoinHandle<()>) {
     let worker_core_id = CORE_IDS[0];
@@ -42,7 +41,7 @@ fn bench_channel_roundtrip(c: &mut Criterion) {
     for trip in trip_numbers {
         group.bench_function(format!("channel {} roundtrip", trip), |b| {
             let (tx, rx, handle) = setup_channel();
-    
+
             let msg = A {
                 number: 42,
                 string: Ustr::from("Hello, World!"),
@@ -51,17 +50,17 @@ fn bench_channel_roundtrip(c: &mut Criterion) {
             b.iter(|| {
                 for _ in 0..trip {
                     tx.send(msg.clone()).unwrap();
-                    
+
                     while let Ok(msg) = rx.recv() {
                         black_box(msg);
                         break;
                     }
                 }
             });
-    
+
             drop(tx);
             handle.join().unwrap();
-        });   
+        });
     }
 }
 
@@ -83,9 +82,5 @@ fn bench_one_way_trip(c: &mut Criterion) {
     });
 }
 
-
-criterion_group!(
-    benches, 
-    bench_one_way_trip,
-    bench_channel_roundtrip);
+criterion_group!(benches, bench_one_way_trip, bench_channel_roundtrip);
 criterion_main!(benches);

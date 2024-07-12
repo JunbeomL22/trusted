@@ -1,8 +1,8 @@
-use crate::definitions::Real;
 use crate::currency::Currency;
-use time::OffsetDateTime;
-use serde::{Serialize, Deserialize};
+use crate::definitions::Real;
 use ndarray::{Array1, Array2};
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SurfaceData {
@@ -59,7 +59,7 @@ impl SurfaceData {
     pub fn get_strike(&self) -> &Array1<Real> {
         &self.strikes
     }
-    
+
     pub fn get_name(&self) -> &str {
         &self.name
     }

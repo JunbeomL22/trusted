@@ -1,18 +1,11 @@
+pub mod data;
+pub mod logger;
 pub mod orderbook;
 pub mod types;
-pub mod data;
 pub mod utils;
-pub mod logger;
 
-pub use logger::{
-    LogLevel,
-    LogMessage,
-    LazyMessage,   
-    LOG_SENDER,
-    MAX_LOG_LEVEL,
-    TIMEZONE,
-};
-pub use utils::timer;
+pub use logger::{LazyMessage, LogLevel, LogMessage, LOG_SENDER, MAX_LOG_LEVEL, TIMEZONE};
 pub use serde_json;
-pub mod udp_client;
+pub use utils::timer;
 pub mod instruments;
+pub mod communication;

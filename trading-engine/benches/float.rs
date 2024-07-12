@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use fixed::types::I32F32;
-use ryu;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
+use rust_decimal::Decimal;
+use ryu;
 
 fn dot_product_fixed(x_vec: Vec<I32F32>, y_vec: Vec<I32F32>) -> I32F32 {
     let mut sum = I32F32::from_num(0);
@@ -61,13 +61,24 @@ fn bench_division_comparison(c: &mut Criterion) {
     let y_fixed: Vec<I32F32> = y.iter().map(|&x| I32F32::from_num(x)).collect();
 
     let mut group = c.benchmark_group("division_comparison");
-    
-    group.bench_function("Decimal division", |b| b.iter(|| division_vector_decimal(x.iter().map(|&x| Decimal::from_f64(x).unwrap()).collect(), y.iter().map(|&x| Decimal::from_f64(x).unwrap()).collect())));
 
-    group.bench_function("fixed division", |b| b.iter(|| division_vector_fixed(x_fixed.clone(), y_fixed.clone())));
+    group.bench_function("Decimal division", |b| {
+        b.iter(|| {
+            division_vector_decimal(
+                x.iter().map(|&x| Decimal::from_f64(x).unwrap()).collect(),
+                y.iter().map(|&x| Decimal::from_f64(x).unwrap()).collect(),
+            )
+        })
+    });
 
-    group.bench_function("f64 division", |b| b.iter(|| division_vector_f64(x.clone(), y.clone())));
-    
+    group.bench_function("fixed division", |b| {
+        b.iter(|| division_vector_fixed(x_fixed.clone(), y_fixed.clone()))
+    });
+
+    group.bench_function("f64 division", |b| {
+        b.iter(|| division_vector_f64(x.clone(), y.clone()))
+    });
+
     group.finish();
 }
 
@@ -80,10 +91,14 @@ fn bench_dot_product_comparison(c: &mut Criterion) {
     let y_fixed: Vec<I32F32> = y.iter().map(|&x| I32F32::from_num(x)).collect();
 
     let mut group = c.benchmark_group("dot_product_comparison");
-    
-    group.bench_function("f64 dot product", |b| b.iter(|| dot_product_f64(x.clone(), y.clone())));
-    
-    group.bench_function("fixed dot product", |b| b.iter(|| dot_product_fixed(x_fixed.clone(), y_fixed.clone())));
+
+    group.bench_function("f64 dot product", |b| {
+        b.iter(|| dot_product_f64(x.clone(), y.clone()))
+    });
+
+    group.bench_function("fixed dot product", |b| {
+        b.iter(|| dot_product_fixed(x_fixed.clone(), y_fixed.clone()))
+    });
     group.finish();
 }
 
@@ -104,7 +119,6 @@ fn bench_float_to_string(c: &mut Criterion) {
             let printed = buffer.format(x);
         });
     });
-    
 
     group.finish();
 }
@@ -115,7 +129,7 @@ fn bench_string_to_float(c: &mut Criterion) {
     let x_decimal_str = "3.141592653589793";
 
     let mut group = c.benchmark_group("string_to_float");
-    
+
     group.bench_function("Decimal::from_str", |b| {
         b.iter(|| {
             let _ = Decimal::from_str(x_fixed_str).unwrap();
@@ -134,13 +148,12 @@ fn bench_string_to_float(c: &mut Criterion) {
             let _ = x_str.parse::<f64>().unwrap();
         });
     });
-    
 
     group.finish();
 }
 
 criterion_group!(
-    benches, 
+    benches,
     bench_division_comparison,
     bench_string_to_float,
     bench_float_to_string,

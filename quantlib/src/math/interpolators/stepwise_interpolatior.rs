@@ -1,16 +1,19 @@
 use std::fmt::Display;
 
 use crate::definitions::Real;
-use crate::utils::find_index_ndarray::{binary_search_index_ndarray, vectorized_search_index_for_sorted_ndarray};
 use crate::math::interpolator::Interpolator1D;
-use ndarray::Array1;
 use crate::util::is_ndarray_sorted;
+use crate::utils::find_index_ndarray::{
+    binary_search_index_ndarray, vectorized_search_index_for_sorted_ndarray,
+};
+use anyhow::{anyhow, ensure, Result};
+use ndarray::Array1;
 use num_traits::Num;
-use anyhow::{Result, ensure, anyhow};
 
 #[derive(Clone, Debug)]
 pub struct StepwiseInterpolator1D<T>
-where T: Num + PartialOrd + Copy
+where
+    T: Num + PartialOrd + Copy,
 {
     domain: Array1<T>,
     value: Array1<Real>,
@@ -20,20 +23,24 @@ where T: Num + PartialOrd + Copy
 }
 
 impl<T> StepwiseInterpolator1D<T>
-where T: Num + PartialOrd + Copy
+where
+    T: Num + PartialOrd + Copy,
 {
     pub fn new(
-        domain: Array1<T>, 
-        value: Array1<Real>, 
+        domain: Array1<T>,
+        value: Array1<Real>,
         allow_extrapolation: bool,
         left_extrapolation_value: Option<Real>,
         right_extrapolation_value: Option<Real>,
     ) -> Result<StepwiseInterpolator1D<T>> {
         let n = domain.len();
-        ensure!(n == value.len(), "domain and value must have the same length");
+        ensure!(
+            n == value.len(),
+            "domain and value must have the same length"
+        );
 
         ensure!(
-            n!=0, 
+            n != 0,
             "(StepwiseInterpolator1D::new) domain and value must not be empty"
         );
 
@@ -54,10 +61,10 @@ where T: Num + PartialOrd + Copy
 }
 
 impl<T> Interpolator1D<T> for StepwiseInterpolator1D<T>
-where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
+where
+    T: Num + PartialOrd + Copy + Display + std::fmt::Debug,
 {
-    fn interpolate(&self, x: T) -> Result<Real>
-    {
+    fn interpolate(&self, x: T) -> Result<Real> {
         let n = self.domain.len();
         if x < self.domain[0] {
             if self.allow_extrapolation {
@@ -66,23 +73,24 @@ where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
                 } else {
                     return Ok(self.left_extrapolation_value.unwrap());
                 }
-                
             } else {
                 return Err(anyhow!(
-                    "(occured at StepwiseInterpolator1D::interpolate) x (= {}) is out of range", x
+                    "(occured at StepwiseInterpolator1D::interpolate) x (= {}) is out of range",
+                    x
                 ));
             }
         }
-        if x > self.domain[n-1] {
+        if x > self.domain[n - 1] {
             if self.allow_extrapolation {
                 if self.right_extrapolation_value.is_none() {
-                    return Ok(self.value[n-1]);
+                    return Ok(self.value[n - 1]);
                 } else {
                     return Ok(self.right_extrapolation_value.unwrap());
                 }
             } else {
                 return Err(anyhow!(
-                    "(occured at StepwiseInterpolator1D::interpolate) x (= {}) is out of range", x
+                    "(occured at StepwiseInterpolator1D::interpolate) x (= {}) is out of range",
+                    x
                 ));
             }
         }
@@ -90,8 +98,7 @@ where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
         Ok(self.value[index])
     }
 
-    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Result<Array1<Real>>
-    {
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Result<Array1<Real>> {
         let length = x.len();
         let mut result = Array1::zeros(length);
         if length <= 2 {
@@ -101,7 +108,7 @@ where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
         } else {
             let index = vectorized_search_index_for_sorted_ndarray(&self.domain, x);
             let left_bound = self.domain[0];
-            let right_bound = self.domain[self.domain.len()-1];
+            let right_bound = self.domain[self.domain.len() - 1];
             for i in 0..length {
                 if !self.allow_extrapolation && (x[i] < left_bound || x[i] > right_bound) {
                     return Err(anyhow!(
@@ -119,30 +126,25 @@ where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
 
 /// ConstantInterpolator1D is a type of StepwiseInterpolator1D that gives only one value for any input.
 #[derive(Debug, Clone)]
-pub struct ConstantInterpolator1D
-{
+pub struct ConstantInterpolator1D {
     value: Real,
 }
 
-impl ConstantInterpolator1D
-{
+impl ConstantInterpolator1D {
     pub fn new(value: Real) -> Result<ConstantInterpolator1D> {
-        Ok(ConstantInterpolator1D {
-            value,
-        })
+        Ok(ConstantInterpolator1D { value })
     }
 }
 
 impl<T> Interpolator1D<T> for ConstantInterpolator1D
-where T: Num + PartialOrd + Copy + Display + std::fmt::Debug
+where
+    T: Num + PartialOrd + Copy + Display + std::fmt::Debug,
 {
-    fn interpolate(&self, _x: T) -> Result<Real>
-    {
+    fn interpolate(&self, _x: T) -> Result<Real> {
         Ok(self.value)
     }
 
-    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Result<Array1<Real>>
-    {
+    fn vectorized_interpolate_for_sorted_ndarray(&self, x: &Array1<T>) -> Result<Array1<Real>> {
         let result = Array1::from_elem(x.len(), self.value);
         Ok(result)
     }
@@ -155,15 +157,9 @@ mod tests {
 
     #[test]
     fn test_interpolate() -> Result<()> {
-        let domain = array![1,   3,   6,   8,   11];
-        let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
-        let interpolator = StepwiseInterpolator1D::new(
-            domain, 
-            value, 
-            true,
-            Some(1.0),
-            Some(11.0),
-        )?;
+        let domain = array![1, 3, 6, 8, 11];
+        let value = array![1.0, 3.0, 6.0, 9.0, 11.0];
+        let interpolator = StepwiseInterpolator1D::new(domain, value, true, Some(1.0), Some(11.0))?;
         assert_eq!(interpolator.interpolate(0)?, 1.0);
         assert_eq!(interpolator.interpolate(1)?, 1.0);
         assert_eq!(interpolator.interpolate(2)?, 1.0);
@@ -182,20 +178,14 @@ mod tests {
 
     #[test]
     fn test_vectorized_interpolate_sorted_input() -> Result<()> {
-        let domain = array![1,   3,   6,   8,   11];
-        let value  = array![1.0, 3.0, 6.0, 9.0, 11.0];
+        let domain = array![1, 3, 6, 8, 11];
+        let value = array![1.0, 3.0, 6.0, 9.0, 11.0];
 
-        let interpolator = StepwiseInterpolator1D::new(
-                                domain, 
-                                value, 
-                                true,
-                                None,
-                                None,
-                            )?;
+        let interpolator = StepwiseInterpolator1D::new(domain, value, true, None, None)?;
         let x = array![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let result = interpolator.vectorized_interpolate_for_sorted_ndarray(&x);
         assert_eq!(
-            result?, 
+            result?,
             array![1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 6.0, 6.0, 9.0, 9.0, 9.0, 11.0, 11.0]
         );
         Ok(())

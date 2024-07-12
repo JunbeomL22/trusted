@@ -1,10 +1,8 @@
-use std::mem;
-use std::alloc::{Layout, alloc};
-use std::ptr;
+use serde::{Deserialize, Serialize};
+use std::alloc::{alloc, Layout};
 use std::marker::PhantomData;
-use quantlib::util::type_name;
-use serde::{Serialize, Deserialize};    
-use serde_json::json;
+use std::mem;
+use std::ptr;
 
 pub struct MiniStruct {
     pub a: bool,
@@ -76,7 +74,7 @@ pub struct F32Pad {
 pub struct MockStruct;
 
 pub trait MockTrait {}
-    
+
 impl MockTrait for MockStruct {}
 
 #[repr(C)]
@@ -127,20 +125,25 @@ fn main() {
     println!("MyEnumACB::B");
     print_struct_info(enum_instance);
 
-
-    let instance = MyStruct8_64_16 { a: 0xAA, b: 0xAAAAAAAAAAAAAAAA, c: 0xCCCC };
+    let instance = MyStruct8_64_16 {
+        a: 0xAA,
+        b: 0xAAAAAAAAAAAAAAAA,
+        c: 0xCCCC,
+    };
     println!("MyStruct8_64_16");
     print_struct_info(instance);
 
-    let f64_instance = F64 { val: 3.14 };
+    let _f64_instance = F64 { val: std::f64::consts::PI };
     //print_struct_info(f64_instance);
 
-    let f64_pad_instance = F64Pad { val: 3.14, _pad: 0x00 };
+    let _f64_pad_instance = F64Pad {
+        val: std::f64::consts::PI,
+        _pad: 0x00,
+    };
     //print_struct_info(f64_pad_instance);
-
+    #[allow(clippy::approx_constant)]
     let phantom_instance = F64Phantom::<MockStruct>::new(3.14);
     print_struct_info(phantom_instance);
-    
 }
 
 fn print_memory(ptr: *const u8, size: usize) {
@@ -159,13 +162,11 @@ fn print_memory(ptr: *const u8, size: usize) {
 }
 
 fn print_vtable<T>() {
-    unsafe {
-        let vtable = std::mem::transmute::<_, usize>(std::ptr::null::<T>());
-        if vtable != 0 {
-            println!("VTable pointer: 0x{:X}", vtable);
-        } else {
-            println!("No VTable (not a trait object)");
-        }
+    let vtable = std::ptr::null::<T>() as usize;
+    if vtable != 0 {
+        println!("VTable pointer: 0x{:X}", vtable);
+    } else {
+        println!("No VTable (not a trait object)");
     }
 }
 
@@ -174,31 +175,35 @@ fn print_struct_info<T>(instance: T) {
     // Get the size and alignment of T
     let size = mem::size_of::<T>();
     let align = mem::align_of::<T>();
-    
+
     println!("Size: {} bytes", size);
     println!("Alignment: {} bytes", align);
-    
+
     // Allocate memory for T
     let layout = Layout::from_size_align(size, align).unwrap();
     let ptr = unsafe { alloc(layout) };
-    
+
     // Copy the instance to our allocated memory
-    unsafe { ptr::copy_nonoverlapping(&instance as *const T as *const u8, ptr, size); }
-    
+    unsafe {
+        ptr::copy_nonoverlapping(&instance as *const T as *const u8, ptr, size);
+    }
+
     // Print the memory contents
     //print_memory(ptr as *const u8, size);
-    
+
     // Print the memory of the original instance
     print_memory(&instance as *const T as *const u8, size);
-    
+
     // Print the pointer to the instance
     println!("\nPointer to instance: {:p}", &instance as *const T);
-    
+
     // Print the vtable pointer (if any)
     print_vtable::<T>();
-    
+
     // Clean up
-    unsafe { std::alloc::dealloc(ptr, layout); }
+    unsafe {
+        std::alloc::dealloc(ptr, layout);
+    }
 
     println!();
 }

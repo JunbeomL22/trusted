@@ -1,9 +1,9 @@
-use crate::definitions::Real;
-use time::OffsetDateTime;
-use serde::{Serialize, Deserialize};
-use std::fmt::Debug;
 use crate::currency::Currency;
+use crate::definitions::Real;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+use time::OffsetDateTime;
 
 /// value: Real, market_datetime: OffsetDateTime, name: String
 /// The examples are flat volatility, constant continuous dividend yield
@@ -29,8 +29,8 @@ impl Debug for ValueData {
 
 impl ValueData {
     pub fn new(
-        value: Real, 
-        market_datetime: Option<OffsetDateTime>, 
+        value: Real,
+        market_datetime: Option<OffsetDateTime>,
         currency: Currency,
         name: String,
         code: String,
@@ -71,23 +71,21 @@ impl ValueData {
 
 #[cfg(test)]
 mod tests {
-    use crate::data::value_data::ValueData;
     use crate::currency::Currency;
+    use crate::data::value_data::ValueData;
     use anyhow::Result;
 
     #[test]
     fn test_creation() -> Result<()> {
         let value_data = ValueData::new(
-            1.0, 
-            None,//OffsetDateTime::now_utc(),
+            1.0,
+            None, //OffsetDateTime::now_utc(),
             Currency::NIL,
             "test".to_string(),
             "test".to_string(),
-        ).expect("Failed to create ValueData");
+        )
+        .expect("Failed to create ValueData");
         assert!(value_data.get_value() == 1.0);
         Ok(())
     }
 }
-
-
-

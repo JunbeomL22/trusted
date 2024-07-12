@@ -1,7 +1,7 @@
-use crossbeam_channel::{bounded, Sender, Receiver};
+use crossbeam_channel::{bounded, Receiver, Sender};
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
-use std::sync::Arc;
 
 const MESSAGE_COUNT: usize = 100_000;
 const WARMUP_COUNT: usize = 2;
@@ -14,7 +14,10 @@ fn producer(tx: Vec<Sender<u64>>, warmup: bool) {
         }
     }
     if !warmup {
-        println!("Producer: Finished sending {} messages to each consumer", count);
+        println!(
+            "Producer: Finished sending {} messages to each consumer",
+            count
+        );
     }
 }
 
@@ -32,13 +35,9 @@ fn run_test(num_consumers: usize) -> f64 {
     let core_ids = Arc::new(core_affinity::get_core_ids().expect("Failed to get core IDs"));
     let num_cores = core_ids.len();
 
-    let (warmup_tx, warmup_rx): (Vec<_>, Vec<_>) = (0..num_consumers)
-        .map(|_| bounded(1))
-        .unzip();
+    let (warmup_tx, warmup_rx): (Vec<_>, Vec<_>) = (0..num_consumers).map(|_| bounded(1)).unzip();
 
-    let (tx, rx): (Vec<_>, Vec<_>) = (0..num_consumers)
-        .map(|_| bounded(1))
-        .unzip();
+    let (tx, rx): (Vec<_>, Vec<_>) = (0..num_consumers).map(|_| bounded(1)).unzip();
 
     // Warmup phase
     let warmup_consumer_handles: Vec<_> = (0..num_consumers)

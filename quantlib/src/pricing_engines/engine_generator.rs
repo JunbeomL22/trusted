@@ -1,39 +1,22 @@
-use crate::currency::{
-    Currency,
-    FxCode,
+use crate::currency::{Currency, FxCode};
+use crate::data::{
+    daily_value_data::DailyValueData, surface_data::SurfaceData, value_data::ValueData,
+    vector_data::VectorData,
 };
 use crate::evaluation_date::EvaluationDate;
-use crate::instrument::{
-    InstrumentTrait,
-    Instrument,
-    Instruments,
-};
+use crate::instrument::{Instrument, InstrumentTrait, Instruments};
 use crate::pricing_engines::{
-    calculation_configuration::CalculationConfiguration,
-    calculation_result::CalculationResult,
-    match_parameter::MatchParameter,
-    engine::Engine,
-};
-use crate::data::{
-    value_data::ValueData,
-    vector_data::VectorData,
-    surface_data::SurfaceData,
-    daily_value_data::DailyValueData,
+    calculation_configuration::CalculationConfiguration, calculation_result::CalculationResult,
+    engine::Engine, match_parameter::MatchParameter,
 };
 //
+use anyhow::{anyhow, Result};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{
-    sync::{
-        Arc,
-        Mutex,
-    },
     collections::HashMap,
     //thread,
-};
-use serde::{Deserialize, Serialize};
-use rayon::prelude::*;
-use anyhow::{
-    Result,
-    anyhow,
+    sync::{Arc, Mutex},
 };
 use time::OffsetDateTime;
 
@@ -77,8 +60,9 @@ impl InstrumentCategory {
         }
         // check underlying codes are the same (not inclusion)
         if let Some(underlying_codes) = &self.underlying_codes {
-            if !underlying_codes_inp.is_empty() &&
-            underlying_codes.iter().collect::<Vec<&String>>() != underlying_codes_inp {
+            if !underlying_codes_inp.is_empty()
+                && underlying_codes.iter().collect::<Vec<&String>>() != underlying_codes_inp
+            {
                 res = false;
             }
         }
@@ -133,7 +117,7 @@ impl Default for EngineGenerator {
             fx_constant_volatility_data: Arc::new(HashMap::new()),
             quanto_correlation_data: Arc::new(HashMap::new()),
             past_daily_value_data: Arc::new(HashMap::new()),
-        }   
+        }
     }
 }
 
@@ -159,7 +143,10 @@ impl EngineGenerator {
         Ok(self)
     }
 
-    pub fn with_instrument_categories(&mut self, instrument_categories: Vec<InstrumentCategory>) -> Result<&mut Self> {
+    pub fn with_instrument_categories(
+        &mut self,
+        instrument_categories: Vec<InstrumentCategory>,
+    ) -> Result<&mut Self> {
         self.instrument_categories = instrument_categories;
         Ok(self)
     }
@@ -205,7 +192,7 @@ impl EngineGenerator {
                 instrument_group_vec.push(instrument_group);
             }
         }
-        
+
         let mut inst_name_code: Vec<String> = vec![];
         for (inst_id, is_distributed) in distribution_checker.iter().enumerate() {
             if !is_distributed {
@@ -241,20 +228,23 @@ impl EngineGenerator {
     pub fn calculate(&mut self) -> Result<()> {
         let shared_results = Arc::new(Mutex::new(HashMap::<String, CalculationResult>::new()));
         let dt = self.evaluation_date.get_date_clone();
-        let calc_res: Result<()> = self.instrument_group_vec.par_iter().enumerate().map(
-            |(group_id, instrument_group)| {
+        let calc_res: Result<()> = self
+            .instrument_group_vec
+            .par_iter()
+            .enumerate()
+            .map(|(group_id, instrument_group)| {
                 let engine = Engine::builder(
                     group_id,
                     self.calculation_configuration.clone(),
                     dt,
                     self.match_parameter.clone(),
                 );
-        
+
                 let engine = match engine.with_instruments(instrument_group.clone()) {
                     Ok(engine) => engine,
                     Err(e) => return Err(e),
                 };
-        
+
                 let mut engine = match engine.with_parameter_data(
                     self.fx_data.clone(),
                     self.stock_data.clone(),
@@ -265,27 +255,28 @@ impl EngineGenerator {
                     self.fx_constant_volatility_data.clone(),
                     self.quanto_correlation_data.clone(),
                     self.past_daily_value_data.clone(),
-                ){
+                ) {
                     Ok(engine) => engine,
                     Err(e) => return Err(e),
                 };
-                
+
                 engine.initialize_pricers()?;
                 engine.calculate()?;
-        
+
                 let result = engine.get_calculation_result();
                 let mut mut_res = shared_results.lock().unwrap();
-        
+
                 for (key, value) in result.iter() {
                     mut_res.insert(key.clone(), value.borrow().clone());
                 }
-        
+
                 Ok(())
-            }
-        ).collect();
+            })
+            .collect();
 
         //self.calculation_results = shared_results.lock().unwrap().clone();
-        self.calculation_results.clone_from(&shared_results.lock().unwrap());
+        self.calculation_results
+            .clone_from(&shared_results.lock().unwrap());
 
         match calc_res {
             Ok(_) => Ok(()),

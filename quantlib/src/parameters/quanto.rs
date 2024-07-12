@@ -1,16 +1,11 @@
 use crate::currency::FxCode;
+use crate::definitions::{Real, Time};
 use crate::parameters::{
-    volatility::Volatility,
-    volatilities::constant_volatility::ConstantVolatility,
+    volatilities::constant_volatility::ConstantVolatility, volatility::Volatility,
 };
-use crate::definitions::{Time, Real};
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
+use std::{cell::RefCell, rc::Rc};
 
-
-/// Quanto parameter. 
+/// Quanto parameter.
 /// It is assumed that the correlation are constant.
 #[derive(Debug, Clone)]
 pub struct Quanto {
@@ -22,8 +17,8 @@ pub struct Quanto {
 
 impl Quanto {
     pub fn new(
-        fx_volatility: Rc<RefCell<Volatility>>, 
-        correlation: Real, 
+        fx_volatility: Rc<RefCell<Volatility>>,
+        correlation: Real,
         fx_code: FxCode,
         underlying_code: String,
     ) -> Quanto {
@@ -35,11 +30,7 @@ impl Quanto {
         }
     }
 
-    pub fn quanto_adjust(
-        &self, 
-        t: Time,
-        forward_moneyness: Real,
-    ) -> Real {
+    pub fn quanto_adjust(&self, t: Time, forward_moneyness: Real) -> Real {
         self.fx_volatility.borrow().get_value(t, forward_moneyness) * self.correlation
     }
 
@@ -55,9 +46,9 @@ impl Quanto {
 impl Default for Quanto {
     fn default() -> Quanto {
         Quanto {
-            fx_volatility: Rc::new(RefCell::new(
-                Volatility::ConstantVolatility(ConstantVolatility::default())
-            )),
+            fx_volatility: Rc::new(RefCell::new(Volatility::ConstantVolatility(
+                ConstantVolatility::default(),
+            ))),
             correlation: 0.0,
             fx_code: FxCode::default(),
             underlying_code: "".to_string(),

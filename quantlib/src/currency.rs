@@ -1,8 +1,10 @@
-use std::hash::Hash;
-use std::fmt::Display;
 use serde::{Deserialize, Serialize, Serializer};
+use std::fmt::Display;
+use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(
+    Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default,
+)]
 pub enum Currency {
     #[default]
     NIL,
@@ -112,7 +114,7 @@ impl From<&str> for Currency {
             "ILS" => Currency::ILS,
             "EGP" => Currency::EGP,
             "ZMW" => Currency::ZMW,
-            _ => Currency::NIL
+            _ => Currency::NIL,
         }
     }
 }
@@ -166,7 +168,7 @@ impl Currency {
             Currency::JOD => "JOD",
             Currency::ILS => "ILS",
             Currency::EGP => "EGP",
-            Currency::ZMW => "ZMW"
+            Currency::ZMW => "ZMW",
         }
     }
 }
@@ -202,7 +204,7 @@ impl FxCode {
     pub fn get_currency2(&self) -> &Currency {
         &self.currency2
     }
-    
+
     pub fn reciprocal(self) -> Self {
         FxCode {
             currency1: self.currency2,
@@ -239,15 +241,15 @@ impl From<&str> for FxCode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, to_string, from_str};
+    use serde_json::{from_str, json, to_string};
     #[test]
     fn test_currency_serialization() {
         let currency = Currency::KRW;
         let serialized = to_string(&currency).unwrap();
-        
+
         assert_eq!(serialized, "\"KRW\"");
         let deserialized: Currency = from_str(&serialized).unwrap();
-        
+
         assert_eq!(deserialized, currency);
     }
 
@@ -255,10 +257,10 @@ mod tests {
     fn test_currency_json() {
         let currency = Currency::KRW;
         let json = json!(currency);
-        
+
         assert_eq!(json, json!("KRW"));
         let deserialized: Currency = serde_json::from_value(json).unwrap();
-        
+
         assert_eq!(deserialized, currency);
     }
 
@@ -266,7 +268,7 @@ mod tests {
     fn test_currency_as_str() {
         let currency = Currency::KRW;
         let as_str = currency.as_str();
-        
+
         assert_eq!(as_str, "KRW");
     }
 }

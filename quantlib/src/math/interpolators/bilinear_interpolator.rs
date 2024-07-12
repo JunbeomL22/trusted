@@ -1,24 +1,22 @@
 use crate::definitions::Real;
-use crate::utils::find_index_ndarray::binary_search_index_ndarray;
 use crate::math::{
-    interpolator::{InterpolatorReal1D, ExtraPolationType},
+    interpolator::{ExtraPolationType, InterpolatorReal1D},
     interpolators::linear_interpolator::LinearInterpolator1D,
 };
 use crate::util::is_ndarray_sorted;
+use crate::utils::find_index_ndarray::binary_search_index_ndarray;
+use anyhow::{anyhow, Result};
 use ndarray::{Array1, Array2};
-use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone)]
-pub struct BilinearInterpolator
-{
+pub struct BilinearInterpolator {
     t_domain: Array1<Real>,
     x_interpolator: Vec<LinearInterpolator1D>,
     t_domain_allow_extrapolation: bool,
     t_domain_extrapolation_type: ExtraPolationType,
 }
 
-impl Default for BilinearInterpolator
-{
+impl Default for BilinearInterpolator {
     fn default() -> BilinearInterpolator {
         BilinearInterpolator {
             t_domain: Array1::default(0),
@@ -42,13 +40,17 @@ impl BilinearInterpolator {
                 "({}:{}) t_domain and x_interpolator must have the same length\n\
                 t_domain: {:?}\n\
                 x_interpolator: {:?}",
-                file!(), line!(), t_domain, x_interpolator
+                file!(),
+                line!(),
+                t_domain,
+                x_interpolator
             ));
         }
         if !is_ndarray_sorted(&t_domain) {
             return Err(anyhow!(
                 "({}:{}) t_domain must be sorted: \n{:?}",
-                file!(), line!(), 
+                file!(),
+                line!(),
                 &t_domain
             ));
         }
@@ -77,7 +79,10 @@ impl BilinearInterpolator {
                 "({}:{}) t_domain and x_domain must have at least 2 elements\n\
                 t_domain: {:?}\n\
                 x_domain: {:?}",
-                file!(), line!(), t_domain, x_domain
+                file!(),
+                line!(),
+                t_domain,
+                x_domain
             ));
         }
 
@@ -86,7 +91,10 @@ impl BilinearInterpolator {
                 "({}:{}) t_domain and z_values must have the same length\n\
                 t_domain: {:?}\n\
                 z_values: {:?}",
-                file!(), line!(), t_domain, values
+                file!(),
+                line!(),
+                t_domain,
+                values
             ));
         }
         if m != values.shape()[1] {
@@ -94,18 +102,21 @@ impl BilinearInterpolator {
                 "({}:{}) x_domain and z_values must have the same length\n\
                 x_domain: {:?}\n\
                 z_values: {:?}",
-                file!(), line!(), x_domain, values
+                file!(),
+                line!(),
+                x_domain,
+                values
             ));
         }
         let mut x_interpolator: Vec<LinearInterpolator1D> = Vec::new();
         for i in 0..n {
             /*
             println!(
-                "({}:{}) x_domain: {:?} \nvalues.row(i): {:?}\n", 
+                "({}:{}) x_domain: {:?} \nvalues.row(i): {:?}\n",
                 file!(), line!(),
                 x_domain.clone(),
                 values.row(i).to_owned());
-            
+
             let x_values = values.row(i); //Array1::from_vec(values.row(i).to_vec());
              */
             let x_interpolator_i = LinearInterpolator1D::new(
@@ -136,7 +147,7 @@ impl BilinearInterpolator {
                         let t_first = self.t_domain[0];
                         let t_second = self.t_domain[1];
                         Ok(v_first + (t - t_first) * (v_second - v_first) / (t_second - t_first))
-                    },
+                    }
                     ExtraPolationType::None => Err(anyhow!(
                         "({}:{}) {}: extrapolation has not been implemented yet",
                         file!(),
@@ -164,15 +175,17 @@ impl BilinearInterpolator {
                         let t_last = self.t_domain[n - 1];
                         let t_prev = self.t_domain[n - 2];
                         return Ok(v_last + (t - t_last) * (v_last - v_prev) / (t_last - t_prev));
-                    },
-                    ExtraPolationType::None => return Err(anyhow!(
-                        "({}:{}) t (={}) is out of range where\n\
+                    }
+                    ExtraPolationType::None => {
+                        return Err(anyhow!(
+                            "({}:{}) t (={}) is out of range where\n\
                         t_domain: Array1<Real> = {:?}",
-                        file!(),
-                        line!(),
-                        t,
-                        self.t_domain
-                    )),
+                            file!(),
+                            line!(),
+                            t,
+                            self.t_domain
+                        ))
+                    }
                 }
             } else {
                 return Err(anyhow!(
@@ -193,15 +206,14 @@ impl BilinearInterpolator {
 
             return Ok(v_prev + (t - t_prev) * (v_next - v_prev) / (t_next - t_prev));
         }
-
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
     use crate::math::interpolator::ExtraPolationType;
+    use crate::math::interpolators::linear_interpolator::LinearInterpolator1D;
     use ndarray::array;
 
     #[test]
@@ -259,7 +271,7 @@ mod tests {
             true,
             ExtraPolationType::Flat,
         )?;
-        
+
         assert_eq!(bilinear_interpolator.interpolate(-1.0, 0.5).unwrap(), 0.5);
         assert_eq!(bilinear_interpolator.interpolate(0.5, 0.5).unwrap(), 1.0);
         assert_eq!(bilinear_interpolator.interpolate(1.5, 1.5).unwrap(), 3.0);

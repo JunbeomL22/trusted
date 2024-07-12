@@ -4,7 +4,10 @@ use quantlib::definitions::Real;
 use quantlib::utils::find_index::{binary_search_index, vectorized_search_index_for_sorted_vector};
 use std;
 // For all elements, the function searches index by bynary_search_index
-fn search_index_by_binary_search_index<T: PartialOrd + Copy>(vec: &[T], search_vec: &[T]) -> Vec<usize> {
+fn search_index_by_binary_search_index<T: PartialOrd + Copy>(
+    vec: &[T],
+    search_vec: &[T],
+) -> Vec<usize> {
     let length = search_vec.len();
     let mut result = vec![0; length];
     for i in 0..length {
@@ -38,7 +41,9 @@ fn benchmark(c: &mut Criterion) {
     //group.measurement_time(std::time::Duration::new(5, 0));
 
     group.bench_function("vectorized_search_index_for_sorted_vector", |b| {
-        b.iter(|| vectorized_search_index_for_sorted_vector(black_box(&vec), black_box(&search_vec)))
+        b.iter(|| {
+            vectorized_search_index_for_sorted_vector(black_box(&vec), black_box(&search_vec))
+        })
     });
 
     group.bench_function("all_binary_search_index", |b| {

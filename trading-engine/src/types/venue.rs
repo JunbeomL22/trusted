@@ -1,6 +1,4 @@
-use enum_dispatch::enum_dispatch;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
 pub enum Venue {
@@ -8,7 +6,6 @@ pub enum Venue {
     Undefined,
     KRX,
 }
-
 
 pub trait VenueTrait {
     fn check_account_id(&self, _: &str) -> bool {

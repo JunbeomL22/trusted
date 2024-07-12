@@ -1,23 +1,20 @@
-use crate::time::jointcalendar::JointCalendar;
-use crate::time::conventions::{PaymentFrequency, BusinessDayConvention};
-use crate::time::calendar_trait::CalendarTrait;
-use crate::utils::string_arithmetic::{add_period, sub_period};
 use crate::definitions::Real;
+use crate::time::calendar_trait::CalendarTrait;
+use crate::time::conventions::{BusinessDayConvention, PaymentFrequency};
+use crate::time::jointcalendar::JointCalendar;
+use crate::utils::string_arithmetic::{add_period, sub_period};
 //
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use std::{collections::VecDeque, ops::Index};
 use time::{Duration, OffsetDateTime};
-use serde::{Serialize, Deserialize};
-use std::{
-    ops::Index,
-    collections::VecDeque,
-};
 
-/// if the amount is None, the pricer calculate the coupon amount. 
-/// Otherwise, the amount is used as the coupon amount. 
-/// This is useful if the user wants to calculate the coupon amount 
+/// if the amount is None, the pricer calculate the coupon amount.
+/// Otherwise, the amount is used as the coupon amount.
+/// This is useful if the user wants to calculate the coupon amount
 /// in the IO section, e.g., serialization, deserialization, etc.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
-pub struct BaseSchedule {   
+pub struct BaseSchedule {
     fixing_date: OffsetDateTime,
     calc_start_date: OffsetDateTime,
     calc_end_date: OffsetDateTime,
@@ -27,13 +24,19 @@ pub struct BaseSchedule {
 
 impl BaseSchedule {
     pub fn new(
-        fixing_date: OffsetDateTime, 
-        calc_start_date: OffsetDateTime, 
-        calc_end_date: OffsetDateTime, 
+        fixing_date: OffsetDateTime,
+        calc_start_date: OffsetDateTime,
+        calc_end_date: OffsetDateTime,
         payment_date: OffsetDateTime,
-        amount: Option<Real>
+        amount: Option<Real>,
     ) -> Self {
-        BaseSchedule { fixing_date, calc_start_date, calc_end_date, payment_date, amount }
+        BaseSchedule {
+            fixing_date,
+            calc_start_date,
+            calc_end_date,
+            payment_date,
+            amount,
+        }
     }
 
     pub fn get_fixing_date(&self) -> &OffsetDateTime {
@@ -55,7 +58,6 @@ impl BaseSchedule {
     pub fn get_amount(&self) -> Option<Real> {
         self.amount
     }
-
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Default)]
@@ -70,7 +72,6 @@ impl Index<usize> for Schedule {
         &self.data[index]
     }
 }
-
 
 impl<'a> IntoIterator for &'a Schedule {
     type Item = &'a BaseSchedule;
@@ -105,13 +106,13 @@ impl Schedule {
 #[allow(clippy::too_many_arguments)]
 pub fn build_schedule(
     forward_generation: bool, // true => generate from effective_date to maturity, false => generate from maturity to effective_date
-    effective_date: &OffsetDateTime, 
-    maturity: &OffsetDateTime, 
+    effective_date: &OffsetDateTime,
+    maturity: &OffsetDateTime,
     calendar: &JointCalendar,
     conv: &BusinessDayConvention,
-    freq: &PaymentFrequency, 
-    fixing_gap_days: i64, 
-    payment_gap_days: i64
+    freq: &PaymentFrequency,
+    fixing_gap_days: i64,
+    payment_gap_days: i64,
 ) -> Result<Schedule> {
     if payment_gap_days < 0 || fixing_gap_days < 0 {
         // display all inputs. file and line are automatically filled by MyError
@@ -125,20 +126,21 @@ pub fn build_schedule(
         msg.push_str(&format!("payment_days: {:?}\n", payment_gap_days));
         return Err(anyhow!(msg));
     }
-    
+
     let mut raw_start_date_vec: VecDeque<OffsetDateTime> = VecDeque::new();
-    
+
     match forward_generation {
         true => {
             let mut raw_start_date = *effective_date;
             raw_start_date_vec.push_back(raw_start_date);
             let mut count = 1;
             while &raw_start_date < maturity {
-                raw_start_date = add_period(effective_date, freq.to_string_with_multiple(count).as_str());
+                raw_start_date =
+                    add_period(effective_date, freq.to_string_with_multiple(count).as_str());
                 count += 1;
                 raw_start_date_vec.push_back(raw_start_date);
             }
-        },
+        }
         false => {
             let mut raw_end_date = *maturity;
             raw_start_date_vec.push_front(raw_end_date);
@@ -150,9 +152,10 @@ pub fn build_schedule(
             }
         }
     }
-    let calc_start_date_vec = raw_start_date_vec.iter().map(
-        |x| calendar.adjust(x, conv)).collect::<Result<Vec<OffsetDateTime>>>()?;
-
+    let calc_start_date_vec = raw_start_date_vec
+        .iter()
+        .map(|x| calendar.adjust(x, conv))
+        .collect::<Result<Vec<OffsetDateTime>>>()?;
 
     let schedule_length = calc_start_date_vec.len() - 1;
     let mut base_schedule_vec: Vec<BaseSchedule> = vec![];
@@ -166,14 +169,11 @@ pub fn build_schedule(
             calc_end_date = calc_start_date_vec[i + 1];
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
-                    &BusinessDayConvention::Preceding,
-                )?;
-            payment_date = calendar.adjust(
-                &(calc_end_date + Duration::days(payment_gap_days)), 
-                conv
+                &BusinessDayConvention::Preceding,
             )?;
-        } 
-        else if i == schedule_length - 1 {
+            payment_date =
+                calendar.adjust(&(calc_end_date + Duration::days(payment_gap_days)), conv)?;
+        } else if i == schedule_length - 1 {
             calc_start_date = calc_start_date_vec[i];
             calc_end_date = *maturity;
             fixing_date = calendar.adjust(
@@ -181,18 +181,15 @@ pub fn build_schedule(
                 &BusinessDayConvention::Preceding,
             )?;
             payment_date = *maturity;
-        } 
-        else {
+        } else {
             calc_start_date = calc_start_date_vec[i];
             calc_end_date = calc_start_date_vec[i + 1];
             fixing_date = calendar.adjust(
                 &(calc_start_date - Duration::days(fixing_gap_days)),
                 &BusinessDayConvention::Preceding,
             )?;
-            payment_date = calendar.adjust(
-                &(calc_end_date + Duration::days(payment_gap_days)),
-                conv
-            )?;
+            payment_date =
+                calendar.adjust(&(calc_end_date + Duration::days(payment_gap_days)), conv)?;
         }
 
         if calc_end_date <= calc_start_date {
@@ -205,15 +202,27 @@ pub fn build_schedule(
                 freq: {:?}\n\
                 fixing_days: {:?}\n\
                 payment_days: {:?}\n",
-                file!(), line!(), calc_end_date.date(), calc_start_date.date(),
-                effective_date, maturity, calendar, conv, freq, fixing_gap_days, payment_gap_days
+                file!(),
+                line!(),
+                calc_end_date.date(),
+                calc_start_date.date(),
+                effective_date,
+                maturity,
+                calendar,
+                conv,
+                freq,
+                fixing_gap_days,
+                payment_gap_days
             ));
         }
 
-        base_schedule_vec.push(
-
-            BaseSchedule::new(fixing_date, calc_start_date, calc_end_date, payment_date, None)
-        );
+        base_schedule_vec.push(BaseSchedule::new(
+            fixing_date,
+            calc_start_date,
+            calc_end_date,
+            payment_date,
+            None,
+        ));
     }
 
     let schedule = Schedule::new(base_schedule_vec);
@@ -221,12 +230,12 @@ pub fn build_schedule(
     Ok(schedule)
 }
 
-#[cfg(test)] 
+#[cfg(test)]
 mod tests {
-    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
     use super::*;
-    use time::macros::{datetime, date};
     use crate::time::calendar::Calendar;
+    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
+    use time::macros::{date, datetime};
     // make a test for
     // calendar = SouthKorea::new(SouthKoreaType::Settlement)
     // effective_date = date!(2023-08-02 16:00:00 +09:00)
@@ -244,19 +253,21 @@ mod tests {
         let joint_calendar = JointCalendar::new(vec![calendar])?;
         let schedule = build_schedule(
             true,
-            &effective_date, 
-            &maturity, 
+            &effective_date,
+            &maturity,
             &joint_calendar,
             &BusinessDayConvention::ModifiedFollowing,
-            &PaymentFrequency::Quarterly,            
-            1, 
-            0
-        ).expect("Failed to build schedule");
+            &PaymentFrequency::Quarterly,
+            1,
+            0,
+        )
+        .expect("Failed to build schedule");
 
         for base_schedule in schedule.iter() {
             println!(
-                "start = {:?}, end = {:?}" , 
-                base_schedule.get_calc_start_date().date(), base_schedule.get_calc_end_date().date()
+                "start = {:?}, end = {:?}",
+                base_schedule.get_calc_start_date().date(),
+                base_schedule.get_calc_end_date().date()
             );
         }
 
@@ -268,38 +279,37 @@ mod tests {
         // start = 2024-04-30, end = 2024-07-31
         assert_eq!(
             schedule[0].get_calc_start_date().date(),
-            date!(2023-01-31),
+            date!(2023 - 01 - 31),
         );
 
         assert_eq!(
             schedule[1].get_calc_start_date().date(),
-            date!(2023-04-28),
+            date!(2023 - 04 - 28),
         );
 
         assert_eq!(
             schedule[2].get_calc_start_date().date(),
-            date!(2023-07-31),
+            date!(2023 - 07 - 31),
         );
 
         assert_eq!(
             schedule[3].get_calc_start_date().date(),
-            date!(2023-10-31),
+            date!(2023 - 10 - 31),
         );
 
         assert_eq!(
             schedule[4].get_calc_start_date().date(),
-            date!(2024-01-31),
+            date!(2024 - 01 - 31),
         );
 
         assert_eq!(
             schedule[5].get_calc_start_date().date(),
-            date!(2024-04-30),
+            date!(2024 - 04 - 30),
         );
-
 
         Ok(())
     }
-    
+
     #[test]
     fn test_build_backward_test() -> Result<()> {
         let effective_date = datetime!(2023-01-31 16:30:00 +09:00);
@@ -309,19 +319,21 @@ mod tests {
         let joint_calendar = JointCalendar::new(vec![calendar])?;
         let schedule = build_schedule(
             false,
-            &effective_date, 
-            &maturity, 
+            &effective_date,
+            &maturity,
             &joint_calendar,
             &BusinessDayConvention::ModifiedFollowing,
-            &PaymentFrequency::Quarterly,            
-            1, 
-            0
-        ).expect("Failed to build schedule");
+            &PaymentFrequency::Quarterly,
+            1,
+            0,
+        )
+        .expect("Failed to build schedule");
 
         for base_schedule in schedule.iter() {
             println!(
-                "start = {:?}, end = {:?}" , 
-                base_schedule.get_calc_start_date().date(), base_schedule.get_calc_end_date().date()
+                "start = {:?}, end = {:?}",
+                base_schedule.get_calc_start_date().date(),
+                base_schedule.get_calc_end_date().date()
             );
         }
         // start = 2023-01-31, end = 2023-04-28
@@ -332,31 +344,31 @@ mod tests {
         // start = 2024-04-30, end = 2024-07-31
         assert_eq!(
             schedule[0].get_calc_start_date().date(),
-            date!(2023-01-31),
+            date!(2023 - 01 - 31),
         );
         assert_eq!(
             schedule[1].get_calc_start_date().date(),
-            date!(2023-04-28),
+            date!(2023 - 04 - 28),
         );
         assert_eq!(
             schedule[2].get_calc_start_date().date(),
-            date!(2023-07-31),
+            date!(2023 - 07 - 31),
         );
         assert_eq!(
             schedule[3].get_calc_start_date().date(),
-            date!(2023-10-31),
+            date!(2023 - 10 - 31),
         );
         assert_eq!(
             schedule[4].get_calc_start_date().date(),
-            date!(2024-01-31),
+            date!(2024 - 01 - 31),
         );
         assert_eq!(
             schedule[5].get_calc_start_date().date(),
-            date!(2024-04-30),
+            date!(2024 - 04 - 30),
         );
         assert_eq!(
             schedule[5].get_calc_end_date().date(),
-            date!(2024-07-31),
+            date!(2024 - 07 - 31),
         );
         Ok(())
     }
@@ -369,46 +381,47 @@ mod tests {
         let joint_calendar = JointCalendar::new(vec![calendar])?;
         let schedule = build_schedule(
             true,
-            &effective_date, 
-            &maturity, 
+            &effective_date,
+            &maturity,
             &joint_calendar,
             &BusinessDayConvention::ModifiedFollowing,
-            &PaymentFrequency::Quarterly,            
-            1, 
-            0
-        ).expect("Failed to build schedule");
+            &PaymentFrequency::Quarterly,
+            1,
+            0,
+        )
+        .expect("Failed to build schedule");
 
         for base_schedule in schedule.iter() {
             println!(
-                "start = {:?}, end = {:?}" , 
-                base_schedule.get_calc_start_date().date(), base_schedule.get_calc_end_date().date()
+                "start = {:?}, end = {:?}",
+                base_schedule.get_calc_start_date().date(),
+                base_schedule.get_calc_end_date().date()
             );
         }
-        
+
         // start = 2023-11-30, end = 2024-02-29
         // start = 2024-02-29, end = 2024-05-30
         // start = 2024-05-30, end = 2024-08-30
         // start = 2024-08-30, end = 2024-11-29
         assert_eq!(
             schedule[0].get_calc_start_date().date(),
-            date!(2023-11-30),
+            date!(2023 - 11 - 30),
         );
 
         assert_eq!(
             schedule[1].get_calc_start_date().date(),
-            date!(2024-02-29),
+            date!(2024 - 02 - 29),
         );
 
         assert_eq!(
             schedule[2].get_calc_start_date().date(),
-            date!(2024-05-30),
+            date!(2024 - 05 - 30),
         );
 
         assert_eq!(
             schedule[3].get_calc_start_date().date(),
-            date!(2024-08-30),
+            date!(2024 - 08 - 30),
         );
-
 
         Ok(())
     }

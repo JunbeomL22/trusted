@@ -1,33 +1,18 @@
-use crossbeam_utils::CachePadded;
-use std::sync::mpsc::{
-    channel as std_channel,
-    Sender as StdSender,
-    Receiver as StdReceiver,
-};
-use crossbeam_channel::{
-    unbounded as crossbeam_unbounded,
-    Sender as CrossbeamSender,
-    Receiver as CrossbeamReceiver,
-};
-use kanal::{
-    unbounded as kanal_unbounded,
-    Sender as KanalSender,
-    Receiver as KanalReceiver,
-};
-use flume::{
-    unbounded as flume_unbounded,
-    Sender as FlumeSender,
-    Receiver as FlumeReceiver,
-};
-use std::thread;
-use core_affinity::{self, CoreId};
-use once_cell::sync::Lazy;
-use trading_engine::utils::timer::get_unix_nano;
 use anyhow::Result;
+use core_affinity::{self, CoreId};
+use crossbeam_channel::{
+    unbounded as crossbeam_unbounded, Receiver as CrossbeamReceiver, Sender as CrossbeamSender,
+};
+use crossbeam_utils::CachePadded;
+use flume::{unbounded as flume_unbounded, Receiver as FlumeReceiver, Sender as FlumeSender};
+use kanal::{unbounded as kanal_unbounded, Receiver as KanalReceiver, Sender as KanalSender};
+use once_cell::sync::Lazy;
+use std::sync::mpsc::{channel as std_channel, Receiver as StdReceiver, Sender as StdSender};
+use std::thread;
+use trading_engine::utils::timer::get_unix_nano;
 
-pub static CORE_IDS: Lazy<Vec<CoreId>> = Lazy::new(|| {
-    core_affinity::get_core_ids().expect("Failed to get core IDs")
-});
+pub static CORE_IDS: Lazy<Vec<CoreId>> =
+    Lazy::new(|| core_affinity::get_core_ids().expect("Failed to get core IDs"));
 
 const DATA_SIZE: usize = 1000;
 
@@ -65,7 +50,11 @@ fn setup_channel_std(core_id: usize) -> (StdSender<A>, StdReceiver<A>, thread::J
 
 fn setup_channel_crossbeam(
     core_id: usize,
-) -> (CrossbeamSender<A>, CrossbeamReceiver<A>, thread::JoinHandle<()>) {
+) -> (
+    CrossbeamSender<A>,
+    CrossbeamReceiver<A>,
+    thread::JoinHandle<()>,
+) {
     let worker_core_id = CORE_IDS[core_id];
 
     let (tx1, rx1) = crossbeam_unbounded();
@@ -99,15 +88,11 @@ fn setup_channel_kanal(
     (tx1, rx2, handle)
 }
 
-fn round_trip_std(
-    channel_core_id: usize,
-    core_id: usize,
-    trip_number: usize, 
-) -> Result<()> {
+fn round_trip_std(channel_core_id: usize, core_id: usize, trip_number: usize) -> Result<()> {
     let main_core_id = CORE_IDS[core_id];
     core_affinity::set_for_current(main_core_id);
 
-    let (tx, rx, handle) = setup_channel_std( channel_core_id );
+    let (tx, rx, handle) = setup_channel_std(channel_core_id);
 
     let a = A::default();
 
@@ -125,7 +110,7 @@ fn round_trip_std(
     }
 
     println!(
-        "(std) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
+        "(std) cores = ({}, {}) average round for {} trip time: {:.0} ns",
         channel_core_id,
         core_id,
         trip_number,
@@ -137,15 +122,11 @@ fn round_trip_std(
     Ok(())
 }
 
-fn round_trip_crossbeam(
-    channel_core_id: usize, 
-    core_id: usize,
-    trip_number: usize, 
-) -> Result<()> {
+fn round_trip_crossbeam(channel_core_id: usize, core_id: usize, trip_number: usize) -> Result<()> {
     let main_core_id = CORE_IDS[core_id];
     core_affinity::set_for_current(main_core_id);
 
-    let (tx, rx, handle) = setup_channel_crossbeam( channel_core_id );
+    let (tx, rx, handle) = setup_channel_crossbeam(channel_core_id);
 
     let a = A::default();
 
@@ -155,7 +136,7 @@ fn round_trip_crossbeam(
         tx.send(a.clone()).unwrap();
         let _ = rx.recv().unwrap();
     }
-    
+
     let start = get_unix_nano();
     for e in a_vec.iter() {
         tx.send(e.clone()).unwrap();
@@ -165,11 +146,8 @@ fn round_trip_crossbeam(
     let end = get_unix_nano();
     let ave = (end - start) / trip_number as u64;
     println!(
-        "(crossbeam) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
-        channel_core_id,
-        core_id,
-        trip_number,
-        ave,
+        "(crossbeam) cores = ({}, {}) average round for {} trip time: {:.0} ns",
+        channel_core_id, core_id, trip_number, ave,
     );
 
     drop(tx);
@@ -177,10 +155,13 @@ fn round_trip_crossbeam(
     Ok(())
 }
 
-
 fn setup_channel_crossbeam_cachepadded(
     core_id: usize,
-) -> (CrossbeamSender<CachePadded<A>>, CrossbeamReceiver<CachePadded<A>>, thread::JoinHandle<()>) {
+) -> (
+    CrossbeamSender<CachePadded<A>>,
+    CrossbeamReceiver<CachePadded<A>>,
+    thread::JoinHandle<()>,
+) {
     let worker_core_id = CORE_IDS[core_id];
 
     let (tx1, rx1) = crossbeam_unbounded();
@@ -197,18 +178,20 @@ fn setup_channel_crossbeam_cachepadded(
 }
 
 fn round_trip_with_cache_padded(
-    channel_core_id: usize, 
+    channel_core_id: usize,
     core_id: usize,
-    trip_number: usize, 
+    trip_number: usize,
 ) -> Result<()> {
     let main_core_id = CORE_IDS[core_id];
     core_affinity::set_for_current(main_core_id);
 
-    let (tx, rx, handle) = setup_channel_crossbeam_cachepadded( channel_core_id );
+    let (tx, rx, handle) = setup_channel_crossbeam_cachepadded(channel_core_id);
 
     let a = CachePadded::new(A::default());
 
-    let a_vec = (0..trip_number).map(|_| a.clone()).collect::<Vec<CachePadded<A>>>();
+    let a_vec = (0..trip_number)
+        .map(|_| a.clone())
+        .collect::<Vec<CachePadded<A>>>();
 
     for _ in 0..10 {
         tx.send(a.clone()).unwrap();
@@ -225,11 +208,8 @@ fn round_trip_with_cache_padded(
     let ave = (end - start) / trip_number as u64;
 
     println!(
-        "(crossbeam_padded) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
-        channel_core_id,
-        core_id,
-        trip_number,
-        ave,
+        "(crossbeam_padded) cores = ({}, {}) average round for {} trip time: {:.0} ns",
+        channel_core_id, core_id, trip_number, ave,
     );
 
     drop(tx);
@@ -237,15 +217,11 @@ fn round_trip_with_cache_padded(
     Ok(())
 }
 
-fn round_trip_kanal(
-    channel_core_id: usize, 
-    core_id: usize,
-    trip_number: usize, 
-) -> Result<()> {
+fn round_trip_kanal(channel_core_id: usize, core_id: usize, trip_number: usize) -> Result<()> {
     let main_core_id = CORE_IDS[core_id];
     core_affinity::set_for_current(main_core_id);
 
-    let (tx, rx, handle) = setup_channel_kanal( channel_core_id );
+    let (tx, rx, handle) = setup_channel_kanal(channel_core_id);
 
     let a = A::default();
 
@@ -265,11 +241,8 @@ fn round_trip_kanal(
     let ave = (end - start) / trip_number as u64;
 
     println!(
-        "(kanal) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
-        channel_core_id,
-        core_id,
-        trip_number,
-        ave,
+        "(kanal) cores = ({}, {}) average round for {} trip time: {:.0} ns",
+        channel_core_id, core_id, trip_number, ave,
     );
 
     drop(tx);
@@ -295,15 +268,11 @@ fn setup_channel_flume(
     (tx1, rx2, handle)
 }
 
-fn round_trip_flume(
-    channel_core_id: usize, 
-    core_id: usize,
-    trip_number: usize, 
-) -> Result<()> {
+fn round_trip_flume(channel_core_id: usize, core_id: usize, trip_number: usize) -> Result<()> {
     let main_core_id = CORE_IDS[core_id];
     core_affinity::set_for_current(main_core_id);
 
-    let (tx, rx, handle) = setup_channel_flume( channel_core_id );
+    let (tx, rx, handle) = setup_channel_flume(channel_core_id);
 
     let a = A::default();
 
@@ -323,11 +292,8 @@ fn round_trip_flume(
     let ave = (end - start) / trip_number as u64;
 
     println!(
-        "(flume) cores = ({}, {}) average round for {} trip time: {:.0} ns", 
-        channel_core_id,
-        core_id,
-        trip_number,
-        ave,
+        "(flume) cores = ({}, {}) average round for {} trip time: {:.0} ns",
+        channel_core_id, core_id, trip_number, ave,
     );
 
     drop(tx);
@@ -336,7 +302,7 @@ fn round_trip_flume(
 }
 
 fn main() -> Result<()> {
-    let trip_numbers = vec![1_000,];
+    let trip_numbers = vec![1_000];
     let core_pairs = [
         (0, 0),
         (0, 1),

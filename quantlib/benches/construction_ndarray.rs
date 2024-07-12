@@ -1,10 +1,9 @@
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use ndarray::Array1;
 
 fn vec_construction(n: i32) -> Vec<f32> {
     (0..n).map(|x| x as f32).collect()
 }
-    
 
 fn array_construction_by_into(n: i32) -> Array1<f32> {
     (0..n).map(|x| x as f32).collect::<Vec<f32>>().into()
@@ -30,24 +29,40 @@ fn benchmarks(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("vec_construction", n), n, |b, &n| {
             b.iter(|| vec_construction(n));
         });
-        
-        group.bench_with_input(BenchmarkId::new("array_construction_by_into", n), n, |b, &n| {
-            b.iter(|| array_construction_by_into(n));
-        });
+
+        group.bench_with_input(
+            BenchmarkId::new("array_construction_by_into", n),
+            n,
+            |b, &n| {
+                b.iter(|| array_construction_by_into(n));
+            },
+        );
 
         let m = *n as f32;
-        group.bench_with_input(BenchmarkId::new("array_construction_from_range", m), &m, |b, &_m| {
-            b.iter(|| array_construction_from_range(m));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("array_construction_from_range", m),
+            &m,
+            |b, &_m| {
+                b.iter(|| array_construction_from_range(m));
+            },
+        );
 
-        group.bench_with_input(BenchmarkId::new("create_vector_then_conversion", n), n, |b, &n| {
-            b.iter(|| create_vector_then_conversion(n));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("create_vector_then_conversion", n),
+            n,
+            |b, &n| {
+                b.iter(|| create_vector_then_conversion(n));
+            },
+        );
 
-        group.bench_with_input(BenchmarkId::new("vec_to_array_conversion", n), n, |b, &n| {
-            let vec: Vec<f32> = (0..n).map(|x| x as f32).collect();
-            b.iter(|| vec_to_array_conversion(vec.clone()));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("vec_to_array_conversion", n),
+            n,
+            |b, &n| {
+                let vec: Vec<f32> = (0..n).map(|x| x as f32).collect();
+                b.iter(|| vec_to_array_conversion(vec.clone()));
+            },
+        );
     }
     group.finish();
 }

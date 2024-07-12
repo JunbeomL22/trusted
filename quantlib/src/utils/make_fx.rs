@@ -1,6 +1,5 @@
 use crate::currency::{Currency, FxCode};
 
-#[warn(dead_code)]
 fn currencies_to_fx_codes(
     currencies: Vec<Currency>,
     must_include: Option<Vec<FxCode>>,
@@ -31,15 +30,8 @@ pub mod tests {
     use anyhow::Result;
     #[test]
     fn test_currencies_to_fx_codes() -> Result<()> {
-        let currs = vec![
-            Currency::USD,
-            Currency::EUR,
-            Currency::JPY,
-            Currency::KRW,
-        ];
-        let _must_include = vec![
-            FxCode::new(Currency::KRW, Currency::KRW),
-        ];
+        let currs = vec![Currency::USD, Currency::EUR, Currency::JPY, Currency::KRW];
+        let _must_include = vec![FxCode::new(Currency::KRW, Currency::KRW)];
         let result = currencies_to_fx_codes(currs, None);
         for res in &result {
             println!("{:?}  ({:?})", res, res.to_string());

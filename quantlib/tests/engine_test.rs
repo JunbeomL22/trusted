@@ -1,60 +1,42 @@
 #[cfg(test)]
 mod tests {
-    use quantlib::enums::{
-        OptionDailySettlementType,
-        OptionType,
-        OptionExerciseType,
-    };
-    use quantlib::currency::{Currency, FxCode};
-    use quantlib::instruments::{
-        futures::Futures,
-        bond::Bond,
-        vanilla_option::VanillaOption,
-        stock::Stock,
-        cash::Cash,
-    };
-    use quantlib::instrument::{
-        Instrument,
-        Instruments,
-    };
-    use quantlib::definitions::Real;
-    use quantlib::pricing_engines::{
-        calculation_configuration::CalculationConfiguration,
-        calculation_result::CalculationResult,
-    };
-    use quantlib::pricing_engines::match_parameter::MatchParameter;
-    use std::collections::HashMap;
-    use quantlib::pricing_engines::{
-        engine_generator::{
-            EngineGenerator,
-            InstrumentCategory,
-        },
-    };
-    use quantlib::data::value_data::ValueData;
-    use quantlib::data::vector_data::VectorData;
-    use quantlib::enums::{IssuerType, CreditRating, RankType};
-    use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
-    use quantlib::time::calendar::Calendar;
-    use quantlib::time::jointcalendar::JointCalendar;
-    use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-    use quantlib::utils::tracing_timer::CustomOffsetTime;
-    use anyhow::{Result, Context};
-    use tracing::{span, info, Level};
-    use tracing_subscriber::fmt::{
-        self,
-        writer::MakeWriterExt,
-    };
-    use tracing_subscriber::layer::SubscriberExt;
-    use tracing_appender::rolling;
-    use tracing_appender::non_blocking;
-    use time::{macros::datetime, Duration};
+    use anyhow::{Context, Result};
     use ndarray::array;
     use ndarray::Array1;
-    use std::time::Instant;
+    use quantlib::currency::{Currency, FxCode};
+    use quantlib::data::value_data::ValueData;
+    use quantlib::data::vector_data::VectorData;
+    use quantlib::definitions::Real;
+    use quantlib::enums::{CreditRating, IssuerType, RankType};
+    use quantlib::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
+    use quantlib::instrument::{Instrument, Instruments};
+    use quantlib::instruments::{
+        bond::Bond, cash::Cash, futures::Futures, stock::Stock, vanilla_option::VanillaOption,
+    };
+    use quantlib::pricing_engines::engine_generator::{EngineGenerator, InstrumentCategory};
+    use quantlib::pricing_engines::match_parameter::MatchParameter;
+    use quantlib::pricing_engines::{
+        calculation_configuration::CalculationConfiguration, calculation_result::CalculationResult,
+    };
+    use quantlib::time::calendar::Calendar;
+    use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
+    use quantlib::time::conventions::{
+        BusinessDayConvention, DayCountConvention, PaymentFrequency,
+    };
+    use quantlib::time::jointcalendar::JointCalendar;
+    use quantlib::utils::tracing_timer::CustomOffsetTime;
+    use std::collections::HashMap;
     use std::rc::Rc;
+    use std::time::Instant;
+    use time::{macros::datetime, Duration};
+    use tracing::{info, span, Level};
+    use tracing_appender::non_blocking;
+    use tracing_appender::rolling;
+    use tracing_subscriber::fmt::{self, writer::MakeWriterExt};
+    use tracing_subscriber::layer::SubscriberExt;
 
     #[test]
-    fn test_engine()-> Result<()> {
+    fn test_engine() -> Result<()> {
         let theta_day = 100;
         let start_time = Instant::now();
         // Set up rolling file appender
@@ -69,12 +51,15 @@ mod tests {
             .with_timer(custom_time.clone());
 
         let console_layer = fmt::layer()
-            .with_writer(
-                std::io::stdout.with_max_level(Level::DEBUG))
+            .with_writer(std::io::stdout.with_max_level(Level::DEBUG))
             .with_timer(custom_time.clone());
 
         let file_layer = fmt::layer()
-            .with_writer(non_blocking_appender.with_max_level(Level::DEBUG).with_min_level(Level::INFO))
+            .with_writer(
+                non_blocking_appender
+                    .with_max_level(Level::DEBUG)
+                    .with_min_level(Level::INFO),
+            )
             .with_timer(custom_time);
 
         // Combine console and file layers into a subscriber
@@ -106,25 +91,27 @@ mod tests {
         let market_datetime = dt.clone();
         let zero_curve1 = "KSD".to_string();
         let zero_curve_data1 = VectorData::new(
-            &value - 0.0005, 
-            Some(dates.clone()), 
-            times.clone(), 
-            Some(market_datetime), 
+            &value - 0.0005,
+            Some(dates.clone()),
+            times.clone(),
+            Some(market_datetime),
             Currency::KRW,
             zero_curve1.clone(),
             zero_curve1.clone(),
-        ).expect("Failed to create VectorData for KSD");
+        )
+        .expect("Failed to create VectorData for KSD");
 
         let zero_curve2 = "KRWGOV".to_string();
         let zero_curve_data2 = VectorData::new(
             value,
-            Some(dates.clone()), 
-            times, 
-            Some(market_datetime), 
+            Some(dates.clone()),
+            times,
+            Some(market_datetime),
             Currency::KRW,
             zero_curve2.clone(),
             zero_curve2.clone(),
-        ).expect("Failed to create VectorData for KRWGOV");
+        )
+        .expect("Failed to create VectorData for KRWGOV");
 
         let funding_curve1 = "Discount(KRW)".to_string();
         let funding_curve_data1 = VectorData::new(
@@ -135,7 +122,8 @@ mod tests {
             Currency::KRW,
             funding_curve1.clone(),
             funding_curve1.clone(),
-        ).expect("failed to make a vector data for funding curve");
+        )
+        .expect("failed to make a vector data for funding curve");
 
         // the borrowing fee curve which amounts to 0.005
         let bor_curve_name = "KOSPI2".to_string();
@@ -147,7 +135,8 @@ mod tests {
             Currency::KRW,
             bor_curve_name.clone(),
             bor_curve_name.clone(),
-        ).expect("failed to make a vector data for borrowing fee");
+        )
+        .expect("failed to make a vector data for borrowing fee");
 
         //
         // mapping construction
@@ -157,7 +146,6 @@ mod tests {
         zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
         zero_curve_map.insert(funding_curve1.clone(), funding_curve_data1);
 
-        
         let mut equity_vol_map = HashMap::new();
         let equity_surface_map = HashMap::new();
 
@@ -168,9 +156,9 @@ mod tests {
             Currency::KRW,
             "KOSPI2".to_string(),
             "KOSPI2".to_string(),
-        ).expect("failed to make a value data for equity volatility");
+        )
+        .expect("failed to make a value data for equity volatility");
 
-        
         //equity_surface_map.insert("KOSPI2".to_string(), equity_surface_data);
         equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
 
@@ -182,27 +170,31 @@ mod tests {
             Currency::KRW,
             fx_str1.to_string(),
             fx_str1.to_string(),
-        ).expect("failed to make a value data for fx rate");
+        )
+        .expect("failed to make a value data for fx rate");
         let mut fx_data_map = HashMap::new();
-        
+
         fx_data_map.insert(fx_code1, fx1);
 
-        
         // make a vector data for dividend ratio
         let div_name = "KOSPI2".to_string();
         let dividend_data = VectorData::new(
             Array1::from(vec![3.0, 3.0]),
-            Some(vec![datetime!(2024-06-01 00:00:00 +09:00), datetime!(2025-01-01 00:00:00 +09:00)]),
+            Some(vec![
+                datetime!(2024-06-01 00:00:00 +09:00),
+                datetime!(2025-01-01 00:00:00 +09:00),
+            ]),
             None,
             Some(market_datetime),
             Currency::KRW,
             div_name.clone(),
             div_name.clone(),
-        ).expect("failed to make a vector data for dividend ratio");
+        )
+        .expect("failed to make a vector data for dividend ratio");
 
         let mut dividend_data_map = HashMap::new();
         dividend_data_map.insert("KOSPI2".to_string(), dividend_data.clone());
-        
+
         // make a stock data
         let stock_name = "KOSPI2".to_string();
         let stock_data = ValueData::new(
@@ -211,11 +203,12 @@ mod tests {
             Currency::KRW,
             stock_name.clone(),
             stock_name.clone(),
-        ).expect("failed to make a stock data");
+        )
+        .expect("failed to make a stock data");
 
         let mut stock_data_map = HashMap::new();
         stock_data_map.insert("KOSPI2".to_string(), stock_data.clone());
-        
+
         // make two stock futures of two maturities with the same other specs
         // then make a Instruments object with the two stock futures
         let stock_futures1 = Futures::new(
@@ -260,28 +253,28 @@ mod tests {
 
         let bond = Bond::new_from_conventions(
             issuer_type,
-            credit_rating,     
-            issuer_name.to_string(), 
-            RankType::Senior, 
+            credit_rating,
+            issuer_name.to_string(),
+            RankType::Senior,
             bond_currency,
             10_000.0,
-            false, 
-            issuedate.clone(), 
+            false,
+            issuedate.clone(),
             issuedate.clone(),
             None,
             maturity,
             Some(0.03),
-            None, 
+            None,
             None,
             None,
             calendar,
             true,
             DayCountConvention::StreetConvention,
-            BusinessDayConvention::Unadjusted, 
-            PaymentFrequency::SemiAnnually, 
-            0, 
+            BusinessDayConvention::Unadjusted,
+            PaymentFrequency::SemiAnnually,
             0,
-            bond_name.to_string(), 
+            0,
+            bond_name.to_string(),
             bond_code.to_string(),
         )?;
 
@@ -299,28 +292,28 @@ mod tests {
 
         let bond2 = Bond::new_from_conventions(
             issuer_type2,
-            credit_rating2,     
-            issuer_name2.to_string(), 
-            RankType::Senior, 
+            credit_rating2,
+            issuer_name2.to_string(),
+            RankType::Senior,
             bond_currency2,
-            10_000.0, 
-            false, 
-            issuedate2.clone(), 
+            10_000.0,
+            false,
+            issuedate2.clone(),
             issuedate2.clone(),
             None,
             maturity2,
             Some(0.0425),
             None,
-            None, 
+            None,
             None,
             calendar,
             true,
             DayCountConvention::StreetConvention,
-            BusinessDayConvention::Unadjusted, 
-            PaymentFrequency::SemiAnnually, 
-            0, 
+            BusinessDayConvention::Unadjusted,
+            PaymentFrequency::SemiAnnually,
             0,
-            bond_name2.to_string(), 
+            0,
+            bond_name2.to_string(),
             bond_code2.to_string(),
         )?;
 
@@ -343,7 +336,7 @@ mod tests {
         );
 
         let cash = Cash::new(
-            Currency::USD, 
+            Currency::USD,
             "USD Cash".to_string(),
             "USD Cash".to_string(),
         );
@@ -373,7 +366,7 @@ mod tests {
             Rc::new(inst6),
             Rc::new(inst7),
         ];
-        
+
         // make a calculation configuration
         let calculation_configuration = CalculationConfiguration::default()
             .with_delta_calculation(true)
@@ -387,7 +380,7 @@ mod tests {
             .with_div_structure_calculation(true)
             .with_vega_matrix_calculation(true)
             .with_theta_day(theta_day);
-            
+
         // make a match parameter
         let mut collateral_curve_map = HashMap::new();
         collateral_curve_map.insert(String::from("KOSPI2"), String::from("KSD"));
@@ -397,7 +390,13 @@ mod tests {
 
         let mut bond_discount_curve_map = HashMap::new();
         bond_discount_curve_map.insert(
-            (issuer_name.to_string(), issuer_type, credit_rating, bond_currency), "KRWGOV".to_string()
+            (
+                issuer_name.to_string(),
+                issuer_type,
+                credit_rating,
+                bond_currency,
+            ),
+            "KRWGOV".to_string(),
         );
 
         let rate_index_curve_map = HashMap::new();
@@ -415,7 +414,7 @@ mod tests {
             bond_discount_curve_map,
             crs_curve_map,
             rate_index_curve_map,
-            funding_cost_map,        
+            funding_cost_map,
         );
 
         let category1 = InstrumentCategory::new(
@@ -426,11 +425,9 @@ mod tests {
                 "IRS".to_string(),
                 "CRS".to_string(),
                 "FxFutures".to_string(),
-                ]),
+            ]),
             Some(vec![Currency::KRW]),
-            Some(vec![
-                "KOSPI2".to_string(),
-            ])
+            Some(vec!["KOSPI2".to_string()]),
         );
 
         let category2 = InstrumentCategory::new(
@@ -438,21 +435,16 @@ mod tests {
                 "Bond".to_string(),
                 "Cash".to_string(),
                 "Stock".to_string(),
-                ]),
+            ]),
             Some(vec![Currency::KRW, Currency::USD]),
-            Some(vec![
-                "KOSPI2".to_string(),
-            ])
+            Some(vec!["KOSPI2".to_string()]),
         );
 
         let instrument_categories = vec![category1, category2];
 
         let mut engine_builder = EngineGenerator::builder();
         let engine_generator = engine_builder
-            .with_configuration(
-                calculation_configuration, 
-                dt.clone(),
-                match_parameter)?
+            .with_configuration(calculation_configuration, dt.clone(), match_parameter)?
             .with_instruments(Instruments::new(inst_vec))?
             .with_instrument_categories(instrument_categories)?
             .with_data(
@@ -466,12 +458,16 @@ mod tests {
                 HashMap::new(),
                 HashMap::new(),
             )?;
-            
-        engine_generator.distribute_instruments().context("Failed to distribute instruments")?;
-        engine_generator.calculate().context("Failed to calculate")?;
 
-        
-        let calculation_results: &HashMap<String, CalculationResult> = engine_generator.get_calculation_results();
+        engine_generator
+            .distribute_instruments()
+            .context("Failed to distribute instruments")?;
+        engine_generator
+            .calculate()
+            .context("Failed to calculate")?;
+
+        let calculation_results: &HashMap<String, CalculationResult> =
+            engine_generator.get_calculation_results();
 
         let key_npv = vec![
             ("KRxxxxxxxxxx".to_string(), 0.99930),
@@ -484,12 +480,14 @@ mod tests {
         ];
 
         for (key, npv) in key_npv.iter() {
-            let result = calculation_results.get(key)
+            let result = calculation_results
+                .get(key)
                 .ok_or_else(|| anyhow::anyhow!("No result found for key {}", key))?;
-            let npv_comp = result.get_npv_result()
+            let npv_comp = result
+                .get_npv_result()
                 .ok_or_else(|| anyhow::anyhow!("No npv result found for key {}", key))?
                 .get_npv();
-                
+
             assert!(
                 (npv - npv_comp).abs() < 1e-6,
                 "npv comparison failed for key {}: expected {}, got {}",
@@ -499,7 +497,6 @@ mod tests {
             );
         }
 
-        
         let elapsed = start_time.elapsed();
         info!("engine test finished {:?}", elapsed);
 

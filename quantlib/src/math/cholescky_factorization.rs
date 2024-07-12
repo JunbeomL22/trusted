@@ -1,6 +1,6 @@
 use crate::definitions::Real;
-use ndarray::Array2;
 use log::warn;
+use ndarray::Array2;
 
 pub fn cholesky_decomposition(matrix: &Array2<Real>) -> Result<Array2<Real>, &'static str> {
     let mut msg = String::from("Cholesky decomposition is carried out by this custom function (utils::cholesky_decomposition)\n");
@@ -49,9 +49,7 @@ mod tests {
 
     #[test]
     fn test_cholesky_decomposition() {
-
-        for i in 0..9
-         {
+        for i in 0..9 {
             let rho = (i as Real) * 0.1;
             // 2 dim
             let matrix = arr2(&[[1.0, rho], [rho, 1.0]]);
@@ -70,7 +68,12 @@ mod tests {
                 matrix, l, &l.dot(&l.t())
             );
             // 4 dim
-            let matrix = arr2(&[[1.0, rho, rho, rho], [rho, 1.0, rho, rho], [rho, rho, 1.0, rho], [rho, rho, rho, 1.0]]);
+            let matrix = arr2(&[
+                [1.0, rho, rho, rho],
+                [rho, 1.0, rho, rho],
+                [rho, rho, 1.0, rho],
+                [rho, rho, rho, 1.0],
+            ]);
             let l = cholesky_decomposition(&matrix).unwrap();
             assert!(
                 (&l.dot(&l.t()) - &matrix).mapv(|x| x.abs()).sum() < 1e-6,

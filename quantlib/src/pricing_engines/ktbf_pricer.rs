@@ -1,23 +1,15 @@
-use crate::parameters::zero_curve::ZeroCurve;
-use crate::evaluation_date::EvaluationDate;
-use crate::pricing_engines::{
-    npv_result::NpvResult, 
-    pricer::PricerTrait,
-    krx_yield_pricer::KrxYieldPricer,
-    bond_pricer::BondPricer,
-};
-use crate::instrument::{
-    Instrument,
-    InstrumentTrait,
-};
 use crate::definitions::Real;
 use crate::enums::Compounding;
+use crate::evaluation_date::EvaluationDate;
+use crate::instrument::{Instrument, InstrumentTrait};
+use crate::parameters::zero_curve::ZeroCurve;
+use crate::pricing_engines::{
+    bond_pricer::BondPricer, krx_yield_pricer::KrxYieldPricer, npv_result::NpvResult,
+    pricer::PricerTrait,
+};
 //
 use anyhow::Result;
-use std::{
-    rc::Rc, 
-    cell::RefCell,
-};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct KtbfPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
@@ -47,31 +39,25 @@ impl PricerTrait for KtbfPricer {
             None,
             None,
         );
-        
+
         let mut bond_yields = Vec::new();
 
         let underlying_bonds = instrument.get_underlying_bonds()?;
 
-        let krx_yield_pricer = KrxYieldPricer::new(
-            self.evaluation_date.clone(),
-            0.0,
-            None,
-            None,
-        );
+        let krx_yield_pricer = KrxYieldPricer::new(self.evaluation_date.clone(), 0.0, None, None);
 
-        let init_guess = self.discount_curve.borrow().get_forward_rate_from_evaluation_date(
-            underlying_bonds[0].get_maturity().unwrap(),
-            Compounding::Simple,
-        )?;
+        let init_guess = self
+            .discount_curve
+            .borrow()
+            .get_forward_rate_from_evaluation_date(
+                underlying_bonds[0].get_maturity().unwrap(),
+                Compounding::Simple,
+            )?;
 
         for bond in underlying_bonds.iter() {
             let inst = Instrument::Bond(bond.clone());
             let npv = bond_pricer.npv(&inst)?;
-            let yield_ = krx_yield_pricer.find_bond_yield(
-                bond.clone(),
-                npv,
-                Some(init_guess)
-            )?;
+            let yield_ = krx_yield_pricer.find_bond_yield(bond.clone(), npv, Some(init_guess))?;
             bond_yields.push(yield_);
         }
 
@@ -79,55 +65,50 @@ impl PricerTrait for KtbfPricer {
 
         let mut ktbf_price = instrument.get_virtual_bond_npv(average_yield)?;
 
-        let borrowing_cost = self.borrowing_curve.borrow().get_discount_factor_at_date(
-            instrument.get_maturity().unwrap(),
-        )?;
+        let borrowing_cost = self
+            .borrowing_curve
+            .borrow()
+            .get_discount_factor_at_date(instrument.get_maturity().unwrap())?;
 
         ktbf_price *= borrowing_cost;
 
         Ok(ktbf_price)
-
     }
 
     fn npv_result(&self, instrument: &Instrument) -> Result<NpvResult> {
         let npv = self.npv(instrument)?;
         Ok(NpvResult::new_from_npv(npv))
     }
-
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::currency::Currency;
+    use crate::data::vector_data::VectorData;
+    use crate::enums::{CreditRating, IssuerType, RankType};
+    use crate::evaluation_date::EvaluationDate;
     use crate::instrument::Instrument;
     use crate::instruments::bond::Bond;
     use crate::instruments::ktbf::{KtbfVirtualBond, KTBF};
-    use crate::evaluation_date::EvaluationDate;
     use crate::parameters::zero_curve::ZeroCurve;
-    use crate::data::vector_data::VectorData;
-    use crate::currency::Currency;
-    use crate::enums::{
-        IssuerType,
-        CreditRating,
-        RankType,
-    };
-    use crate::time::{
-        calendars::southkorea::{SouthKorea, SouthKoreaType},
-        jointcalendar::JointCalendar,
-        conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention},
-        calendar::Calendar,
-    };
     use crate::pricing_engines::{
         ktbf_pricer::KtbfPricer,
-        pricer::{PricerTrait, Pricer},
+        pricer::{Pricer, PricerTrait},
+    };
+    use crate::time::{
+        calendar::Calendar,
+        calendars::southkorea::{SouthKorea, SouthKoreaType},
+        conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
+        jointcalendar::JointCalendar,
     };
     //
-    use time::macros::datetime;
-    use std::rc::Rc;
-    use std::cell::RefCell;
-    use ndarray::array;
-    use time::Duration;
     use anyhow::Result;
-    
+    use ndarray::array;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use time::macros::datetime;
+    use time::Duration;
+
     #[test]
     fn test_ktbf_pricer() -> Result<()> {
         let eval_date = datetime!(2024-01-02 00:00:00 UTC);
@@ -136,7 +117,7 @@ mod tests {
             array![0.030, 0.040],
             None,
             Some(array![0.5, 5.0]),
-            None,//eval_date.clone(),
+            None, //eval_date.clone(),
             Currency::KRW,
             "KRWGOV".to_string(),
             "KRWGOV".to_string(),
@@ -152,7 +133,7 @@ mod tests {
             array![0.003],
             None,
             Some(array![0.5]),
-            None,//eval_date.clone(),
+            None, //eval_date.clone(),
             Currency::KRW,
             "KTBF3Y".to_string(),
             "KTBF3Y".to_string(),
@@ -238,12 +219,7 @@ mod tests {
             "Bond2".to_string(),
         )?;
 
-        let virtual_bond = KtbfVirtualBond::new(
-            3,
-            0.05,
-            PaymentFrequency::SemiAnnually,
-            100.0
-        );
+        let virtual_bond = KtbfVirtualBond::new(3, 0.05, PaymentFrequency::SemiAnnually, 100.0);
 
         let ktbf = KTBF::new(
             Currency::KRW,
@@ -267,7 +243,6 @@ mod tests {
         let pricer = Pricer::KtbfPricer(ktbf_pricer);
         let npv = pricer.npv(&Instrument::KTBF(ktbf))?;
         println!("KTBF NPV: {}", npv);
-
 
         Ok(())
     }

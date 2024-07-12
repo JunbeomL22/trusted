@@ -1,16 +1,11 @@
-use trading_engine::{
-    logger::{
-        LogLevel,
-        TimeZone,
-        Logger,
-    },
-    timer,
-    log_info,
-    info,
-};
-use trading_engine::utils::timer::get_unix_nano;
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use trading_engine::utils::timer::get_unix_nano;
+use trading_engine::{
+    info, log_info,
+    logger::{LogLevel, Logger, TimeZone},
+    timer,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct TestStruct {
@@ -38,7 +33,7 @@ impl Drop for Guard {
         let dropping = get_unix_nano();
         let elapsed = dropping - self.ts;
         let elapsed_as_seconds = elapsed as f64 / 1_000_000.0;
-        
+
         println!("dropping guard: {:.3}ms", elapsed_as_seconds);
     }
 }
@@ -52,7 +47,7 @@ fn main() -> Result<()> {
         .launch();
 
     let iteration = 100_000;
-    
+
     let test_struct = TestStruct::default();
 
     for _ in 0..5 {
@@ -76,8 +71,14 @@ fn main() -> Result<()> {
     let elapsed_as_seconds = elapsed as f64 / 1_000_000_000.0;
     let elapsed_average = elapsed as f64 / iteration as f64;
 
-    info!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
-    println!("elapsed: {:.3}s, average: {:.0}ns", elapsed_as_seconds, elapsed_average);
+    info!(
+        "elapsed: {:.3}s, average: {:.0}ns",
+        elapsed_as_seconds, elapsed_average
+    );
+    println!(
+        "elapsed: {:.3}s, average: {:.0}ns",
+        elapsed_as_seconds, elapsed_average
+    );
 
     Ok(())
 }

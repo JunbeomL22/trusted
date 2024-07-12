@@ -1,39 +1,37 @@
 // heavily advised by youngjin park https://github.com/youngjin-create
 use crate::utils::timer::get_unix_nano;
 //
+use anyhow::{anyhow, Result};
+use chrono;
+use core_affinity;
+use crossbeam_channel::{unbounded, Sender};
 use once_cell::sync::Lazy;
-use crossbeam_channel::{Sender, unbounded};
 use std::{
-    io::{Write, BufWriter},
     fs::{File, OpenOptions},
+    io::{BufWriter, Write},
     path::PathBuf,
 };
-use core_affinity;
 use std::{
-    thread,
     sync::{
-        Mutex, 
-        atomic::{
-            AtomicUsize, 
-            AtomicBool,
-            AtomicI32,
-            Ordering},
+        atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering},
+        Mutex,
     },
+    thread,
 };
-use anyhow::{Result, anyhow};
-use chrono;
 
 const LOG_MESSAGE_BUFFER_SIZE: usize = 1_000_000; // string length
 const LOG_MESSAGE_FLUSH_INTERVAL: u64 = 1_000_000; // 1 second
 
-pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
+pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> =
+    Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
 pub static CONSOLE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
-pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> = Lazy::new(|| Mutex::new(None));
+pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> =
+    Lazy::new(|| Mutex::new(None));
 
 pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let (sender, receiver) = unbounded();
-    
+
     let mut message_queue: Vec<String> = Vec::with_capacity(LOG_MESSAGE_BUFFER_SIZE);
     let mut last_flush_time = get_unix_nano();
 
@@ -48,8 +46,9 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let timestamp = get_unix_nano();
                     message_queue.push(message);
 
-                    if (buffer_size + new_msg_length > LOG_MESSAGE_BUFFER_SIZE) ||
-                        (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL) {
+                    if (buffer_size + new_msg_length > LOG_MESSAGE_BUFFER_SIZE)
+                        || (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL)
+                    {
                         if let Some(ref mut writer) = writer {
                             let output = message_queue.join("");
                             writer.write_all(output.as_bytes()).unwrap();
@@ -59,9 +58,9 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
 
                             message_queue.clear();
                             last_flush_time = get_unix_nano();
-                        } 
+                        }
                     }
-                },
+                }
                 LogMessage::FlushingMessage(lazy_message) => {
                     let message = lazy_message.eval();
                     message_queue.push(message);
@@ -74,16 +73,16 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         }
                         message_queue.clear();
                         last_flush_time = get_unix_nano();
-                    } 
-                    
-                },
+                    }
+                }
                 LogMessage::StaticString(message) => {
                     let buffer_size = message_queue.len();
                     let timestamp = get_unix_nano();
                     message_queue.push(message.to_string());
 
-                    if (buffer_size + message.len() > LOG_MESSAGE_BUFFER_SIZE) ||
-                        (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL) {
+                    if (buffer_size + message.len() > LOG_MESSAGE_BUFFER_SIZE)
+                        || (timestamp - last_flush_time > LOG_MESSAGE_FLUSH_INTERVAL)
+                    {
                         if let Some(ref mut writer) = writer {
                             let output = message_queue.join("");
                             writer.write_all(output.as_bytes()).unwrap();
@@ -93,9 +92,9 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
 
                             message_queue.clear();
                             last_flush_time = get_unix_nano();
-                        } 
-                    } 
-                },
+                        }
+                    }
+                }
                 LogMessage::SetFile(file_name) => {
                     if let Some(ref mut writer) = writer {
                         writer.flush().unwrap();
@@ -112,11 +111,13 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                                 .create(true)
                                 .append(true)
                                 .open(&file_name)
-                                .map_err(|e| anyhow!("Failed to open file: {} [{}]", file_name.display(), e))
-                                .unwrap()
+                                .map_err(|e| {
+                                    anyhow!("Failed to open file: {} [{}]", file_name.display(), e)
+                                })
+                                .unwrap(),
                         ));
                     }
-                },
+                }
                 LogMessage::SetCore => {
                     let core_ids = core_affinity::get_core_ids().unwrap();
                     if let Some(last_core_id) = core_ids.first() {
@@ -124,7 +125,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     } else {
                         panic!("No core available for logger thread")
                     }
-                },
+                }
                 LogMessage::Close => {
                     if let Some(ref mut writer) = writer {
                         writer.write_all(message_queue.join("").as_bytes()).unwrap();
@@ -132,7 +133,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         let _ = writer.get_mut().sync_all();
                     }
                     break;
-                },
+                }
             }
         }
     }));
@@ -194,7 +195,7 @@ impl LogLevel {
             _ => {
                 let error = || anyhow!("Invalid log level: {}", level);
                 Err(error())
-            },
+            }
         }
     }
 }
@@ -292,7 +293,6 @@ macro_rules! log_error {
     }};
 }
 
-
 #[macro_export]
 macro_rules! log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -387,7 +387,6 @@ macro_rules! flushing_log_error {
     }};
 }
 
-
 #[macro_export]
 macro_rules! flushing_log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -456,7 +455,7 @@ pub struct LoggerGuard;
 
 impl Drop for LoggerGuard {
     fn drop(&mut self) {
-        log_trace!("logger", message="LoggerGuard is dropped");
+        log_trace!("logger", message = "LoggerGuard is dropped");
         Logger::finalize();
     }
 }
@@ -475,16 +474,19 @@ impl Logger {
 
     pub fn initialize() -> Logger {
         let _ = get_unix_nano();
-        Logger {
-            file_name: None,            
-        }
+        Logger { file_name: None }
     }
 
     pub fn with_file(mut self, file_path: &str, file_name: &str) -> Result<Logger> {
         std::fs::create_dir_all(file_path)?;
 
         let current_time = chrono::Local::now();
-        let file_name = format!("{}/{}-{}.log", file_path, file_name, current_time.format("%Y%m%d-%H%M%S"));
+        let file_name = format!(
+            "{}/{}-{}.log",
+            file_path,
+            file_name,
+            current_time.format("%Y%m%d-%H%M%S")
+        );
         self.file_name = Some(file_name);
         Ok(self)
     }
@@ -532,7 +534,9 @@ impl LazyMessage {
     where
         F: (FnOnce() -> String) + Send + 'static,
     {
-        LazyMessage { data: Box::new(data) }
+        LazyMessage {
+            data: Box::new(data),
+        }
     }
 
     pub fn eval(self) -> String {
@@ -566,7 +570,7 @@ mod tests {
         info!("warm up");
 
         let iteration = 100_000;
-        
+
         let test_struct = TestStruct {
             a: 1,
             b: 3.14,
@@ -586,7 +590,10 @@ mod tests {
         let elapsed_as_seconds = elapsed as f64 / 1_000_000_000.0;
         let elapsed_average = elapsed as f64 / iteration as f64;
 
-        info!("elapsed: {}s, average: {}ns", elapsed_as_seconds, elapsed_average);
+        info!(
+            "elapsed: {}s, average: {}ns",
+            elapsed_as_seconds, elapsed_average
+        );
 
         Ok(())
     }

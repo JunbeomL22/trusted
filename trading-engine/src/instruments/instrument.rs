@@ -1,16 +1,13 @@
 use crate::instruments::mock_instrument::MockInstrument;
+use crate::types::{isin_code::IsinCode, venue::Venue};
 use crate::utils::numeric_converter::NumReprCfg;
-use crate::types::{
-    isin_code::IsinCode,
-    venue::Venue,
-};
-use serde::{Serialize, Deserialize};
 use enum_dispatch::enum_dispatch;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash)]
 #[enum_dispatch(InstrumentTrait)]
 pub enum Instrument {
-    Mock(MockInstrument)
+    Mock(MockInstrument),
 }
 
 #[enum_dispatch]

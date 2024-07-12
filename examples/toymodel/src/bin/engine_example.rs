@@ -1,57 +1,37 @@
-use quantlib::enums::{
-    OptionDailySettlementType,
-    OptionType,
-    OptionExerciseType,
-};
-use quantlib::currency::{Currency, FxCode};
-use quantlib::instruments::{
-    futures::Futures,
-    bond::Bond,
-    vanilla_option::VanillaOption,
-    stock::Stock,
-    cash::Cash,
-};
-use quantlib::instrument::{
-    Instrument,
-    Instruments,
-};
-use quantlib::definitions::Real;
-use quantlib::pricing_engines::{
-    calculation_configuration::CalculationConfiguration,
-    calculation_result::CalculationResult,
-};
-use quantlib::pricing_engines::match_parameter::MatchParameter;
-use std::collections::HashMap;
-use quantlib::pricing_engines::{
-    engine_generator::{
-        EngineGenerator,
-        InstrumentCategory,
-    },
-};
-use quantlib::data::value_data::ValueData;
-use quantlib::data::vector_data::VectorData;
-use quantlib::enums::{IssuerType, CreditRating, RankType};
-use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
-use quantlib::time::calendar::Calendar;
-use quantlib::time::jointcalendar::JointCalendar;
-use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
-use quantlib::utils::tracing_timer::CustomOffsetTime;
-use anyhow::{Result, Context};
-use tracing::{span, info, Level};
-use tracing_subscriber::fmt::{
-    self,
-    writer::MakeWriterExt,
-};
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_appender::rolling;
-use tracing_appender::non_blocking;
-use time::{macros::datetime, Duration};
+use anyhow::{Context, Result};
 use ndarray::array;
 use ndarray::Array1;
-use std::time::Instant;
-use std::rc::Rc;
+use quantlib::currency::{Currency, FxCode};
+use quantlib::data::value_data::ValueData;
+use quantlib::data::vector_data::VectorData;
+use quantlib::definitions::Real;
+use quantlib::enums::{CreditRating, IssuerType, RankType};
+use quantlib::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
+use quantlib::instrument::{Instrument, Instruments};
+use quantlib::instruments::{
+    bond::Bond, cash::Cash, futures::Futures, stock::Stock, vanilla_option::VanillaOption,
+};
+use quantlib::pricing_engines::engine_generator::{EngineGenerator, InstrumentCategory};
+use quantlib::pricing_engines::match_parameter::MatchParameter;
+use quantlib::pricing_engines::{
+    calculation_configuration::CalculationConfiguration, calculation_result::CalculationResult,
+};
+use quantlib::time::calendar::Calendar;
+use quantlib::time::calendars::{southkorea::SouthKorea, southkorea::SouthKoreaType};
+use quantlib::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+use quantlib::time::jointcalendar::JointCalendar;
+use quantlib::utils::tracing_timer::CustomOffsetTime;
 use serde_json::to_string_pretty;
+use std::collections::HashMap;
 use std::fs::write;
+use std::rc::Rc;
+use std::time::Instant;
+use time::{macros::datetime, Duration};
+use tracing::{info, span, Level};
+use tracing_appender::non_blocking;
+use tracing_appender::rolling;
+use tracing_subscriber::fmt::{self, writer::MakeWriterExt};
+use tracing_subscriber::layer::SubscriberExt;
 
 fn main() -> Result<()> {
     let theta_day = 100;
@@ -68,8 +48,7 @@ fn main() -> Result<()> {
         .with_timer(custom_time.clone());
 
     let console_layer = fmt::layer()
-        .with_writer(
-            std::io::stdout.with_max_level(Level::DEBUG))
+        .with_writer(std::io::stdout.with_max_level(Level::DEBUG))
         .with_timer(custom_time.clone());
 
     let file_layer = fmt::layer()
@@ -82,8 +61,7 @@ fn main() -> Result<()> {
         .with(err_layer)
         .with(console_layer);
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
 
     // Create a new span with an `info` level
     let main_span = span!(Level::INFO, "main (engine)");
@@ -105,25 +83,27 @@ fn main() -> Result<()> {
     let market_datetime = dt;
     let zero_curve1 = "KSD".to_string();
     let zero_curve_data1 = VectorData::new(
-        &value - 0.0005, 
-        Some(dates.clone()), 
-        times.clone(), 
-        Some(market_datetime), 
+        &value - 0.0005,
+        Some(dates.clone()),
+        times.clone(),
+        Some(market_datetime),
         Currency::KRW,
         zero_curve1.clone(),
         zero_curve1.clone(),
-    ).expect("Failed to create VectorData for KSD");
+    )
+    .expect("Failed to create VectorData for KSD");
 
     let zero_curve2 = "KRWGOV".to_string();
     let zero_curve_data2 = VectorData::new(
         value,
-        Some(dates.clone()), 
-        times, 
-        Some(market_datetime), 
+        Some(dates.clone()),
+        times,
+        Some(market_datetime),
         Currency::KRW,
         zero_curve2.clone(),
         zero_curve2.clone(),
-    ).expect("Failed to create VectorData for KRWGOV");
+    )
+    .expect("Failed to create VectorData for KRWGOV");
 
     let funding_curve1 = "Discount(KRW)".to_string();
     let funding_curve_data1 = VectorData::new(
@@ -134,7 +114,8 @@ fn main() -> Result<()> {
         Currency::KRW,
         funding_curve1.clone(),
         funding_curve1.clone(),
-    ).expect("failed to make a vector data for funding curve");
+    )
+    .expect("failed to make a vector data for funding curve");
 
     // the borrowing fee curve which amounts to 0.005
     let bor_curve_name = "KOSPI2".to_string();
@@ -146,7 +127,8 @@ fn main() -> Result<()> {
         Currency::KRW,
         bor_curve_name.clone(),
         bor_curve_name.clone(),
-    ).expect("failed to make a vector data for borrowing fee");
+    )
+    .expect("failed to make a vector data for borrowing fee");
 
     //
     // mapping construction
@@ -156,7 +138,6 @@ fn main() -> Result<()> {
     zero_curve_map.insert("KOSPI2".to_string(), borrowing_curve_data);
     zero_curve_map.insert(funding_curve1.clone(), funding_curve_data1);
 
-    
     let mut equity_vol_map = HashMap::new();
     let equity_surface_map = HashMap::new();
 
@@ -167,9 +148,9 @@ fn main() -> Result<()> {
         Currency::KRW,
         "KOSPI2".to_string(),
         "KOSPI2".to_string(),
-    ).expect("failed to make a value data for equity volatility");
+    )
+    .expect("failed to make a value data for equity volatility");
 
-    
     //equity_surface_map.insert("KOSPI2".to_string(), equity_surface_data);
     equity_vol_map.insert("KOSPI2".to_string(), equity_constant_vol1);
 
@@ -181,27 +162,31 @@ fn main() -> Result<()> {
         Currency::KRW,
         fx_str1.to_string(),
         fx_str1.to_string(),
-    ).expect("failed to make a value data for fx rate");
+    )
+    .expect("failed to make a value data for fx rate");
     let mut fx_data_map = HashMap::new();
-    
+
     fx_data_map.insert(fx_code1, fx1);
 
-    
     // make a vector data for dividend ratio
     let div_name = "KOSPI2".to_string();
     let dividend_data = VectorData::new(
         Array1::from(vec![3.0, 3.0]),
-        Some(vec![datetime!(2024-06-01 00:00:00 +09:00), datetime!(2025-01-01 00:00:00 +09:00)]),
+        Some(vec![
+            datetime!(2024-06-01 00:00:00 +09:00),
+            datetime!(2025-01-01 00:00:00 +09:00),
+        ]),
         None,
         Some(market_datetime),
         Currency::KRW,
         div_name.clone(),
         div_name.clone(),
-    ).expect("failed to make a vector data for dividend ratio");
+    )
+    .expect("failed to make a vector data for dividend ratio");
 
     let mut dividend_data_map = HashMap::new();
     dividend_data_map.insert("KOSPI2".to_string(), dividend_data.clone());
-    
+
     // make a stock data
     let stock_name = "KOSPI2".to_string();
     let stock_data = ValueData::new(
@@ -210,11 +195,12 @@ fn main() -> Result<()> {
         Currency::KRW,
         stock_name.clone(),
         stock_name.clone(),
-    ).expect("failed to make a stock data");
+    )
+    .expect("failed to make a stock data");
 
     let mut stock_data_map = HashMap::new();
     stock_data_map.insert("KOSPI2".to_string(), stock_data.clone());
-    
+
     // make two stock futures of two maturities with the same other specs
     // then make a Instruments object with the two stock futures
     let stock_futures1 = Futures::new(
@@ -259,28 +245,28 @@ fn main() -> Result<()> {
 
     let bond = Bond::new_from_conventions(
         issuer_type,
-        credit_rating,     
-        issuer_name.to_string(), 
-        RankType::Senior, 
+        credit_rating,
+        issuer_name.to_string(),
+        RankType::Senior,
         bond_currency,
         10_000.0,
-        false, 
-        issuedate, 
+        false,
+        issuedate,
         issuedate,
         None,
         maturity,
         Some(0.03),
-        None, 
+        None,
         None,
         None,
         calendar,
         true,
         DayCountConvention::StreetConvention,
-        BusinessDayConvention::Unadjusted, 
-        PaymentFrequency::SemiAnnually, 
-        0, 
+        BusinessDayConvention::Unadjusted,
+        PaymentFrequency::SemiAnnually,
         0,
-        bond_name.to_string(), 
+        0,
+        bond_name.to_string(),
         bond_code.to_string(),
     )?;
 
@@ -298,28 +284,28 @@ fn main() -> Result<()> {
 
     let bond2 = Bond::new_from_conventions(
         issuer_type2,
-        credit_rating2,     
-        issuer_name2.to_string(), 
-        RankType::Senior, 
+        credit_rating2,
+        issuer_name2.to_string(),
+        RankType::Senior,
         bond_currency2,
-        10_000.0, 
-        false, 
-        issuedate2, 
+        10_000.0,
+        false,
+        issuedate2,
         issuedate2,
         None,
         maturity2,
         Some(0.0425),
         None,
-        None, 
+        None,
         None,
         calendar,
         true,
         DayCountConvention::StreetConvention,
-        BusinessDayConvention::Unadjusted, 
-        PaymentFrequency::SemiAnnually, 
-        0, 
+        BusinessDayConvention::Unadjusted,
+        PaymentFrequency::SemiAnnually,
         0,
-        bond_name2.to_string(), 
+        0,
+        bond_name2.to_string(),
         bond_code2.to_string(),
     )?;
 
@@ -342,7 +328,7 @@ fn main() -> Result<()> {
     );
 
     let cash = Cash::new(
-        Currency::USD, 
+        Currency::USD,
         "USD Cash".to_string(),
         "USD Cash".to_string(),
     );
@@ -372,7 +358,7 @@ fn main() -> Result<()> {
         Rc::new(inst6),
         Rc::new(inst7),
     ];
-    
+
     // make a calculation configuration
     let calculation_configuration = CalculationConfiguration::default()
         .with_delta_calculation(true)
@@ -386,8 +372,10 @@ fn main() -> Result<()> {
         .with_rho_structure_calculation(true)
         .with_theta_calculation(true)
         .with_theta_day(theta_day)
-        .with_vega_matrix_spot_moneyness(array![0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.3]);
-        
+        .with_vega_matrix_spot_moneyness(array![
+            0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.3
+        ]);
+
     // make a match parameter
     let mut collateral_curve_map = HashMap::new();
     collateral_curve_map.insert(String::from("KOSPI2"), String::from("KSD"));
@@ -397,7 +385,13 @@ fn main() -> Result<()> {
 
     let mut bond_discount_curve_map = HashMap::new();
     bond_discount_curve_map.insert(
-        (issuer_name.to_string(), issuer_type, credit_rating, bond_currency), "KRWGOV".to_string()
+        (
+            issuer_name.to_string(),
+            issuer_type,
+            credit_rating,
+            bond_currency,
+        ),
+        "KRWGOV".to_string(),
     );
 
     let rate_index_curve_map = HashMap::new();
@@ -415,7 +409,7 @@ fn main() -> Result<()> {
         bond_discount_curve_map,
         crs_curve_map,
         rate_index_curve_map,
-        funding_cost_map,        
+        funding_cost_map,
     );
 
     let category1 = InstrumentCategory::new(
@@ -426,11 +420,9 @@ fn main() -> Result<()> {
             "IRS".to_string(),
             "CRS".to_string(),
             "FxFutures".to_string(),
-            ]),
+        ]),
         Some(vec![Currency::KRW]),
-        Some(vec![
-            "KOSPI2".to_string(),
-        ])
+        Some(vec!["KOSPI2".to_string()]),
     );
 
     let category2 = InstrumentCategory::new(
@@ -438,21 +430,16 @@ fn main() -> Result<()> {
             "Bond".to_string(),
             "Cash".to_string(),
             "Stock".to_string(),
-            ]),
+        ]),
         Some(vec![Currency::KRW, Currency::USD]),
-        Some(vec![
-            "KOSPI2".to_string(),
-        ])
+        Some(vec!["KOSPI2".to_string()]),
     );
 
     let instrument_categories = vec![category1, category2];
 
     let mut engine_builder = EngineGenerator::builder();
     let engine_generator = engine_builder
-        .with_configuration(
-            calculation_configuration, 
-            dt,
-            match_parameter)?
+        .with_configuration(calculation_configuration, dt, match_parameter)?
         .with_instruments(Instruments::new(inst_vec))?
         .with_instrument_categories(instrument_categories)?
         .with_data(
@@ -466,16 +453,26 @@ fn main() -> Result<()> {
             HashMap::new(),
             HashMap::new(),
         )?;
-        
-    engine_generator.distribute_instruments().context("Failed to distribute instruments")?;
-    engine_generator.calculate().context("Failed to calculate")?;
 
-    let calculation_results: &HashMap<String, CalculationResult> = engine_generator.get_calculation_results();
+    engine_generator
+        .distribute_instruments()
+        .context("Failed to distribute instruments")?;
+    engine_generator
+        .calculate()
+        .context("Failed to calculate")?;
+
+    let calculation_results: &HashMap<String, CalculationResult> =
+        engine_generator.get_calculation_results();
     println!("calculation results: {:?}", calculation_results);
-    
-    let json = to_string_pretty(&calculation_results)
-        .with_context(|| format!("({}:{}) Failed to serialize CalculationResult to JSON", file!(), line!()))?;
-    
+
+    let json = to_string_pretty(&calculation_results).with_context(|| {
+        format!(
+            "({}:{}) Failed to serialize CalculationResult to JSON",
+            file!(),
+            line!()
+        )
+    })?;
+
     write("./examples/toymodel/json_data/results.json", json)
         .with_context(|| format!("({}:{}) Failed to write JSON to file", file!(), line!()))?;
 
@@ -491,6 +488,6 @@ fn main() -> Result<()> {
     */
     let elapsed = start_time.elapsed();
     info!("engine example finished {:?}", elapsed);
-     
+
     Ok(())
 }

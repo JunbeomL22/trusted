@@ -1,10 +1,6 @@
 // Atomic counter
-use std::sync::atomic::{
-    AtomicUsize, 
-    AtomicU64,
-    Ordering,
-};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 #[derive(Debug)]
 pub struct CounterUsize {
@@ -14,10 +10,7 @@ pub struct CounterUsize {
 }
 
 impl CounterUsize {
-    pub fn new(
-        start: usize,
-        end: usize,
-    ) -> Self {
+    pub fn new(start: usize, end: usize) -> Self {
         CounterUsize {
             start,
             end,
@@ -28,14 +21,19 @@ impl CounterUsize {
     pub fn next(&self) -> Result<usize> {
         let res = self.counter.fetch_add(1, Ordering::SeqCst);
         if res > self.end {
-            let lazy_error = || anyhow!("CounterUsize: counter overflow, start: {}, end: {}", self.start, self.end);
+            let lazy_error = || {
+                anyhow!(
+                    "CounterUsize: counter overflow, start: {}, end: {}",
+                    self.start,
+                    self.end
+                )
+            };
             Err(lazy_error())
         } else {
             Ok(res)
         }
     }
 }
-
 
 #[derive(Debug)]
 pub struct CounterU64 {
@@ -45,10 +43,7 @@ pub struct CounterU64 {
 }
 
 impl CounterU64 {
-    pub fn new(
-        start: u64,
-        end: u64,
-    ) -> Self {
+    pub fn new(start: u64, end: u64) -> Self {
         CounterU64 {
             start,
             end,
@@ -59,7 +54,13 @@ impl CounterU64 {
     pub fn next(&self) -> Result<u64> {
         let res = self.counter.fetch_add(1, Ordering::SeqCst);
         if res > self.end {
-            let lazy_error = || anyhow!("CounterU64: counter overflow, start: {}, end: {}", self.start, self.end);
+            let lazy_error = || {
+                anyhow!(
+                    "CounterU64: counter overflow, start: {}, end: {}",
+                    self.start,
+                    self.end
+                )
+            };
             Err(lazy_error())
         } else {
             Ok(res)
@@ -170,4 +171,3 @@ mod tests {
         Ok(())
     }
 }
-

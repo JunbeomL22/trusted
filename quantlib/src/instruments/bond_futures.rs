@@ -1,9 +1,8 @@
 use crate::currency::Currency;
 use crate::definitions::Real;
-use serde::{Serialize, Deserialize};
-use time::OffsetDateTime;
 use crate::instrument::InstrumentTrait;
-
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BondFutures {
@@ -28,14 +27,13 @@ impl InstrumentTrait for BondFutures {
         &self.code
     }
 
-    fn get_currency(&self) ->  &Currency {
+    fn get_currency(&self) -> &Currency {
         &self.currency
     }
 
     fn get_unit_notional(&self) -> Real {
         self.unit_notional
     }
-
 
     fn get_maturity(&self) -> Option<&OffsetDateTime> {
         Some(&self.maturity)

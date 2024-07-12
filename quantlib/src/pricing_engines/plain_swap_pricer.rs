@@ -1,27 +1,14 @@
 use crate::currency::Currency;
-use crate::parameters::zero_curve::ZeroCurve;
-use crate::evaluation_date::EvaluationDate;
-use crate::pricing_engines::{
-    pricer::PricerTrait,
-    npv_result::NpvResult,
-};
-use crate::instrument::{
-    Instrument,
-    InstrumentTrait,
-};
-use crate::parameters::{
-    market_price::MarketPrice,
-    past_price::DailyClosePrice,
-};
 use crate::definitions::Real;
-// 
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    collections::HashMap,
-};
-use time::OffsetDateTime;
+use crate::evaluation_date::EvaluationDate;
+use crate::instrument::{Instrument, InstrumentTrait};
+use crate::parameters::zero_curve::ZeroCurve;
+use crate::parameters::{market_price::MarketPrice, past_price::DailyClosePrice};
+use crate::pricing_engines::{npv_result::NpvResult, pricer::PricerTrait};
+//
 use anyhow::Result;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use time::OffsetDateTime;
 
 pub struct PlainSwapPricer {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
@@ -58,7 +45,7 @@ impl PricerTrait for PlainSwapPricer {
             Some(ref fxf) => fxf.borrow().get_value(),
             None => 1.0,
         };
-    
+
         let mut cashflow_amounts: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
         let mut cashflow_probabilities: HashMap<usize, (OffsetDateTime, Real)> = HashMap::new();
         let mut fixed_res = 0.0;
@@ -78,19 +65,21 @@ impl PricerTrait for PlainSwapPricer {
         let mut count: usize = 0;
         for (payment_date, amount) in fixed_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                discount_factor =
+                    fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
                 fixed_res += amount * discount_factor;
             }
             if eval_date.date() <= payment_date.date() {
                 cashflow_amounts.insert(count, (*payment_date, *amount));
                 cashflow_probabilities.insert(count, (*payment_date, 1.0));
                 count += 1;
-            }     
+            }
         }
 
         for (payment_date, amount) in floating_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                discount_factor =
+                    floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
                 floating_res += amount * discount_factor;
             }
             if eval_date.date() <= payment_date.date() {
@@ -102,14 +91,9 @@ impl PricerTrait for PlainSwapPricer {
 
         let res = fixed_res + floating_res * floating_to_fixed_fx;
 
-        let npv_result = NpvResult::new(
-            res,
-            cashflow_amounts,
-            cashflow_probabilities,
-        );
+        let npv_result = NpvResult::new(res, cashflow_amounts, cashflow_probabilities);
 
         Ok(npv_result)
-    
     }
 
     fn npv(&self, instrument: &Instrument) -> Result<Real> {
@@ -117,7 +101,7 @@ impl PricerTrait for PlainSwapPricer {
             Some(ref fxf) => fxf.borrow().get_value(),
             None => 1.0,
         };
-        
+
         let mut fixed_res = 0.0;
         let mut floating_res = 0.0;
         let mut discount_factor: Real;
@@ -134,23 +118,25 @@ impl PricerTrait for PlainSwapPricer {
 
         for (payment_date, amount) in fixed_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
-                fixed_res += amount * discount_factor;    
+                discount_factor =
+                    fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                fixed_res += amount * discount_factor;
             }
         }
 
         for (payment_date, amount) in floating_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                discount_factor =
+                    floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
                 floating_res += amount * discount_factor;
             }
         }
 
-        let res = fixed_res  + floating_res * floating_to_fixed_fx_rate;
+        let res = fixed_res + floating_res * floating_to_fixed_fx_rate;
         Ok(res)
     }
 
-    fn fx_exposure(&self,instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
+    fn fx_exposure(&self, instrument: &Instrument, _npv: Real) -> Result<HashMap<Currency, Real>> {
         let mut fixed_res = 0.0;
         let mut floating_res = 0.0;
         let mut discount_factor: Real;
@@ -167,14 +153,16 @@ impl PricerTrait for PlainSwapPricer {
 
         for (payment_date, amount) in fixed_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
-                fixed_res += amount * discount_factor;    
+                discount_factor =
+                    fixed_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                fixed_res += amount * discount_factor;
             }
         }
 
         for (payment_date, amount) in floating_cashflows.iter() {
             if eval_date.date() < payment_date.date() {
-                discount_factor = floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
+                discount_factor =
+                    floating_leg_discount_curve.get_discount_factor_at_date(payment_date)?;
                 floating_res += amount * discount_factor;
             }
         }
@@ -194,7 +182,6 @@ impl PricerTrait for PlainSwapPricer {
             .or_insert(floating_amount);
 
         Ok(res)
-        
     }
 }
 
@@ -202,46 +189,25 @@ impl PricerTrait for PlainSwapPricer {
 pub mod tests {
     use super::*;
     use crate::currency::{Currency, FxCode};
-    use crate::pricing_engines::pricer::{PricerTrait, Pricer};
-    use crate::parameters::{
-        zero_curve::ZeroCurve,
-        rate_index::RateIndex
-    };
     use crate::data::vector_data::VectorData;
     use crate::evaluation_date::EvaluationDate;
-    use crate::instrument::{
-        Instrument,
-        InstrumentTrait,
-    };
-    use crate::instruments::plain_swap::{
-        PlainSwap,
-        PlainSwapType,
-    };
+    use crate::instrument::{Instrument, InstrumentTrait};
+    use crate::instruments::plain_swap::{PlainSwap, PlainSwapType};
+    use crate::parameters::{rate_index::RateIndex, zero_curve::ZeroCurve};
+    use crate::pricing_engines::pricer::{Pricer, PricerTrait};
 
     use crate::time::{
-        calendar_trait::CalendarTrait,
         calendar::Calendar,
-        jointcalendar::JointCalendar,
+        calendar_trait::CalendarTrait,
         calendars::southkorea::{SouthKorea, SouthKoreaType},
         calendars::unitedstates::{UnitedStates, UnitedStatesType},
-        conventions::{
-            DayCountConvention,
-            BusinessDayConvention,
-            PaymentFrequency,
-        },
-    };
-    use std::{
-        cell::RefCell,
-        rc::Rc,
-        collections::HashMap,
-    };
-    use time::{
-        OffsetDateTime,
-        Duration,
-        macros::datetime,
+        conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
+        jointcalendar::JointCalendar,
     };
     use anyhow::Result;
     use ndarray::array;
+    use std::{cell::RefCell, collections::HashMap, rc::Rc};
+    use time::{macros::datetime, Duration, OffsetDateTime};
 
     #[test]
     fn test_crs_pricer() -> Result<()> {
@@ -257,7 +223,7 @@ pub mod tests {
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         let us = Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Settlement));
         let calendar = JointCalendar::new(vec![sk, us])?;
-        
+
         let fixing_gap_days = 1;
         let payment_gap_days = 0;
 
@@ -267,14 +233,14 @@ pub mod tests {
             String::from("3M"),
             Currency::USD,
             String::from("USD Libor 3M"),
-            String::from("USD Libor 3M") // this is just a mock code
+            String::from("USD Libor 3M"), // this is just a mock code
         )?;
 
         let initial_fixed_side_endorsement = Some(fx_rate);
         let initial_floating_side_payment = Some(1.0);
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
-        
+
         let crs = PlainSwap::new_from_conventions(
             fixed_currency,
             floating_currency,
@@ -311,21 +277,18 @@ pub mod tests {
 
         let inst = Instrument::PlainSwap(crs);
 
-        assert_eq!(
-            inst.get_specific_plain_swap_type()?,
-            PlainSwapType::CRS,
-        );
+        assert_eq!(inst.get_specific_plain_swap_type()?, PlainSwapType::CRS,);
 
         let usdirs_data = VectorData::new(
             array![0.04, 0.04],
             None,
             Some(array![0.5, 5.0]),
-            None,//issue_date.clone(),
+            None, //issue_date.clone(),
             Currency::USD,
             "USDIRS".to_string(),
             "USDIRS".to_string(),
         )?;
-        
+
         let usdirs_curve = ZeroCurve::new(
             evaluation_date.clone(),
             &usdirs_data,
@@ -344,7 +307,7 @@ pub mod tests {
             "KRWCRS".to_string(),
             "KRWCRS".to_string(),
         )?;
-        
+
         let krwcrs_curve = ZeroCurve::new(
             evaluation_date.clone(),
             &krwcrs_data,
@@ -354,20 +317,16 @@ pub mod tests {
 
         let fixed_curve = Rc::new(RefCell::new(krwcrs_curve));
 
-        
         let fx_code = FxCode::new(Currency::USD, Currency::KRW);
-        
-        let floating_to_fixed_fx = Rc::new(RefCell::new(
-            MarketPrice::new(
-                fx_rate,
-                datetime!(2024-01-02 16:30:00 +09:00),
-                None,
-                fx_code.get_currency2().clone(),
-                fx_code.to_string(),
-                fx_code.to_string(),
-            )
-        ));
-        
+
+        let floating_to_fixed_fx = Rc::new(RefCell::new(MarketPrice::new(
+            fx_rate,
+            datetime!(2024-01-02 16:30:00 +09:00),
+            None,
+            fx_code.get_currency2().clone(),
+            fx_code.to_string(),
+            fx_code.to_string(),
+        )));
 
         let pricer = PlainSwapPricer::new(
             evaluation_date.clone(),
@@ -378,13 +337,9 @@ pub mod tests {
             Some(floating_to_fixed_fx.clone()),
         )?;
 
-
         let npv_result = pricer.npv_result(&inst)?;
         let npv = pricer.npv(&inst)?;
-        let fx_exposure = pricer.fx_exposure(
-            &inst, 
-            npv_result.get_npv(),
-        )?;
+        let fx_exposure = pricer.fx_exposure(&inst, npv_result.get_npv())?;
 
         println!("NPV: {:?}", npv);
         println!("Cashflows:");
@@ -393,7 +348,7 @@ pub mod tests {
             println!("{:?}: {}", date.date(), amount);
         }
         println!("FX Exposure: {:?}", fx_exposure);
-        
+
         //NPV: 0.460083
         //FX Exposure: {KRW: -13_303_186_000.0, USD: 10_005_854.0}
         let expected_npv = 0.460083;
@@ -402,22 +357,30 @@ pub mod tests {
 
         assert!(
             (npv - npv_result.get_npv()).abs() / fx_rate < 1e-5,
-            "npv: {}, npv_result.get_npv(): {}", npv, npv_result.get_npv(),
+            "npv: {}, npv_result.get_npv(): {}",
+            npv,
+            npv_result.get_npv(),
         );
 
         assert!(
             (npv - expected_npv).abs() / fx_rate < 1e-5,
-            "npv: {}, expected_npv: {}", npv, expected_npv,
+            "npv: {}, expected_npv: {}",
+            npv,
+            expected_npv,
         );
 
         assert!(
             (fx_exposure.get(&Currency::KRW).unwrap() - expected_krw_exposure).abs() < 1e-6,
-            "fx_exposure: {}, expected_krw_exposure: {}", fx_exposure.get(&Currency::KRW).unwrap(), expected_krw_exposure,
+            "fx_exposure: {}, expected_krw_exposure: {}",
+            fx_exposure.get(&Currency::KRW).unwrap(),
+            expected_krw_exposure,
         );
-        
+
         assert!(
             (fx_exposure.get(&Currency::USD).unwrap() - expected_usd_exposure).abs() < 1e-6,
-            "fx_exposure: {}, expected_usd_exposure: {}", fx_exposure.get(&Currency::USD).unwrap(), expected_usd_exposure,
+            "fx_exposure: {}, expected_usd_exposure: {}",
+            fx_exposure.get(&Currency::USD).unwrap(),
+            expected_usd_exposure,
         );
 
         Ok(())
@@ -437,7 +400,7 @@ pub mod tests {
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         // let us = Calendar::UnitedStates(UnitedStates::new(UnitedStatesType::Settlement));
         let calendar = JointCalendar::new(vec![sk])?;
-        
+
         let fixing_gap_days = 1;
         let payment_gap_days = 0;
 
@@ -446,14 +409,14 @@ pub mod tests {
             String::from("91D"),
             Currency::KRW,
             String::from("CD 91D"),
-            String::from("CD 91D") // this is just a mock code
+            String::from("CD 91D"), // this is just a mock code
         )?;
 
         let initial_fixed_side_endorsement = None;
         let initial_floating_side_payment = None;
         let last_fixed_side_payment = None;
         let last_floating_side_endorsement = None;
-        
+
         let irs = PlainSwap::new_from_conventions(
             fixed_currency,
             floating_currency,
@@ -497,15 +460,13 @@ pub mod tests {
             "KRWIRS".to_string(),
             "KRWIRS".to_string(),
         )?;
-        
-        let curve = Rc::new(RefCell::new(
-            ZeroCurve::new(
-                evaluation_date.clone(),
-                &curve_data,
-                "KRWIRS".to_string(),
-                "KRWIRS".to_string(),
-            )?
-        ));
+
+        let curve = Rc::new(RefCell::new(ZeroCurve::new(
+            evaluation_date.clone(),
+            &curve_data,
+            "KRWIRS".to_string(),
+            "KRWIRS".to_string(),
+        )?));
 
         let pricer = PlainSwapPricer::new(
             evaluation_date.clone(),
@@ -518,10 +479,7 @@ pub mod tests {
 
         let inst = Instrument::PlainSwap(irs);
         let npv_result = pricer.npv_result(&inst)?;
-        let fx_exposure = pricer.fx_exposure(
-            &inst, 
-            npv_result.get_npv(),
-        )?;
+        let fx_exposure = pricer.fx_exposure(&inst, npv_result.get_npv())?;
 
         let npv_from_npv_result = npv_result.get_npv();
         let npv = pricer.npv(&inst)?;
@@ -538,17 +496,23 @@ pub mod tests {
 
         assert!(
             (npv - expected_npv).abs() < 1e-6,
-            "npv: {}, expected_npv: {}", npv, expected_npv,
+            "npv: {}, expected_npv: {}",
+            npv,
+            expected_npv,
         );
 
         assert!(
             (npv - npv_from_npv_result).abs() < 1e-6,
-            "npv: {}, npv_from_npv_result: {}", npv, npv_from_npv_result,
+            "npv: {}, npv_from_npv_result: {}",
+            npv,
+            npv_from_npv_result,
         );
 
         assert!(
             (fx_exposure.get(&Currency::KRW).unwrap() - expected_fx_exposure).abs() < 1e-6,
-            "fx_exposure: {}, expected_fx_exposure: {}", fx_exposure.get(&Currency::KRW).unwrap(), expected_fx_exposure,
+            "fx_exposure: {}, expected_fx_exposure: {}",
+            fx_exposure.get(&Currency::KRW).unwrap(),
+            expected_fx_exposure,
         );
 
         Ok(())

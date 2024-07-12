@@ -1,10 +1,10 @@
 use crate::definitions::Real;
-use std::collections::HashMap;
-use time::OffsetDateTime;
-use serde::{Serialize, Deserialize};
-use anyhow::Result;
-use std::ops::{Add, Sub, Mul, Div};
 use crate::utils::number_format::write_number_with_commas;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::ops::{Add, Div, Mul, Sub};
+use time::OffsetDateTime;
 /// NPV result
 /// npv: Real
 /// coupon_amounts: id -> (datetimes, amount)
@@ -22,7 +22,7 @@ impl std::fmt::Debug for NpvResult {
         write!(f, "    npv: ")?;
         write_number_with_commas(f, self.npv)?;
         writeln!(f)?;
-        
+
         let mut keys = self.cashflow_amounts.keys().collect::<Vec<&usize>>();
         keys.sort();
         writeln!(f, "    cashflow_amounts: ")?;
@@ -34,7 +34,7 @@ impl std::fmt::Debug for NpvResult {
         }
 
         writeln!(f)?;
-        
+
         let mut keys = self.cashflow_probabilities.keys().collect::<Vec<&usize>>();
         keys.sort();
         writeln!(f, "    cashflow_probabilities: ")?;
@@ -77,10 +77,10 @@ impl NpvResult {
     pub fn get_expected_coupon_amount(&self) -> Result<HashMap<OffsetDateTime, Real>> {
         let mut res = HashMap::new();
         for (id, (datetime, amount)) in self.cashflow_amounts.iter() {
-            let prob = self.cashflow_probabilities.get(id)
-                .ok_or_else(||
-                    anyhow::anyhow!("No probability found for coupon id {}", id)
-            )?;
+            let prob = self
+                .cashflow_probabilities
+                .get(id)
+                .ok_or_else(|| anyhow::anyhow!("No probability found for coupon id {}", id))?;
             res.insert(*datetime, *amount * prob.1);
         }
         Ok(res)
@@ -90,7 +90,6 @@ impl NpvResult {
         &self.cashflow_amounts
     }
 }
-
 
 impl Default for NpvResult {
     fn default() -> NpvResult {

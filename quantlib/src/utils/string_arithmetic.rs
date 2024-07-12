@@ -1,9 +1,9 @@
-use crate::{definitions::Time, time::calendar_trait::CalendarTrait};
 use crate::time::calendars::nullcalendar::NullCalendar;
+use crate::{definitions::Time, time::calendar_trait::CalendarTrait};
 //
-use time::{OffsetDateTime, Duration, Month, Date};
-use regex;
 use anyhow::{anyhow, Result};
+use regex;
+use time::{Date, Duration, Month, OffsetDateTime};
 
 /// rough implementation of from_period_string_to_float
 /// it does not consider leap year month day difference, etc
@@ -12,8 +12,10 @@ pub fn from_period_string_to_float(period: &str) -> Result<Time> {
 
     if !re.is_match(period) {
         return Err(anyhow!(
-            "{}:{} (from_period_string_to_float) Invalid period: {}", 
-            file!(), line!(), period
+            "{}:{} (from_period_string_to_float) Invalid period: {}",
+            file!(),
+            line!(),
+            period
         ));
     }
 
@@ -31,10 +33,11 @@ pub fn from_period_string_to_float(period: &str) -> Result<Time> {
             "sec" => result += value / (365.25 * 24.0 * 60.0 * 60.0),
             _ => {
                 Err(anyhow!(
-                            "{}:{} (from_period_string_to_float) Invalid unit", 
-                            file!(), line!()
-                        ))?;
-                    },
+                    "{}:{} (from_period_string_to_float) Invalid unit",
+                    file!(),
+                    line!()
+                ))?;
+            }
         }
     }
     Ok(result)
@@ -81,16 +84,19 @@ pub fn from_month_to_i32(month: Month) -> i32 {
 /// ```
 /// use time::macros::datetime;
 /// use quantlib::utils::string_arithmetic::add_period;
-/// 
+///
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
 /// let y = add_period(&x, "1Y1M1D1h1min1sec");
 /// println!("{}", y); // 2022-02-02 01:01:01 UTC
 /// ```
-/// 
+///
 pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     let re = regex::Regex::new(r"(\d+)(Y|M|W|D|h|min|sec)+").unwrap();
     if !re.is_match(duration) {
-        panic!("panic at add_period(datetime: {}, duration: {})", datetime, duration);
+        panic!(
+            "panic at add_period(datetime: {}, duration: {})",
+            datetime, duration
+        );
     }
     let mut new_datetime = *datetime;
     // panic where the duration is invalid
@@ -101,33 +107,39 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
             "Y" => {
                 let new_year = new_datetime.year() + value as i32;
                 let new_month = new_datetime.month();
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_datetime.day() > eom_new {
                     true => eom_new,
                     false => new_datetime.day(),
                 };
                 new_datetime = OffsetDateTime::new_in_offset(
-                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    Date::from_calendar_date(new_year, new_month, new_day)
+                        .expect("Failed to create Date"),
                     datetime.time(),
                     datetime.offset(),
                 );
-            },
+            }
             "M" => {
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
-                let new_month = from_i32_to_month((month_i32 + value as i32) % 12);      
+                let new_month = from_i32_to_month((month_i32 + value as i32) % 12);
                 let new_year = year + (month_i32 + value as i32) / 12;
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_datetime.day() > eom_new {
                     true => eom_new,
                     false => new_datetime.day(),
                 };
                 new_datetime = OffsetDateTime::new_in_offset(
-                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    Date::from_calendar_date(new_year, new_month, new_day)
+                        .expect("Failed to create Date"),
                     datetime.time(),
                     datetime.offset(),
                 );
-            },
+            }
             "W" => new_datetime += Duration::weeks(value),
             "D" => new_datetime += Duration::days(value),
             "h" => new_datetime += Duration::hours(value),
@@ -145,12 +157,12 @@ pub fn add_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
 /// ```
 /// use time::macros::datetime;
 /// use quantlib::utils::string_arithmetic::sub_period;
-/// 
+///
 /// let x = datetime!(2021-01-01 00:00:00 UTC);
 /// let y = sub_period(&x, "1Y1M1D1h1min1sec");
 /// println!("{}", y); // 2019-11-29 22:58:59 UTC
 /// ```
-/// 
+///
 pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
     let re = regex::Regex::new(r"(\d+)(Y|M|W|D|h|min|sec)+").unwrap();
     if !re.is_match(duration) {
@@ -164,34 +176,40 @@ pub fn sub_period(datetime: &OffsetDateTime, duration: &str) -> OffsetDateTime {
             "Y" => {
                 let new_year = new_datetime.year() - value as i32;
                 let new_month = new_datetime.month();
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_datetime.day() > eom_new {
                     true => eom_new,
                     false => new_datetime.day(),
                 };
 
                 new_datetime = OffsetDateTime::new_in_offset(
-                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    Date::from_calendar_date(new_year, new_month, new_day)
+                        .expect("Failed to create Date"),
                     datetime.time(),
                     datetime.offset(),
                 );
-            },
+            }
             "M" => {
                 let month_i32 = from_month_to_i32(new_datetime.month());
                 let year = new_datetime.year();
                 let new_month = from_i32_to_month((month_i32 - value as i32 + 120000000) % 12);
                 let new_year = year - 1 + (month_i32 - value as i32 + 12) / 12;
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_datetime.day() > eom_new {
                     true => eom_new,
                     false => new_datetime.day(),
                 };
                 new_datetime = OffsetDateTime::new_in_offset(
-                    Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date"),
+                    Date::from_calendar_date(new_year, new_month, new_day)
+                        .expect("Failed to create Date"),
                     datetime.time(),
                     datetime.offset(),
-                );   
-            },
+                );
+            }
             "W" => new_datetime -= Duration::weeks(value),
             "D" => new_datetime -= Duration::days(value),
             "h" => new_datetime -= Duration::hours(value),
@@ -217,25 +235,31 @@ pub fn add_period_date(date: &Date, duration: &str) -> Date {
             "Y" => {
                 let new_year = new_date.year() + value;
                 let new_month = new_date.month();
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_date.day() > eom_new {
                     true => eom_new,
                     false => new_date.day(),
                 };
-                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
-            },
+                new_date = Date::from_calendar_date(new_year, new_month, new_day)
+                    .expect("Failed to create Date");
+            }
             "M" => {
                 let month_i32 = from_month_to_i32(new_date.month());
                 let year = new_date.year();
-                let new_month = from_i32_to_month((month_i32 + value) % 12);      
+                let new_month = from_i32_to_month((month_i32 + value) % 12);
                 let new_year = year + (month_i32 + value) / 12;
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_date.day() > eom_new {
                     true => eom_new,
                     false => new_date.day(),
                 };
-                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
-            },
+                new_date = Date::from_calendar_date(new_year, new_month, new_day)
+                    .expect("Failed to create Date");
+            }
             "W" => new_date += Duration::weeks(value as i64),
             "D" => new_date += Duration::days(value as i64),
             _ => panic!("Invalid unit"),
@@ -258,25 +282,31 @@ pub fn sub_period_date(date: &Date, duration: &str) -> Date {
             "Y" => {
                 let new_year = new_date.year() - value;
                 let new_month = new_date.month();
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_date.day() > eom_new {
                     true => eom_new,
                     false => new_date.day(),
                 };
-                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
-            },
+                new_date = Date::from_calendar_date(new_year, new_month, new_day)
+                    .expect("Failed to create Date");
+            }
             "M" => {
                 let month_i32 = from_month_to_i32(new_date.month());
                 let year = new_date.year();
                 let new_month = from_i32_to_month((month_i32 - value + 120000000) % 12);
                 let new_year = year - 1 + (month_i32 - value + 12) / 12;
-                let eom_new = NullCalendar::default().last_day_of_month(new_year, new_month).day();
+                let eom_new = NullCalendar::default()
+                    .last_day_of_month(new_year, new_month)
+                    .day();
                 let new_day = match new_date.day() > eom_new {
                     true => eom_new,
                     false => new_date.day(),
                 };
-                new_date = Date::from_calendar_date(new_year, new_month, new_day).expect("Failed to create Date");
-            },
+                new_date = Date::from_calendar_date(new_year, new_month, new_day)
+                    .expect("Failed to create Date");
+            }
             "W" => new_date -= Duration::weeks(value as i64),
             "D" => new_date -= Duration::days(value as i64),
             _ => panic!("Invalid unit"),
@@ -288,7 +318,7 @@ pub fn sub_period_date(date: &Date, duration: &str) -> Date {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::macros::{datetime, date};
+    use time::macros::{date, datetime};
 
     #[test]
     fn test_month_operation() {
@@ -331,7 +361,7 @@ mod tests {
         assert_eq!(from_i32_to_month((month_i32 + 6) % 12), Month::December);
         assert_eq!(from_i32_to_month((month_i32 + 7) % 12), Month::January);
         assert_eq!(from_i32_to_month((month_i32 + 8) % 12), Month::February);
-        
+
         month = Month::November;
         let month_i32 = from_month_to_i32(month);
         assert_eq!(from_i32_to_month((month_i32 + 0) % 12), Month::November);
@@ -345,7 +375,6 @@ mod tests {
         assert_eq!(from_i32_to_month((month_i32 + 1) % 12), Month::January);
         assert_eq!(from_i32_to_month((month_i32 + 2) % 12), Month::February);
         assert_eq!(from_i32_to_month((month_i32 + 3) % 12), Month::March);
-        
     }
 
     #[test]
@@ -438,15 +467,15 @@ mod tests {
 
     #[test]
     fn test_add_period_date() {
-        let x = date!(2021-01-31);
+        let x = date!(2021 - 01 - 31);
         let y = add_period_date(&x, "1Y18M");
-        assert_eq!(y, date!(2023-07-31));
+        assert_eq!(y, date!(2023 - 07 - 31));
     }
 
     #[test]
     fn test_sub_period_date() {
-        let x = date!(2021-01-31);
+        let x = date!(2021 - 01 - 31);
         let y = sub_period_date(&x, "1Y18M");
-        assert_eq!(y, date!(2019-07-31));
+        assert_eq!(y, date!(2019 - 07 - 31));
     }
 }

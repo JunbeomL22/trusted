@@ -1,26 +1,17 @@
 use crate::definitions::Real;
-use crate::instruments::bond::Bond;
-use crate::pricing_engines::pricer::PricerTrait;
-use crate::pricing_engines::npv_result::NpvResult;
-use crate::instrument::{Instrument, InstrumentTrait};
 use crate::evaluation_date::EvaluationDate;
-use crate::time::{
-    conventions::DayCountConvention,
-    calendar_trait::CalendarTrait,
-};
-use crate::parameters::{
-    zero_curve::ZeroCurve,
-    past_price::DailyClosePrice,
-};
+use crate::instrument::{Instrument, InstrumentTrait};
+use crate::instruments::bond::Bond;
+use crate::parameters::{past_price::DailyClosePrice, zero_curve::ZeroCurve};
+use crate::pricing_engines::npv_result::NpvResult;
+use crate::pricing_engines::pricer::PricerTrait;
+use crate::time::{calendar_trait::CalendarTrait, conventions::DayCountConvention};
 //
-use anyhow::{Result, anyhow, Context};
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
-use argmin::core::{Error, Executor, CostFunction, Gradient};
+use anyhow::{anyhow, Context, Result};
+use argmin::core::{CostFunction, Error, Executor, Gradient};
 use argmin::solver::gradientdescent::SteepestDescent;
 use argmin::solver::linesearch::MoreThuenteLineSearch;
+use std::{cell::RefCell, rc::Rc};
 
 /// 금융투자회사의 영업 및 업무에 관한 규정 별표 14
 /// https://law.kofia.or.kr/service/law/lawFullScreenContent.do?seq=136&historySeq=263
@@ -36,11 +27,11 @@ pub struct KrxYieldPricer {
 impl KrxYieldPricer {
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        bond_yield: Real, 
+        bond_yield: Real,
         forward_curve: Option<Rc<RefCell<ZeroCurve>>>,
         past_fixing_data: Option<Rc<DailyClosePrice>>,
     ) -> KrxYieldPricer {
-        KrxYieldPricer { 
+        KrxYieldPricer {
             evaluation_date,
             bond_yield,
             daycount: DayCountConvention::StreetConvention,
@@ -57,26 +48,16 @@ impl KrxYieldPricer {
         self.bond_yield = bond_yield;
     }
 
-    pub fn find_bond_yield(
-        &self, 
-        bond: Bond, 
-        npv: Real,
-        init_guess: Option<Real>,
-    ) -> Result<Real> {
+    pub fn find_bond_yield(&self, bond: Bond, npv: Real, init_guess: Option<Real>) -> Result<Real> {
         let pricer = self.clone();
         let problem = KrxYieldPricerCostFunction::new(bond, npv, pricer);
-        let linesearch = MoreThuenteLineSearch::new();        
-        
+        let linesearch = MoreThuenteLineSearch::new();
+
         let solver = SteepestDescent::new(linesearch);
         let init_param = init_guess.unwrap_or(0.02);
         let executor = Executor::new(problem, solver)
-            .configure(|state|
-                state
-                    .param(init_param)
-                    .max_iters(30)
-                    .target_cost(1.0e-9)
-            );
-        
+            .configure(|state| state.param(init_param).max_iters(30).target_cost(1.0e-9));
+
         let res = executor.run()?;
         match res.state.best_param {
             Some(param) => Ok(param),
@@ -104,9 +85,11 @@ impl KrxYieldPricerCostFunction {
 impl CostFunction for KrxYieldPricerCostFunction {
     type Param = Real;
     type Output = Real;
-    
+
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
-        {self.pricer.borrow_mut().set_bond_yield(*param);}
+        {
+            self.pricer.borrow_mut().set_bond_yield(*param);
+        }
         let npv = self.pricer.borrow().npv(&self.bond)?;
         Ok((npv - self.npv).powf(2.0))
     }
@@ -115,10 +98,10 @@ impl CostFunction for KrxYieldPricerCostFunction {
 impl Gradient for KrxYieldPricerCostFunction {
     type Param = Real;
     type Gradient = Real;
-  
+
     fn gradient(&self, param: &Self::Param) -> Result<Self::Gradient, Error> {
         let h = 5.0e-5;
-        let grad = (self.cost(&(param + h))? - self.cost(&(param - h))?)/(2.0*h);
+        let grad = (self.cost(&(param + h))? - self.cost(&(param - h))?) / (2.0 * h);
         Ok(grad)
     }
 }
@@ -136,14 +119,21 @@ impl PricerTrait for KrxYieldPricer {
         let daycounter = self.daycount;
         let maturity = bond.get_maturity().unwrap();
 
-        let cashflow = bond.get_cashflows(
-            pricing_date,
-            self.forward_curve.clone(),
-            self.past_fixing_data.clone()
-        ).with_context(|| anyhow!(
-            "{}:{} (KrxYieldPricer) Failed to get coupon cashflow of {} ({})",
-            file!(), line!(), bond.get_name(), bond.get_code()
-        ))?;
+        let cashflow = bond
+            .get_cashflows(
+                pricing_date,
+                self.forward_curve.clone(),
+                self.past_fixing_data.clone(),
+            )
+            .with_context(|| {
+                anyhow!(
+                    "{}:{} (KrxYieldPricer) Failed to get coupon cashflow of {} ({})",
+                    file!(),
+                    line!(),
+                    bond.get_name(),
+                    bond.get_code()
+                )
+            })?;
 
         // get minimum date after the pricing date (the key of cashflow)
         let min_cashflow_date = cashflow
@@ -151,25 +141,22 @@ impl PricerTrait for KrxYieldPricer {
             .filter(|&date| date.date() > pricing_date.date())
             .min()
             .unwrap_or(maturity);
-        
+
         if !cashflow.is_empty() {
             for (date, amount) in cashflow.iter() {
                 if date.date() <= pricing_date.date() {
                     continue;
                 }
-                diff = cal.year_fraction(
-                    min_cashflow_date,
-                    date, 
-                    &daycounter)?;
+                diff = cal.year_fraction(min_cashflow_date, date, &daycounter)?;
                 disc_factor = 1.0 / (1.0 + effective_yield).powf(diff * freq);
                 res += amount * disc_factor;
             }
         }
-        
+
         // 금융투자회사의 영업 및 업무에 관한 규정 별표 14
         // d = days from pricing_date to the next coupon dates
         let d = (min_cashflow_date.date() - pricing_date.date()).whole_days();
-        
+
         // previous coupon date (or issue date)
         let schedule = bond.get_schedule()?;
 
@@ -181,7 +168,7 @@ impl PricerTrait for KrxYieldPricer {
             .unwrap_or(bond.get_issue_date()?);
         let b = (min_cashflow_date.date() - previous_date.date()).whole_days();
         let frac = d as Real / b as Real;
-        
+
         res /= 1.0 + effective_yield * frac;
 
         Ok(res)
@@ -196,14 +183,14 @@ impl PricerTrait for KrxYieldPricer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::macros::datetime;
+    use crate::currency::Currency;
+    use crate::enums::{CreditRating, IssuerType, RankType};
     use crate::evaluation_date;
     use crate::instruments::bond::Bond;
-    use crate::time::{calendar::Calendar, jointcalendar::JointCalendar};
-    use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::currency::Currency;
-    use crate::enums::{IssuerType, CreditRating, RankType};
+    use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+    use crate::time::{calendar::Calendar, jointcalendar::JointCalendar};
+    use time::macros::datetime;
     use time::Duration;
 
     #[test]
@@ -227,21 +214,21 @@ mod tests {
         let credit_rating2 = CreditRating::None;
 
         let bond = Bond::new_from_conventions(
-            issuer_type2, 
-            credit_rating2, 
-            issuer_name2.to_string(), 
+            issuer_type2,
+            credit_rating2,
+            issuer_name2.to_string(),
             RankType::Senior,
             bond_currency2,
             //
             1_000_0.0,
-            false, 
+            false,
             //
-            issuedate2.clone(), 
+            issuedate2.clone(),
             issuedate2.clone(),
             Some(pricing_date.clone()),
             maturity2,
             //
-            Some(0.0425), 
+            Some(0.0425),
             None,
             None,
             None,
@@ -250,20 +237,16 @@ mod tests {
             //
             true,
             DayCountConvention::StreetConvention,
-            BusinessDayConvention::Unadjusted, 
-            PaymentFrequency::SemiAnnually, 
+            BusinessDayConvention::Unadjusted,
+            PaymentFrequency::SemiAnnually,
             //
             0,
-            0,  
-            bond_name2.to_string(), 
+            0,
+            bond_name2.to_string(),
             bond_code2.to_string(),
         )?;
 
-        let cashflows = bond.get_cashflows(
-            &pricing_date,
-            None,
-            None
-        )?;
+        let cashflows = bond.get_cashflows(&pricing_date, None, None)?;
 
         for (date, amount) in cashflows.iter() {
             println!("date: {}, amount: {}", date, amount);
@@ -271,20 +254,18 @@ mod tests {
 
         let inst = Instrument::Bond(bond.clone());
         let bond_yield = 0.03390;
-        
-        let pricer = KrxYieldPricer::new(
-            eval_date_rc.clone(),
-            bond_yield, 
-            None,
-            None,
-        );
+
+        let pricer = KrxYieldPricer::new(eval_date_rc.clone(), bond_yield, None, None);
 
         let npv = pricer.npv(&inst)?;
         let expected_npv = 1.025838;
         println!("npv: {}", npv);
         assert!(
             (npv - expected_npv).abs() < 1.0e-5,
-            "npv: {}, expected_npv: {}", npv, expected_npv);
+            "npv: {}, expected_npv: {}",
+            npv,
+            expected_npv
+        );
 
         // find bond yield
         let calc_yield = pricer.find_bond_yield(bond, npv, Some(-0.1))?;
@@ -292,7 +273,9 @@ mod tests {
         println!("calc yield: {:?}", calc_yield);
         assert!(
             (calc_yield - expected_yield).abs() < 1.0e-5,
-            "calc yield: {}, expected_yield: {}", calc_yield, expected_yield
+            "calc yield: {}, expected_yield: {}",
+            calc_yield,
+            expected_yield
         );
 
         Ok(())

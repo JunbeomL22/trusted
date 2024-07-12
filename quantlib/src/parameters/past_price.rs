@@ -1,16 +1,13 @@
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use time::{Date, Time, OffsetDateTime, UtcOffset};
 use crate::data::daily_value_data::DailyValueData;
 use crate::definitions::Real;
 use crate::time::calendar::Calendar;
 use crate::time::calendar_trait::CalendarTrait;
-use crate::time::calendars::southkorea::{
-    SouthKorea,
-    SouthKoreaType,
-};
+use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
 use crate::time::conventions::BusinessDayConvention;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use time::{Date, OffsetDateTime, Time, UtcOffset};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DailyClosePrice {
@@ -27,11 +24,9 @@ impl Default for DailyClosePrice {
         DailyClosePrice {
             value: HashMap::new(),
             // korea stock market
-            close_time: Time::from_hms(15, 40, 0).unwrap(), 
-            utc_offset: UtcOffset::from_hms(9, 0, 0).unwrap(), 
-            calendar: Calendar::SouthKorea(
-                SouthKorea::new(SouthKoreaType::Krx),
-            ),
+            close_time: Time::from_hms(15, 40, 0).unwrap(),
+            utc_offset: UtcOffset::from_hms(9, 0, 0).unwrap(),
+            calendar: Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Krx)),
             name: String::new(),
             code: String::new(),
         }
@@ -40,11 +35,11 @@ impl Default for DailyClosePrice {
 
 impl DailyClosePrice {
     pub fn new(
-        value: HashMap<Date, Real>, 
+        value: HashMap<Date, Real>,
         close_time: Time,
         utc_offset: UtcOffset,
         calendar: Calendar,
-        name: String, 
+        name: String,
         code: String,
     ) -> DailyClosePrice {
         DailyClosePrice {
@@ -57,9 +52,7 @@ impl DailyClosePrice {
         }
     }
 
-    pub fn new_from_data(
-        data: &DailyValueData,
-    ) -> Result<DailyClosePrice> {
+    pub fn new_from_data(data: &DailyValueData) -> Result<DailyClosePrice> {
         let res = DailyClosePrice {
             value: data.get_value().clone(),
             close_time: *data.get_close_time(),
@@ -94,10 +87,13 @@ impl DailyClosePrice {
         let datetime = datetime.to_offset(self.utc_offset);
 
         if datetime.time() > self.close_time {
-            let next_date = self.calendar.adjust(
-                &(datetime + time::Duration::days(1)), 
-                &BusinessDayConvention::Following,
-            ).expect("Failed to adjust date in get_at_datetime");
+            let next_date = self
+                .calendar
+                .adjust(
+                    &(datetime + time::Duration::days(1)),
+                    &BusinessDayConvention::Following,
+                )
+                .expect("Failed to adjust date in get_at_datetime");
             self.value.get(&next_date.date())
         } else {
             self.value.get(&datetime.date())
@@ -142,14 +138,14 @@ mod tests {
     #[test]
     fn test_close_data() {
         let mut past_price = DailyClosePrice::default();
-        let date1 = date!(2021-01-01);
-        let date2 = date!(2021-01-02);
-        let date3 = date!(2021-01-03);
+        let date1 = date!(2021 - 01 - 01);
+        let date2 = date!(2021 - 01 - 02);
+        let date3 = date!(2021 - 01 - 03);
 
         let value_map = vec![(date1, 100.0), (date2, 200.0), (date3, 300.0)]
             .into_iter()
             .collect::<HashMap<Date, Real>>();
-        
+
         past_price.set_value(value_map);
 
         assert_eq!(past_price.get(&date1), Some(&100.0));

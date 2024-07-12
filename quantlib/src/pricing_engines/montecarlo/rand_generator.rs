@@ -1,10 +1,10 @@
 use ndarray::Array2;
 //use ndarray_linalg::cholesky::*;
-use crate::math::cholescky_factorization::cholesky_decomposition;
 use crate::definitions::Real;
+use crate::math::cholescky_factorization::cholesky_decomposition;
+use log::info;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
-use log::info;
 
 // make a 2-D array of shape (n, steps) of f32 (Real) random numbers
 // This indicates a path of n objects with steps observations
@@ -16,29 +16,28 @@ pub fn correlated_path(steps: usize, correlation: &Array2<Real>) -> Array2<Real>
     let normal: Normal<Real> = Normal::new(0.0, 1.0).unwrap();
     let cholesky = cholesky_decomposition(correlation).unwrap();
 
-    let mut msg = String::from("better to calculate cholesky decomposition once and use it for all paths.");
+    let mut msg =
+        String::from("better to calculate cholesky decomposition once and use it for all paths.");
     msg.push_str( "In addition, check BLAS is being used. Currently disabled for multi developing environment");
     info!("{}", msg);
-    cholesky.dot(&Array2::from_shape_fn((n, steps), |_| normal.sample(&mut rng) as Real))
+    cholesky.dot(&Array2::from_shape_fn((n, steps), |_| {
+        normal.sample(&mut rng) as Real
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::Array2;
     use ndarray::prelude::*;
-    
+    use ndarray::Array2;
+
     #[test]
     fn test_correlated_path() {
         let steps = 100000;
         let corr = 0.5 as Real;
         let cholesky_variable = (1.0 - corr.powi(2)).sqrt();
 
-        let correlation_matrix = Array2::from_shape_vec(
-            (2, 2),
-            vec![1.0, 0.5, 0.5, 1.0],
-        )
-        .unwrap();
+        let correlation_matrix = Array2::from_shape_vec((2, 2), vec![1.0, 0.5, 0.5, 1.0]).unwrap();
         let path = correlated_path(steps, &correlation_matrix);
         let mean = path.mean_axis(Axis(1)).unwrap();
         // discrepancy: subtract mean vector from all path columnwise
@@ -48,24 +47,31 @@ mod tests {
         let mut msg = String::from("Statistics:\n");
         msg.push_str(&format!(" * # of variables: {}\n", 2));
         msg.push_str(&format!(" * Steps: {}\n", steps));
-        msg.push_str(&format!(" * sampled from a normal distribution with mean = {}, correlation = {}\n", 0.0, corr));
+        msg.push_str(&format!(
+            " * sampled from a normal distribution with mean = {}, correlation = {}\n",
+            0.0, corr
+        ));
         msg.push_str(&format!(" * sampled mean: {}\n", mean));
         msg.push_str(&format!(" * sampled covariance: \n{}\n", &recalc_cov));
 
         println!("{}", msg);
         let cholesky = cholesky_decomposition(&correlation_matrix).unwrap();
-        
+
         //let expected_cov = cholesky.t().dot(&cholesky);
         assert_eq!(
-            path.shape(), &[2, steps],
+            path.shape(),
+            &[2, steps],
             "path must be of shape ({}, {}), but is of shape {:?}",
-            2, steps, path.shape()
+            2,
+            steps,
+            path.shape()
         );
 
         assert!(
-            (cholesky[[1,1]] - cholesky_variable).abs() < 1e-8,
+            (cholesky[[1, 1]] - cholesky_variable).abs() < 1e-8,
             "Cholesky decomposition is not correct. Expected: {}, got: {}",
-            cholesky_variable, cholesky[[1,1]]
+            cholesky_variable,
+            cholesky[[1, 1]]
         );
 
         // checking cholsky decomposition recovers the correlation matrix

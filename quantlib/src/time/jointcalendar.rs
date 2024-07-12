@@ -1,9 +1,9 @@
-use crate::time::calendar_trait::CalendarTrait;
-use crate::time::calendar::Calendar;
 use crate::definitions::Time;
-use serde::{Serialize, Deserialize};
+use crate::time::calendar::Calendar;
+use crate::time::calendar_trait::CalendarTrait;
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JointCalendar {
@@ -16,7 +16,8 @@ impl JointCalendar {
         if calendars.is_empty() {
             return Err(anyhow!(
                 "{}:{}  JointCalendar must have at least one calendar",
-                file!(), line!()
+                file!(),
+                line!()
             ));
         }
         let mut name = String::from("JoinCalendar : ");
@@ -24,18 +25,11 @@ impl JointCalendar {
             if i == 0 {
                 name.push_str(cal.calendar_name());
             } else {
-            name.push_str(
-                format!(
-                    "{} & ",
-                    cal.calendar_name()
-                ).as_str())
+                name.push_str(format!("{} & ", cal.calendar_name()).as_str())
             }
         }
 
-        Ok(JointCalendar { 
-            name, 
-            calendars,
-        })
+        Ok(JointCalendar { name, calendars })
     }
 
     pub fn calendars(&self) -> &Vec<Calendar> {
@@ -44,15 +38,16 @@ impl JointCalendar {
 
     pub fn is_business_day(&self, date: &OffsetDateTime) -> bool {
         self.calendars.iter().all(|c| c.is_business_day(date))
-    }                      
+    }
 }
 
 impl CalendarTrait for JointCalendar {
     fn year_fraction(
-                &self, 
-                start_date: &OffsetDateTime, 
-                end_date: &OffsetDateTime, 
-                day_count: &super::conventions::DayCountConvention) -> Result<Time> {
+        &self,
+        start_date: &OffsetDateTime,
+        end_date: &OffsetDateTime,
+        day_count: &super::conventions::DayCountConvention,
+    ) -> Result<Time> {
         self.calendars[0].year_fraction(start_date, end_date, day_count)
     }
 
@@ -65,10 +60,11 @@ impl CalendarTrait for JointCalendar {
     }
 
     fn display_holidays(
-        &self, 
-        date_from: &OffsetDateTime, 
-        date_upto: &OffsetDateTime, 
-        include_weekend: bool) {
+        &self,
+        date_from: &OffsetDateTime,
+        date_upto: &OffsetDateTime,
+        include_weekend: bool,
+    ) {
         let mut date = *date_from;
         while date <= *date_upto {
             if self.is_holiday(&date) && (include_weekend || !self.is_weekend(&date)) {
@@ -91,27 +87,30 @@ impl CalendarTrait for JointCalendar {
     }
 
     fn add_holidays(&mut self, _date: &time::Date) -> Result<()> {
-        Err(anyhow!("It is not allowed to add holidays to JointCalendar"))
+        Err(anyhow!(
+            "It is not allowed to add holidays to JointCalendar"
+        ))
     }
 
     fn remove_holidays(&mut self, _date: &time::Date) -> Result<()> {
-        Err(anyhow!("It is not allowed to remove holidays from JointCalendar"))
+        Err(anyhow!(
+            "It is not allowed to remove holidays from JointCalendar"
+        ))
     }
 
     fn is_holiday(&self, date: &OffsetDateTime) -> bool {
         self.calendars.iter().any(|c| c.is_holiday(date))
     }
-
 }
-         
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::time::calendars::unitedstates::{UnitedStates, UnitedStatesType};
-    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
     use crate::time::calendar::Calendar;
+    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
+    use crate::time::calendars::unitedstates::{UnitedStates, UnitedStatesType};
     use time::macros::datetime;
-    
+
     #[test]
     fn test_joint_calendar() -> Result<()> {
         let _summer_time = false;

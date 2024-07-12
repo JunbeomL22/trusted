@@ -1,10 +1,14 @@
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, anyhow};
 pub trait FromU8 {
-    fn from_u8(v: u8) -> Result<Self> where Self: Sized;
+    fn from_u8(v: u8) -> Result<Self>
+    where
+        Self: Sized;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord,
+)]
 pub enum OrderSide {
     #[default]
     NoSide = 0,
@@ -24,7 +28,7 @@ impl FromU8 for OrderSide {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub enum BookType { 
+pub enum BookType {
     L1 = 1,
     #[default]
     L2 = 2,

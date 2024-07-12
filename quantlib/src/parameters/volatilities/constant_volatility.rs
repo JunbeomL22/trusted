@@ -1,7 +1,7 @@
-use crate::parameters::volatility::VolatilityTrait;
 use crate::definitions::{Real, Time};
-use serde::{Serialize, Deserialize};
+use crate::parameters::volatility::VolatilityTrait;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 //
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstantVolatility {
@@ -12,11 +12,7 @@ pub struct ConstantVolatility {
 
 impl ConstantVolatility {
     pub fn new(value: Real, name: String, code: String) -> ConstantVolatility {
-        ConstantVolatility {
-            value,
-            name,
-            code,
-        }
+        ConstantVolatility { value, name, code }
     }
 }
 
@@ -35,7 +31,6 @@ impl VolatilityTrait for ConstantVolatility {
         self.value
     }
 
-
     fn get_name(&self) -> &String {
         &self.name
     }
@@ -53,12 +48,12 @@ impl VolatilityTrait for ConstantVolatility {
     }
 
     fn bump_volatility(
-        &mut self, 
+        &mut self,
         _time1: Option<Time>,
         _time2: Option<Time>,
         _left_spot_moneyness: Option<Real>,
         _right_spot_moneyness: Option<Real>,
-        bump: Real
+        bump: Real,
     ) -> Result<()> {
         self.value += bump;
         Ok(())

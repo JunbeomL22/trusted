@@ -1,4 +1,4 @@
-fn main () {
+fn main() {
     let x: u64 = 1;
     println!("{:?}", x.to_le_bytes());
     println!("{:?}", (x << 16).to_le_bytes());

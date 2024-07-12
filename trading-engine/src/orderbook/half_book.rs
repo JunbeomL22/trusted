@@ -1,18 +1,14 @@
-use crate::types::{
-    base::{
-        OrderId,
-        BookPrice,
-    },
-    enums::OrderSide,
-};
 use crate::data::book_order::BookOrder;
 use crate::orderbook::level::Level;
+use crate::types::{
+    base::{BookPrice, OrderId},
+    enums::OrderSide,
+};
 //
+use anyhow::Result;
 use rustc_hash::FxHashMap;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use anyhow::Result;
-
 
 #[derive(Debug, Clone, Default)]
 pub struct HalfBook {
@@ -34,9 +30,9 @@ impl HalfBook {
     #[must_use]
     pub fn initialize_with_order(order: BookOrder) -> Self {
         let mut levels = BTreeMap::new();
-        let price = order.price.clone();
+        let price = order.price;
         let level = Level::initialize_with_order(order.clone());
-        levels.insert(price.clone(), level);
+        levels.insert(price, level);
         let mut cache = FxHashMap::default();
         cache.insert(order.order_id, price);
         HalfBook {
@@ -70,7 +66,7 @@ impl HalfBook {
         match self.levels.get_mut(&order.price) {
             Some(level) => {
                 level.add_order(order)?;
-            },
+            }
             None => {
                 let level = Level::initialize_with_order(order.clone());
                 self.levels.insert(order.price, level);

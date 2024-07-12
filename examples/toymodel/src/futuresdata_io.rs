@@ -1,16 +1,10 @@
-use quantlib::instruments::futures::Futures;
+use anyhow::{Context, Result};
 use quantlib::currency::Currency;
+use quantlib::instruments::futures::Futures;
+use serde_json::{from_str, to_string_pretty};
+use std::fs::{read_to_string, write};
 use time::macros::datetime;
-use anyhow::{Result, Context};
-use serde_json::{
-    from_str,
-    to_string_pretty,
-};
 use tracing::info;
-use std::fs::{
-    write,
-    read_to_string,
-};
 
 pub fn futuresdata_io() -> Result<()> {
     let futures1 = Futures::new(
@@ -43,8 +37,8 @@ pub fn futuresdata_io() -> Result<()> {
 
     let futdate_vec = vec![futures1, futures2];
 
-    let json = to_string_pretty(&futdate_vec)
-        .context("Failed to serialize Vec<Futures> to JSON")?;
+    let json =
+        to_string_pretty(&futdate_vec).context("Failed to serialize Vec<Futures> to JSON")?;
 
     write("./examples/toymodel/json_data/futuresdata.json", json)
         .context("Failed to write JSON to file")?;
@@ -53,8 +47,7 @@ pub fn futuresdata_io() -> Result<()> {
     let json = read_to_string("./examples/toymodel/json_data/futuresdata.json")
         .context("Failed to read JSON from file")?;
 
-    let res: Vec<Futures> = from_str(&json)
-        .context("Failed to deserialize JSON to Futures")?;
+    let res: Vec<Futures> = from_str(&json).context("Failed to deserialize JSON to Futures")?;
 
     info!("{:?}", res);
     Ok(())

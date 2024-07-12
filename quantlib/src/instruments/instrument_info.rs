@@ -1,9 +1,8 @@
 use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::utils::number_format::write_number_with_commas;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstrumentInfo {
@@ -66,7 +65,7 @@ impl InstrumentInfo {
             maturity,
         }
     }
-    
+
     pub fn type_name(&self) -> &String {
         &self.instrument_type
     }

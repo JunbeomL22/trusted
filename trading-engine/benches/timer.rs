@@ -1,15 +1,13 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use chrono::{DateTime, Local};
 use chrono::prelude::*;
+use chrono::{DateTime, Local};
+use core_affinity;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::thread;
 use time;
 use time::format_description::well_known::Rfc3339;
 use trading_engine::timer::{
-    get_unix_nano,
-    get_thread_local_unix_nano,
-    convert_unix_nano_to_datetime_format,
+    convert_unix_nano_to_datetime_format, get_thread_local_unix_nano, get_unix_nano,
 };
-use core_affinity;
-use std::thread;
 
 fn bench_nows(c: &mut Criterion) {
     // The first call will take some time for calibartion
@@ -19,7 +17,7 @@ fn bench_nows(c: &mut Criterion) {
     group.bench_function("minstant", |b| {
         b.iter(minstant::Instant::now);
     });
-    
+
     group.bench_function("systemtime", |b| {
         b.iter(std::time::Instant::now);
     });
@@ -56,40 +54,34 @@ fn bench_unix_nanos(c: &mut Criterion) {
     group.bench_function("systemtime", |b| {
         b.iter(|| {
             let now = std::time::SystemTime::now();
-            now.duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+            now.duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         });
     });
 
     group.bench_function("quanta", |b| {
-        b.iter(|| {
-            get_unix_nano()
-        });
+        b.iter(|| get_unix_nano());
     });
 
     group.bench_function("quanta thread local", |b| {
-        b.iter(|| {
-            get_thread_local_unix_nano()
-        });
+        b.iter(|| get_thread_local_unix_nano());
     });
 
     group.finish();
 }
 
-
 fn bench_datetime_conversion_from_unix_nano(c: &mut Criterion) {
     let anchor = minstant::Anchor::new();
     let instant = minstant::Instant::now();
     let unix_nano = instant.as_unix_nanos(&anchor);
-    let local_offset = time::UtcOffset::from_hms(9,0,0)
-        .expect("failed to create UtcOffset");
+    let local_offset = time::UtcOffset::from_hms(9, 0, 0).expect("failed to create UtcOffset");
 
     let mut group = c.benchmark_group("from nanos to datetime");
     group.bench_function("chrono::DateTime Local", |b| {
-        b.iter(|| {
-            DateTime::<Local>::from(Local.timestamp_nanos(unix_nano as i64))
-        });
+        b.iter(|| DateTime::<Local>::from(Local.timestamp_nanos(unix_nano as i64)));
     });
-    
+
     group.bench_function("time::OffsetDatetime Local", |b| {
         b.iter(|| {
             //time::OffsetDateTime::from_unix_timestamp_nanos(unix_nano as i128)
@@ -100,13 +92,11 @@ fn bench_datetime_conversion_from_unix_nano(c: &mut Criterion) {
     });
 
     group.finish();
-
 }
 
 fn bench_datetime_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("datetime creation now");
-    let offset = time::UtcOffset::from_hms(9,0,0)
-        .expect("failed to create UtcOffset");
+    let offset = time::UtcOffset::from_hms(9, 0, 0).expect("failed to create UtcOffset");
 
     group.bench_function("chrono::DateTime utc", |b| {
         b.iter(chrono::Utc::now);
@@ -137,15 +127,17 @@ fn bench_multi_thread_unix_nano(c: &mut Criterion) {
     // generate 1000 get_unix_nano() for 6 threads
     group.bench_function("with thread local", |b| {
         b.iter(|| {
-            let handles: Vec<_> = (0..thread_number).map(|i| {
-                let core_id = core_ids[i].clone();
-                core_affinity::set_for_current(core_id);
-                thread::spawn(|| {
-                    for _ in 0..1_000_000 {
-                        get_thread_local_unix_nano();
-                    }
+            let handles: Vec<_> = (0..thread_number)
+                .map(|i| {
+                    let core_id = core_ids[i].clone();
+                    core_affinity::set_for_current(core_id);
+                    thread::spawn(|| {
+                        for _ in 0..1_000_000 {
+                            get_thread_local_unix_nano();
+                        }
+                    })
                 })
-            }).collect();
+                .collect();
 
             for handle in handles {
                 handle.join().unwrap();
@@ -155,15 +147,17 @@ fn bench_multi_thread_unix_nano(c: &mut Criterion) {
 
     group.bench_function("without thread local", |b| {
         b.iter(|| {
-            let handles: Vec<_> = (0..thread_number).map(|i| {
-                let core_id = core_ids[i].clone();
-                core_affinity::set_for_current(core_id);
-                thread::spawn(|| {
-                    for _ in 0..1_000_000 {
-                        get_unix_nano();
-                    }
+            let handles: Vec<_> = (0..thread_number)
+                .map(|i| {
+                    let core_id = core_ids[i].clone();
+                    core_affinity::set_for_current(core_id);
+                    thread::spawn(|| {
+                        for _ in 0..1_000_000 {
+                            get_unix_nano();
+                        }
+                    })
                 })
-            }).collect();
+                .collect();
 
             for handle in handles {
                 handle.join().unwrap();
@@ -173,7 +167,7 @@ fn bench_multi_thread_unix_nano(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches, 
+    benches,
     bench_datetime_conversion_from_unix_nano,
     bench_datetime_creation,
     bench_nows,

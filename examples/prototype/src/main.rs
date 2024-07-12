@@ -1,10 +1,10 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use pcap::Capture;
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
-use pnet::packet::udp::UdpPacket;
 use pnet::packet::tcp::TcpPacket;
+use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
 
 const PCAP_FILE: &str = "data/small_20231228105204.pcap";
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if count > 10 {
             break;
         }
-        if let Some(ethernet_packet) = EthernetPacket::new(packet.data) { 
+        if let Some(ethernet_packet) = EthernetPacket::new(packet.data) {
             if ethernet_packet.get_ethertype() == pnet::packet::ethernet::EtherTypes::Ipv4 {
                 // Parse the IPv4 packet
                 if let Some(ipv4_packet) = Ipv4Packet::new(ethernet_packet.payload()) {
@@ -41,10 +41,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("---");
                             println!("TCP Payload: {:?}", String::from_utf8_lossy(payload));
                         }
-                    } 
+                    }
                 } else {
-                            println!("---");
-                            println!("Non IPv4 Packet.");
+                    println!("---");
+                    println!("Non IPv4 Packet.");
                 }
             }
         }

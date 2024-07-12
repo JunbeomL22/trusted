@@ -1,12 +1,12 @@
 use crate::currency::Currency;
 use crate::definitions::{Integer, Real};
+use crate::instrument::InstrumentTrait;
 use crate::instruments::bond::Bond;
 use crate::time::conventions::PaymentFrequency;
-use crate::instrument::InstrumentTrait;
 //
-use serde::{Serialize, Deserialize};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KtbfVirtualBond {
@@ -18,8 +18,8 @@ pub struct KtbfVirtualBond {
 
 impl KtbfVirtualBond {
     pub fn new(
-        year: Integer, 
-        coupon_rate: Real, 
+        year: Integer,
+        coupon_rate: Real,
         frequency: PaymentFrequency,
         unit_notional: Real,
     ) -> KtbfVirtualBond {
@@ -45,8 +45,6 @@ impl KtbfVirtualBond {
         res += 1.0 / (1.0 + effective_yield).powi(coupon_payment_number);
         res * self.unit_notional
     }
-    
-    
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,8 +99,8 @@ impl KTBF {
                     code,
                 )),
             }
-        }    
-        
+        }
+
         Ok(KTBF {
             currency,
             unit_notional,
@@ -119,7 +117,6 @@ impl KTBF {
     pub fn get_underlying_bonds(&self) -> &Vec<Bond> {
         &self.underlying_bonds
     }
-
 }
 
 impl InstrumentTrait for KTBF {
@@ -135,7 +132,7 @@ impl InstrumentTrait for KTBF {
         &self.code
     }
 
-    fn get_currency(&self) ->  &Currency {
+    fn get_currency(&self) -> &Currency {
         &self.currency
     }
 
@@ -158,5 +155,4 @@ impl InstrumentTrait for KTBF {
     fn get_bond_futures_borrowing_curve_tags(&self) -> Vec<&String> {
         vec![&self.borrowing_curve_tag]
     }
-
 }

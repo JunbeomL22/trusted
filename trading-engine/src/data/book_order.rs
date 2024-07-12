@@ -1,13 +1,8 @@
-use crate::types::base::{
-    OrderId,
-    BookPrice,
-    BookQuantity,
-};
+use crate::types::base::{BookPrice, BookQuantity, OrderId};
 use crate::types::enums::OrderSide;
 //
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BookOrder {
@@ -33,20 +28,14 @@ impl BookOrder {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
 
     #[test]
     fn test_book_order() {
-        use crate::types::enums::OrderSide;
-        use crate::types::base::{
-            OrderId,
-            BookPrice,
-            BookQuantity,
-        };
         use super::*;
+        use crate::types::base::{BookPrice, BookQuantity, OrderId};
+        use crate::types::enums::OrderSide;
 
         let price: BookPrice = 100;
         let quantity: BookQuantity = 100;

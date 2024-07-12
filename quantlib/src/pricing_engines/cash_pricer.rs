@@ -1,7 +1,7 @@
-use crate::pricing_engines::pricer::PricerTrait;
+use crate::definitions::Real;
 use crate::instrument::Instrument;
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::definitions::Real;
+use crate::pricing_engines::pricer::PricerTrait;
 //
 use anyhow::Result;
 pub struct CashPricer {}

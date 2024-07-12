@@ -1,26 +1,22 @@
 use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::Instrument;
+use crate::instrument::InstrumentTrait;
 use crate::parameters::market_price::MarketPrice;
-use crate::pricing_engines::pricer::PricerTrait;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::instrument::InstrumentTrait;
+use crate::pricing_engines::pricer::PricerTrait;
 //
 use anyhow::{anyhow, Result};
-use std::{
-    rc::Rc,
-    cell::RefCell,
-    collections::HashMap,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// evaluation date is not needed for this pricer
 /// all parameters have the evaluation date (shared in the form of Rc<RefCell<EvaluationDate>>)
 pub struct FxFuturesPricer {
     //evaluation_date: Rc<RefCell<EvaluationDate>>, //not used
-    fx: Rc<RefCell<MarketPrice>>, // floationg to fixed fx as in PlainSwapPricer. 
+    fx: Rc<RefCell<MarketPrice>>, // floationg to fixed fx as in PlainSwapPricer.
     underlying_currency_curve: Rc<RefCell<ZeroCurve>>, // if you use implied dividend, this will be risk-free rate (or you can think of it as benchmark rate)
-    futures_currency_curve: Rc<RefCell<ZeroCurve>>, // or repo
+    futures_currency_curve: Rc<RefCell<ZeroCurve>>,    // or repo
 }
 
 impl FxFuturesPricer {
@@ -44,17 +40,25 @@ impl PricerTrait for FxFuturesPricer {
         let fx_rate = self.fx.borrow().get_value();
         let maturity = match instrument.get_maturity() {
             Some(maturity) => maturity,
-            None => return Err(anyhow!(
-                "({}:{}) Maturity of {} ({}) is not set",
-                file!(),
-                line!(),
-                instrument.get_name(),
-                instrument.get_code(),
-            )),
+            None => {
+                return Err(anyhow!(
+                    "({}:{}) Maturity of {} ({}) is not set",
+                    file!(),
+                    line!(),
+                    instrument.get_name(),
+                    instrument.get_code(),
+                ))
+            }
         };
-        
-        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
-        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
+
+        let underlying_discount = self
+            .underlying_currency_curve
+            .borrow()
+            .get_discount_factor_at_date(maturity)?;
+        let futures_discount = self
+            .futures_currency_curve
+            .borrow()
+            .get_discount_factor_at_date(maturity)?;
 
         let npv = fx_rate * underlying_discount / futures_discount;
         Ok(npv)
@@ -71,20 +75,28 @@ impl PricerTrait for FxFuturesPricer {
         let underlying_currency = *instrument.get_underlying_currency()?;
         let maturity = match instrument.get_maturity() {
             Some(maturity) => maturity,
-            None => return Err(anyhow!(
-                "({}:{}) Maturity of {} ({}) is not set",
-                file!(),
-                line!(),
-                instrument.get_name(),
-                instrument.get_code(),
-            )),
+            None => {
+                return Err(anyhow!(
+                    "({}:{}) Maturity of {} ({}) is not set",
+                    file!(),
+                    line!(),
+                    instrument.get_name(),
+                    instrument.get_code(),
+                ))
+            }
         };
 
-        let underlying_discount = self.underlying_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
-        let futures_discount = self.futures_currency_curve.borrow().get_discount_factor_at_date(maturity)?;
+        let underlying_discount = self
+            .underlying_currency_curve
+            .borrow()
+            .get_discount_factor_at_date(maturity)?;
+        let futures_discount = self
+            .futures_currency_curve
+            .borrow()
+            .get_discount_factor_at_date(maturity)?;
 
         let mut res: HashMap<Currency, Real> = HashMap::new();
-        res.insert(futures_currency, - futures_discount * average_trade_price);
+        res.insert(futures_currency, -futures_discount * average_trade_price);
         res.insert(underlying_currency, underlying_discount);
 
         Ok(res)
@@ -96,33 +108,31 @@ mod tests {
     use super::*;
     use crate::currency::Currency;
     use crate::data::vector_data::VectorData;
+    use crate::evaluation_date::EvaluationDate;
+    use crate::instrument::Instrument;
     use crate::instruments::fx_futures::FxFutures;
     use crate::parameters::zero_curve::ZeroCurve;
     use crate::pricing_engines::fx_futures_pricer::FxFuturesPricer;
-    use crate::evaluation_date::EvaluationDate;
-    use crate::instrument::Instrument;
     use crate::pricing_engines::pricer::PricerTrait;
-    use std::rc::Rc;
-    use std::cell::RefCell;
-    use time::macros::datetime;
     use anyhow::Result;
     use ndarray::array;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use time::macros::datetime;
 
     #[test]
     fn test_fx_futures_pricer() -> Result<()> {
         let eval_date = datetime!(2024-01-02 00:00:00 UTC);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(eval_date.clone())));
-        let fx = Rc::new(RefCell::new(
-            MarketPrice::new(
-                1300.0,
-                eval_date.clone(),
-                None,
-                Currency::KRW,
-                "USDKRW".to_string(),
-                "USDKRW".to_string(),
-            )
-        ));
-        
+        let fx = Rc::new(RefCell::new(MarketPrice::new(
+            1300.0,
+            eval_date.clone(),
+            None,
+            Currency::KRW,
+            "USDKRW".to_string(),
+            "USDKRW".to_string(),
+        )));
+
         let underlying_curve_data = VectorData::new(
             array![0.04, 0.04],
             None,
@@ -133,15 +143,13 @@ mod tests {
             "USDOIS".to_string(),
         )?;
 
-        let usdois_curve = Rc::new(RefCell::new(
-            ZeroCurve::new(
-                evaluation_date.clone(),
-                &underlying_curve_data,
-                "USDOIS".to_string(),
-                "USDOIS".to_string(),
-            )?
-        ));
-        
+        let usdois_curve = Rc::new(RefCell::new(ZeroCurve::new(
+            evaluation_date.clone(),
+            &underlying_curve_data,
+            "USDOIS".to_string(),
+            "USDOIS".to_string(),
+        )?));
+
         let futures_curve_data = VectorData::new(
             array![0.04, 0.04],
             None,
@@ -152,14 +160,12 @@ mod tests {
             "KRWCRS".to_string(),
         )?;
 
-        let krwcrs_curve = Rc::new(RefCell::new(
-            ZeroCurve::new(
-                evaluation_date.clone(),
-                &futures_curve_data,
-                "KRWCRS".to_string(),
-                "KRWCRS".to_string(),
-            )?
-        ));
+        let krwcrs_curve = Rc::new(RefCell::new(ZeroCurve::new(
+            evaluation_date.clone(),
+            &futures_curve_data,
+            "KRWCRS".to_string(),
+            "KRWCRS".to_string(),
+        )?));
 
         let pricer = FxFuturesPricer::new(
             //evaluation_date.clone(),
@@ -194,23 +200,25 @@ mod tests {
         assert!(
             (npv.get_npv() - expected_npv).abs() < 1e-6,
             "npv is not correct: expected {}, got {}",
-            expected_npv, npv.get_npv(),
+            expected_npv,
+            npv.get_npv(),
         );
 
         let expected_krw_fx_exposure = -1251.4957;
         assert!(
             (fx_exporsure.get(&Currency::KRW).unwrap() - expected_krw_fx_exposure).abs() < 1e-6,
             "KRW fx exposure is not correct: expected {}, got {}",
-            expected_krw_fx_exposure, fx_exporsure.get(&Currency::KRW).unwrap(),
+            expected_krw_fx_exposure,
+            fx_exporsure.get(&Currency::KRW).unwrap(),
         );
 
         let expected_usd_fx_exposure = 0.96268904;
         assert!(
             (fx_exporsure.get(&Currency::USD).unwrap() - expected_usd_fx_exposure).abs() < 1e-6,
             "USD fx exposure is not correct: expected {}, got {}",
-            expected_usd_fx_exposure, fx_exporsure.get(&Currency::USD).unwrap(),
+            expected_usd_fx_exposure,
+            fx_exporsure.get(&Currency::USD).unwrap(),
         );
         Ok(())
     }
 }
-

@@ -1,16 +1,13 @@
-use crate::instruments::instrument_info::InstrumentInfo;
 use crate::currency::Currency;
-use crate::definitions::{Real, Integer};
+use crate::definitions::{Integer, Real};
+use crate::instruments::instrument_info::InstrumentInfo;
 use crate::pricing_engines::npv_result::NpvResult;
-use crate::utils::number_format::{write_number_with_commas, formatted_number};
+use crate::utils::number_format::{formatted_number, write_number_with_commas};
 use anyhow::{anyhow, Result};
-use std::collections::HashMap;
-use serde::{
-    Serialize, 
-    Deserialize, 
-};
-use time::OffsetDateTime;
 use ndarray::Array2;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use time::OffsetDateTime;
 
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
@@ -19,7 +16,7 @@ use ndarray::Array2;
 ///
 /// npv: Option<Real>: Net Present Value:
 /// exclude cashflow at evaluation date, not considering unit_notional
-/// value: Option<Real>: 
+/// value: Option<Real>:
 /// Value of the instrument considering unit_notional excluding cashflow at evaluation date
 /// mostly pnl -> value_2 - value_1 +cashflow_inbetween
 /// all greeks are calculated based on value not the npv in other words, considering unit_notional
@@ -28,7 +25,7 @@ use ndarray::Array2;
 pub struct CalculationResult {
     instrument_info: Option<InstrumentInfo>,
     evaluation_date: Option<OffsetDateTime>,
-    npv_result: Option<NpvResult>, 
+    npv_result: Option<NpvResult>,
     value: Option<Real>,
     fx_exposure: Option<HashMap<Currency, Real>>,
     delta: Option<HashMap<String, Real>>,
@@ -39,7 +36,7 @@ pub struct CalculationResult {
     theta: Option<Real>,
     div_delta: Option<HashMap<String, Real>>,
     div_structure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on div_tenor in CalculationConfiguration
-    rho: Option<HashMap<String, Real>>, // Curve Code -> rho
+    rho: Option<HashMap<String, Real>>,                // Curve Code -> rho
     rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
     #[serde(skip)]
@@ -189,15 +186,13 @@ impl std::fmt::Debug for CalculationResult {
                 write_number_with_commas(f, matrix_sum)?;
                 writeln!(f, "): ")?;
 
-
-                let under_line = "-".repeat((9+3) * 17);
+                let under_line = "-".repeat((9 + 3) * 17);
                 writeln!(f, "{}", under_line)?;
                 for row in value.rows() {
-                    
                     for element in row {
                         let formatted_number = format!("{:9}", formatted_number(*element));
                         write!(f, "{} | ", formatted_number)?;
-                    }       
+                    }
                     writeln!(f)?;
                     writeln!(f, "{}", under_line)?;
                 }
@@ -207,15 +202,17 @@ impl std::fmt::Debug for CalculationResult {
         if let Some(ref currency) = self.representation_currency {
             writeln!(f, " * representation_currency: {:?}", currency)?;
         }
-        writeln!(f, "===========================================================")
+        writeln!(
+            f,
+            "==========================================================="
+        )
     }
 }
 
-
 impl CalculationResult {
     pub fn new(
-        instrument_info: InstrumentInfo, 
-        evaluation_date: OffsetDateTime
+        instrument_info: InstrumentInfo,
+        evaluation_date: OffsetDateTime,
     ) -> CalculationResult {
         let representation_currency = instrument_info.get_currency();
         CalculationResult {
@@ -252,12 +249,14 @@ impl CalculationResult {
         match self.npv_result.as_ref() {
             None => Err(anyhow!("npv result is not set")),
             Some(npv) => {
-                let unit = self.instrument_info.as_ref()
-                        .ok_or_else(|| anyhow!("instrument info is not set"))?
-                        .get_unit_notional();
+                let unit = self
+                    .instrument_info
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("instrument info is not set"))?
+                    .get_unit_notional();
                 self.value = Some(npv.get_npv() * unit);
                 Ok(())
-            },
+            }
         }
     }
 
@@ -277,10 +276,10 @@ impl CalculationResult {
                 let mut delta = HashMap::new();
                 delta.insert(und_code.to_owned(), v);
                 self.delta = Some(delta);
-            },
+            }
             Some(delta) => {
                 delta.insert(und_code.to_owned(), v);
-            },
+            }
         }
     }
 
@@ -290,70 +289,62 @@ impl CalculationResult {
                 let mut gamma = HashMap::new();
                 gamma.insert(und_code.to_owned(), v);
                 self.gamma = Some(gamma);
-            },
+            }
             Some(gamma) => {
                 gamma.insert(und_code.to_owned(), v);
-            },
+            }
         }
     }
 
-    pub fn set_single_vega_structure(
-        &mut self, 
-        und_code: &str, 
-        vega_structure: Vec<Real>,
-    ) {
+    pub fn set_single_vega_structure(&mut self, und_code: &str, vega_structure: Vec<Real>) {
         match &mut self.vega_strucure {
             None => {
                 let mut vega_structure_map = HashMap::new();
                 vega_structure_map.insert(und_code.to_owned(), vega_structure);
                 self.vega_strucure = Some(vega_structure_map);
-            },
+            }
             Some(vega_structure_map) => {
                 vega_structure_map.insert(und_code.to_owned(), vega_structure);
-            },
+            }
         }
     }
-    
+
     pub fn set_single_vega(&mut self, und_code: &str, v: Real) {
         match &mut self.vega {
             None => {
                 let mut vega = HashMap::new();
                 vega.insert(und_code.to_owned(), v);
                 self.vega = Some(vega);
-            },
+            }
             Some(vega) => {
                 vega.insert(und_code.to_owned(), v);
-            },
+            }
         }
     }
-    
+
     pub fn set_single_rho(&mut self, curve_code: &str, v: Real) {
         match &mut self.rho {
             None => {
                 let mut rho = HashMap::new();
                 rho.insert(curve_code.to_owned(), v);
                 self.rho = Some(rho);
-            },
+            }
             Some(rho) => {
                 rho.insert(curve_code.to_owned(), v);
-            },
+            }
         }
     }
 
-    pub fn set_single_rho_structure(
-        &mut self, 
-        curve_code: &str, 
-        rho_structure: Vec<Real>,
-    ) {
+    pub fn set_single_rho_structure(&mut self, curve_code: &str, rho_structure: Vec<Real>) {
         match &mut self.rho_structure {
             None => {
                 let mut rho_structure_map = HashMap::new();
                 rho_structure_map.insert(curve_code.to_owned(), rho_structure);
                 self.rho_structure = Some(rho_structure_map);
-            },
+            }
             Some(rho_structure_map) => {
                 rho_structure_map.insert(curve_code.to_owned(), rho_structure);
-            },
+            }
         }
     }
 
@@ -363,27 +354,23 @@ impl CalculationResult {
                 let mut div_delta = HashMap::new();
                 div_delta.insert(und_code.to_owned(), v);
                 self.div_delta = Some(div_delta);
-            },
+            }
             Some(div_delta) => {
                 div_delta.insert(und_code.to_owned(), v);
-            },
+            }
         }
     }
 
-    pub fn set_single_div_structure(
-        &mut self, 
-        und_code: &str, 
-        div_structure: Vec<Real>,
-    ) {
+    pub fn set_single_div_structure(&mut self, und_code: &str, div_structure: Vec<Real>) {
         match &mut self.div_structure {
             None => {
                 let mut div_structure_map = HashMap::new();
                 div_structure_map.insert(und_code.to_owned(), div_structure);
                 self.div_structure = Some(div_structure_map);
-            },
+            }
             Some(div_structure_map) => {
                 div_structure_map.insert(und_code.to_owned(), div_structure);
-            },
+            }
         }
     }
 
@@ -398,7 +385,7 @@ impl CalculationResult {
     pub fn set_cashflows(&mut self, cashflows: HashMap<OffsetDateTime, Real>) {
         self.cashflows = Some(cashflows);
     }
-    
+
     pub fn get_instrument_info(&self) -> Option<&InstrumentInfo> {
         self.instrument_info.as_ref()
     }
@@ -427,7 +414,7 @@ impl CalculationResult {
         self.vega_strucure.as_ref()
     }
 
-    pub fn get_vega_matrix(&self) -> Option<&HashMap<String, Array2<Real>> > {
+    pub fn get_vega_matrix(&self) -> Option<&HashMap<String, Array2<Real>>> {
         self.vega_matrix.as_ref()
     }
 
@@ -459,24 +446,24 @@ impl CalculationResult {
         self.representation_currency = Some(currency);
     }
 
-    pub fn set_single_vega_matrix(
-        &mut self, 
-        und_code: &str, 
-        vega_matrix: Array2<Real>,
-    ) {
+    pub fn set_single_vega_matrix(&mut self, und_code: &str, vega_matrix: Array2<Real>) {
         match &mut self.vega_matrix {
             None => {
                 let mut vega_matrix_map = HashMap::new();
                 vega_matrix_map.insert(und_code.to_owned(), vega_matrix);
                 self.vega_matrix = Some(vega_matrix_map);
-            },
+            }
             Some(vega_matrix_map) => {
                 vega_matrix_map.insert(und_code.to_owned(), vega_matrix);
-            },
+            }
         }
     }
 
-    pub fn representation_currency_conversion(&self, currency: Currency, fx_rate: Real) -> Result<CalculationResult> {
+    pub fn representation_currency_conversion(
+        &self,
+        currency: Currency,
+        fx_rate: Real,
+    ) -> Result<CalculationResult> {
         if currency == *self.representation_currency.as_ref().unwrap() {
             return Ok(self.clone());
         }
@@ -492,7 +479,7 @@ impl CalculationResult {
                     new_exposure.insert(*c, v * fx_rate);
                 }
                 Some(new_exposure)
-            },
+            }
             None => None,
         };
 
@@ -503,7 +490,7 @@ impl CalculationResult {
                     new_delta.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_delta)
-            },
+            }
             None => None,
         };
 
@@ -514,18 +501,18 @@ impl CalculationResult {
                     new_gamma.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_gamma)
-            },
+            }
             None => None,
         };
-        
+
         let vega: Option<HashMap<String, Real>> = match &self.vega {
             Some(vega) => {
                 let mut new_vega = HashMap::new();
                 for (und_code, v) in vega {
                     new_vega.insert(und_code.clone(), v * fx_rate);
-                } 
+                }
                 Some(new_vega)
-            },
+            }
             None => None,
         };
         let vega_strucure: Option<HashMap<String, Vec<Real>>> = match &self.vega_strucure {
@@ -536,7 +523,7 @@ impl CalculationResult {
                     new_vega_structure.insert(und_code.clone(), new_v);
                 }
                 Some(new_vega_structure)
-            },
+            }
             None => None,
         };
         let vega_matrix: Option<HashMap<String, Array2<Real>>> = match &self.vega_matrix {
@@ -547,7 +534,7 @@ impl CalculationResult {
                     new_vega_matrix.insert(und_code.clone(), new_v);
                 }
                 Some(new_vega_matrix)
-            },
+            }
             None => None,
         };
 
@@ -559,7 +546,7 @@ impl CalculationResult {
                     new_div_delta.insert(und_code.clone(), v * fx_rate);
                 }
                 Some(new_div_delta)
-            },
+            }
             None => None,
         };
         let div_structure: Option<HashMap<String, Vec<Real>>> = match &self.div_structure {
@@ -570,7 +557,7 @@ impl CalculationResult {
                     new_div_structure.insert(und_code.clone(), new_v);
                 }
                 Some(new_div_structure)
-            },
+            }
             None => None,
         };
         let rho: Option<HashMap<String, Real>> = match &self.rho {
@@ -580,7 +567,7 @@ impl CalculationResult {
                     new_rho.insert(curve_code.clone(), v * fx_rate);
                 }
                 Some(new_rho)
-            },
+            }
             None => None,
         };
         let rho_structure: Option<HashMap<String, Vec<Real>>> = match &self.rho_structure {
@@ -591,7 +578,7 @@ impl CalculationResult {
                     new_rho_structure.insert(curve_code.clone(), new_v);
                 }
                 Some(new_rho_structure)
-            },
+            }
             None => None,
         };
         let theta_day: Option<Integer> = self.theta_day;
@@ -625,16 +612,13 @@ impl CalculationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::instrument::InstrumentTrait;
     use crate::{
-        currency::Currency, 
+        currency::Currency,
         instrument::Instrument,
-        instruments::{
-            instrument_info::InstrumentInfo, 
-            futures::Futures
-        },
+        instruments::{futures::Futures, instrument_info::InstrumentInfo},
     };
     use time::macros::datetime;
-    use crate::instrument::InstrumentTrait;
 
     #[test]
     fn test_calculation_result() {
@@ -644,7 +628,6 @@ mod tests {
         result.set_npv(NpvResult::new_from_npv(100.0));
 
         assert_eq!(result.get_npv_result().unwrap().get_npv(), 100.0);
-        
     }
 
     #[test] // test serialization
@@ -670,7 +653,7 @@ mod tests {
         let code = fut_trait.get_code();
         let type_name = fut_trait.get_type_name();
         let maturity = fut_trait.get_maturity();
-        
+
         let instrument = InstrumentInfo::new(
             name.clone(),
             code.clone(),
@@ -679,13 +662,12 @@ mod tests {
             fut_trait.get_unit_notional(),
             maturity,
         );
-        
+
         let evaluation_date = datetime!(2021-01-01 00:00:00 +00:00);
         let mut result = CalculationResult::new(instrument, evaluation_date);
         result.set_npv(NpvResult::new_from_npv(100.0));
-        
-        result.set_single_delta(&"KOSPI200".to_string(), 0.1);
 
+        result.set_single_delta(&"KOSPI200".to_string(), 0.1);
 
         let serialized = serde_json::to_string_pretty(&result).unwrap();
         println!("serialized = {}", serialized);

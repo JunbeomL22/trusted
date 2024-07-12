@@ -1,14 +1,11 @@
-use crate::pricing_engines::pricer::PricerTrait;
-use crate::instrument::Instrument;
 use crate::definitions::Real;
+use crate::instrument::Instrument;
 use crate::parameters::market_price::MarketPrice;
 use crate::pricing_engines::npv_result::NpvResult;
+use crate::pricing_engines::pricer::PricerTrait;
 //
 use anyhow::Result;
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct IdentityPricer {
     market_price: Rc<RefCell<MarketPrice>>,
@@ -16,9 +13,7 @@ pub struct IdentityPricer {
 
 impl IdentityPricer {
     pub fn new(market_price: Rc<RefCell<MarketPrice>>) -> IdentityPricer {
-        IdentityPricer {
-            market_price,
-        }
+        IdentityPricer { market_price }
     }
 }
 

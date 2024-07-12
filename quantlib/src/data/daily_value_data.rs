@@ -1,12 +1,9 @@
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use time::{Date, Time, UtcOffset};
 use crate::definitions::Real;
 use crate::time::calendar::Calendar;
-use crate::time::calendars::southkorea::{
-    SouthKorea,
-    SouthKoreaType,
-};
+use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use time::{Date, Time, UtcOffset};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DailyValueData {
@@ -23,11 +20,9 @@ impl Default for DailyValueData {
         DailyValueData {
             value: HashMap::new(),
             // korea stock market
-            close_time: Time::from_hms(15, 40, 0).unwrap(), 
-            utc_offset: UtcOffset::from_hms(9, 0, 0).unwrap(), 
-            calendar: Calendar::SouthKorea(
-                SouthKorea::new(SouthKoreaType::Krx),
-            ),
+            close_time: Time::from_hms(15, 40, 0).unwrap(),
+            utc_offset: UtcOffset::from_hms(9, 0, 0).unwrap(),
+            calendar: Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Krx)),
             name: String::new(),
             code: String::new(),
         }
@@ -36,11 +31,11 @@ impl Default for DailyValueData {
 
 impl DailyValueData {
     pub fn new(
-        value: HashMap<Date, Real>, 
+        value: HashMap<Date, Real>,
         close_time: Time,
         utc_offset: UtcOffset,
         calendar: Calendar,
-        name: String, 
+        name: String,
         code: String,
     ) -> DailyValueData {
         DailyValueData {
@@ -112,13 +107,13 @@ mod tests {
     #[test]
     fn test_close_data() {
         let mut data = DailyValueData::default();
-        let date1 = date!(2021-01-01);
-        let date2 = date!(2021-01-02);
-        let date3 = date!(2021-01-03);
+        let date1 = date!(2021 - 01 - 01);
+        let date2 = date!(2021 - 01 - 02);
+        let date3 = date!(2021 - 01 - 03);
         data.insert(date1, 100.0);
         data.insert(date2, 200.0);
         data.insert(date3, 300.0);
-        
+
         assert_eq!(data.get(&date1), Some(&100.0));
         assert_eq!(data.get(&date2), Some(&200.0));
         assert_eq!(data.get(&date3), Some(&300.0));

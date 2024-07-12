@@ -60,13 +60,11 @@ pub enum AccountingLevel {
     Level3 = 3,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum OptionType {
     Call,
     Put,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
 pub enum OptionExerciseType {
@@ -85,7 +83,6 @@ pub enum OptionDailySettlementType {
     NotSettled,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy, Default)]
 pub enum StickynessType {
     #[default]
@@ -93,14 +90,12 @@ pub enum StickynessType {
     StickyToStrike,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
 pub enum VanillaOptionCalculationMethod {
     MonteCarlo = 0,
     FiniteDifference = 1,
     Analytic = 2,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
 pub enum StockRankType {

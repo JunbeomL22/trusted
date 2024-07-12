@@ -1,16 +1,16 @@
-use crate::instrument::{Instrument, InstrumentTrait};
 use crate::currency::Currency;
 use crate::enums::{
-    CreditRating, 
+    CreditRating,
     IssuerType,
     //RateIndexCode,
     OptionDailySettlementType,
 };
+use crate::instrument::{Instrument, InstrumentTrait};
 use crate::instruments::plain_swap::PlainSwapType;
 //
-use serde::{Serialize, Deserialize};
+use anyhow::{anyhow, Context, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use anyhow::{Result, Context, anyhow};
 //
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MatchParameter {
@@ -20,16 +20,11 @@ pub struct MatchParameter {
     // Underlying asset code: String -> curve_name: String
     // Underlying code examples are stock, bond, commodity, etc.
     borrowing_curve_map: HashMap<String, String>,
-    // (issuer: String, 
-    //  issuer_type: IssuerType, 
-    //  credit_rating: CreditRating, 
+    // (issuer: String,
+    //  issuer_type: IssuerType,
+    //  credit_rating: CreditRating,
     //  currency: Currency) -> String
-    bond_discount_curve_map: HashMap<(
-        String, 
-        IssuerType, 
-        CreditRating,
-        Currency
-    ), String>,
+    bond_discount_curve_map: HashMap<(String, IssuerType, CreditRating, Currency), String>,
     // index code: RateIndexCode -> String
     rate_index_forward_curve_map: HashMap<String, String>,
     // Currency::XXX -> String::from("XXXCRS")
@@ -46,13 +41,9 @@ impl Default for MatchParameter {
         let collateral_curve_map: HashMap<String, String> = HashMap::new();
 
         let borrowing_curve_map: HashMap<String, String> = HashMap::new();
-        
-        let bond_discount_curve_map: HashMap<(
-            String,
-            IssuerType, 
-            CreditRating, 
-            Currency
-        ), String> = HashMap::new();
+
+        let bond_discount_curve_map: HashMap<(String, IssuerType, CreditRating, Currency), String> =
+            HashMap::new();
 
         let crs_curve_map: HashMap<Currency, String> = HashMap::new();
         let funding_cost_map: HashMap<Currency, String> = HashMap::new();
@@ -72,13 +63,8 @@ impl Default for MatchParameter {
 impl MatchParameter {
     pub fn new(
         collateral_curve_map: HashMap<String, String>,
-        borrowing_curve_map: HashMap<String, String>, 
-        bond_discount_curve_map: HashMap<(
-            String, 
-            IssuerType, 
-            CreditRating, 
-            Currency
-        ), String>,
+        borrowing_curve_map: HashMap<String, String>,
+        bond_discount_curve_map: HashMap<(String, IssuerType, CreditRating, Currency), String>,
         crs_curve_map: HashMap<Currency, String>,
         rate_index_forward_curve_map: HashMap<String, String>,
         funding_cost_map: HashMap<Currency, String>,
@@ -109,10 +95,10 @@ impl MatchParameter {
                         "({}:{}) {} ({}) has {}, but its crs curve is not found in MatchParameter.crs_curve_map",
                         file!(), line!(),
                         instrument.get_name(), instrument.get_code(),
-                        fixed_currency.as_str(), 
-                    ))?;                
+                        fixed_currency.as_str(),
+                    ))?;
                 Ok(res)
-            },
+            }
             Instrument::FxFutures(instrument) => {
                 let currency = instrument.get_currency();
                 let res = self.crs_curve_map.get(currency)
@@ -123,7 +109,7 @@ impl MatchParameter {
                         currency.as_str()
                     ))?;
                 Ok(res)
-            },
+            }
             _ => Ok(&self.dummy_string),
         }
     }
@@ -134,7 +120,7 @@ impl MatchParameter {
                 if instrument.get_specific_plain_swap_type()? == PlainSwapType::IRS {
                     return Ok(&self.dummy_string);
                 }
-                
+
                 let floating_currency = instrument.get_floating_leg_currency()?;
                 let res = self.crs_curve_map.get(floating_currency)
                     .ok_or_else(|| anyhow!(
@@ -144,7 +130,7 @@ impl MatchParameter {
                         floating_currency.as_str()
                     ))?;
                 Ok(res)
-            },
+            }
             Instrument::FxFutures(instrument) => {
                 let underlying_currency = instrument.get_underlying_currency()?;
                 let res = self.crs_curve_map.get(underlying_currency)
@@ -155,7 +141,7 @@ impl MatchParameter {
                         underlying_currency.as_str()
                     ))?;
                 Ok(res)
-            },
+            }
             _ => Ok(&self.dummy_string),
         }
     }
@@ -163,21 +149,36 @@ impl MatchParameter {
         match instrument {
             Instrument::Bond(instrument) => {
                 match self.bond_discount_curve_map.get(&(
-                    instrument.get_issuer_name().with_context(
-                        || anyhow!(
-                            "({}:{}) Issuer name is not found for {} ({})", 
-                            file!(), line!(),
-                            instrument.get_name(), instrument.get_code()))?.clone(),
-                    *instrument.get_issuer_type().with_context(
-                        || anyhow!(
-                            "({}:{}) Issuer type is not found for {} ({})", 
-                            file!(), line!(),
-                            instrument.get_name(), instrument.get_code()))?,
-                    *instrument.get_credit_rating().with_context(
-                        || anyhow!(
-                            "({}:{}) Credit rating is not found for {} ({})", 
-                            file!(), line!(),
-                            instrument.get_name(), instrument.get_code()))?,
+                    instrument
+                        .get_issuer_name()
+                        .with_context(|| {
+                            anyhow!(
+                                "({}:{}) Issuer name is not found for {} ({})",
+                                file!(),
+                                line!(),
+                                instrument.get_name(),
+                                instrument.get_code()
+                            )
+                        })?
+                        .clone(),
+                    *instrument.get_issuer_type().with_context(|| {
+                        anyhow!(
+                            "({}:{}) Issuer type is not found for {} ({})",
+                            file!(),
+                            line!(),
+                            instrument.get_name(),
+                            instrument.get_code()
+                        )
+                    })?,
+                    *instrument.get_credit_rating().with_context(|| {
+                        anyhow!(
+                            "({}:{}) Credit rating is not found for {} ({})",
+                            file!(),
+                            line!(),
+                            instrument.get_name(),
+                            instrument.get_code()
+                        )
+                    })?,
                     *instrument.get_currency(),
                 )) {
                     Some(curve_name) => Ok(curve_name),
@@ -186,29 +187,27 @@ impl MatchParameter {
             }
             // IRS (or OIS) uses rate index forward curve as discount curve
             Instrument::PlainSwap(instrument) => {
-                let rate_index = instrument.get_rate_index()
-                    .context("Rate index is not found").unwrap();
-                    
+                let rate_index = instrument
+                    .get_rate_index()
+                    .context("Rate index is not found")
+                    .unwrap();
+
                 match rate_index {
                     None => Ok(&self.dummy_string),
                     Some(rate_index) => {
                         match self.rate_index_forward_curve_map.get(rate_index.get_code()) {
                             Some(curve_name) => Ok(curve_name),
-                            None => {
-                                Err(anyhow!(
-                                    "Rate index forward curve is not found for {}",
-                                    rate_index.get_code()
-                                ))
-                            }
+                            None => Err(anyhow!(
+                                "Rate index forward curve is not found for {}",
+                                rate_index.get_code()
+                            )),
                         }
                     }
                 }
-            },
+            }
             Instrument::VanillaOption(instrument) => {
                 match instrument.get_option_daily_settlement_type()? {
-                    OptionDailySettlementType::Settled => {
-                        Ok(&self.dummy_string)
-                    },
+                    OptionDailySettlementType::Settled => Ok(&self.dummy_string),
                     OptionDailySettlementType::NotSettled => {
                         match self.funding_cost_map.get(instrument.get_currency()) {
                             Some(curve_name) => Ok(curve_name),
@@ -222,16 +221,14 @@ impl MatchParameter {
                         }
                     }
                 }
-            },
+            }
             // these are indestruments that do not need to be discounted
-            Instrument::Futures(_) |
-            Instrument::BondFutures(_) |
-            Instrument::KTBF(_) |
-            Instrument::FxFutures(_) |
-            Instrument::Stock(_) |
-            Instrument::Cash(_) => {
-                Ok(&self.dummy_string)
-            },
+            Instrument::Futures(_)
+            | Instrument::BondFutures(_)
+            | Instrument::KTBF(_)
+            | Instrument::FxFutures(_)
+            | Instrument::Stock(_)
+            | Instrument::Cash(_) => Ok(&self.dummy_string),
         }
     }
     /// Curve name for underlying asset
@@ -247,7 +244,11 @@ impl MatchParameter {
         res
     }
 
-    pub fn get_collateral_curve_name(&self, instrument: &Instrument, und_code: &String) -> Result<&String> {
+    pub fn get_collateral_curve_name(
+        &self,
+        instrument: &Instrument,
+        und_code: &String,
+    ) -> Result<&String> {
         self.collateral_curve_map.get(und_code)
         .ok_or_else(|| anyhow!(
             "{} has underlying code {} but no collateral curve name in MatchParameter.collateral_curve_map",
@@ -278,28 +279,34 @@ impl MatchParameter {
                 let rate_index = instrument.get_rate_index()?;
                 let res = match rate_index {
                     None => Ok(&self.dummy_string),
-                    Some(rate_index) => {
-                        self.rate_index_forward_curve_map.get(rate_index.get_code())
-                        .ok_or_else(|| anyhow!(
-                            "Rate index forward curve is not found for {}",
-                            rate_index.get_code()))
-                    }
+                    Some(rate_index) => self
+                        .rate_index_forward_curve_map
+                        .get(rate_index.get_code())
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "Rate index forward curve is not found for {}",
+                                rate_index.get_code()
+                            )
+                        }),
                 };
                 res
-            },
+            }
             Instrument::PlainSwap(instrument) => {
                 let rate_index = instrument.get_rate_index()?;
                 let res = match rate_index {
                     None => Ok(&self.dummy_string),
-                    Some(rate_index) => {
-                        self.rate_index_forward_curve_map.get(rate_index.get_code())
-                        .ok_or_else(|| anyhow!(
-                            "Rate index forward curve is not found for {}",
-                            rate_index.get_code()))
-                    }
+                    Some(rate_index) => self
+                        .rate_index_forward_curve_map
+                        .get(rate_index.get_code())
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "Rate index forward curve is not found for {}",
+                                rate_index.get_code()
+                            )
+                        }),
                 };
                 res
-            },
+            }
             _ => Ok(&self.dummy_string),
         }
     }
@@ -311,38 +318,31 @@ impl MatchParameter {
     pub fn get_borrowing_curve_map(&self) -> &HashMap<String, String> {
         &self.borrowing_curve_map
     }
-
-    
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instruments::futures::Futures;
-    use crate::instruments::plain_swap::PlainSwap;
     use crate::currency::Currency;
     use crate::enums::{CreditRating, IssuerType};
+    use crate::instruments::futures::Futures;
+    use crate::instruments::plain_swap::PlainSwap;
+    use crate::parameters::rate_index::RateIndex;
+    use crate::time::calendar::Calendar;
+    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
+    use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
+    use crate::time::jointcalendar::JointCalendar;
+    use anyhow::Result;
     use std::collections::HashMap;
     use time::macros::datetime;
-    use crate::time::conventions::{BusinessDayConvention, PaymentFrequency, DayCountConvention};
-    use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
-    use crate::time::jointcalendar::JointCalendar;
-    use crate::time::calendar::Calendar;
-    use crate::parameters::rate_index::RateIndex;
     use time::Duration;
-    use anyhow::Result;
 
     #[test]
     fn test_match_parameter() -> Result<()> {
         let mut collateral_curve_map: HashMap<String, String> = HashMap::new();
         let borrowing_curve_map: HashMap<String, String> = HashMap::new();
-        let bond_discount_curve_map: HashMap<(
-            String, 
-            IssuerType, 
-            CreditRating, 
-            Currency
-        ), String> = HashMap::new();
+        let bond_discount_curve_map: HashMap<(String, IssuerType, CreditRating, Currency), String> =
+            HashMap::new();
         let mut rate_index_forward_curve_map: HashMap<String, String> = HashMap::new();
 
         let stock_futures = Futures::new(
@@ -359,7 +359,7 @@ mod tests {
             "AAPL".to_string(),
         );
 
-        // let's make SouthKorea - Setlement calendar 
+        // let's make SouthKorea - Setlement calendar
         // By the reason of project architecture, its is inherently JointCalendar
 
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
@@ -380,7 +380,10 @@ mod tests {
             Currency::KRW,
             Currency::KRW,
             //
-            None, None, None, None,
+            None,
+            None,
+            None,
+            None,
             //
             10_000_000_000.0,
             issue_date.clone(),
@@ -406,7 +409,7 @@ mod tests {
             "IRS".to_string(),
             "IRS".to_string(),
         )?;
-        
+
         collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
         rate_index_forward_curve_map.insert("CD 91D".to_string(), "KRWIRS".to_string());
 
@@ -417,48 +420,51 @@ mod tests {
             bond_discount_curve_map,
             HashMap::new(),
             rate_index_forward_curve_map,
-            funding_cost_map, 
+            funding_cost_map,
         );
-        
+
         let stock_futures_inst = Instrument::Futures(stock_futures);
         let irs_inst = Instrument::PlainSwap(irs);
 
         assert_eq!(
-            match_parameter.get_collateral_curve_name(
-                &stock_futures_inst,
-                &String::from("AAPL")
-            )?.clone(),
+            match_parameter
+                .get_collateral_curve_name(&stock_futures_inst, &String::from("AAPL"))?
+                .clone(),
             String::from("USDGOV"),
             "EquityFutures has underlying code AAPL but it returns a curve name: {}",
-            match_parameter.get_collateral_curve_name(
-                &stock_futures_inst,
-                &String::from("AAPL")
-            )?
+            match_parameter
+                .get_collateral_curve_name(&stock_futures_inst, &String::from("AAPL"))?
         );
 
         assert_eq!(
-            match_parameter.get_discount_curve_name(&stock_futures_inst)?.clone(), 
+            match_parameter
+                .get_discount_curve_name(&stock_futures_inst)?
+                .clone(),
             String::from("Dummy"),
             "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_discount_curve_name(&stock_futures_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_rate_index_curve_name(&stock_futures_inst)?.clone(), 
+            match_parameter
+                .get_rate_index_curve_name(&stock_futures_inst)?
+                .clone(),
             String::from("Dummy"),
             "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_name(&stock_futures_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_discount_curve_name(&irs_inst)?.clone(), 
+            match_parameter.get_discount_curve_name(&irs_inst)?.clone(),
             String::from("KRWIRS"),
             "IRS needs to be discounted but it returns a curve name: {}",
             match_parameter.get_discount_curve_name(&irs_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_rate_index_curve_name(&irs_inst)?.clone(), 
+            match_parameter
+                .get_rate_index_curve_name(&irs_inst)?
+                .clone(),
             String::from("KRWIRS"),
             "IRS needs to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_name(&irs_inst)?
@@ -466,4 +472,3 @@ mod tests {
         Ok(())
     }
 }
-
