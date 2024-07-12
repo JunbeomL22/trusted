@@ -317,6 +317,16 @@ impl IntegerConverter {
             self.decimal_point_length,
         )
     }
+
+    #[inline(always)]
+    pub unsafe fn to_u64_unchecked(&self, value: &[u8]) -> u64 {    
+        parse_under16(value, self.parsing_length) as u64
+    }
+
+    #[inline(always)]
+    pub unsafe fn to_u32_unchecked(&self, value: &[u8]) -> u32 {
+        parse_under8(value, self.parsing_length) as u32
+    }
     
     #[inline(always)]
     pub fn to_i64(&self, value: &[u8]) -> i64 {
@@ -370,17 +380,30 @@ pub struct OrderConverter {
 }
 
 impl OrderConverter {
+    #[inline]
     pub fn to_book_price(&self, val: &[u8]) -> BookPrice {
         self.price.to_i64(val)
     }
 
+    #[inline]
     pub fn to_book_quantity(& self, val: &[u8]) -> BookQuantity {
         self.quantity.to_u64(val)
     }
 
+    #[inline]
     pub fn to_order_count(& self, val: &[u8]) -> OrderCount {
         assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
         self.order_count.to_u64(val) as u32
+    }
+
+    #[inline]
+    pub unsafe fn to_order_count_unchecked(& self, val: &[u8]) -> OrderCount {
+        self.order_count.to_u32_unchecked(val)
+    }
+
+    #[inline]
+    pub unsafe fn to_book_quantity_unchecked(& self, val: &[u8]) -> BookQuantity {
+        self.quantity.to_u64_unchecked(val)
     }
 }
 
@@ -390,8 +413,14 @@ pub struct TimeStampConverter {
 }
 
 impl TimeStampConverter {
+    #[inline]
     pub fn to_timestamp(& self, val: &[u8]) -> u64 {
         self.converter.to_u64(val)
+    }
+
+    #[inline]
+    pub unsafe fn to_timestamp_unchecked(& self, val: &[u8]) -> u64 {
+        self.converter.to_u64_unchecked(val)
     }
 }
 
@@ -489,7 +518,7 @@ mod tests {
             total_length: 7,
             float_normalizer: None,
         };
-        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let converter = IntegerConverter::new(cfg).unwrap();
         let s = b"01234.5";
         let val = converter.to_u64(s);
         assert_eq!(
@@ -509,7 +538,7 @@ mod tests {
             total_length: 12,
             float_normalizer: None,
         };
-        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let converter = IntegerConverter::new(cfg).unwrap();
         let s = b"000001234.56";
         let val = converter.to_u64(s);
         assert_eq!(val, 123_456);
@@ -527,7 +556,7 @@ mod tests {
             float_normalizer: None,
         };
 
-        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let converter = IntegerConverter::new(cfg).unwrap();
         let val_str = b"10000123456";
         let val = converter.to_u64(val_str);
         
@@ -542,7 +571,7 @@ mod tests {
             float_normalizer: None,
         };
 
-        let mut converter = IntegerConverter::new(cfg_for_big_number).unwrap();
+        let converter = IntegerConverter::new(cfg_for_big_number).unwrap();
 
         let val_str = b"-911110000123456.3";
 
@@ -568,7 +597,7 @@ mod tests {
             float_normalizer: None,
         };
 
-        let mut converter = IntegerConverter::new(cfg).unwrap();
+        let converter = IntegerConverter::new(cfg).unwrap();
 
         let val_str = b"-10000123456.001";
         let val = converter.to_i64(val_str);

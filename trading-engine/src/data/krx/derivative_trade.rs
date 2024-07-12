@@ -183,34 +183,36 @@ impl IFMSRPD0037 {
 
         let mut st_idx_marker = self.quote_start_index;
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
-        for _ in 0..self.quote_level {
-            let sell_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-            st_idx_marker += pr_ln;
-            let buy_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-            st_idx_marker += pr_ln;
-            let sell_quantity = converter.to_book_quantity(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-            st_idx_marker += qn_ln;
-            let buy_quantity = converter.to_book_quantity(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-            st_idx_marker += qn_ln;
-            let sell_order_count = converter.to_order_count(&payload[st_idx_marker..st_idx_marker + or_ln]);
-            st_idx_marker += or_ln;
-            let buy_order_count = converter.to_order_count(&payload[st_idx_marker..st_idx_marker + or_ln]);
-            st_idx_marker += or_ln;
-            //
-            let sell_order = OrderBase {
-                book_price: sell_price,
-                book_quantity: sell_quantity,
-                order_count: sell_order_count,
-            };
+        unsafe {
+            for _ in 0..self.quote_level {
+                let sell_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+                st_idx_marker += pr_ln;
+                let buy_price = converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
+                st_idx_marker += pr_ln;
+                let sell_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+                st_idx_marker += qn_ln;
+                let buy_quantity = converter.to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
+                st_idx_marker += qn_ln;
+                let sell_order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+                st_idx_marker += or_ln;
+                let buy_order_count = converter.to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
+                st_idx_marker += or_ln;
+                //
+                let sell_order = OrderBase {
+                    book_price: sell_price,
+                    book_quantity: sell_quantity,
+                    order_count: sell_order_count,
+                };
 
-            let buy_order = OrderBase {
-                book_price: buy_price,
-                book_quantity: buy_quantity,
-                order_count: buy_order_count,
-            };
+                let buy_order = OrderBase {
+                    book_price: buy_price,
+                    book_quantity: buy_quantity,
+                    order_count: buy_order_count,
+                };
 
-            ask_order_data.push(sell_order);
-            bid_order_data.push(buy_order);
+                ask_order_data.push(sell_order);
+                bid_order_data.push(buy_order);
+            }
         }
 
         Ok(
