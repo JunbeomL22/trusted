@@ -175,31 +175,32 @@ impl IFMSRPD0037 {
         };
         //
 
-        let mut ask_order_data = Vec::with_capacity(self.quote_level);
-        let mut bid_order_data = Vec::with_capacity(self.quote_level);
+        let mut ask_order_data = vec![OrderBase::default(); self.quote_level];
+        let mut bid_order_data = vec![OrderBase::default(); self.quote_level];
 
-        let mut st_idx_marker = self.quote_start_index;
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         unsafe {
-            for _ in 0..self.quote_level {
+            ask_order_data.set_len(self.quote_level);
+            for i in 0..self.quote_level {
+                let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+                let st_idx_marker = self.quote_start_index + offset * i;
+                let payload_clipped = &payload[st_idx_marker..st_idx_marker+offset];
                 let sell_price =
-                    converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-                st_idx_marker += pr_ln;
+                    converter.to_book_price(&payload_clipped[0..pr_ln]);
+                let idx_marker1 = pr_ln + pr_ln; 
                 let buy_price =
-                    converter.to_book_price(&payload[st_idx_marker..st_idx_marker + pr_ln]);
-                st_idx_marker += pr_ln;
+                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
                 let sell_quantity = converter
-                    .to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-                st_idx_marker += qn_ln;
+                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1+ qn_ln]);
+                let idx_marker2 = idx_marker1 + qn_ln;
                 let buy_quantity = converter
-                    .to_book_quantity_unchecked(&payload[st_idx_marker..st_idx_marker + qn_ln]);
-                st_idx_marker += qn_ln;
+                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
+                let idx_marker3 = idx_marker2 + qn_ln;
                 let sell_order_count = converter
-                    .to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
-                st_idx_marker += or_ln;
+                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
+                let idx_marker4 = idx_marker3 + or_ln;
                 let buy_order_count = converter
-                    .to_order_count_unchecked(&payload[st_idx_marker..st_idx_marker + or_ln]);
-                st_idx_marker += or_ln;
+                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
                 //
                 let sell_order = OrderBase {
                     book_price: sell_price,
@@ -213,8 +214,8 @@ impl IFMSRPD0037 {
                     order_count: buy_order_count,
                 };
 
-                ask_order_data.push(sell_order);
-                bid_order_data.push(buy_order);
+                ask_order_data[i] = sell_order;
+                bid_order_data[i] = buy_order;
             }
         }
 
