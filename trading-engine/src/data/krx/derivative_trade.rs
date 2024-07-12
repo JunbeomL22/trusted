@@ -180,7 +180,6 @@ impl IFMSRPD0037 {
 
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         unsafe {
-            ask_order_data.set_len(self.quote_level);
             for i in 0..self.quote_level {
                 let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
                 let st_idx_marker = self.quote_start_index + offset * i;
