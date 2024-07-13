@@ -22,9 +22,35 @@ pub struct Slice {
     pub end: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct OrderBase {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct QuoteBase {
     pub order_count: OrderCount,
     pub book_price: BookPrice,
     pub book_quantity: BookQuantity,
 }
+
+impl PartialEq for QuoteBase {
+    fn eq(&self, other: &QuoteBase) -> bool {
+        self.book_price == other.book_price && 
+        self.book_quantity == other.book_quantity &&
+        self.order_count == other.order_count
+    }
+}
+
+impl PartialEq<&QuoteBase> for QuoteBase {
+    fn eq(&self, other: &&QuoteBase) -> bool {
+        self.book_price == other.book_price && 
+        self.book_quantity == other.book_quantity &&
+        self.order_count == other.order_count
+    }
+}
+
+impl PartialEq<QuoteBase> for &QuoteBase {
+    fn eq(&self, other: &QuoteBase) -> bool {
+        self.book_price == other.book_price && 
+        self.book_quantity == other.book_quantity &&
+        self.order_count == other.order_count
+    }
+}
+
+impl Eq for QuoteBase {}

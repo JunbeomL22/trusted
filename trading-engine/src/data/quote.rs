@@ -1,8 +1,4 @@
-use crate::types::{
-    base::OrderBase,
-    isin_code::IsinCode,
-    venue::Venue,
-};
+use crate::types::{base::QuoteBase, isin_code::IsinCode, venue::Venue};
 
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -10,8 +6,8 @@ pub struct QuoteData {
     venue: Venue,
     isin_code: IsinCode, // this can be spread product
     timestamp: u64,      // HHMMSSuuuuuu
-    ask_order_data: Vec<OrderBase>,
-    bid_order_data: Vec<OrderBase>,
+    ask_order_data: Vec<QuoteBase>,
+    bid_order_data: Vec<QuoteBase>,
 }
 
 impl QuoteData {

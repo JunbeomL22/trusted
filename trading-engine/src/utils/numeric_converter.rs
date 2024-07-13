@@ -227,7 +227,7 @@ pub struct IntegerConverter {
     start_index: usize,
     end_index: usize,
     decimal_point_length: usize,
-    decimal_point_length_i32: i32,
+    decimal_number_point_length_i32: i32,
     parsing_length: usize,
     #[serde(skip)]
     parser: fn(&[u8], usize, usize) -> u64,
@@ -253,7 +253,7 @@ impl Default for IntegerConverter {
             start_index: 0,
             end_index: 0,
             decimal_point_length: 0,
-            decimal_point_length_i32: 0,
+            decimal_number_point_length_i32: 0,
             parsing_length: 0,
             parser: parse_under16_with_floating_point,
         }
@@ -322,7 +322,7 @@ impl IntegerConverter {
             start_index,
             end_index,
             decimal_point_length,
-            decimal_point_length_i32: decimal_point_length as i32,
+            decimal_number_point_length_i32: (decimal_point_length as i32 - 1i32).max(0),
             parsing_length: all_digit_size,
             parser,
         })
@@ -365,24 +365,24 @@ impl IntegerConverter {
 
     #[inline(always)]
     pub fn to_f64_from_i64(&self, value: i64) -> f64 {
-        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
+        value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
     }
 
     #[inline(always)]
     pub fn to_f64_from_i32(&mut self, value: i32) -> f64 {
-        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
+        value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
     }
 
     #[inline(always)]
     pub fn to_f64_from_u32(&mut self, value: u32) -> f64 {
-        value as f64 / 10_f64.powi(self.decimal_point_length_i32)
+        value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
     }
 
     #[inline(always)]
     pub fn normalized_f64_from_i64(&mut self, value: i64) -> f64 {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
-                let added_normalizer = normalizer + self.decimal_point_length_i32;
+                let added_normalizer = normalizer + self.decimal_number_point_length_i32;
                 let denominator = 10_f64.powi(added_normalizer);
                 let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
 

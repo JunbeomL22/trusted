@@ -1,8 +1,8 @@
 use crate::utils::checkers;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::str::from_utf8_unchecked;
 use std::hash::{Hash, Hasher};
+use std::str::from_utf8_unchecked;
 
 #[derive(Debug, Clone, Eq, Deserialize, Serialize, Default)]
 pub struct IsinCode {
@@ -31,7 +31,9 @@ impl IsinCode {
     /// # Safety
     /// This function is unsafe because it does not check the validity of the input.
     pub unsafe fn from_u8_unchecked(isin: &[u8]) -> Self {
-        IsinCode { isin: *isin.as_ptr().cast::<[u8; 12]>() }
+        IsinCode {
+            isin: *isin.as_ptr().cast::<[u8; 12]>(),
+        }
     }
 
     pub fn as_str(&self) -> &str {

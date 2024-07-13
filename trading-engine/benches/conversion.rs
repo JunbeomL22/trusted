@@ -360,14 +360,18 @@ fn bench_parse_g730f(c: &mut Criterion) {
 
     let mut trade_quote_data_buffer = TradeQuoteData::with_quote_level(5);
     bgroup.bench_function("parse_g730f_with_buffer", |b| {
-        b.iter(|| interface.to_trade_quote_data_buffer(black_box(test_data), &mut trade_quote_data_buffer));
+        b.iter(|| {
+            interface.to_trade_quote_data_buffer(black_box(test_data), &mut trade_quote_data_buffer)
+        });
     });
 
     let mut trade_quote_data_buffer = TradeQuoteData::with_quote_level(4);
     let interface = IFMSRPD0037::default().with_quote_level_cut(4);
-    
+
     bgroup.bench_function("parse_g730f_with_buffer (4 quote level cut)", |b| {
-        b.iter(|| interface.to_trade_quote_data_buffer(black_box(test_data), &mut trade_quote_data_buffer));
+        b.iter(|| {
+            interface.to_trade_quote_data_buffer(black_box(test_data), &mut trade_quote_data_buffer)
+        });
     });
 
     bgroup.finish();

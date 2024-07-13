@@ -133,7 +133,9 @@ fn main() {
     println!("MyStruct8_64_16");
     print_struct_info(instance);
 
-    let _f64_instance = F64 { val: std::f64::consts::PI };
+    let _f64_instance = F64 {
+        val: std::f64::consts::PI,
+    };
     //print_struct_info(f64_instance);
 
     let _f64_pad_instance = F64Pad {

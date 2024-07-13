@@ -1,12 +1,12 @@
 use crate::types::{
-    base::{BookPrice, BookQuantity, OrderBase},
+    base::{BookPrice, BookQuantity, QuoteBase},
     enums::TradeType,
     isin_code::IsinCode,
     venue::Venue,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct TradeQuoteData {
     //data_code: LocalStr, // this will be sent to another thread anyway
     pub venue: Venue,
@@ -15,26 +15,9 @@ pub struct TradeQuoteData {
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
     pub trade_type: Option<TradeType>,
-    pub ask_quote_data: Vec<OrderBase>,
-    pub bid_quote_data: Vec<OrderBase>,
+    pub ask_quote_data: Vec<QuoteBase>,
+    pub bid_quote_data: Vec<QuoteBase>,
     pub quote_level_cut: usize, // this value indicates how many levels of order data are actually used. This can be less than the length of ask_order_data and bid_order_data
-}
-
-impl Default for TradeQuoteData {
-    fn default() -> Self {
-        TradeQuoteData {
-            //data_code: LocalStr::from(""),
-            venue: Venue::default(),
-            isin_code: IsinCode::default(),
-            timestamp: 0,
-            trade_price: 0,
-            trade_quantity: 0,
-            trade_type: None,
-            ask_quote_data: Vec::new(),
-            bid_quote_data: Vec::new(),
-            quote_level_cut: 0,
-        }
-    }
 }
 
 impl TradeQuoteData {
@@ -46,8 +29,8 @@ impl TradeQuoteData {
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
-            ask_quote_data: vec![OrderBase::default(); level],
-            bid_quote_data: vec![OrderBase::default(); level],
+            ask_quote_data: vec![QuoteBase::default(); level],
+            bid_quote_data: vec![QuoteBase::default(); level],
             quote_level_cut: level,
         }
     }

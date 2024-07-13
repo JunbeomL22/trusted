@@ -901,6 +901,7 @@ dependencies = [
  "serde",
  "serde_json",
  "time",
+ "trading-engine",
 ]
 
 [[package]]

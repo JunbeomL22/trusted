@@ -6,18 +6,27 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::tcp::TcpPacket;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
+//
+use trading_engine::data::krx::interface_map::KRX_TR_CODE_MAP;
 
 const PCAP_FILE: &str = "data/small_20231228105204.pcap";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    for (k, v) in KRX_TR_CODE_MAP.iter() {
+        println!("{:?} -> {:?}", std::str::from_utf8(k).unwrap(), v);
+    }
+
+    let tr_keys: Vec<&[u8]> = KRX_TR_CODE_MAP.keys().map(|k| *k).collect();
+
+    let mut tr_vec: Vec<Vec<u8>> = Vec::new();
+
     // Open the PCAP file
     let mut capture = Capture::from_file(PCAP_FILE).context("Failed to open PCAP file")?;
 
     let mut count = 0;
 
     while let Ok(packet) = capture.next_packet() {
-        count += 1;
-        if count > 10 {
+        if count > 100 {
             break;
         }
         if let Some(ethernet_packet) = EthernetPacket::new(packet.data) {
@@ -30,16 +39,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if let Some(udp_packet) = UdpPacket::new(ipv4_packet.payload()) {
                             // Extract and print the TCP payload
                             let payload = udp_packet.payload();
-                            println!("---");
-                            println!("UDP Payload: {:?}", String::from_utf8_lossy(payload));
+                            if tr_keys.contains(&&payload[..5]) {
+                                tr_vec.push(payload.to_vec());
+                                count += 1;
+                                println!("---");
+                                println!("UDP Payload: {:?}", String::from_utf8_lossy(payload));
+                            }
                         }
                     } else if ipv4_packet.get_next_level_protocol() == IpNextHeaderProtocols::Tcp {
                         // Parse the TCP segment
                         if let Some(tcp_packet) = TcpPacket::new(ipv4_packet.payload()) {
                             // Extract and print the TCP payload
                             let payload = tcp_packet.payload();
-                            println!("---");
-                            println!("TCP Payload: {:?}", String::from_utf8_lossy(payload));
+                            if tr_keys.contains(&&payload[..5]) {
+                                tr_vec.push(payload.to_vec());
+                                count += 1;
+                                println!("---");
+                                println!("TCP Payload: {:?}", String::from_utf8_lossy(payload));
+                            }
+                            
                         }
                     }
                 } else {
@@ -50,5 +68,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    for tr in tr_vec {
+        println!("---");
+        println!("TR: {:?}", String::from_utf8_lossy(&tr));
+    }
     Ok(())
 }

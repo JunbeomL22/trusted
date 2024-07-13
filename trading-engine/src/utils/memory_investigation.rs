@@ -28,7 +28,6 @@ fn print_vtable<T>() {
     } else {
         println!("No VTable (not a trait object)");
     }
-
 }
 
 pub fn print_struct_info<T>(instance: T) {
