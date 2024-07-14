@@ -900,6 +900,7 @@ dependencies = [
  "pnet",
  "serde",
  "serde_json",
+ "statrs",
  "time",
  "trading-engine",
 ]
