@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let local_offset = UtcOffset::from_hms(9, 0, 0)?;
 
-    let tr_keys_str_slice = ["G704F", "G705F"];
+    let tr_keys_str_slice = ["B602F"];//["G704F", "G705F"];
     let tr_keys: Vec<&[u8]> = tr_keys_str_slice.iter().map(|&x| x.as_bytes()).collect();
     let mut tr_vec: Vec<Vec<u8>> = Vec::new(); // to store tr data
     let mut packet_time: Vec<u64> = Vec::new(); // unix_nano // to check statistics of packet time
@@ -116,13 +116,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut sorted_packet_time_diff_u64 = packet_time_diff.iter().map(|&x| x as u64).collect::<Vec<u64>>();
     sorted_packet_time_diff_u64.sort();
-
-    for (i, diff) in sorted_packet_time_diff_u64.iter().enumerate() {
-        println!("sorted_packet_time_diff_u64[{}]: {:?}", i, diff);
-        if diff > &1_000 {
-            break;
-        }
-    }
 
     Ok(())
 }

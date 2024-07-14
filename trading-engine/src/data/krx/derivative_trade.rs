@@ -1,6 +1,6 @@
-use crate::data::trade_quote::TradeQuoteData;
+use crate::data::trade_quote::TradeQuoteSnapshot;
 use crate::types::{
-    base::{QuoteBase, Slice},
+    base::{LevelSnapshot, Slice},
     enums::TradeType,
     isin_code::IsinCode,
     venue::Venue,
@@ -95,7 +95,7 @@ impl Default for IFMSRPD0037 {
     fn default() -> Self {
         IFMSRPD0037 {
             order_converter: OrderConverter::krx_derivative_converter(),
-            timestamp_converter: OrderConverter::krx_timestamp_converter(),
+            timestamp_converter: TimeStampConverter::krx_timestamp_converter(),
             payload_length: 431,
             isin_code_slice: Slice { start: 17, end: 29 },
             timestamp_slice: Slice { start: 35, end: 47 },
@@ -119,20 +119,23 @@ impl Default for IFMSRPD0037 {
 }
 
 impl IFMSRPD0037 {
+    #[inline]
     pub fn get_order_converter(&self) -> &OrderConverter {
         &self.order_converter
     }
 
+    #[inline]
     pub fn get_timestamp_converter(&self) -> &TimeStampConverter {
         &self.timestamp_converter
     }
 
+    #[inline]
     pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Self {
         self.quote_level_cut = quote_level_cut;
         self
     }
 
-    pub fn to_trade_quote_data(&self, payload: &[u8]) -> Result<TradeQuoteData> {
+    pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
         if payload.len() != self.payload_length {
             let err = || {
                 anyhow!(
@@ -192,8 +195,8 @@ impl IFMSRPD0037 {
         };
         //
 
-        let mut ask_quote_data = vec![QuoteBase::default(); self.quote_level_cut];
-        let mut bid_quote_data = vec![QuoteBase::default(); self.quote_level_cut];
+        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
 
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         unsafe {
@@ -322,7 +325,7 @@ impl IFMSRPD0037 {
                     .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
             }
         }
-        Ok(TradeQuoteData {
+        Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
             timestamp,
@@ -335,19 +338,19 @@ impl IFMSRPD0037 {
         })
     }
 
-    pub fn to_trade_quote_data_buffer(
+    pub fn to_trade_quote_snapshot_buffer(
         &self,
         payload: &[u8],
-        data_buffer: &mut TradeQuoteData,
+        data_buffer: &mut TradeQuoteSnapshot,
     ) -> Result<()> {
-        if data_buffer.ask_quote_data.len() != self.quote_level_cut
-            || data_buffer.bid_quote_data.len() != self.quote_level_cut
+        if data_buffer.ask_quote_data.len() < self.quote_level_cut
+            || data_buffer.bid_quote_data.len() < self.quote_level_cut
         {
             let err = || {
                 anyhow!(
                     "ask_quote_data length is not equal to quote_level: {} != {} \n\
                 This method is for low latency. Generality is not the purpose\n\
-                TradeQuoteData buffer {:?}",
+                TradeQuoteSnapshot buffer {:?}",
                     data_buffer.ask_quote_data.len(),
                     self.quote_level,
                     data_buffer
@@ -363,7 +366,7 @@ impl IFMSRPD0037 {
                 message:\n\
                 {:?}",
                     payload.len(),
-                    std::str::from_utf8(payload),
+                    std::str::from_utf8(&payload[..(payload.len()-1)]),
                 )
             };
             return Err(err());
@@ -376,7 +379,7 @@ impl IFMSRPD0037 {
                 message:\n\
                 {:?}",
                     payload[self.payload_length - 1],
-                    std::str::from_utf8(payload),
+                    std::str::from_utf8(&payload[..(payload.len()-1)]),
                 )
             };
             return Err(err());
@@ -667,7 +670,7 @@ impl Default for IFMSRPD0038 {
     fn default() -> Self {
         IFMSRPD0038 {
             order_converter: OrderConverter::krx_stock_converter(),
-            timestamp_converter: OrderConverter::krx_timestamp_converter(),
+            timestamp_converter: TimeStampConverter::krx_timestamp_converter(),
             payload_length: 661,
             isin_code_slice: Slice { start: 17, end: 29 },
             timestamp_slice: Slice { start: 35, end: 47 },
@@ -704,7 +707,7 @@ impl IFMSRPD0038 {
         self
     }
 
-    pub fn to_trade_quote_data(&self, payload: &[u8]) -> Result<TradeQuoteData> {
+    pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
         if payload.len() != self.payload_length {
             let err = || {
                 anyhow!(
@@ -712,7 +715,7 @@ impl IFMSRPD0038 {
                 message:\n\
                 {:?}",
                     payload.len(),
-                    std::str::from_utf8(payload),
+                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
                 )
             };
             return Err(err());
@@ -725,7 +728,7 @@ impl IFMSRPD0038 {
                 message:\n\
                 {:?}",
                     payload[self.payload_length - 1],
-                    std::str::from_utf8(payload),
+                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
                 )
             };
             return Err(err());
@@ -743,18 +746,15 @@ impl IFMSRPD0038 {
         let isin_code =
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(
-                &payload[self.timestamp_slice.start..self.timestamp_slice.end],
-            )
+            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
 
-        let trade_price = converter
-            .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
+        let trade_price = unsafe { 
+            converter.to_book_price_unchecked(&payload[self.trade_price_slice.start..self.trade_price_slice.end])
+        };
 
         let trade_quantity = unsafe {
-            converter.to_book_quantity_unchecked(
-                &payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end],
-            )
+            converter.to_book_quantity_unchecked(&payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end])
         };
 
         let trade_type = match &payload[self.trade_type_slice.start..self.trade_type_slice.end] {
@@ -764,8 +764,8 @@ impl IFMSRPD0038 {
         };
         //
 
-        let mut ask_quote_data = vec![QuoteBase::default(); self.quote_level_cut];
-        let mut bid_quote_data = vec![QuoteBase::default(); self.quote_level_cut];
+        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         unsafe{
             for i in 0..self.quote_level_cut {
@@ -773,9 +773,9 @@ impl IFMSRPD0038 {
                 let st_idx_marker = self.quote_start_index + offset * i;
                 let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
 
-                ask_quote_data[i].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
+                ask_quote_data[i].book_price = converter.to_book_price_unchecked(&payload_clipped[0..pr_ln]);
                 let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[i].book_price = converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
+                bid_quote_data[i].book_price = converter.to_book_price_unchecked(&payload_clipped[pr_ln..idx_marker1]);
 
                 ask_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
                 let idx_marker2 = idx_marker1 + qn_ln;
@@ -788,7 +788,7 @@ impl IFMSRPD0038 {
             }
         }
 
-        Ok(TradeQuoteData {
+        Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
             timestamp,
@@ -801,19 +801,19 @@ impl IFMSRPD0038 {
         })
     }
 
-    pub fn to_trade_quote_data_buffer(
+    pub fn to_trade_quote_snapshot_buffer(
         &self,
         payload: &[u8],
-        data_buffer: &mut TradeQuoteData,
+        data_buffer: &mut TradeQuoteSnapshot,
     ) -> Result<()> {
-        if data_buffer.ask_quote_data.len() != self.quote_level_cut
-            || data_buffer.bid_quote_data.len() != self.quote_level_cut
+        if data_buffer.ask_quote_data.len() < self.quote_level_cut
+            || data_buffer.bid_quote_data.len() < self.quote_level_cut
         {
             let err = || {
                 anyhow!(
                     "ask_quote_data length is not equal to quote_level: {} != {} \n\
                 This method is for low latency. Generality is not the purpose\n\
-                TradeQuoteData buffer {:?}",
+                TradeQuoteSnapshot buffer {:?}",
                     data_buffer.ask_quote_data.len(),
                     self.quote_level,
                     data_buffer
@@ -829,7 +829,7 @@ impl IFMSRPD0038 {
                 message:\n\
                 {:?}",
                     payload.len(),
-                    std::str::from_utf8(payload),
+                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
                 )
             };
             return Err(err());
@@ -918,8 +918,8 @@ mod tests {
         let ifmsrpd0037 = IFMSRPD0037::default();
 
         let trade_quote_data = ifmsrpd0037
-            .to_trade_quote_data(test_data)
-            .expect("failed to convert to TradeQuoteData");
+            .to_trade_quote_snapshot(test_data)
+            .expect("failed to convert to TradeQuoteSnapshot");
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
             trade_quote_data.isin_code.as_str()
@@ -942,7 +942,7 @@ mod tests {
         let ask_order1 = trade_quote_data.ask_quote_data[0];
         assert_eq!(
             ask_order1, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 3,
                 book_price: 212,
                 book_quantity: 10,
@@ -952,7 +952,7 @@ mod tests {
         let bid_order1 = trade_quote_data.bid_quote_data[0];
         assert_eq!(
             bid_order1, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 6,
                 book_price: 211,
                 book_quantity: 10,
@@ -962,7 +962,7 @@ mod tests {
         let ask_order5 = trade_quote_data.ask_quote_data[4];
         assert_eq!(
             ask_order5, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 7,
                 book_price: 216,
                 book_quantity: 18,
@@ -972,7 +972,7 @@ mod tests {
         let bid_order5 = trade_quote_data.bid_quote_data[4];
         assert_eq!(
             bid_order5, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 11,
                 book_price: 207,
                 book_quantity: 62,
@@ -989,10 +989,10 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0037 = IFMSRPD0037::default().with_quote_level_cut(4);
 
-        let mut trade_quote_data = TradeQuoteData::with_quote_level(4);
+        let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
         ifmsrpd0037
-            .to_trade_quote_data_buffer(test_data, &mut trade_quote_data)
-            .expect("failed to convert to TradeQuoteData");
+            .to_trade_quote_snapshot_buffer(test_data, &mut trade_quote_data)
+            .expect("failed to convert to TradeQuoteSnapshot");
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
             trade_quote_data.isin_code.as_str()
@@ -1014,7 +1014,7 @@ mod tests {
         let ask_order1 = trade_quote_data.ask_quote_data[0];
         assert_eq!(
             ask_order1, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 3,
                 book_price: 212,
                 book_quantity: 10,
@@ -1024,7 +1024,7 @@ mod tests {
         let bid_order1 = trade_quote_data.bid_quote_data[0];
         assert_eq!(
             bid_order1, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 6,
                 book_price: 211,
                 book_quantity: 10,
@@ -1034,7 +1034,7 @@ mod tests {
         let ask_order4 = trade_quote_data.ask_quote_data[3];
         assert_eq!(
             ask_order4, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 9,
                 book_price: 215,
                 book_quantity: 38,
@@ -1044,7 +1044,7 @@ mod tests {
         let bid_order4 = trade_quote_data.bid_quote_data[3];
         assert_eq!(
             bid_order4, 
-            QuoteBase {
+            LevelSnapshot {
                 order_count: 13,
                 book_price: 208,
                 book_quantity: 37,
@@ -1062,8 +1062,8 @@ mod tests {
         let ifmsrpd0038 = IFMSRPD0038::default();
 
         let trade_quote_data = ifmsrpd0038
-            .to_trade_quote_data(test_data)
-            .expect("failed to convert to TradeQuoteData");
+            .to_trade_quote_snapshot(test_data)
+            .expect("failed to convert to TradeQuoteSnapshot");
 
         println!(
             "\n* G704F parsing for isin code: {:?}\n",
@@ -1072,7 +1072,107 @@ mod tests {
 
         dbg!(trade_quote_data.clone());
 
-        assert!(true);
+        assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
+        assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
+        assert_eq!(trade_quote_data.trade_price, 66500);
+        assert_eq!(trade_quote_data.trade_quantity, 7);
+        assert_eq!(trade_quote_data.trade_type, Some(TradeType::Buy));
+        let ask_quote = trade_quote_data.effective_ask_data();
+        let bid_quote = trade_quote_data.effective_bid_data();
+
+        assert_eq!(
+            ask_quote[0],
+            LevelSnapshot {
+                order_count: 10,
+                book_price: 66600,
+                book_quantity: 69,
+            },
+        );
+
+        assert_eq!(
+            ask_quote[9],
+            LevelSnapshot {
+                order_count: 11,
+                book_price: 67500,
+                book_quantity: 45,
+            },
+        );
+
+        assert_eq!(
+            bid_quote[9],
+            LevelSnapshot {
+                order_count: 8,
+                book_price: 65500,
+                book_quantity: 40,
+            },
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_ifmsrpd0038_with_buffer() -> Result<()> {
+        let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
+        test_data_vec.push(255);
+        let test_data = test_data_vec.as_slice();
+        let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6);
+
+        let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
+        ifmsrpd0038
+            .to_trade_quote_snapshot_buffer(test_data, &mut trade_quote_data)
+            .expect("failed to convert to TradeQuoteSnapshot");
+
+        println!(
+            "\n* G704F parsing for isin code: {:?}\n",
+            trade_quote_data.isin_code.as_str()
+        );
+
+        dbg!(trade_quote_data.clone());
+
+        assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
+        assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
+        assert_eq!(trade_quote_data.trade_price, 66500);
+        assert_eq!(trade_quote_data.trade_quantity, 7);
+        assert_eq!(trade_quote_data.trade_type, Some(TradeType::Buy));
+        let ask_quote = trade_quote_data.effective_ask_data();
+        let bid_quote = trade_quote_data.effective_bid_data();
+
+        dbg!(trade_quote_data.clone());
+
+        assert_eq!(
+            ask_quote[0],
+            LevelSnapshot {
+                order_count: 10,
+                book_price: 66600,
+                book_quantity: 69,
+            },
+        );
+        
+        assert_eq!(
+            ask_quote[5],
+            LevelSnapshot {
+                order_count: 6,
+                book_price: 67100,
+                book_quantity: 30,
+            },
+        );
+        
+        assert_eq!(
+            bid_quote[0],
+            LevelSnapshot {
+                order_count: 6,
+                book_price: 66400,
+                book_quantity: 68,
+            },
+        );
+
+        assert_eq!(
+            bid_quote[5],
+            LevelSnapshot {
+                order_count: 6,
+                book_price: 65900,
+                book_quantity: 36,
+            },
+        );
         Ok(())
     }
     

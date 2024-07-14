@@ -339,6 +339,13 @@ impl IntegerConverter {
 
     /// # Safety
     /// This function is unsafe because it does not check the input format.
+    /// This function is the input is non-negative integer
+    #[inline(always)]
+    pub unsafe fn to_nonnegative_i64_unchecked(&self, value: &[u8]) -> i64 {
+        self.to_u64_unchecked(value) as i64
+    }
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
     #[inline(always)]
     pub unsafe fn to_u64_unchecked(&self, value: &[u8]) -> u64 {
         parse_under16(value, self.parsing_length) as u64
@@ -417,6 +424,12 @@ impl OrderConverter {
         self.order_count.to_u64(val) as u32
     }
 
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
+    #[inline]
+    pub unsafe fn to_book_price_unchecked(&self, val: &[u8]) -> BookPrice {
+        self.price.to_nonnegative_i64_unchecked(val)
+    }
     /// # Safety
     /// This function is unsafe because it does not check the input format.
     #[inline]

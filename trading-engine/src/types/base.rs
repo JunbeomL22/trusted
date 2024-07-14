@@ -23,34 +23,34 @@ pub struct Slice {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct QuoteBase {
+pub struct LevelSnapshot {
     pub order_count: OrderCount,
     pub book_price: BookPrice,
     pub book_quantity: BookQuantity,
 }
 
-impl PartialEq for QuoteBase {
-    fn eq(&self, other: &QuoteBase) -> bool {
+impl PartialEq for LevelSnapshot {
+    fn eq(&self, other: &LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
         self.order_count == other.order_count
     }
 }
 
-impl PartialEq<&QuoteBase> for QuoteBase {
-    fn eq(&self, other: &&QuoteBase) -> bool {
+impl PartialEq<&LevelSnapshot> for LevelSnapshot {
+    fn eq(&self, other: &&LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
         self.order_count == other.order_count
     }
 }
 
-impl PartialEq<QuoteBase> for &QuoteBase {
-    fn eq(&self, other: &QuoteBase) -> bool {
+impl PartialEq<LevelSnapshot> for &LevelSnapshot {
+    fn eq(&self, other: &LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
         self.order_count == other.order_count
     }
 }
 
-impl Eq for QuoteBase {}
+impl Eq for LevelSnapshot {}

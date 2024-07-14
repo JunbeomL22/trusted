@@ -28,19 +28,19 @@ impl FromU8 for OrderSide {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub enum BookType {
+pub enum DataType {
     L1 = 1,
     #[default]
     L2 = 2,
     L3 = 3,
 }
 
-impl FromU8 for BookType {
+impl FromU8 for DataType {
     fn from_u8(v: u8) -> Result<Self> {
         match v {
-            1 => Ok(BookType::L1),
-            2 => Ok(BookType::L2),
-            3 => Ok(BookType::L3),
+            1 => Ok(DataType::L1),
+            2 => Ok(DataType::L2),
+            3 => Ok(DataType::L3),
             _ => Err(anyhow!("Invalid BookType in from_u8")),
         }
     }

@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
 pub enum Venue {
-    #[default]
     Undefined,
+    #[default]
     KRX,
 }
 

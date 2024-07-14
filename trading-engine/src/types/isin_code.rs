@@ -4,9 +4,15 @@ use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 use std::str::from_utf8_unchecked;
 
-#[derive(Debug, Clone, Eq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Eq, Deserialize, Serialize)]
 pub struct IsinCode {
     isin: [u8; 12],
+}
+
+impl Default for IsinCode {
+    fn default() -> Self {
+        IsinCode { isin: [48; 12] }
+    }
 }
 
 impl PartialEq for IsinCode {
@@ -41,11 +47,6 @@ impl IsinCode {
     }
 
     pub fn new(isin: &[u8]) -> Result<Self> {
-        if !checkers::valid_isin_code_length(isin) {
-            let err = || anyhow!("Invalid ISIN code: invalid length: {:?}", isin);
-            return Err(err());
-        }
-
         if checkers::contains_white_space(isin) {
             let err = || anyhow!("Invalid ISIN code: contains white space: {:?}", isin);
             return Err(err());

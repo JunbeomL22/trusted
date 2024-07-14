@@ -89,7 +89,9 @@ impl OrderConverter {
             order_count,
         }
     }
-    
+}
+
+impl TimeStampConverter {
     pub fn krx_timestamp_converter() -> TimeStampConverter {
         let time_cfg = NumReprCfg {
             digit_length: 12,
