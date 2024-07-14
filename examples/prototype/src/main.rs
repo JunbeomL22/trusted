@@ -6,6 +6,8 @@ use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::tcp::TcpPacket;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
+use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+
 //
 use trading_engine::data::krx::interface_map::KRX_TR_CODE_MAP;
 
@@ -26,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut count = 0;
 
     while let Ok(packet) = capture.next_packet() {
-        if count > 100 {
+        if count > 10 {
             break;
         }
         if let Some(ethernet_packet) = EthernetPacket::new(packet.data) {
@@ -38,6 +40,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // Parse the TCP segment
                         if let Some(udp_packet) = UdpPacket::new(ipv4_packet.payload()) {
                             // Extract and print the TCP payload
+                            let ts = packet.header.ts;
+                            let secs = ts.tv_sec as i64;
+                            let nsecs = ts.tv_usec as u32 * 1000; // Convert microseconds to nanoseconds
+
+                            // Convert to NaiveDateTime and then to DateTime<Utc>
+                            let naive = NaiveDateTime::from_timestamp(secs, nsecs);
+                            let datetime = DateTime::<Utc>::from_utc(naive, Utc);
+
+                            // Print the timestamp and the packet data
+                            println!("Captured a UDP packet at timestamp: {}", datetime);
                             let payload = udp_packet.payload();
                             if tr_keys.contains(&&payload[..5]) {
                                 tr_vec.push(payload.to_vec());
