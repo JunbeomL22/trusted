@@ -18,6 +18,7 @@ use crate::{
 };
 use crate::utils::numeric_converter::{OrderConverter, TimeStampConverter};
 use anyhow::{anyhow, Result};
+
 /// Message Structure:
 /// 파생 우선호가 (우선호가 5단계)
 /// Derivative Best Bid/Ask (5 levels)
@@ -87,9 +88,6 @@ pub struct IFMSRPD0034 {
 impl Default for IFMSRPD0034 {
     fn default() -> Self {
         IFMSRPD0034 {
-            //order_converter: OrderConverter::krx_derivative_converter(),
-            //time_stamp_converter: TimeStampConverter::krx_timestamp_converter(),
-            //
             payload_length: 324,
             //
             isin_code_slice: Slice { start: 17, end: 29 },
@@ -305,9 +303,6 @@ impl IFMSRPD0034 {
 /// |----------------------------------|----------|--------|-------------------|
 #[derive(Debug, Clone)]
 pub struct IFMSRPD0035 {
-    order_converter: OrderConverter,
-    time_stamp_converter: TimeStampConverter,
-    //
     payload_length: usize,
     //
     isin_code_slice: Slice,
@@ -316,6 +311,140 @@ pub struct IFMSRPD0035 {
     quote_level_cut: usize,   // <= self.quote_level, ex) 3 => only 3 levels parsed
     quote_start_index: usize, // 172 in this case
 }
+
+impl Checker for IFMSRPD0035 {
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        "IFMSRPD0035"
+    }
+
+    #[inline]
+    fn get_payload_length(&self) -> usize {
+        self.payload_length
+    }
+
+    #[inline]
+    fn get_quote_level_cut(&self) -> usize {
+        self.quote_level_cut
+    }
+}
+impl Default for IFMSRPD0035 {
+    fn default() -> Self {
+        IFMSRPD0035 {
+            payload_length: 554,
+            //
+            isin_code_slice: Slice { start: 17, end: 29 },
+            timestamp_slice: Slice { start: 35, end: 47 },
+            //
+            quote_level_cut: 10,
+            quote_start_index: 47,
+        }
+    }
+}
+
+impl IFMSRPD0035 {
+    #[inline]
+    #[must_use]
+    pub fn get_order_converter(&self) -> &OrderConverter {
+        &KRX_STOCK_ORDER_CONVERTER
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get_timestamp_converter(&self) -> &TimeStampConverter {
+        &KRX_TIMESTAMP_CONVERTER
+    }
+
+    #[inline]
+    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
+        if quote_level_cut > 10 {
+            let err = || anyhow!("{} can not have more than 10 levels of quote data", self.as_str());
+            return Err(err());
+        }
+        self.quote_level_cut = quote_level_cut;
+        Ok(self)
+    }
+
+    pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
+        self.is_valid_krx_payload(payload)?;
+
+        let converter = self.get_order_converter();
+        let timestamp_converter = self.get_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+        let or_ln = converter.order_count.get_config().total_length;
+
+        let venue = Venue::KRX;
+
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let timestamp = unsafe {
+            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+        };
+        
+        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        parse_unroll!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            ask_quote_data,
+            bid_quote_data,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
+
+        Ok(QuoteSnapshot {
+            venue,
+            isin_code,
+            timestamp,
+            ask_quote_data,
+            bid_quote_data,
+            quote_level_cut: self.quote_level_cut,
+        })
+    }
+
+    pub fn to_quote_snapshot_buffer(&self, payload: &[u8], buffer: &mut QuoteSnapshot) -> Result<()> {
+        self.is_valid_krx_payload(payload)?;
+        self.is_valid_quote_snapshot_buffer(payload, buffer)?;
+
+        let converter = self.get_order_converter();
+        let timestamp_converter = self.get_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+        let or_ln = converter.order_count.get_config().total_length;
+
+        buffer.venue = Venue::KRX;
+
+        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+
+        buffer.timestamp = unsafe {
+            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+        };
+
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+
+        parse_unroll_with_buffer!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            buffer,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
