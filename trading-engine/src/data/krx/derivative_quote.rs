@@ -1,9 +1,20 @@
 use crate::data::quote::QuoteSnapshot;
 use crate::types::{
     base::{LevelSnapshot, Slice},
-    enums::TradeType,
     isin_code::IsinCode,
     venue::Venue,
+};
+use crate::data::{
+    checker::Checker,
+    krx::krx_converter::{
+        KRX_DERIVATIVE_ORDER_CONVERTER,
+        KRX_STOCK_ORDER_CONVERTER,
+        KRX_TIMESTAMP_CONVERTER,
+    },
+};
+use crate::{
+    parse_unroll,
+    parse_unroll_with_buffer,
 };
 use crate::utils::numeric_converter::{OrderConverter, TimeStampConverter};
 use anyhow::{anyhow, Result};
@@ -61,15 +72,14 @@ use anyhow::{anyhow, Result};
 /// |----------------------------------|----------|------|----------|
 #[derive(Debug, Clone)]
 pub struct IFMSRPD0034 {
-    order_converter: OrderConverter,
-    time_stamp_converter: TimeStampConverter,
+    //order_converter: OrderConverter,
+    //time_stamp_converter: TimeStampConverter,
     //
     payload_length: usize,
     //
     isin_code_slice: Slice,
     timestamp_slice: Slice,
     //
-    quote_level: usize,       // 5 given in this case
     quote_level_cut: usize,   // <= self.quote_level, ex) 3 => only 3 levels parsed
     quote_start_index: usize, // 172 in this case
 }
@@ -77,61 +87,65 @@ pub struct IFMSRPD0034 {
 impl Default for IFMSRPD0034 {
     fn default() -> Self {
         IFMSRPD0034 {
-            order_converter: OrderConverter::krx_derivative_converter(),
-            time_stamp_converter: TimeStampConverter::krx_timestamp_converter(),
+            //order_converter: OrderConverter::krx_derivative_converter(),
+            //time_stamp_converter: TimeStampConverter::krx_timestamp_converter(),
             //
             payload_length: 324,
             //
             isin_code_slice: Slice { start: 17, end: 29 },
             timestamp_slice: Slice { start: 35, end: 47 },
             //
-            quote_level: 5,
             quote_level_cut: 5,
             quote_start_index: 47,
         }
     }
 }
 
+impl Checker for IFMSRPD0034 {
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        "IFMSRPD0034"
+    }
+
+    #[inline]
+    fn get_payload_length(&self) -> usize {
+        self.payload_length
+    }
+
+    #[inline]
+    fn get_quote_level_cut(&self) -> usize {
+        self.quote_level_cut
+    }
+}
+
 impl IFMSRPD0034 {
     #[inline]
+    #[must_use]
     pub fn get_order_converter(&self) -> &OrderConverter {
-        &self.order_converter
+        &KRX_DERIVATIVE_ORDER_CONVERTER
     }
 
     #[inline]
-    pub fn get_time_stamp_converter(&self) -> &TimeStampConverter {
-        &self.time_stamp_converter
+    #[must_use]
+    pub fn get_timestamp_converter(&self) -> &TimeStampConverter {
+        &KRX_TIMESTAMP_CONVERTER
     }
 
     #[inline]
-    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Self {
+    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
+        if quote_level_cut > 5 {
+            let err = || anyhow!("{} can not have more than 5 levels of quote data", self.as_str());
+            return Err(err());
+        }
         self.quote_level_cut = quote_level_cut;
-        self
+        Ok(self)
     }
 
     pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
-        if payload.len() != self.payload_length {
-            let err = || anyhow!(
-                "Unmatched payload length for IFMSRPD0034: expected {}, got {}\n\
-                message: {:?}",
-                self.payload_length,
-                payload.len(),
-                std::str::from_utf8(&payload[..(self.payload_length-1)]).unwrap(),
-            );
-            return Err(err());
-        }
+        self.is_valid_krx_payload(payload)?;
 
-        if payload[self.payload_length - 1] != 255 {
-            let err = || anyhow!(
-                "End keyword is not matched for IFMSRPD0034: expected 255\n\
-                message: {:?}",
-                payload,
-            );
-            return Err(err());
-        }
-
-        let converter = &self.order_converter;
-        let timestamp_converter = &self.time_stamp_converter;
+        let converter = self.get_order_converter();
+        let timestamp_converter = self.get_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
@@ -146,30 +160,19 @@ impl IFMSRPD0034 {
         
         let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
         let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
-
-        unsafe {
-            for i in 0..self.quote_level_cut {
-                if i >= self.quote_level {
-                    break;
-                }
-                let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-                let st_idx_marker = self.quote_start_index + offset * i;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[i].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[i].book_price = converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                bid_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-        }
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        parse_unroll!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            ask_quote_data,
+            bid_quote_data,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
 
         Ok(QuoteSnapshot {
             venue,
@@ -182,41 +185,11 @@ impl IFMSRPD0034 {
     }
 
     pub fn to_quote_snapshot_buffer(&self, payload: &[u8], buffer: &mut QuoteSnapshot) -> Result<()> {
-        if buffer.ask_quote_data.len() < self.quote_level_cut || 
-        buffer.bid_quote_data.len() < self.quote_level_cut {
-            let err = || anyhow!(
-                "Buffer is not enough for IFMSRPD0034: expected at least {} levels, got {}\n\
-                message: {:?}",
-                self.quote_level_cut,
-                buffer.ask_quote_data.len(),
-                std::str::from_utf8(&payload[..(self.payload_length-1)]).unwrap(),
-            );
-            return Err(err());
-        }
-        if payload.len() != self.payload_length {
-            let err = || anyhow!(
-                "Unmatched payload length for IFMSRPD0034: expected {}, got {}\n\
-                message: {:?}",
-                self.payload_length,
-                payload.len(),
-                std::str::from_utf8(&payload[..(self.payload_length-1)]).unwrap(),
-            );
-            return Err(err());
-        }
+        self.is_valid_krx_payload(payload)?;
+        self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        if payload[self.payload_length - 1] != 255 {
-            let err = || anyhow!(
-                "End keyword is not matched for IFMSRPD0034: expected 255\n\
-                payload[self.payload_length - 1] = {}\n\
-                message: {:?}",
-                payload[self.payload_length - 1],
-                std::str::from_utf8(&payload[..(self.payload_length-1)]).unwrap(),
-            );
-            return Err(err());
-        }
-
-        let converter = &self.order_converter;
-        let timestamp_converter = &self.time_stamp_converter;
+        let converter = self.get_order_converter();
+        let timestamp_converter = self.get_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
@@ -230,33 +203,119 @@ impl IFMSRPD0034 {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
 
-        unsafe {
-            for i in 0..self.quote_level_cut {
-                if i >= self.quote_level {
-                    break;
-                }
-                let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-                let st_idx_marker = self.quote_start_index + offset * i;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                buffer.ask_quote_data[i].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                buffer.bid_quote_data[i].book_price = converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                buffer.ask_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                buffer.bid_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                buffer.ask_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                buffer.bid_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-        }
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        parse_unroll_with_buffer!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            buffer,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
+       
         Ok(())
     }
 }
 
+
+/// Message Structure:
+/// 파생 우선호가 (우선호가 10단계) 주식 선물 + 옵션
+/// Derivative Best Bid/Ask (10 levels) Stock Futures + Options
+/// +----------------------------------|----------|--------|-------------------+
+/// | ItemName                         | DataType | Length | CummulativeLength |
+/// |----------------------------------|----------|--------|-------------------|
+/// | Data Category                    | String   | 2      | 2                 |
+/// | Information Category             | String   | 3      | 5                 |
+/// | Message sequence number          | Int      | 8      | 13                |
+/// | Board ID                         | String   | 2      | 15                |
+/// | Session ID                       | String   | 2      | 17                |
+/// | ISIN Code                        | String   | 12     | 29                |
+/// | A designated number for an issue | Int      | 6      | 35                |
+/// | Processing Time of Trading System| String   | 12     | 47                |
+/// | Ask Level 1 price                | Double   | 9      | 56                |
+/// | Bid Level 1 price                | Double   | 9      | 65                |
+/// | Ask Level 1 volume               | Int      | 9      | 74                |
+/// | Bid Level 1 volume               | Int      | 9      | 83                |
+/// | Ask Level 1_Order Counts         | Int      | 5      | 88                |
+/// | Bid Level 1_Order Counts         | Int      | 5      | 93                |
+/// | Ask Level 2 price                | Double   | 9      | 102               |
+/// | Bid Level 2 price                | Double   | 9      | 111               |
+/// | Ask Level 2 volume               | Int      | 9      | 120               |
+/// | Bid Level 2 volume               | Int      | 9      | 129               |
+/// | Ask Level 2_Order Counts         | Int      | 5      | 134               |
+/// | Bid Level 2_Order Counts         | Int      | 5      | 139               |
+/// | Ask Level 3 price                | Double   | 9      | 148               |
+/// | Bid Level 3 price                | Double   | 9      | 157               |
+/// | Ask Level 3 volume               | Int      | 9      | 166               |
+/// | Bid Level 3 volume               | Int      | 9      | 175               |
+/// | Ask Level 3_Order Counts         | Int      | 5      | 180               |
+/// | Bid Level 3_Order Counts         | Int      | 5      | 185               |
+/// | Ask Level 4 price                | Double   | 9      | 194               |
+/// | Bid Level 4 price                | Double   | 9      | 203               |
+/// | Ask Level 4 volume               | Int      | 9      | 212               |
+/// | Bid Level 4 volume               | Int      | 9      | 221               |
+/// | Ask Level 4_Order Counts         | Int      | 5      | 226               |
+/// | Bid Level 4_Order Counts         | Int      | 5      | 231               |
+/// | Ask Level 5 price                | Double   | 9      | 240               |
+/// | Bid Level 5 price                | Double   | 9      | 249               |
+/// | Ask Level 5 volume               | Int      | 9      | 258               |
+/// | Bid Level 5 volume               | Int      | 9      | 267               |
+/// | Ask Level 5_Order Counts         | Int      | 5      | 272               |
+/// | Bid Level 5_Order Counts         | Int      | 5      | 277               |
+/// | Ask Level 6 price                | Double   | 9      | 286               |
+/// | Bid Level 6 price                | Double   | 9      | 295               |
+/// | Ask Level 6 volume               | Int      | 9      | 304               |
+/// | Bid Level 6 volume               | Int      | 9      | 313               |
+/// | Ask Level 6_Order Counts         | Int      | 5      | 318               |
+/// | Bid Level 6_Order Counts         | Int      | 5      | 323               |
+/// | Ask Level 7 price                | Double   | 9      | 332               |
+/// | Bid Level 7 price                | Double   | 9      | 341               |
+/// | Ask Level 7 volume               | Int      | 9      | 350               |
+/// | Bid Level 7 volume               | Int      | 9      | 359               |
+/// | Ask Level 7_Order Counts         | Int      | 5      | 364               |
+/// | Bid Level 7_Order Counts         | Int      | 5      | 369               |
+/// | Ask Level 8 price                | Double   | 9      | 378               |
+/// | Bid Level 8 price                | Double   | 9      | 387               |
+/// | Ask Level 8 volume               | Int      | 9      | 396               |
+/// | Bid Level 8 volume               | Int      | 9      | 405               |
+/// | Ask Level 8_Order Counts         | Int      | 5      | 410               |
+/// | Bid Level 8_Order Counts         | Int      | 5      | 415               |
+/// | Ask Level 9 price                | Double   | 9      | 424               |
+/// | Bid Level 9 price                | Double   | 9      | 433               |
+/// | Ask Level 9 volume               | Int      | 9      | 442               |
+/// | Bid Level 9 volume               | Int      | 9      | 451               |
+/// | Ask Level 9_Order Counts         | Int      | 5      | 456               |
+/// | Bid Level 9_Order Counts         | Int      | 5      | 461               |
+/// | Ask Level 10 price               | Double   | 9      | 470               |
+/// | Bid Level 10 price               | Double   | 9      | 479               |
+/// | Ask Level 10 volume              | Int      | 9      | 488               |
+/// | Bid Level 10 volume              | Int      | 9      | 497               |
+/// | Ask Level 10_Order Counts        | Int      | 5      | 502               |
+/// | Bid Level 10_Order Counts        | Int      | 5      | 507               |
+/// | Ask Total Volume                 | Int      | 9      | 516               |
+/// | Bid Total Volume                 | Int      | 9      | 525               |
+/// | Ask Price_Valid Counts           | Int      | 5      | 530               |
+/// | Bid Price_Valid Counts           | Int      | 5      | 535               |
+/// | Estimated Trading Price          | Double   | 9      | 544               |
+/// | Estimated Trading Volume         | Int      | 9      | 553               |
+/// | End Keyword                      | String   | 1      | 554               |
+/// |----------------------------------|----------|--------|-------------------|
+#[derive(Debug, Clone)]
+pub struct IFMSRPD0035 {
+    order_converter: OrderConverter,
+    time_stamp_converter: TimeStampConverter,
+    //
+    payload_length: usize,
+    //
+    isin_code_slice: Slice,
+    timestamp_slice: Slice,
+    //
+    quote_level_cut: usize,   // <= self.quote_level, ex) 3 => only 3 levels parsed
+    quote_start_index: usize, // 172 in this case
+}
 #[cfg(test)]
 mod tests {
     use super::*;

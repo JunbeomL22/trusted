@@ -6,6 +6,13 @@ use crate::types::{
     venue::Venue,
 };
 use crate::utils::numeric_converter::{OrderConverter, TimeStampConverter};
+use crate::{
+    parse_unroll,
+    parse_unroll_with_buffer,
+    parse_unroll_unchecked_price,
+    parse_unroll_unchecked_price_with_buffer,
+};
+use crate::data::checker::Checker;
 use anyhow::{anyhow, Result};
 
 /// Message Structure:
@@ -86,9 +93,25 @@ pub struct IFMSRPD0037 {
     //
     trade_type_slice: Slice,
     //
-    quote_level: usize,       // 5 given in this case
     quote_level_cut: usize,   // <= self.quote_level, ex) 3 => only 3 levels parsed
     quote_start_index: usize, // 172 in this case
+}
+
+impl Checker for IFMSRPD0037 {
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        "IFMSRPD0037"
+    }
+
+    #[inline]
+    fn get_payload_length(&self) -> usize {
+        self.payload_length
+    }
+
+    #[inline]
+    fn get_quote_level_cut(&self) -> usize {
+        self.quote_level_cut
+    }
 }
 
 impl Default for IFMSRPD0037 {
@@ -102,15 +125,12 @@ impl Default for IFMSRPD0037 {
             //
             trade_price_slice: Slice { start: 47, end: 56 },
             trade_quantity_slice: Slice { start: 56, end: 65 },
-            //
-            // near_month_trade_price_slice: Slice { start: 65, end: 74 },
-            //
+           
             trade_type_slice: Slice {
                 start: 153,
                 end: 154,
             },
             //
-            quote_level: 5,
             quote_level_cut: 5,
             quote_start_index: 172,
             //
@@ -130,38 +150,18 @@ impl IFMSRPD0037 {
     }
 
     #[inline]
-    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Self {
+    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
+        if quote_level_cut > 5 {
+            let err = || anyhow!("{} can not have quote_level_cut > 5", self.as_str());
+            return Err(err());
+        }
         self.quote_level_cut = quote_level_cut;
-        self
+        Ok(self)
     }
 
     pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
-        if payload.len() != self.payload_length {
-            let err = || {
-                anyhow!(
-                    "Invalid payload length: {}\n\
-                message:\n\
-                {:?}",
-                    payload.len(),
-                    std::str::from_utf8(payload),
-                )
-            };
-            return Err(err());
-        }
-
-        if payload[self.payload_length - 1] != 255 {
-            let err = || {
-                anyhow!(
-                    "Invalid end keyword: {}\n\
-                message:\n\
-                {:?}",
-                    payload[self.payload_length - 1],
-                    std::str::from_utf8(payload),
-                )
-            };
-            return Err(err());
-        }
-
+        self.is_valid_krx_payload(payload)?;
+        //
         let converter = &self.order_converter;
         let timestamp_converter = &self.timestamp_converter;
 
@@ -199,132 +199,20 @@ impl IFMSRPD0037 {
         let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
 
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
-        unsafe {
-            //for i in 0..(self.quote_level - 3 ) {
-            let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-            if self.quote_level_cut >= 1 {
-                let st_idx_marker = self.quote_start_index;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        parse_unroll!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            ask_quote_data,
+            bid_quote_data,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
 
-                ask_quote_data[0].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[0].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[0].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[0].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[0].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                bid_quote_data[0].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 2 {
-                let st_idx_marker = self.quote_start_index + offset;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[1].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[1].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[1].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[1].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[1].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                bid_quote_data[1].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 3 {
-                let st_idx_marker = self.quote_start_index + offset * 2;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[2].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[2].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[2].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[2].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[2].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                bid_quote_data[2].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 4 {
-                let st_idx_marker = self.quote_start_index + offset * 3;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[3].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[3].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[3].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[3].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[3].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                bid_quote_data[3].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 5 {
-                let st_idx_marker = self.quote_start_index + offset * 4;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[4].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[4].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[4].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[4].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[4].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                bid_quote_data[4].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-        }
         Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
@@ -343,48 +231,9 @@ impl IFMSRPD0037 {
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
     ) -> Result<()> {
-        if data_buffer.ask_quote_data.len() < self.quote_level_cut
-            || data_buffer.bid_quote_data.len() < self.quote_level_cut
-        {
-            let err = || {
-                anyhow!(
-                    "ask_quote_data length is not equal to quote_level: {} != {} \n\
-                This method is for low latency. Generality is not the purpose\n\
-                TradeQuoteSnapshot buffer {:?}",
-                    data_buffer.ask_quote_data.len(),
-                    self.quote_level,
-                    data_buffer
-                )
-            };
-            return Err(err());
-        }
-
-        if payload.len() != self.payload_length {
-            let err = || {
-                anyhow!(
-                    "Invalid payload length: {}\n\
-                message:\n\
-                {:?}",
-                    payload.len(),
-                    std::str::from_utf8(&payload[..(payload.len()-1)]),
-                )
-            };
-            return Err(err());
-        }
-
-        if payload[self.payload_length - 1] != 255 {
-            let err = || {
-                anyhow!(
-                    "Invalid end keyword: {}\n\
-                message:\n\
-                {:?}",
-                    payload[self.payload_length - 1],
-                    std::str::from_utf8(&payload[..(payload.len()-1)]),
-                )
-            };
-            return Err(err());
-        }
-
+        self.is_valid_krx_payload(payload)?;
+        self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
+        
         let converter = &self.order_converter;
         let timestamp_converter = &self.timestamp_converter;
 
@@ -420,6 +269,19 @@ impl IFMSRPD0037 {
         //
 
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        parse_unroll_with_buffer!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            data_buffer,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
+        /*
         unsafe {
             //for i in 0..(self.quote_level - 3 ) {
             let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
@@ -549,9 +411,8 @@ impl IFMSRPD0037 {
                 data_buffer.bid_quote_data[4].order_count = converter
                     .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
             }
-
-            Ok(())
-        }
+            */
+        Ok(())
     }
 }
 
@@ -661,7 +522,6 @@ pub struct IFMSRPD0038 {
     trade_quantity_slice: Slice,
     trade_type_slice: Slice,
     //
-    quote_level: usize,       // 10 given in this case
     quote_level_cut: usize,   // <= self.quote_level, ex) 3 => only 3 levels parsed
     quote_start_index: usize, // 181 in this case
 }
@@ -686,10 +546,26 @@ impl Default for IFMSRPD0038 {
                 end: 154,
             },
             //
-            quote_level: 10,
             quote_level_cut: 10,
             quote_start_index: 172,
         }
+    }
+}
+
+impl Checker for IFMSRPD0038 {
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        "IFMSRPD0038"
+    }
+
+    #[inline]
+    fn get_payload_length(&self) -> usize {
+        self.payload_length
+    }
+
+    #[inline]
+    fn get_quote_level_cut(&self) -> usize {
+        self.quote_level_cut
     }
 }
 
@@ -702,37 +578,17 @@ impl IFMSRPD0038 {
         &self.timestamp_converter
     }
 
-    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Self {
+    pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
+        if quote_level_cut > 10 {
+            let err = || anyhow!("{} can not have quote_level_cut > 10", self.as_str());
+            return Err(err());
+        };
         self.quote_level_cut = quote_level_cut;
-        self
+        Ok(self)
     }
 
     pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
-        if payload.len() != self.payload_length {
-            let err = || {
-                anyhow!(
-                    "Invalid payload length: {}\n\
-                message:\n\
-                {:?}",
-                    payload.len(),
-                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
-                )
-            };
-            return Err(err());
-        }
-
-        if payload[self.payload_length - 1] != 255 {
-            let err = || {
-                anyhow!(
-                    "Invalid end keyword: {}\n\
-                message:\n\
-                {:?}",
-                    payload[self.payload_length - 1],
-                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
-                )
-            };
-            return Err(err());
-        }
+        self.is_valid_krx_payload(payload)?;
 
         let converter = &self.order_converter;
         let timestamp_converter = &self.timestamp_converter;
@@ -767,27 +623,21 @@ impl IFMSRPD0038 {
         let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
         let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
-        unsafe{
-            for i in 0..self.quote_level_cut {
-                let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-                let st_idx_marker = self.quote_start_index + offset * i;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                ask_quote_data[i].book_price = converter.to_book_price_unchecked(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                bid_quote_data[i].book_price = converter.to_book_price_unchecked(&payload_clipped[pr_ln..idx_marker1]);
-
-                ask_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                bid_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                ask_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                bid_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-        }
-
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        
+        parse_unroll_unchecked_price!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            ask_quote_data,
+            bid_quote_data,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
+        
         Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
@@ -806,47 +656,8 @@ impl IFMSRPD0038 {
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
     ) -> Result<()> {
-        if data_buffer.ask_quote_data.len() < self.quote_level_cut
-            || data_buffer.bid_quote_data.len() < self.quote_level_cut
-        {
-            let err = || {
-                anyhow!(
-                    "ask_quote_data length is not equal to quote_level: {} != {} \n\
-                This method is for low latency. Generality is not the purpose\n\
-                TradeQuoteSnapshot buffer {:?}",
-                    data_buffer.ask_quote_data.len(),
-                    self.quote_level,
-                    data_buffer
-                )
-            };
-            return Err(err());
-        }
-
-        if payload.len() != self.payload_length {
-            let err = || {
-                anyhow!(
-                    "Invalid payload length: {}\n\
-                message:\n\
-                {:?}",
-                    payload.len(),
-                    std::str::from_utf8(&payload[..(payload.len()-1)]).unwrap(),
-                )
-            };
-            return Err(err());
-        }
-
-        if payload[self.payload_length - 1] != 255 {
-            let err = || {
-                anyhow!(
-                    "Invalid end keyword: {}\n\
-                message:\n\
-                {:?}",
-                    payload[self.payload_length - 1],
-                    std::str::from_utf8(payload),
-                )
-            };
-            return Err(err());
-        }
+        self.is_valid_krx_payload(payload)?;
+        self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
 
         let converter = &self.order_converter;
         let timestamp_converter = &self.timestamp_converter;
@@ -880,27 +691,19 @@ impl IFMSRPD0038 {
             _ => Some(TradeType::Buy),
         };
 
+        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
-        unsafe {
-            for i in 0..self.quote_level_cut {
-                let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-                let st_idx_marker = self.quote_start_index + offset * i;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[i].book_price = converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[i].book_price = converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[i].book_quantity = converter.to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                data_buffer.bid_quote_data[i].order_count = converter.to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-        }
+        parse_unroll_unchecked_price_with_buffer!(
+            self.quote_level_cut,
+            self.quote_start_index,
+            offset,
+            payload,
+            data_buffer,
+            converter,
+            pr_ln,
+            qn_ln,
+            or_ln
+        );
 
         Ok(())
     }
@@ -987,7 +790,7 @@ mod tests {
         let mut test_data_vec = b"G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380".to_vec();
         test_data_vec.push(255);
         let test_data = test_data_vec.as_slice();
-        let ifmsrpd0037 = IFMSRPD0037::default().with_quote_level_cut(4);
+        let ifmsrpd0037 = IFMSRPD0037::default().with_quote_level_cut(4)?;
 
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
         ifmsrpd0037
@@ -1059,7 +862,7 @@ mod tests {
         let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
         test_data_vec.push(255);
         let test_data = test_data_vec.as_slice();
-        let ifmsrpd0038 = IFMSRPD0038::default();
+        let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
         let trade_quote_data = ifmsrpd0038
             .to_trade_quote_snapshot(test_data)
@@ -1090,20 +893,20 @@ mod tests {
         );
 
         assert_eq!(
-            ask_quote[9],
+            ask_quote[5],
             LevelSnapshot {
-                order_count: 11,
-                book_price: 67500,
-                book_quantity: 45,
+                order_count: 6,
+                book_price: 67100,
+                book_quantity: 30,
             },
         );
 
         assert_eq!(
-            bid_quote[9],
+            bid_quote[5],
             LevelSnapshot {
-                order_count: 8,
-                book_price: 65500,
-                book_quantity: 40,
+                order_count: 6,
+                book_price: 65900,
+                book_quantity: 36,
             },
         );
         Ok(())
@@ -1114,7 +917,7 @@ mod tests {
         let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
         test_data_vec.push(255);
         let test_data = test_data_vec.as_slice();
-        let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6);
+        let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
         ifmsrpd0038

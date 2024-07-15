@@ -355,69 +355,136 @@ fn bench_parsing(c: &mut Criterion) {
 
     bgroup.finish();
 }
+fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
+    let mut group = c.benchmark_group("parse_stock_derivative_trade_quote");
+    let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
+    test_data_vec.push(255);
+    let test_data = test_data_vec.as_slice();
+    let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(4).expect("");
 
-fn bench_parse_g730f(c: &mut Criterion) {
-    let mut bgroup = c.benchmark_group("parse derivative data");
+    let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
+
+    group.bench_function("parse stock derivative (G704F, cut 4)", |b| {
+        b.iter(|| {
+            ifmsrpd0038
+                .to_trade_quote_snapshot(black_box(test_data))
+                .expect("failed to parse")
+        });
+    });
+
+    group.bench_function("parse stock derivative with buffer (G704F, cut 4)", |b| {
+        b.iter(|| {
+            ifmsrpd0038
+                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data)
+                .expect("failed to parse")
+        });
+    });
+
+    let ifmrspd0038 = IFMSRPD0038::default().with_quote_level_cut(6).expect("");
+
+    group.bench_function("parse stock derivative (G704F, cut 6)", |b| {
+        b.iter(|| {
+            ifmrspd0038
+                .to_trade_quote_snapshot(black_box(test_data))
+                .expect("failed to parse")
+        });
+    });
+
+    let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
+    group.bench_function("parse stock derivative with buffer (G704F, cut 6)", |b| {
+        b.iter(|| {
+            ifmrspd0038
+                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data)
+                .expect("failed to parse")
+        });
+    });
+}
+
+fn bench_parse_derivative_trade_quote(c: &mut Criterion) {
+    let mut bgroup = c.benchmark_group("parse derivative trade quote");
 
     bgroup.warm_up_time(std::time::Duration::from_secs(4));
     let mut test_data_vec = b"G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380".to_vec();
     test_data_vec.push(255);
     let test_data = test_data_vec.as_slice();
-    let interface = IFMSRPD0037::default();
-    bgroup.bench_function("parse_g703f", |b| {
+    let interface = IFMSRPD0037::default().with_quote_level_cut(4).expect("");
+    bgroup.bench_function("parse non-stock (g703f, cut 4)", |b| {
+        b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data)));
+    });
+
+    let mut trade_quote_data_buffer = TradeQuoteSnapshot::with_quote_level(4);
+
+    bgroup.bench_function("parse non-stock with buffer (g703f, cut 4)", |b| {
+        b.iter(|| {
+            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer)
+        });
+    });
+
+    let interface = IFMSRPD0037::default().with_quote_level_cut(5).expect("");
+    bgroup.bench_function("parse non-stock (g703f, cut 5)", |b| {
         b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data)));
     });
 
     let mut trade_quote_data_buffer = TradeQuoteSnapshot::with_quote_level(5);
-    bgroup.bench_function("parse_g703f_with_buffer", |b| {
+    bgroup.bench_function("parse non-stock with buffer (g703f, cut 5)", |b| {
         b.iter(|| {
             interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer)
-        });
-    });
-
-    let mut trade_quote_data_buffer = TradeQuoteSnapshot::with_quote_level(4);
-    let interface = IFMSRPD0037::default().with_quote_level_cut(4);
-
-    bgroup.bench_function("parse_g703f_with_buffer (4 quote level cut)", |b| {
-        b.iter(|| {
-            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer)
-        });
-    });
-
-    let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
-    test_data_vec.push(255);
-    let test_data = test_data_vec.as_slice();
-    let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6);
-
-    let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
-
-    bgroup.bench_function("parse_g704f_with_buffer (6 quote level cut)", |b| {
-        b.iter(|| {
-            ifmsrpd0038
-                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data)
-        });
-    });
-
-    let mut test_data_vec = b"B602F        G140KR4106V30004000020104939405656001379.70001379.500000000030000000030000300003001379.80001379.400000000040000000040000400004001379.90001379.300000000070000000050000600005001380.00001379.200000000050000000070000500007001380.10001379.1000000000500000000500005000050000009020000025920031700642000000.00000000000".to_vec();
-    test_data_vec.push(255);
-    let test_data = test_data_vec.as_slice();
-
-    let ifmsrpd0034 = IFMSRPD0034::default().with_quote_level_cut(5);
-
-    let mut quote_data = QuoteSnapshot::with_quote_level(5);
-    bgroup.bench_function("parse_b602f_with_buffer (5 quote level cut)", |b| {
-        b.iter(|| {
-            ifmsrpd0034
-                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data)
         });
     });
 
     bgroup.finish();
 }
 
+fn bench_derivative_quote(c: &mut Criterion) {
+    let mut group = c.benchmark_group("non-stock derivative_quote");
+    let mut test_data_vec = b"B602F        G140KR4106V30004000020104939405656001379.70001379.500000000030000000030000300003001379.80001379.400000000040000000040000400004001379.90001379.300000000070000000050000600005001380.00001379.200000000050000000070000500007001380.10001379.1000000000500000000500005000050000009020000025920031700642000000.00000000000".to_vec();
+    test_data_vec.push(255);
+    let test_data = test_data_vec.as_slice();
+
+    let ifmsrpd0034 = IFMSRPD0034::default().with_quote_level_cut(4).expect("");
+
+    group.bench_function("parse non-stock derivative quote (b602f) (4 cut)", |b| {
+        b.iter(|| {
+            ifmsrpd0034
+                .to_quote_snapshot(black_box(test_data))
+        });
+    });
+
+    let mut quote_data = QuoteSnapshot::with_quote_level(4);    
+    group.bench_function("parse non-stock derivative quote with buffer (b602f) (4 cut)", |b| {
+        b.iter(|| {
+            ifmsrpd0034
+                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data)
+                .expect("failed to parse")
+        });
+    });
+
+    let ifmsrpd0034 = IFMSRPD0034::default().with_quote_level_cut(5).expect("");
+    group.bench_function("parse non-stock derivative quote (b602f) (5 cut)", |b| {
+        b.iter(|| {
+            ifmsrpd0034
+                .to_quote_snapshot(black_box(test_data))
+        });
+    });
+
+    let mut quote_data = QuoteSnapshot::with_quote_level(5);
+    group.bench_function("parse non-stock derivative quote with buffer (b602f) (5 cut)", |b| {
+        b.iter(|| {
+            ifmsrpd0034
+                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data)
+                .expect("failed to parse")
+        });
+    });
+
+    group.finish();
+
+}
+
 criterion_group!(
     benches,
-    bench_parse_g730f,
+    bench_derivative_quote,
+    bench_parse_stock_derivative_trade_quote,
+    bench_parse_derivative_trade_quote,
     //bench_custom_numeric_converter,
     //bench_integer_converter,
     //bench_parsing,

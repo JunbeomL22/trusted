@@ -1,7 +1,10 @@
 use crate::utils::numeric_converter::{
-    IntegerConverter, NumReprCfg, OrderConverter, TimeStampConverter,
+    IntegerConverter, 
+    NumReprCfg, 
+    OrderConverter, 
+    TimeStampConverter,
 };
-
+use once_cell::sync::Lazy;
 
 impl OrderConverter {
     pub fn krx_derivative_converter() -> Self {
@@ -111,3 +114,6 @@ impl TimeStampConverter {
     }
 }
 
+pub static KRX_STOCK_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_stock_converter);
+pub static KRX_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_derivative_converter);
+pub static KRX_TIMESTAMP_CONVERTER: Lazy<TimeStampConverter> = Lazy::new(TimeStampConverter::krx_timestamp_converter);
