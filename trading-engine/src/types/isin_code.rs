@@ -61,6 +61,10 @@ impl IsinCode {
             isin: unsafe { *isin.as_ptr().cast::<[u8; 12]>() },
         })
     }
+
+    pub fn starts_with(&self, prefix: &[u8]) -> bool {
+        self.isin.starts_with(prefix)
+    }
 }
 
 impl PartialEq<&str> for IsinCode {

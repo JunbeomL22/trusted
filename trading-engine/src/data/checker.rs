@@ -12,6 +12,7 @@ pub trait Checker {
     fn as_str(&self) -> &'static str;
     fn get_payload_length(&self) -> usize;
     fn get_quote_level_cut(&self) -> usize;
+    fn get_lp_quote_level_cut(&self) -> usize { unimplemented!(); }
 
     #[inline]
     fn is_valid_krx_payload(&self, payload: &[u8]) -> Result<()> {

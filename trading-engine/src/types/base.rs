@@ -16,24 +16,37 @@ pub type BookQuantity = u64;
 // 건수
 pub type OrderCount = u32;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
     pub start: usize,
     pub end: usize,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct LevelSnapshot {
-    pub order_count: OrderCount,
+    pub order_count: Option<OrderCount>,
     pub book_price: BookPrice,
     pub book_quantity: BookQuantity,
+    pub lp_quantity: Option<BookQuantity>,
+}
+
+impl Default for LevelSnapshot {
+    fn default() -> Self {
+        LevelSnapshot {
+            order_count: None,
+            book_price: 0,
+            book_quantity: 0,
+            lp_quantity: None,
+        }
+    }
 }
 
 impl PartialEq for LevelSnapshot {
     fn eq(&self, other: &LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
-        self.order_count == other.order_count
+        self.order_count == other.order_count && 
+        self.lp_quantity == other.lp_quantity
     }
 }
 
@@ -41,7 +54,8 @@ impl PartialEq<&LevelSnapshot> for LevelSnapshot {
     fn eq(&self, other: &&LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
-        self.order_count == other.order_count
+        self.order_count == other.order_count &&
+        self.lp_quantity == other.lp_quantity
     }
 }
 
@@ -49,7 +63,8 @@ impl PartialEq<LevelSnapshot> for &LevelSnapshot {
     fn eq(&self, other: &LevelSnapshot) -> bool {
         self.book_price == other.book_price && 
         self.book_quantity == other.book_quantity &&
-        self.order_count == other.order_count
+        self.order_count == other.order_count &&
+        self.lp_quantity == other.lp_quantity
     }
 }
 

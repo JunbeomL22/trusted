@@ -4,6 +4,11 @@ use crate::types::{
     isin_code::IsinCode,
     venue::Venue,
 };
+use crate::data::krx::krx_converter::{
+    get_krx_cum_qnt_converter,
+    get_krx_trade_price_converter,
+    get_krx_trade_qnt_converter,
+}
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -18,6 +23,10 @@ pub struct TradeQuoteSnapshot {
     pub ask_quote_data: Vec<LevelSnapshot>,
     pub bid_quote_data: Vec<LevelSnapshot>,
     pub quote_level_cut: usize, // this value indicates how many levels of order data are actually used. This can be less than the length of ask_order_data and bid_order_data
+    //
+    pub all_lp_holdings: Option<BookQuantity>,
+    //
+    pub cumulative_trade_quantity: Option<BookQuantity>,
 }
 
 impl TradeQuoteSnapshot {
@@ -32,6 +41,10 @@ impl TradeQuoteSnapshot {
             ask_quote_data: vec![LevelSnapshot::default(); level],
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,
+            //
+            all_lp_holdings: None,
+            //
+            cumulative_trade_quantity: None,
         }
     }
 

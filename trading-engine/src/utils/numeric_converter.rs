@@ -54,6 +54,13 @@ fn div_rem(dividend: i64, divisor: i64) -> (i64, i64) {
 }
 
 #[inline(always)]
+fn div_rem_u64(u: u64, v: u64) -> (u64, u64) {
+    let quotient = u / v;
+    let remainder = u - (quotient * v);
+    (quotient, remainder)
+}
+
+#[inline(always)]
 pub fn u8_chunk_to_u64_decimal(mut chunk: u64) -> u64 {
     let lower_digits = (chunk & 0x0f000f000f000f00) >> 8;
     let upper_digits = (chunk & 0x000f000f000f000f) * 10;
@@ -354,6 +361,13 @@ impl IntegerConverter {
     /// # Safety
     /// This function is unsafe because it does not check the input format.
     #[inline(always)]
+    pub unsafe fn to_long_u64_unchecked(&self, value: &[u8]) -> u64 {
+        parse_under32(value, self.parsing_length) as u64
+    }
+
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
+    #[inline(always)]
     pub unsafe fn to_u32_unchecked(&self, value: &[u8]) -> u32 {
         parse_under8(value, self.parsing_length) as u32
     }
@@ -376,26 +390,45 @@ impl IntegerConverter {
     }
 
     #[inline(always)]
-    pub fn to_f64_from_i32(&mut self, value: i32) -> f64 {
+    pub fn to_f64_from_u64(&self, value: u64) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
     }
 
     #[inline(always)]
-    pub fn to_f64_from_u32(&mut self, value: u32) -> f64 {
+    pub fn to_f64_from_i32(&self, value: i32) -> f64 {
         value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
     }
 
     #[inline(always)]
-    pub fn normalized_f64_from_i64(&mut self, value: i64) -> f64 {
+    pub fn to_f64_from_u32(&self, value: u32) -> f64 {
+        value as f64 / 10_f64.powi(self.decimal_number_point_length_i32)
+    }
+
+    #[inline(always)]
+    pub fn normalized_f32_from_i64(&self, value: i64) -> f32 {
+        match self.numcfg.float_normalizer {
+            Some(normalizer) => {
+                let added_normalizer = normalizer + self.decimal_number_point_length_i32;
+                let denominator = 10_f32.powi(added_normalizer);
+                let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
+
+                quotient as f32 + (remainder as f32 / denominator)
+            }
+            None => self.to_f64_from_i64(value) as f32,
+        }
+    }
+
+    #[inline(always)]
+    pub fn normalized_f32_from_u64(&self, value: u64) -> f32 {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
                 let added_normalizer = normalizer + self.decimal_number_point_length_i32;
                 let denominator = 10_f64.powi(added_normalizer);
-                let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
+                let (quotient, remainder) = div_rem_u64(value, 10_u64.pow(added_normalizer as u32));
 
-                quotient as f64 + (remainder as f64 / denominator)
+                quotient as f32 + (remainder as f32 / denominator as f32)
             }
-            None => self.to_f64_from_i64(value),
+            None => self.to_f64_from_u64(value) as f32,
         }
     }
 }
@@ -464,9 +497,29 @@ impl TimeStampConverter {
     }
 }
 
-//unsafe impl Sync for OrderConverter {}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CumQntConverter {
+    pub converter: IntegerConverter,
+}
 
-//unsafe impl Sync for TimeStampConverter {}
+impl CumQntConverter {
+    #[inline]
+    pub fn to_cum_qnt(&self, val: &[u8]) -> BookQuantity {
+        self.converter.to_u64(val)
+    }
+
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
+    #[inline]
+    pub unsafe fn to_cum_qnt_unchecked(&self, val: &[u8]) -> BookQuantity {
+        self.converter.to_u64_unchecked(val)
+    }
+
+    #[inline]
+    pub unsafe fn to_long_cum_qnt_unchecked(&self, val: &[u8]) -> BookQuantity {
+        self.converter.to_long_u64_unchecked(val)
+    }
+}
 
 #[cfg(test)]
 mod tests {

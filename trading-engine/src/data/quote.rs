@@ -17,10 +17,7 @@ pub struct QuoteSnapshot {
     pub bid_quote_data: Vec<LevelSnapshot>,
     pub quote_level_cut: usize, // this value indicates how many levels of order data are actually used. This can be less than the length of ask_order_data and bid_order_data
     //
-    pub lp_ask_quote_data: Vec<LevelSnapshot>,
-    pub lp_bid_quote_data: Vec<LevelSnapshot>,
-    pub lp_quote_level_cut: usize,
-    pub lp_holdings: Option<BookQuantity>,
+    pub all_lp_holdings: Option<BookQuantity>,
 }
 
 impl QuoteSnapshot {
@@ -33,10 +30,10 @@ impl QuoteSnapshot {
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,
             //
-            lp_ask_quote_data: vec![],
-            lp_bid_quote_data: vec![],
-            lp_quote_level_cut: 0,
-            lp_holdings: None,
+            all_lp_holdings: None,
+            //
+            order_count_given: false,
+            lp_quantity_given: false,
         }
     }
 
@@ -51,25 +48,6 @@ impl QuoteSnapshot {
     pub fn effective_ask_data(&self) -> &[LevelSnapshot] {
         &self.ask_quote_data[..self.quote_level_cut]
     }
-
-    #[inline]
-    #[must_use]
-    pub fn effective_lp_bid_data(&self) -> &[LevelSnapshot] {
-        &self.lp_bid_quote_data
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn effective_lp_ask_data(&self) -> &[LevelSnapshot] {
-        &self.lp_ask_quote_data
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn effective_lp_holdings(&self) -> Option<BookQuantity> {
-        self.lp_holdings
-    }
-
 }
 
 #[cfg(test)]

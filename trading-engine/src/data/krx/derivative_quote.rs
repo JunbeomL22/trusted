@@ -73,9 +73,6 @@ use anyhow::{anyhow, Result};
 /// |----------------------------------|----------|------|----------|
 #[derive(Debug, Clone)]
 pub struct IFMSRPD0034 {
-    //order_converter: OrderConverter,
-    //time_stamp_converter: TimeStampConverter,
-    //
     payload_length: usize,
     //
     isin_code_slice: Slice,
@@ -119,13 +116,13 @@ impl Checker for IFMSRPD0034 {
 impl IFMSRPD0034 {
     #[inline]
     #[must_use]
-    pub fn get_order_converter(&self) -> &OrderConverter {
+    pub fn get_order_converter(&self) -> &'static OrderConverter {
         &KRX_DERIVATIVE_ORDER_CONVERTER
     }
 
     #[inline]
     #[must_use]
-    pub fn get_timestamp_converter(&self) -> &TimeStampConverter {
+    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
         &KRX_TIMESTAMP_CONVERTER
     }
 
@@ -179,6 +176,7 @@ impl IFMSRPD0034 {
             ask_quote_data,
             bid_quote_data,
             quote_level_cut: self.quote_level_cut,
+            all_lp_holdings: None,
         })
     }
 
@@ -216,6 +214,7 @@ impl IFMSRPD0034 {
        
         Ok(())
     }
+
 }
 
 
@@ -345,13 +344,13 @@ impl Default for IFMSRPD0035 {
 impl IFMSRPD0035 {
     #[inline]
     #[must_use]
-    pub fn get_order_converter(&self) -> &OrderConverter {
+    pub fn get_order_converter(&self) -> &'static OrderConverter {
         &KRX_STOCK_ORDER_CONVERTER
     }
 
     #[inline]
     #[must_use]
-    pub fn get_timestamp_converter(&self) -> &TimeStampConverter {
+    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
         &KRX_TIMESTAMP_CONVERTER
     }
 
@@ -405,6 +404,7 @@ impl IFMSRPD0035 {
             ask_quote_data,
             bid_quote_data,
             quote_level_cut: self.quote_level_cut,
+            all_lp_holdings: None,
         })
     }
 

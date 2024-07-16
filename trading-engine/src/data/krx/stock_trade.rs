@@ -27,7 +27,7 @@
 /// | The Best Bid                           | Double   | 11     | 185    |
 /// | End Keyword                            | String   | 1      | 186    |
 /// +----------------------------------------+----------+--------+--------+
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct IFMSRPD0004 {
 
 }
