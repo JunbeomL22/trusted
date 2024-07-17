@@ -445,7 +445,7 @@ mod tests {
     fn test_get_order_converter() -> Result<()> {
         let payload = b"XX6FXXXXXXX";
         let isin_code = IsinCode::new(b"KR4169V30013")?;
-        let conv = get_krx_derivative_converter(&payload[..5], &isin_code)
+        let conv = get_krx_derivative_converter(&payload[..5], &isin_code);
         let val = conv.to_book_price(b"-1234.123");
 
         assert_eq!(val, -1234123);

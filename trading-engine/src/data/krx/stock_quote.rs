@@ -15,12 +15,10 @@ use crate::{
         },
         checker::Checker,
     },
-    utils::numeric_converter::{
-        OrderConverter,
-        TimeStampConverter,
-    },
-    parse_unroll_unchecked_price,
-    parse_unroll_unchecked_price_with_buffer,
+    parse_unroll_unchecked_price_no_count_no_lp_quantity,
+    parse_unroll_unchecked_price_no_count_no_lp_quantity_with_buffer,
+    parse_unroll_unchecked_price_no_count_with_lp_quantity,
+    parse_unroll_unchecked_price_no_count_with_lp_quantity_with_buffer,
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -154,14 +152,14 @@ impl IFMSRPD0002 {
             timestamp_converter
                 .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
-        
+
         let quote_level_cut = self.quote_level_cut;
         let quote_start_index = self.quote_start_index;
         let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
         let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
         let offset = pr_ln * 2 + qn_ln * 2;
 
-        parse_unroll_unchecked_price!(
+        parse_unroll_unchecked_price_no_count_no_lp_quantity!(
             quote_level_cut,
             quote_start_index,
             offset,
@@ -204,10 +202,11 @@ impl IFMSRPD0002 {
                 .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
 
+
         let offset = pr_ln * 2 + qn_ln * 2;
         let quote_level_cut = self.quote_level_cut;
         let quote_start_index = self.quote_start_index;
-        parse_unroll_unchecked_price_with_buffer!(
+        parse_unroll_unchecked_price_no_count_no_lp_quantity_with_buffer!(
             quote_level_cut,
             quote_start_index,
             offset,
@@ -379,45 +378,7 @@ impl IFMSRPD0003 {
         let offset = pr_ln * 2 + qn_ln * 4;
 
         // price -> quantity -> lp_quantity
-        unsafe {
-            for i in 0..quote_level_cut {
-                if quote_level_cut > i {
-                    let st_idx_marker = quote_start_index + i * offset;
-                    let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                    ask_quote_data[i].book_price = converter
-                        .to_book_price_unchecked(&payload_clipped[0..pr_ln]);
-                    let idx_marker1 = pr_ln + pr_ln;
-                    bid_quote_data[i].book_price =
-                        converter.to_book_price_unchecked(&payload_clipped[pr_ln..idx_marker1]);
-
-                    ask_quote_data[i].book_quantity = converter
-                        .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                    let idx_marker2 = idx_marker1 + qn_ln;
-                    bid_quote_data[i].book_quantity = converter
-                        .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                    let idx_marker3 = idx_marker2 + qn_ln;
-                    ask_quote_data[i].lp_quantity = Some(converter
-                        .to_book_quantity_unchecked(&payload_clipped[idx_marker3..idx_marker3 + qn_ln]));
-
-                    bid_quote_data[i].lp_quantity = Some(converter
-                        .to_book_quantity_unchecked(&payload_clipped[idx_marker3 + qn_ln..idx_marker3 + qn_ln + qn_ln]));
-                }
-            }
-        }
-
-        Ok(QuoteSnapshot {
-            venue,
-            isin_code,
-            timestamp,
-            ask_quote_data,
-            bid_quote_data,
-            quote_level_cut,
-            all_lp_holdings: None,
-        })
-        /*
-        parse_unroll_unchecked_price_with_lp_quantity!(
+        parse_unroll_unchecked_price_no_count_with_lp_quantity!(
             quote_level_cut,
             quote_start_index,
             offset,
@@ -428,7 +389,52 @@ impl IFMSRPD0003 {
             pr_ln,
             qn_ln
         );
-        */
+
+        Ok(QuoteSnapshot {
+            venue,
+            isin_code,
+            timestamp,
+            ask_quote_data,
+            bid_quote_data,
+            quote_level_cut,
+            all_lp_holdings: None,
+        })
+       
+    }
+
+    pub fn to_quote_snapshot_buffer(&self, payload: &[u8], buffer: &mut QuoteSnapshot) -> Result<()> {
+        self.is_valid_krx_payload(payload)?;
+        self.is_valid_quote_snapshot_buffer(payload, buffer)?;
+
+        buffer.venue = Venue::KRX;
+        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+
+        let converter = get_krx_stock_order_converter();
+        let timestamp_converter = get_krx_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+
+        buffer.timestamp = unsafe {
+            timestamp_converter
+                .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+        };
+
+        let offset = pr_ln * 2 + qn_ln * 4;
+        let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
+        parse_unroll_unchecked_price_no_count_with_lp_quantity_with_buffer!(
+            quote_level_cut,
+            quote_start_index,
+            offset,
+            payload,
+            buffer,
+            converter,
+            pr_ln,
+            qn_ln
+        );
+
+        Ok(())
     }
 }
 

@@ -50,7 +50,7 @@ pub static KRX_TR_CODE_MAP: Lazy<FxHashMap<&'static [u8], &'static str>> = Lazy:
     // 증권 체결
     // Securities Trade
     ["A301S", // STK (A)
-    "A302S", "A303S", "A304S" // STK (C)
+    "A302S", "A303S", "A304S", // STK (C)
     "A301Q", // KSQ
     "A301X", // KNX
     ].iter().for_each(|&code| {

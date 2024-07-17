@@ -657,7 +657,7 @@ impl IFMSRPD0038 {
         };
 
         let trade_price = unsafe { 
-            converter.to_book_price_unchecked(&payload[self.trade_price_slice.start..self.trade_price_slice.end])
+            converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end])
         };
 
         let trade_quantity = unsafe {
@@ -671,14 +671,15 @@ impl IFMSRPD0038 {
         };
         //
         let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
         let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
         let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
         
-        parse_unroll_unchecked_price!(
-            self.quote_level_cut,
-            self.quote_start_index,
+        parse_unroll!(
+            quote_level_cut,
+            quote_start_index,
             offset,
             payload,
             ask_quote_data,
@@ -719,12 +720,13 @@ impl IFMSRPD0038 {
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
         let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        dbg!(converter.clone());
         let order_counter = get_krx_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
+        let or_ln = order_counter.order_count.get_config().total_length;
         //
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
             let cum_qnt_converter = get_krx_cum_qnt_converter();
@@ -758,10 +760,12 @@ impl IFMSRPD0038 {
         };
 
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
-        parse_unroll_unchecked_price_with_buffer!(
-            self.quote_level_cut,
-            self.quote_start_index,
+        parse_unroll_with_buffer!(
+            quote_level_cut,
+            quote_start_index,
             offset,
             payload,
             data_buffer,
@@ -856,21 +860,6 @@ impl Checker for IFMSRPD0036 {
 }
 
 impl IFMSRPD0036 {
-    #[inline]
-    pub fn get_order_converter(&self) -> &'static OrderConverter {
-        &KRX_DERIVATIVE_ORDER_CONVERTER
-    }
-
-    #[inline]
-    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
-        &KRX_TIMESTAMP_CONVERTER
-    }
-
-    #[inline]
-    pub fn get_cumulative_trade_quantity_converter(&self) -> &'static CumQntConverter {
-        &KRX_CUM_QNT_CONVERTER
-    }
-
     pub fn with_cum_trd_qnt(mut self, parse_cum_trd_qnt: bool) -> Self {
         self.parse_cum_trd_qnt = parse_cum_trd_qnt;
         self
@@ -887,7 +876,7 @@ impl IFMSRPD0036 {
         let timestamp_converter = get_krx_timestamp_converter();
 
         let cum_trd_qnt = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -1067,7 +1056,7 @@ mod tests {
             trade_quote_data.isin_code.as_str()
         );
         dbg!(trade_quote_data.clone());
-        let converter = ifmsrpd0037.get_order_converter();
+        let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
         assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
@@ -1084,9 +1073,10 @@ mod tests {
         assert_eq!(
             ask_order1, 
             LevelSnapshot {
-                order_count: 3,
+                order_count: Some(3),
                 book_price: 212,
                 book_quantity: 10,
+                lp_quantity: None,
             }
         );
 
@@ -1094,9 +1084,10 @@ mod tests {
         assert_eq!(
             bid_order1, 
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 211,
                 book_quantity: 10,
+                lp_quantity: None,
             },
         );
 
@@ -1104,9 +1095,10 @@ mod tests {
         assert_eq!(
             ask_order4, 
             LevelSnapshot {
-                order_count: 9,
+                order_count: Some(9),
                 book_price: 215,
                 book_quantity: 38,
+                lp_quantity: None,
             },
         );
 
@@ -1114,9 +1106,10 @@ mod tests {
         assert_eq!(
             bid_order4, 
             LevelSnapshot {
-                order_count: 13,
+                order_count: Some(13),
                 book_price: 208,
                 book_quantity: 37,
+                lp_quantity: None,
             },
         );
 
@@ -1152,27 +1145,30 @@ mod tests {
         assert_eq!(
             ask_quote[0],
             LevelSnapshot {
-                order_count: 10,
+                order_count: Some(10),
                 book_price: 66600,
                 book_quantity: 69,
+                lp_quantity: None,
             },
         );
 
         assert_eq!(
             ask_quote[5],
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 67100,
                 book_quantity: 30,
+                lp_quantity: None,
             },
         );
 
         assert_eq!(
             bid_quote[5],
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 65900,
                 book_quantity: 36,
+                lp_quantity: None,
             },
         );
         Ok(())
@@ -1210,36 +1206,40 @@ mod tests {
         assert_eq!(
             ask_quote[0],
             LevelSnapshot {
-                order_count: 10,
+                order_count: Some(10),
                 book_price: 66600,
                 book_quantity: 69,
+                lp_quantity: None,
             },
         );
         
         assert_eq!(
             ask_quote[5],
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 67100,
                 book_quantity: 30,
+                lp_quantity: None,
             },
         );
         
         assert_eq!(
             bid_quote[0],
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 66400,
                 book_quantity: 68,
+                lp_quantity: None,
             },
         );
 
         assert_eq!(
             bid_quote[5],
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 65900,
                 book_quantity: 36,
+                lp_quantity: None,
             },
         );
         Ok(())
