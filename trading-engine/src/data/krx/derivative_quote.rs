@@ -12,7 +12,7 @@ use crate::{
 use crate::data::krx::krx_converter::{
     get_krx_derivative_converter,
     get_krx_timestamp_converter,
-    get_krx_order_counter,
+    get_krx_base_order_counter,
 };
 
 use anyhow::{anyhow, Result};
@@ -129,7 +129,7 @@ impl IFMSRPD0034 {
 
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
         let timestamp_converter = get_krx_timestamp_converter();
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
@@ -178,7 +178,7 @@ impl IFMSRPD0034 {
         buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
         let converter = get_krx_derivative_converter(&payload[..5], &buffer.isin_code);
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
@@ -354,7 +354,7 @@ impl IFMSRPD0035 {
 
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
         let timestamp_converter = get_krx_timestamp_converter();
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
@@ -404,7 +404,7 @@ impl IFMSRPD0035 {
         buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
         let converter = get_krx_derivative_converter(&payload[..5], &buffer.isin_code);
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;

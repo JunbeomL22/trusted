@@ -9,3 +9,4 @@ pub use serde_json;
 pub use utils::timer;
 pub mod communication;
 pub mod instruments;
+pub mod spinqueue;

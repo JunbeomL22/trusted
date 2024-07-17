@@ -6,22 +6,16 @@ use crate::types::{
     isin_code::IsinCode,
     venue::Venue,
 };
-use crate::utils::numeric_converter::{
-    OrderConverter, 
-    TimeStampConverter,
-    CumQntConverter,
-};
+
 use crate::data::krx::krx_converter::{
     get_krx_derivative_converter,
-    get_krx_order_counter,
+    get_krx_base_order_counter,
     get_krx_timestamp_converter,
-    get_krx_cum_qnt_converter,
+    get_krx_base_cum_qnt_converter,
 };
 use crate::{
     parse_unroll,
     parse_unroll_with_buffer,
-    parse_unroll_unchecked_price,
-    parse_unroll_unchecked_price_with_buffer,
 };
 use crate::data::checker::Checker;
 use anyhow::{anyhow, Result};
@@ -175,7 +169,7 @@ impl IFMSRPD0037 {
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
@@ -205,7 +199,7 @@ impl IFMSRPD0037 {
         //
 
         let cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -265,14 +259,14 @@ impl IFMSRPD0037 {
         
         let timestamp_converter = get_krx_timestamp_converter();
         let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
         //
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -320,138 +314,6 @@ impl IFMSRPD0037 {
             or_ln
         );
 
-        /*
-        unsafe {
-            //for i in 0..(self.quote_level - 3 ) {
-            let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
-            if self.quote_level_cut >= 1 {
-                let st_idx_marker = self.quote_start_index;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[0].book_price =
-                    converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[0].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[0].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[0].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[0].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                data_buffer.bid_quote_data[0].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 2 {
-                let st_idx_marker = self.quote_start_index + offset;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[1].book_price =
-                    converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[1].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[1].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[1].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[1].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                data_buffer.bid_quote_data[1].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 3 {
-                let st_idx_marker = self.quote_start_index + offset * 2;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[2].book_price =
-                    converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[2].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[2].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[2].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[2].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                data_buffer.bid_quote_data[2].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 4 {
-                let st_idx_marker = self.quote_start_index + offset * 3;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[3].book_price =
-                    converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[3].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[3].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[3].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[3].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-
-                data_buffer.bid_quote_data[3].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            //
-            //
-            if self.quote_level_cut >= 5 {
-                let st_idx_marker = self.quote_start_index + offset * 4;
-                let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
-
-                data_buffer.ask_quote_data[4].book_price =
-                    converter.to_book_price(&payload_clipped[0..pr_ln]);
-                let idx_marker1 = pr_ln + pr_ln;
-                data_buffer.bid_quote_data[4].book_price =
-                    converter.to_book_price(&payload_clipped[pr_ln..idx_marker1]);
-
-                data_buffer.ask_quote_data[4].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
-                let idx_marker2 = idx_marker1 + qn_ln;
-                data_buffer.bid_quote_data[4].book_quantity = converter
-                    .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
-
-                let idx_marker3 = idx_marker2 + qn_ln;
-                data_buffer.ask_quote_data[4].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker3..idx_marker3 + or_ln]);
-                let idx_marker4 = idx_marker3 + or_ln;
-                data_buffer.bid_quote_data[4].order_count = converter
-                    .to_order_count_unchecked(&payload_clipped[idx_marker4..idx_marker4 + or_ln]);
-            }
-            */
-        
         Ok(())
     }
 }
@@ -636,11 +498,11 @@ impl IFMSRPD0038 {
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -720,8 +582,7 @@ impl IFMSRPD0038 {
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
         let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
-        dbg!(converter.clone());
-        let order_counter = get_krx_order_counter();
+        let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
@@ -729,7 +590,7 @@ impl IFMSRPD0038 {
         let or_ln = order_counter.order_count.get_config().total_length;
         //
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -876,7 +737,7 @@ impl IFMSRPD0036 {
         let timestamp_converter = get_krx_timestamp_converter();
 
         let cum_trd_qnt = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -927,7 +788,7 @@ impl IFMSRPD0036 {
         let timestamp_converter = get_krx_timestamp_converter();
 
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = get_krx_cum_qnt_converter();
+            let cum_qnt_converter = get_krx_base_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]

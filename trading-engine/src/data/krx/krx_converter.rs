@@ -349,64 +349,85 @@ impl YieldConverter {
     }
 }
 
-pub static KRX_STOCK_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_stock_converter);
-pub static KRX_STOCK_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_stock_derivative_converter);
-pub static KRX_GENERAL_COMM_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_general_commodity_derivative_converter);
-pub static KRX_BASE_BOND_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_base_bond_converter);
-pub static KRX_RISK_FREE_DERIVATIVE_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_risk_free_derivative_converter);
-pub static KRX_BASE_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_base_derivative_converter);
-pub static KRX_TIMESTAMP_CONVERTER: Lazy<TimeStampConverter> = Lazy::new(TimeStampConverter::krx_timestamp_converter);
-pub static KRX_BASE_CUM_QNT_CONVERTER: Lazy<CumQntConverter> = Lazy::new(CumQntConverter::krx_base_cum_qnt_converter);
-pub static KRX_BOND_CUM_QNT_CONVERTER: Lazy<CumQntConverter> = Lazy::new(CumQntConverter::krx_bond_cum_qnt_converter);
-pub static KRX_YIELD_CONVERTER: Lazy<YieldConverter> = Lazy::new(YieldConverter::krx_yield_converter);
-pub static KRX_BASE_ORDER_COUNTER: Lazy<OrderCounter> = Lazy::new(OrderCounter::krx_base_order_counter);
-pub static KRX_REPO_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(OrderConverter::krx_repo_converter);
-
 #[inline]
 #[must_use]
 pub fn get_krx_timestamp_converter() -> &'static TimeStampConverter {
+    static KRX_TIMESTAMP_CONVERTER: Lazy<TimeStampConverter> = Lazy::new(
+        TimeStampConverter::krx_timestamp_converter);
     &KRX_TIMESTAMP_CONVERTER
 }
 
 #[inline]
 #[must_use]
-pub fn get_krx_cum_qnt_converter() -> &'static CumQntConverter {
+pub fn get_krx_base_cum_qnt_converter() -> &'static CumQntConverter {
+    static KRX_BASE_CUM_QNT_CONVERTER: Lazy<CumQntConverter> = Lazy::new(
+        CumQntConverter::krx_base_cum_qnt_converter);
     &KRX_BASE_CUM_QNT_CONVERTER
 }
 
 #[inline]
 #[must_use]
+pub fn get_krx_bond_cum_qnt_converter() -> &'static CumQntConverter {
+    static KRX_BOND_CUM_QNT_CONVERTER: Lazy<CumQntConverter> = Lazy::new(
+        CumQntConverter::krx_bond_cum_qnt_converter);
+    &KRX_BOND_CUM_QNT_CONVERTER
+}
+
+#[inline]
+#[must_use]
 pub fn get_krx_stock_order_converter() -> &'static OrderConverter {
+    static KRX_STOCK_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_stock_converter);
     &KRX_STOCK_ORDER_CONVERTER
 }
 
 #[inline]
 #[must_use]
 pub fn get_krx_base_bond_order_converter() -> &'static OrderConverter {
+    static KRX_BASE_BOND_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_base_bond_converter);
     &KRX_BASE_BOND_ORDER_CONVERTER
 }
 
 #[inline]
 #[must_use]
 pub fn get_krx_repo_order_converter() -> &'static OrderConverter {
+    static KRX_REPO_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_repo_converter);
     &KRX_REPO_ORDER_CONVERTER
 }
 
 #[inline]
 #[must_use]
 pub fn get_krx_yield_converter() -> &'static YieldConverter {
+    static KRX_YIELD_CONVERTER: Lazy<YieldConverter> = Lazy::new(
+        YieldConverter::krx_yield_converter);
     &KRX_YIELD_CONVERTER
 }
 
 #[inline]
 #[must_use]
-pub fn get_krx_order_counter() -> &'static OrderCounter {
+pub fn get_krx_base_order_counter() -> &'static OrderCounter {
+    static KRX_BASE_ORDER_COUNTER: Lazy<OrderCounter> = Lazy::new(
+        OrderCounter::krx_base_order_counter);
     &KRX_BASE_ORDER_COUNTER
 }
 
 #[inline]
 #[must_use]
 pub fn get_krx_derivative_converter(payload: &[u8], isin_code: &IsinCode) -> &'static OrderConverter {
+    static KRX_STOCK_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_stock_derivative_converter);
+
+    static KRX_GENERAL_COMM_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_general_commodity_derivative_converter);
+
+    static KRX_RISK_FREE_DERIVATIVE_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_risk_free_derivative_converter);
+        
+    static KRX_BASE_DERIVATIVE_ORDER_CONVERTER: Lazy<OrderConverter> = Lazy::new(
+        OrderConverter::krx_base_derivative_converter);
+
     static TR_STOCK: [&'static [u8]; 2] = [b"04F", b"05F"];
     static TR_COMMODITY: &'static [u8] = b"10F";
     static RISK_FREE_ISIN_HEADER: &'static [u8] = b"KR4169";
@@ -430,7 +451,7 @@ mod tests {
     
     #[test]
     fn test_krx_cum_qnt_converter() -> Result<()> {
-        let converter = &KRX_BASE_CUM_QNT_CONVERTER;
+        let converter = get_krx_base_cum_qnt_converter();
         let raw = b"123456789012";
         let converted = unsafe { converter.to_cum_qnt_unchecked(raw) };
         assert_eq!(converted, 123456789012);

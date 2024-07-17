@@ -46,6 +46,15 @@ harness = false
 name = "vector"
 harness = false
 
+[[bench]]
+name = "atomic"
+harness = false
+
+[[bench]]
+name = "sync"
+harness = false
+
+
 [dependencies]
 anyhow = "1.0"
 criterion = "0.5"
