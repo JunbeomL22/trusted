@@ -32,8 +32,6 @@ impl QuoteSnapshot {
             //
             all_lp_holdings: None,
             //
-            order_count_given: false,
-            lp_quantity_given: false,
         }
     }
 

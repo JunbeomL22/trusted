@@ -9,6 +9,8 @@ pub type OrderId = u64;
 pub type AccountId = LocalStr;
 
 pub type TraderId = LocalStr;
+// 수익률
+pub type BookYield = i64;
 // 가격
 pub type BookPrice = i64;
 // 수량

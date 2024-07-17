@@ -12,10 +12,10 @@ use crate::utils::numeric_converter::{
     CumQntConverter,
 };
 use crate::data::krx::krx_converter::{
-    KRX_CUM_QNT_CONVERTER,
-    KRX_DERIVATIVE_ORDER_CONVERTER,
-    KRX_TIMESTAMP_CONVERTER,
-    KRX_STOCK_ORDER_CONVERTER,
+    get_krx_derivative_converter,
+    get_krx_order_counter,
+    get_krx_timestamp_converter,
+    get_krx_cum_qnt_converter,
 };
 use crate::{
     parse_unroll,
@@ -151,21 +151,6 @@ impl Default for IFMSRPD0037 {
 
 impl IFMSRPD0037 {
     #[inline]
-    pub fn get_order_converter(&self) -> &'static OrderConverter {
-        &KRX_DERIVATIVE_ORDER_CONVERTER
-    }
-
-    #[inline]
-    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
-        &KRX_TIMESTAMP_CONVERTER
-    }
-
-    #[inline]
-    pub fn get_cumulative_trade_quantity_converter(&self) -> &'static CumQntConverter {
-        &KRX_CUM_QNT_CONVERTER
-    }
-
-    #[inline]
     pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
         if quote_level_cut > 5 {
             let err = || anyhow!("{} can not have quote_level_cut > 5", self.as_str());
@@ -184,17 +169,19 @@ impl IFMSRPD0037 {
     pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         //
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
-
-        let pr_ln = converter.price.get_config().total_length;
-        let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
-        //
         let venue = Venue::KRX;
 
         let isin_code =
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+        let order_counter = get_krx_order_counter();
+        let timestamp_converter = get_krx_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+        let or_ln = order_counter.order_count.get_config().total_length;
+        //
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
@@ -217,8 +204,8 @@ impl IFMSRPD0037 {
         };
         //
 
-        let cum_trd_qnt = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+        let cumulative_trade_quantity = if self.parse_cum_trd_qnt {
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -228,8 +215,9 @@ impl IFMSRPD0037 {
             None
         };
 
-        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
-        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let quote_level_cut = self.quote_level_cut;
+        let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
 
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
@@ -241,6 +229,7 @@ impl IFMSRPD0037 {
             ask_quote_data,
             bid_quote_data,
             converter,
+            order_counter,
             pr_ln,
             qn_ln,
             or_ln
@@ -255,14 +244,11 @@ impl IFMSRPD0037 {
             trade_type,
             ask_quote_data,
             bid_quote_data,
-            quote_level_cut: self.quote_level_cut,
+            quote_level_cut,
             //
-            lp_ask_quote_data: None,
-            lp_bid_quote_data: None,
-            lp_quote_level_cut: None,
-            lp_holdings: None,
+            cumulative_trade_quantity,
             //
-            cumulative_trade_quantity: cum_trd_qnt,
+            all_lp_holdings: None,
 
         })
     }
@@ -274,16 +260,19 @@ impl IFMSRPD0037 {
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
+        data_buffer.isin_code =
+            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;        
         
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
+        let timestamp_converter = get_krx_timestamp_converter();
+        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        let order_counter = get_krx_order_counter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
+        let or_ln = order_counter.order_count.get_config().total_length;
         //
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -293,8 +282,6 @@ impl IFMSRPD0037 {
 
         data_buffer.venue = Venue::KRX;
 
-        data_buffer.isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
@@ -327,6 +314,7 @@ impl IFMSRPD0037 {
             payload,
             data_buffer,
             converter,
+            order_counter,
             pr_ln,
             qn_ln,
             or_ln
@@ -626,21 +614,6 @@ impl Checker for IFMSRPD0038 {
 }
 
 impl IFMSRPD0038 {
-    #[inline]
-    pub fn get_order_converter(&self) -> &'static OrderConverter {
-        &KRX_STOCK_ORDER_CONVERTER
-    }
-
-    #[inline]
-    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
-        &KRX_TIMESTAMP_CONVERTER    
-    }
-
-    #[inline]
-    pub fn get_cumulative_trade_quantity_converter(&self) -> &'static CumQntConverter {
-        &KRX_CUM_QNT_CONVERTER
-    }
-
     pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
         if quote_level_cut > 10 {
             let err = || anyhow!("{} can not have quote_level_cut > 10", self.as_str());
@@ -657,12 +630,17 @@ impl IFMSRPD0038 {
 
     pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
+        let venue = Venue::KRX;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
+        let isin_code =
+            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+        let order_counter = get_krx_order_counter();
+        let timestamp_converter = get_krx_timestamp_converter();
 
-        let cum_trd_qnt = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+        let cumulative_trade_quantity = if self.parse_cum_trd_qnt {
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -672,12 +650,8 @@ impl IFMSRPD0038 {
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
+        let or_ln = order_counter.order_count.get_config().total_length;
         //
-        let venue = Venue::KRX;
-
-        let isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
@@ -696,8 +670,9 @@ impl IFMSRPD0038 {
             _ => Some(TradeType::Buy),
         };
         //
-        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
-        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
+        let quote_level_cut = self.quote_level_cut;
+        let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
         // sell_price => buy_price => sell_quantity => buy_quantity => sell_order_count => buy_order_count
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
         
@@ -709,6 +684,7 @@ impl IFMSRPD0038 {
             ask_quote_data,
             bid_quote_data,
             converter,
+            order_counter,
             pr_ln,
             qn_ln,
             or_ln
@@ -723,14 +699,10 @@ impl IFMSRPD0038 {
             trade_type,
             ask_quote_data,
             bid_quote_data,
-            quote_level_cut: self.quote_level_cut,
+            quote_level_cut,
             //
-            lp_ask_quote_data: None,
-            lp_bid_quote_data: None,
-            lp_quote_level_cut: None,
-            lp_holdings: None,
-            //
-            cumulative_trade_quantity: cum_trd_qnt,
+            cumulative_trade_quantity,
+            all_lp_holdings: None,
         })
     }
 
@@ -741,16 +713,21 @@ impl IFMSRPD0038 {
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
+        data_buffer.venue = Venue::KRX;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
+        data_buffer.isin_code =
+            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+
+        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        let order_counter = get_krx_order_counter();
+        let timestamp_converter = get_krx_timestamp_converter();
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = converter.order_count.get_config().total_length;
         //
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -758,10 +735,7 @@ impl IFMSRPD0038 {
             })
         } else { None };
 
-        data_buffer.venue = Venue::KRX;
-
-        data_buffer.isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
@@ -792,6 +766,7 @@ impl IFMSRPD0038 {
             payload,
             data_buffer,
             converter,
+            order_counter,
             pr_ln,
             qn_ln,
             or_ln
@@ -903,9 +878,13 @@ impl IFMSRPD0036 {
 
     pub fn to_trade_data(&self, payload: &[u8]) -> Result<TradeData> {
         self.is_valid_krx_payload(payload)?;
+        let venue = Venue::KRX;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
+        let isin_code =
+            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+        let timestamp_converter = get_krx_timestamp_converter();
 
         let cum_trd_qnt = if self.parse_cum_trd_qnt {
             let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
@@ -916,10 +895,6 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
-        let venue = Venue::KRX;
-
-        let isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
@@ -955,12 +930,15 @@ impl IFMSRPD0036 {
         data_buffer: &mut TradeData,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
+        data_buffer.venue = Venue::KRX;
+        data_buffer.isin_code = IsinCode::new(
+            &payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
+        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        let timestamp_converter = get_krx_timestamp_converter();
 
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
-            let cum_qnt_converter = self.get_cumulative_trade_quantity_converter();
+            let cum_qnt_converter = get_krx_cum_qnt_converter();
             Some(unsafe {
                 cum_qnt_converter.to_cum_qnt_unchecked(
                     &payload[self.cum_trd_qnt_slice.start..self.cum_trd_qnt_slice.end]
@@ -968,10 +946,6 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
-        data_buffer.venue = Venue::KRX;
-
-        data_buffer.isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
@@ -1017,7 +991,7 @@ mod tests {
         );
         dbg!(trade_quote_data.clone());
 
-        let converter = ifmsrpd0037.get_order_converter();
+        let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
         assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
@@ -1034,9 +1008,10 @@ mod tests {
         assert_eq!(
             ask_order1, 
             LevelSnapshot {
-                order_count: 3,
+                order_count: Some(3),
                 book_price: 212,
                 book_quantity: 10,
+                lp_quantity: None,
             }
         );
 
@@ -1044,9 +1019,10 @@ mod tests {
         assert_eq!(
             bid_order1, 
             LevelSnapshot {
-                order_count: 6,
+                order_count: Some(6),
                 book_price: 211,
                 book_quantity: 10,
+                lp_quantity: None,
             },
         );
 
@@ -1054,9 +1030,10 @@ mod tests {
         assert_eq!(
             ask_order5, 
             LevelSnapshot {
-                order_count: 7,
+                order_count: Some(7),
                 book_price: 216,
                 book_quantity: 18,
+                lp_quantity: None,
             },
         );
 
@@ -1064,9 +1041,10 @@ mod tests {
         assert_eq!(
             bid_order5, 
             LevelSnapshot {
-                order_count: 11,
+                order_count: Some(11),
                 book_price: 207,
                 book_quantity: 62,
+                lp_quantity: None,
             },
         );
 

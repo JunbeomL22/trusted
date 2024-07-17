@@ -4,14 +4,7 @@ use crate::types::{
     isin_code::IsinCode,
     venue::Venue,
 };
-use crate::data::{
-    checker::Checker,
-    krx::krx_converter::{
-        KRX_DERIVATIVE_ORDER_CONVERTER,
-        KRX_STOCK_ORDER_CONVERTER,
-        KRX_TIMESTAMP_CONVERTER,
-    },
-};
+use crate::data::checker::Checker;
 use crate::{
     parse_unroll,
     parse_unroll_with_buffer,
@@ -520,6 +513,18 @@ mod tests {
         );
 
         assert!(true);
+        Ok(())
+    }
+    
+    #[test]
+    fn test_parse_ifmsrpd0035() -> Result<()> {
+        unimplemented!("\n\n This test is not implemented yet. \n\n");
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_ifmsrpd0035_with_buffer() -> Result<()> {
+        unimplemented!("\n\n This test is not implemented yet. \n\n");
         Ok(())
     }
 }

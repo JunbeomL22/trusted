@@ -31,3 +31,13 @@
 pub struct IFMSRPD0004 {
 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ifmsrpd0004() {
+        unimplemented!("\n\n This test is not implemented yet. \n\n");
+    }
+}

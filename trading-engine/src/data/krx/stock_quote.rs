@@ -10,8 +10,8 @@ use crate::{
     data::{
         quote::QuoteSnapshot,
         krx::krx_converter::{
-            KRX_STOCK_ORDER_CONVERTER,
-            KRX_TIMESTAMP_CONVERTER,
+            get_krx_stock_order_converter,
+            get_krx_timestamp_converter,
         },
         checker::Checker,
     },
@@ -129,18 +129,6 @@ impl Default for IFMSRPD0002 {
 }
 impl IFMSRPD0002 {
     #[inline]
-    #[must_use]
-    pub fn get_order_converter(&self) -> &'static OrderConverter {
-        &KRX_STOCK_ORDER_CONVERTER
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn get_timestamp_converter(&self) -> &'static TimeStampConverter {
-        &KRX_TIMESTAMP_CONVERTER
-    }
-
-    #[inline]
     pub fn with_quote_level_cut(mut self, quote_level_cut: usize) -> Result<Self> {
         if quote_level_cut > 10 {
             let err = || anyhow!("{} can not have more than 5 levels of quote data", self.as_str());
@@ -153,35 +141,36 @@ impl IFMSRPD0002 {
     pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
-
-        let pr_ln = converter.price.get_config().total_length;
-        let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
-
         let venue = Venue::KRX;
 
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let converter = get_krx_stock_order_converter();
+        let timestamp_converter = get_krx_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+
         let timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+            timestamp_converter
+                .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
         
-        let mut ask_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
-        let mut bid_quote_data = vec![LevelSnapshot::default(); self.quote_level_cut];
-        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
+        let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let offset = pr_ln * 2 + qn_ln * 2;
 
         parse_unroll_unchecked_price!(
-            self.quote_level_cut,
-            self.quote_start_index,
+            quote_level_cut,
+            quote_start_index,
             offset,
             payload,
             ask_quote_data,
             bid_quote_data,
             converter,
             pr_ln,
-            qn_ln,
-            or_ln
+            qn_ln
         );
 
         Ok(QuoteSnapshot {
@@ -190,11 +179,8 @@ impl IFMSRPD0002 {
             timestamp,
             ask_quote_data,
             bid_quote_data,
-            quote_level_cut: self.quote_level_cut,
-            lp_ask_quote_data: None,
-            lp_bid_quote_data: None,
-            lp_quote_level_cut: None,
-            lp_holdings: None,
+            quote_level_cut,
+            all_lp_holdings: None,
         })
     }
 
@@ -203,32 +189,33 @@ impl IFMSRPD0002 {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        let converter = self.get_order_converter();
-        let timestamp_converter = self.get_timestamp_converter();
-
-        let pr_ln = converter.price.get_config().total_length;
-        let qn_ln = converter.quantity.get_config().total_length;
-        let or_ln = converter.order_count.get_config().total_length;
-
         buffer.venue = Venue::KRX;
 
         buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
+        let converter = get_krx_stock_order_converter();
+        let timestamp_converter = get_krx_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+
         buffer.timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+            timestamp_converter
+                .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
 
-        let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
+        let offset = pr_ln * 2 + qn_ln * 2;
+        let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
         parse_unroll_unchecked_price_with_buffer!(
-            self.quote_level_cut,
-            self.quote_start_index,
+            quote_level_cut,
+            quote_start_index,
             offset,
             payload,
             buffer,
             converter,
             pr_ln,
-            qn_ln,
-            or_ln
+            qn_ln
         );
        
         Ok(())
@@ -324,8 +311,6 @@ pub struct IFMSRPD0003 {
     //
     quote_level_cut: usize,
     quote_start_index: usize,
-    //
-    lp_quote_level_cut: usize,
 }
 
 impl Default for IFMSRPD0003 {
@@ -338,8 +323,6 @@ impl Default for IFMSRPD0003 {
             //
             quote_level_cut: 10,
             quote_start_index: 47,
-            //
-            lp_quote_level_cut: 10,
         }
     }
 }
@@ -359,11 +342,6 @@ impl Checker for IFMSRPD0003 {
     fn get_quote_level_cut(&self) -> usize {
         self.quote_level_cut
     }
-
-    #[inline]
-    fn get_lp_quote_level_cut(&self) -> usize {
-        self.lp_quote_level_cut
-    }
 }
 
 impl IFMSRPD0003 {
@@ -377,13 +355,104 @@ impl IFMSRPD0003 {
         Ok(self)
     }
 
-    #[inline]
-    pub fn with_lp_quote_level_cut(mut self, lp_quote_level_cut: usize) -> Result<Self> {
-        if lp_quote_level_cut > 10 {
-            let err = || anyhow!("{} can not have more than 5 levels of lp quote data", self.as_str());
-            return Err(err());
+    pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
+        self.is_valid_krx_payload(payload)?;
+
+        let venue = Venue::KRX;
+
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let converter = get_krx_stock_order_converter();
+        let timestamp_converter = get_krx_timestamp_converter();
+
+        let pr_ln = converter.price.get_config().total_length;
+        let qn_ln = converter.quantity.get_config().total_length;
+
+        let timestamp = unsafe {
+            timestamp_converter
+                .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
+        };
+
+        let quote_level_cut = self.quote_level_cut;
+        let quote_start_index = self.quote_start_index;
+        let mut ask_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let mut bid_quote_data = vec![LevelSnapshot::default(); quote_level_cut];
+        let offset = pr_ln * 2 + qn_ln * 4;
+
+        // price -> quantity -> lp_quantity
+        unsafe {
+            for i in 0..quote_level_cut {
+                if quote_level_cut > i {
+                    let st_idx_marker = quote_start_index + i * offset;
+                    let payload_clipped = &payload[st_idx_marker..st_idx_marker + offset];
+
+                    ask_quote_data[i].book_price = converter
+                        .to_book_price_unchecked(&payload_clipped[0..pr_ln]);
+                    let idx_marker1 = pr_ln + pr_ln;
+                    bid_quote_data[i].book_price =
+                        converter.to_book_price_unchecked(&payload_clipped[pr_ln..idx_marker1]);
+
+                    ask_quote_data[i].book_quantity = converter
+                        .to_book_quantity_unchecked(&payload_clipped[idx_marker1..idx_marker1 + qn_ln]);
+                    let idx_marker2 = idx_marker1 + qn_ln;
+                    bid_quote_data[i].book_quantity = converter
+                        .to_book_quantity_unchecked(&payload_clipped[idx_marker2..idx_marker2 + qn_ln]);
+
+                    let idx_marker3 = idx_marker2 + qn_ln;
+                    ask_quote_data[i].lp_quantity = Some(converter
+                        .to_book_quantity_unchecked(&payload_clipped[idx_marker3..idx_marker3 + qn_ln]));
+
+                    bid_quote_data[i].lp_quantity = Some(converter
+                        .to_book_quantity_unchecked(&payload_clipped[idx_marker3 + qn_ln..idx_marker3 + qn_ln + qn_ln]));
+                }
+            }
         }
-        self.lp_quote_level_cut = lp_quote_level_cut;
-        Ok(self)
+
+        Ok(QuoteSnapshot {
+            venue,
+            isin_code,
+            timestamp,
+            ask_quote_data,
+            bid_quote_data,
+            quote_level_cut,
+            all_lp_holdings: None,
+        })
+        /*
+        parse_unroll_unchecked_price_with_lp_quantity!(
+            quote_level_cut,
+            quote_start_index,
+            offset,
+            payload,
+            ask_quote_data,
+            bid_quote_data,
+            converter,
+            pr_ln,
+            qn_ln
+        );
+        */
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ifmsrpd0002() {
+        unimplemented!("\n\n * This test is not implemented yet. * \n");
+    }
+
+    #[test]
+    fn test_ifmsrpd0002_with_buffer() {
+        unimplemented!("\n\n * This test is not implemented yet. * \n");
+    }
+
+    #[test]
+    fn test_ifmsrpd0003() {
+        unimplemented!("\n\n * This test is not implemented yet. * \n");
+    }
+
+    #[test]
+    fn test_ifmsrpd0003_with_buffer() {
+        unimplemented!("\n\n * This test is not implemented yet. * \n");
     }
 }

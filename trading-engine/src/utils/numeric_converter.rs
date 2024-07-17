@@ -1,4 +1,9 @@
-use crate::types::base::{BookPrice, BookQuantity, OrderCount};
+use crate::types::base::{
+    BookPrice, 
+    BookQuantity, 
+    OrderCount,
+    BookYield,
+};
 use crate::{log_error, log_warn};
 use anyhow::{anyhow, bail, Result};
 use serde::{de::Deserializer, Deserialize, Serialize};
@@ -13,6 +18,7 @@ pub struct NumReprCfg {
     pub digit_length: usize,
     pub decimal_point_length: usize,
     pub is_signed: bool,
+    pub unused_length: usize,
     pub total_length: usize,
     pub float_normalizer: Option<i32>,
     pub drop_decimal_point: bool,
@@ -20,7 +26,7 @@ pub struct NumReprCfg {
 
 impl NumReprCfg {
     pub fn check_validity(&self) -> Result<()> {
-        let mut check_size = self.digit_length + self.decimal_point_length;
+        let mut check_size = self.digit_length + self.decimal_point_length + self.unused_length;
 
         check_size += if self.is_signed { 1 } else { 0 };
 
@@ -177,19 +183,7 @@ pub fn parse_under32_with_floating_point(u: &[u8], length: usize, point_length: 
             } else {
                 10u128.pow((length - 17) as u32)
             };
-            /*
-            dbg!(
-                std::str::from_utf8(upper).unwrap(),
-                std::str::from_utf8(lower).unwrap(),
-                upper_val,
-                lower_val,
-                point_location,
-                length,
-                left_point_length,
-                right_point_length,
-                power_val,
-            );
-             */
+            
             upper_val * power_val as u64 + lower_val
         }
     }
@@ -283,14 +277,10 @@ impl IntegerConverter {
             bail!("IntegerConverter parse by bit operations based only on little endian")
         }
 
-        let mut all_digit_size = numcfg.total_length;
+        let is_sigined_usize = numcfg.is_signed as usize;
+        let mut all_digit_size = numcfg.total_length - numcfg.unused_length - is_sigined_usize;
 
-        let start_index = if numcfg.is_signed {
-            all_digit_size -= 1;
-            1
-        } else {
-            0
-        };
+        let start_index = is_sigined_usize + numcfg.unused_length;
 
         let decimal_point_length = if numcfg.drop_decimal_point {
             all_digit_size -= numcfg.decimal_point_length;
@@ -434,10 +424,29 @@ impl IntegerConverter {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OrderCounter {
+    pub order_count: IntegerConverter,
+}
+
+impl OrderCounter {
+    #[inline]
+    pub fn to_order_count(&self, val: &[u8]) -> OrderCount {
+        assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
+        self.order_count.to_u64(val) as u32
+    }
+
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
+    #[inline]
+    pub unsafe fn to_order_count_unchecked(&self, val: &[u8]) -> OrderCount {
+        self.order_count.to_u32_unchecked(val)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OrderConverter {
     pub price: IntegerConverter,
     pub quantity: IntegerConverter,
-    pub order_count: IntegerConverter,
 }
 
 impl OrderConverter {
@@ -451,23 +460,11 @@ impl OrderConverter {
         self.quantity.to_u64(val)
     }
 
-    #[inline]
-    pub fn to_order_count(&self, val: &[u8]) -> OrderCount {
-        assert!(val.len() <= 10, "OrderCount must be fewer than 10 bytes");
-        self.order_count.to_u64(val) as u32
-    }
-
     /// # Safety
     /// This function is unsafe because it does not check the input format.
     #[inline]
     pub unsafe fn to_book_price_unchecked(&self, val: &[u8]) -> BookPrice {
         self.price.to_nonnegative_i64_unchecked(val)
-    }
-    /// # Safety
-    /// This function is unsafe because it does not check the input format.
-    #[inline]
-    pub unsafe fn to_order_count_unchecked(&self, val: &[u8]) -> OrderCount {
-        self.order_count.to_u32_unchecked(val)
     }
 
     /// # Safety
@@ -494,6 +491,18 @@ impl TimeStampConverter {
     #[inline]
     pub unsafe fn to_timestamp_unchecked(&self, val: &[u8]) -> u64 {
         self.converter.to_u64_unchecked(val)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct YieldConverter {
+    pub converter: IntegerConverter,
+}
+
+impl YieldConverter {
+    #[inline]
+    pub fn to_yield(&self, val: &[u8]) -> BookYield {
+        self.converter.to_i64(val)
     }
 }
 
@@ -605,6 +614,7 @@ mod tests {
             decimal_point_length: 2,
             drop_decimal_point: false,
             is_signed: true,
+            unused_length: 0,
             total_length: 7,
             float_normalizer: None,
         };
@@ -626,6 +636,7 @@ mod tests {
             decimal_point_length: 3,
             drop_decimal_point: false,
             is_signed: true,
+            unused_length: 0,
             total_length: 12,
             float_normalizer: None,
         };
@@ -643,6 +654,7 @@ mod tests {
             decimal_point_length: 0,
             drop_decimal_point: false,
             is_signed: false,
+            unused_length: 0,
             total_length: 11,
             float_normalizer: None,
         };
@@ -658,6 +670,7 @@ mod tests {
             decimal_point_length: 2,
             drop_decimal_point: false,
             is_signed: true,
+            unused_length: 0,
             total_length: 18,
             float_normalizer: None,
         };
@@ -683,6 +696,7 @@ mod tests {
             decimal_point_length: 4,
             drop_decimal_point: true,
             is_signed: true,
+            unused_length: 0,
             total_length: 16,
             float_normalizer: None,
         };

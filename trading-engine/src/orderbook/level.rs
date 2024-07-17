@@ -114,7 +114,6 @@ impl Level {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::base::{BookPrice, BookQuantity, OrderId};
     use crate::types::enums::OrderSide;
     use crate::utils::numeric_converter::{IntegerConverter, NumReprCfg};
 
@@ -125,6 +124,7 @@ mod tests {
             decimal_point_length: 3,
             drop_decimal_point: false,
             is_signed: true,
+            unused_length: 0,
             total_length: 11,
             float_normalizer: None,
         };
