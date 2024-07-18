@@ -3,21 +3,64 @@ use crate::types::{
         LevelSnapshot,
         BookQuantity,
     },
+    enums::TimeStampType,
     isin_code::IsinCode, 
     venue::Venue,
 };
 
-use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+use crate::utils::numeric_converter::{
+    OrderConverter,
+    OrderCounter,
+    CumQntConverter,
+    TimeStampConverter,
+};
+
+use crate::data::krx::krx_converter::{
+    get_krx_base_bond_order_converter,
+    get_krx_base_order_counter,
+    get_krx_timestamp_converter,
+    get_krx_base_cum_qnt_converter,
+};
+
+
+#[derive(Debug, Clone)]
 pub struct QuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
+    //
+    pub timestamp_type: TimeStampType,
     pub timestamp: u64,      // HHMMSSuuuuuu
+    //
     pub ask_quote_data: Vec<LevelSnapshot>,
     pub bid_quote_data: Vec<LevelSnapshot>,
     pub quote_level_cut: usize, // this value indicates how many levels of order data are actually used. This can be less than the length of ask_order_data and bid_order_data
     //
     pub all_lp_holdings: Option<BookQuantity>,
+    //
+    pub order_counter: &'static OrderCounter,
+    pub order_converter: &'static OrderConverter,
+    pub timestamp_converter: &'static TimeStampConverter,
+}
+
+impl Default for QuoteSnapshot {
+    fn default() -> Self {
+        QuoteSnapshot {
+            venue: Venue::default(),
+            isin_code: IsinCode::default(),
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
+            timestamp: 0,
+            ask_quote_data: Vec::new(),
+            bid_quote_data: Vec::new(),
+            quote_level_cut: 0,
+            //
+            all_lp_holdings: None,
+            //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: get_krx_base_bond_order_converter(),
+            timestamp_converter: get_krx_timestamp_converter(),
+        }
+    }
+
 }
 
 impl QuoteSnapshot {
@@ -25,13 +68,18 @@ impl QuoteSnapshot {
         QuoteSnapshot {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
-            timestamp: 0,
+            //
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
+            timestamp: 19700101,
             ask_quote_data: vec![LevelSnapshot::default(); level],
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,
             //
             all_lp_holdings: None,
             //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: get_krx_base_bond_order_converter(),
+            timestamp_converter: get_krx_timestamp_converter(),
         }
     }
 

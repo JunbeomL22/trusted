@@ -51,7 +51,7 @@ name = "atomic"
 harness = false
 
 [[bench]]
-name = "sync"
+name = "update_status"
 harness = false
 
 

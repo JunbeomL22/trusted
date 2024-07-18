@@ -1,18 +1,41 @@
 use crate::types::{
-    base::{BookPrice, BookQuantity, LevelSnapshot},
-    enums::TradeType,
+    base::{
+        BookPrice, 
+        BookQuantity, 
+        LevelSnapshot,
+    },
+    enums::{
+        TradeType,
+        TimeStampType,
+    },
     isin_code::IsinCode,
     venue::Venue,
 };
+use crate::utils::numeric_converter::{
+    OrderConverter,
+    OrderCounter,
+    CumQntConverter,
+    TimeStampConverter,
+};
 
-use serde::{Deserialize, Serialize};
+use crate::data::krx::krx_converter::{
+    get_krx_base_bond_order_converter,
+    get_krx_base_order_counter,
+    get_krx_timestamp_converter,
+    get_krx_base_cum_qnt_converter,
+};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+
+#[derive(Debug, Clone)]
+//Serialize // this struct will not be in database directly. It will be converted to another struct
 pub struct TradeQuoteSnapshot {
     //data_code: LocalStr, // this will be sent to another thread anyway
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
+    //
+    pub timestamp_type: TimeStampType,
     pub timestamp: u64,      // HHMMSSuuuuuu
+    //
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
     pub trade_type: Option<TradeType>,
@@ -23,6 +46,40 @@ pub struct TradeQuoteSnapshot {
     pub cumulative_trade_quantity: Option<BookQuantity>,
     //
     pub all_lp_holdings: Option<BookQuantity>,
+    //
+    pub order_counter: &'static OrderCounter,
+    pub order_converter: &'static OrderConverter,
+    pub timestamp_converter: &'static TimeStampConverter,
+    pub cumulative_qnt_converter: &'static CumQntConverter,
+}
+
+
+
+impl Default for TradeQuoteSnapshot {
+    fn default() -> Self {
+        TradeQuoteSnapshot {
+            venue: Venue::default(),
+            isin_code: IsinCode::default(),
+            //
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
+            timestamp: 09_00_00_000000,
+            trade_price: 0,
+            trade_quantity: 0,
+            trade_type: None,
+            ask_quote_data: Vec::new(),
+            bid_quote_data: Vec::new(),
+            quote_level_cut: 0,
+            //
+            cumulative_trade_quantity: None,
+            //
+            all_lp_holdings: None,
+            //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: get_krx_base_bond_order_converter(),
+            timestamp_converter: get_krx_timestamp_converter(),
+            cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
+        }
+    }
 }
 
 impl TradeQuoteSnapshot {
@@ -30,7 +87,10 @@ impl TradeQuoteSnapshot {
         TradeQuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
-            timestamp: 0,
+            //
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
+            timestamp: 09_00_00_000000,
+            //
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
@@ -41,6 +101,11 @@ impl TradeQuoteSnapshot {
             cumulative_trade_quantity: None,
             //
             all_lp_holdings: None,
+            //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: get_krx_base_bond_order_converter(),
+            timestamp_converter: get_krx_timestamp_converter(),
+            cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         }
     }
 

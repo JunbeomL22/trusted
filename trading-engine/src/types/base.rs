@@ -18,6 +18,12 @@ pub type BookQuantity = u64;
 // 건수
 pub type OrderCount = u32;
 
+pub type Real = f32;
+
+pub type TimeStamp = u64;
+
+pub type TimeSeriesPoint = (TimeStamp, Real);
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
     pub start: usize,

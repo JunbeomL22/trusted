@@ -423,7 +423,7 @@ impl IntegerConverter {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct OrderCounter {
     pub order_count: IntegerConverter,
 }
@@ -443,7 +443,7 @@ impl OrderCounter {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct OrderConverter {
     pub price: IntegerConverter,
     pub quantity: IntegerConverter,
@@ -475,7 +475,7 @@ impl OrderConverter {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TimeStampConverter {
     pub converter: IntegerConverter,
 }

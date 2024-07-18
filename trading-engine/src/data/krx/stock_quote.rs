@@ -6,10 +6,12 @@ use crate::{
         },
         isin_code::IsinCode,
         venue::Venue,
+        enums::TimeStampType,
     },
     data::{
         quote::QuoteSnapshot,
         krx::krx_converter::{
+            get_krx_base_order_counter,
             get_krx_stock_order_converter,
             get_krx_timestamp_converter,
         },
@@ -174,11 +176,16 @@ impl IFMSRPD0002 {
         Ok(QuoteSnapshot {
             venue,
             isin_code,
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             ask_quote_data,
             bid_quote_data,
             quote_level_cut,
             all_lp_holdings: None,
+            //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: converter,
+            timestamp_converter,
         })
     }
 
@@ -194,9 +201,12 @@ impl IFMSRPD0002 {
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
 
+        buffer.timestamp_converter = timestamp_converter;
+        buffer.order_converter = converter;
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
 
+        buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
         buffer.timestamp = unsafe {
             timestamp_converter
                 .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
@@ -393,11 +403,16 @@ impl IFMSRPD0003 {
         Ok(QuoteSnapshot {
             venue,
             isin_code,
+            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             ask_quote_data,
             bid_quote_data,
             quote_level_cut,
             all_lp_holdings: None,
+            //
+            order_counter: get_krx_base_order_counter(),
+            order_converter: converter,
+            timestamp_converter,
         })
        
     }
@@ -412,9 +427,12 @@ impl IFMSRPD0003 {
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
 
+        buffer.timestamp_converter = timestamp_converter;
+        buffer.order_converter = converter;
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
 
+        buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
         buffer.timestamp = unsafe {
             timestamp_converter
                 .to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
