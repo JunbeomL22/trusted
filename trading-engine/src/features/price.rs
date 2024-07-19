@@ -5,16 +5,6 @@ use crate::types::{
 use crate::utils::numeric_converter::OrderConverter;
 use crate::data::krx::krx_converter::get_krx_base_bond_order_converter;
 
-pub enum TimeStepUnit {
-    Tick,
-    Nano,
-    Micro,
-    Milli,
-    Second,
-    Minute,
-    Hour,
-}
-
 #[derive(Debug, Clone)]
 pub struct MetaData {
     pub is_normalised: bool,

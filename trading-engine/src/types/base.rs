@@ -1,5 +1,6 @@
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
+use crate::types::enums::TimeStepUnit;
 
 pub type UnixNano = u64;
 /// if we encounter a venue using non u64 type OrderId, we must change this to enum OrderId.
@@ -20,9 +21,11 @@ pub type OrderCount = u32;
 
 pub type Real = f32;
 
-pub type TimeStamp = u64;
+pub type MilliTimeStamp = u32; // HHMMSSmmm
+pub type MicroTimeStamp = u64; // HHMMSSuuuuuu
 
-pub type TimeSeriesPoint = (TimeStamp, Real);
+pub type MilliTimeSeriesPoint = (MilliTimeStamp, Real);
+pub type MicroTimeSeriesPoint = (MicroTimeStamp, Real);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
@@ -77,3 +80,10 @@ impl PartialEq<LevelSnapshot> for &LevelSnapshot {
 }
 
 impl Eq for LevelSnapshot {}
+
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct TimeInterval {
+    pub interval: u32,
+    pub unit: TimeStepUnit,
+}

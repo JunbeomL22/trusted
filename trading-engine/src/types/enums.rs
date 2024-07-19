@@ -80,6 +80,18 @@ pub enum TimeStampType {
     UnixNano,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+pub enum TimeStepUnit {
+    #[default]
+    Tick,
+    Nano,
+    Micro,
+    Milli,
+    Second,
+    Minute,
+    Hour,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
