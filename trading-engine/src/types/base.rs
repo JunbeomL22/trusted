@@ -1,6 +1,7 @@
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
 use crate::types::enums::TimeStepUnit;
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 pub type UnixNano = u64;
 /// if we encounter a venue using non u64 type OrderId, we must change this to enum OrderId.
@@ -21,11 +22,135 @@ pub type OrderCount = u32;
 
 pub type Real = f32;
 
-pub type MilliTimeStamp = u32; // HHMMSSmmm
-pub type MicroTimeStamp = u64; // HHMMSSuuuuuu
 
-pub type MilliTimeSeriesPoint = (MilliTimeStamp, Real);
-pub type MicroTimeSeriesPoint = (MicroTimeStamp, Real);
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct MicroTimeStamp{
+    // HHMMSSuuuuuu
+    pub stamp: u64,
+}
+
+impl MicroTimeStamp {
+    pub fn new(stamp: u64) -> Self {
+        MicroTimeStamp { stamp }
+    }
+}
+
+impl MicroTimeStamp {
+    #[inline]
+    pub fn as_real(&self) -> Real {
+        self.stamp as Real
+    }
+}
+impl Default for MicroTimeStamp {
+    fn default() -> Self {
+        MicroTimeStamp { stamp: 0 }
+    }
+}
+
+impl AddAssign<MicroTimeStamp> for MicroTimeStamp {
+    fn add_assign(&mut self, other: MicroTimeStamp) {
+        self.stamp += other.stamp;
+    }
+}
+
+impl SubAssign<MicroTimeStamp> for MicroTimeStamp {
+    fn sub_assign(&mut self, other: MicroTimeStamp) {
+        self.stamp -= other.stamp;
+    }
+}
+
+impl Add<MicroTimeStamp> for MicroTimeStamp {
+    type Output = MicroTimeStamp;
+
+    fn add(self, other: MicroTimeStamp) -> MicroTimeStamp {
+        MicroTimeStamp { stamp: self.stamp + other.stamp}
+    }
+}
+
+impl Sub<MicroTimeStamp> for MicroTimeStamp {
+    type Output = MicroTimeStamp;
+
+    fn sub(self, other: MicroTimeStamp) -> MicroTimeStamp {
+        MicroTimeStamp { stamp: self.stamp - other.stamp }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MilliTimeStamp{
+    // HHMMSSmmm
+    pub stamp: u32,
+}
+
+impl MilliTimeStamp {
+    pub fn new(stamp: u32) -> Self {
+        MilliTimeStamp { stamp }
+    }
+}
+ 
+impl MilliTimeStamp {
+    #[inline]
+    pub fn as_real(&self) -> Real {
+        self.stamp as Real
+    }
+}
+
+impl Default for MilliTimeStamp {
+    fn default() -> Self {
+        MilliTimeStamp { stamp: 0 }
+    }
+}
+
+impl AddAssign<MilliTimeStamp> for MilliTimeStamp {
+    fn add_assign(&mut self, other: MilliTimeStamp) {
+        self.stamp += other.stamp;
+    }
+}
+
+impl SubAssign<MilliTimeStamp> for MilliTimeStamp {
+    fn sub_assign(&mut self, other: MilliTimeStamp) {
+        self.stamp -= other.stamp;
+    }
+}
+
+impl Add<MilliTimeStamp> for MilliTimeStamp {
+    type Output = MilliTimeStamp;
+
+    fn add(self, other: MilliTimeStamp) -> MilliTimeStamp {
+        MilliTimeStamp { stamp: self.stamp + other.stamp}
+    }
+}
+
+impl Sub<MilliTimeStamp> for MilliTimeStamp {
+    type Output = MilliTimeStamp;
+
+    fn sub(self, other: MilliTimeStamp) -> MilliTimeStamp {
+        MilliTimeStamp{ 
+            stamp: self.stamp - other.stamp
+        }
+    }
+}
+
+impl MicroTimeStamp {
+    /// cut off the last 3 digits, in other words, quotient of 1000
+    pub fn to_millis(&self) -> MilliTimeStamp {
+        MilliTimeStamp{
+            stamp: (self.stamp / 1000) as u32,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct CoarseTimeSeriesPoint {
+    pub timestamp: MilliTimeStamp, 
+    pub value: Real,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct FineTimeSeriesPoint {
+    pub timestamp: MicroTimeStamp, 
+    pub value: Real,
+
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
@@ -84,6 +209,29 @@ impl Eq for LevelSnapshot {}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimeInterval {
-    pub interval: u32,
     pub unit: TimeStepUnit,
+    pub interval: Real,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::enums::TimeStepUnit;
+
+    #[test]
+    fn test_micro_to_milli() {
+        let micro = MicroTimeStamp{stamp: 123456789};
+        let milli = micro.to_millis();
+        assert_eq!(milli.stamp, 123456);
+    }
+
+    #[test]
+    fn test_time_interval() {
+        let ti = TimeInterval {
+            interval: 1.0,
+            unit: TimeStepUnit::Second,
+        };
+        assert_eq!((ti.interval - 1.0) < Real::EPSILON, true);
+        assert_eq!(ti.unit, TimeStepUnit::Second);
+    }
 }

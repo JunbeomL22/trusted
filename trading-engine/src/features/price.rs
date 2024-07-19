@@ -1,9 +1,6 @@
-use crate::types::{
-    base::TimeSeriesPoint,
-    enums::TimeStampType,
-};
 use crate::utils::numeric_converter::OrderConverter;
 use crate::data::krx::krx_converter::get_krx_base_bond_order_converter;
+use crate::types::enums::TimeStampType;
 
 #[derive(Debug, Clone)]
 pub struct MetaData {
@@ -23,7 +20,8 @@ impl Default for MetaData {
         }
     }
 }
-/// These are keyed by (Venue, IsinCode)
+/*
+/ These are keyed by (Venue, IsinCode)
 #[derive(Debug, Clone)]
 pub struct MidPrice { // 
     pub metadata: MetaData,
@@ -50,3 +48,5 @@ impl MidPrice {
         }
     }
 }
+ */
+//
