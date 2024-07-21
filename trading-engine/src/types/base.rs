@@ -145,6 +145,22 @@ pub struct CoarseTimeSeriesPoint {
     pub value: Real,
 }
 
+impl CoarseTimeSeriesPoint {
+    pub fn from_timestamp(timestamp: MilliTimeStamp) -> Self {
+        CoarseTimeSeriesPoint {
+            timestamp,
+            value: 0.0,
+        }
+    }
+    
+    pub fn null_point() -> Self {
+        CoarseTimeSeriesPoint {
+            timestamp: MilliTimeStamp { stamp: 0 },
+            value: 0.0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct FineTimeSeriesPoint {
     pub timestamp: MicroTimeStamp, 
