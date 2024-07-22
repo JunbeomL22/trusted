@@ -710,4 +710,33 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn mock() {
+        let x: &[u8; 1] = b"8";
+        let x: u8 = unsafe { std::ptr::read_unaligned(x.as_ptr() as *const u8) };
+        let y: u8 = x & 0x0f;
+        assert_eq!(y, 8);
+
+        let x: &[u8; 2] = b"12";
+        let x: u16 = unsafe { std::ptr::read_unaligned(x.as_ptr() as *const u16) };
+        let lower: u16 = (x & 0x0f00) >> 8;
+        let upper: u16 = (x & 0x000f) * 10;
+
+        dbg!(lower, upper);
+
+        let x: &[u8; 4] = b"1234";  
+        let x: u32 = unsafe { std::ptr::read_unaligned(x.as_ptr() as *const u32) };
+
+        let lower: u32 = (x & 0x0f000f00) >> 8;
+        let upper: u32 = (x & 0x000f000f) * 10;
+        let chunk = lower + upper;
+
+        let lower: u32 = (chunk & 0x00ff0000) >> 16;
+        let upper: u32 = (chunk & 0x000000ff) * 100;
+
+        dbg!(lower, upper);
+        
+
+    }
 }

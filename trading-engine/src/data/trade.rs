@@ -2,6 +2,7 @@ use crate::types::{
     base::{
         BookPrice, 
         BookQuantity,
+        Real,
     },
     enums::{
         TradeType,
@@ -81,5 +82,11 @@ impl TradeData {
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
             timestamp_converter: get_krx_timestamp_converter(),
         }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn to_normalized_real(&self) -> f32 {
+        self.order_converter.price.normalized_f32_from_i64(self.trade_price)
     }
 }
