@@ -92,6 +92,16 @@ impl MilliTimeStamp {
     pub fn as_real(&self) -> Real {
         self.stamp as Real
     }
+
+    #[inline]
+    pub fn to_seconds(&self) -> Real {
+        self.stamp as Real / 1000.0
+    }
+
+    #[inline]
+    pub fn to_micros(&self) -> Real {
+        self.stamp as Real * 1000.0
+    }
 }
 
 impl Default for MilliTimeStamp {
@@ -172,6 +182,14 @@ pub struct FineTimeSeriesPoint {
 pub struct Slice {
     pub start: usize,
     pub end: usize,
+}
+
+pub type NormalizedReal = Real;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct Quote {
+    pub price: NormalizedReal,
+    pub quantity: NormalizedReal,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

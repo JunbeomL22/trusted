@@ -277,7 +277,11 @@ impl TimeStampConverter {
         let converter =
             IntegerConverter::new(time_cfg).expect("failed to create time converter");
 
-        TimeStampConverter { converter }
+        let utc_offset_hour = 9;
+        TimeStampConverter { 
+            converter,
+            utc_offset_hour,
+        }
     }
 }
 

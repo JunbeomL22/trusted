@@ -5,6 +5,14 @@ use crate::types::base::{
     BookYield,
 };
 use crate::{log_error, log_warn};
+use crate::types::base::{
+    Real,
+    NormalizedReal,
+    MicroTimeStamp,
+    MilliTimeStamp,
+};
+use crate::utils::timer::time_components_from_unix_nano;
+use crate::types::enums::TimeStampType;
 use anyhow::{anyhow, bail, Result};
 use serde::{de::Deserializer, Deserialize, Serialize};
 use std::ptr::read_unaligned;
@@ -395,30 +403,30 @@ impl IntegerConverter {
     }
 
     #[inline(always)]
-    pub fn normalized_f32_from_i64(&self, value: i64) -> f32 {
+    pub fn normalized_real_from_i64(&self, value: i64) -> NormalizedReal {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
                 let added_normalizer = normalizer + self.decimal_number_point_length_i32;
                 let denominator = 10_f32.powi(added_normalizer);
                 let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
 
-                quotient as f32 + (remainder as f32 / denominator)
+                quotient as Real + (remainder as Real / denominator)
             }
-            None => self.to_f64_from_i64(value) as f32,
+            None => self.to_f64_from_i64(value) as Real
         }
     }
 
     #[inline(always)]
-    pub fn normalized_f32_from_u64(&self, value: u64) -> f32 {
+    pub fn normalized_real_from_u64(&self, value: u64) -> NormalizedReal {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
                 let added_normalizer = normalizer + self.decimal_number_point_length_i32;
                 let denominator = 10_f64.powi(added_normalizer);
                 let (quotient, remainder) = div_rem_u64(value, 10_u64.pow(added_normalizer as u32));
 
-                quotient as f32 + (remainder as f32 / denominator as f32)
+                quotient as Real + (remainder as Real / denominator as Real)
             }
-            None => self.to_f64_from_u64(value) as f32,
+            None => self.to_f64_from_u64(value) as Real,
         }
     }
 }
@@ -478,6 +486,7 @@ impl OrderConverter {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TimeStampConverter {
     pub converter: IntegerConverter,
+    pub utc_offset_hour: u8,
 }
 
 impl TimeStampConverter {
@@ -491,6 +500,25 @@ impl TimeStampConverter {
     #[inline]
     pub unsafe fn to_timestamp_unchecked(&self, val: &[u8]) -> u64 {
         self.converter.to_u64_unchecked(val)
+    }
+
+    pub fn milli_timestamp_from_u64(&self, value: u64, stamp_type: TimeStampType) -> MilliTimeStamp {
+        match stamp_type {
+            TimeStampType::HHMMSSuuuuuu => {
+                MilliTimeStamp { 
+                    stamp: (value / 1000) as u32,
+                }
+            },
+            TimeStampType::UnixNano => {
+                // HHMMSSmmm
+                let (h, m, s, mil) = time_components_from_unix_nano(value);
+                let mut timestamp = (h + self.utc_offset_hour) as u32 * 10_000_000;
+                timestamp += m as u32 * 100_000;
+                timestamp += s as u32 * 1_000;
+                timestamp += mil as u32;
+                MilliTimeStamp { stamp: timestamp }
+            }
+        }
     }
 }
 
@@ -533,6 +561,16 @@ impl CumQntConverter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::krx::krx_converter::get_krx_timestamp_converter;
+
+    #[test]
+    fn test_micro_to_milli() {
+        let timestamp_converter = get_krx_timestamp_converter();
+        let timestamp_u64: u64 = 12_30_20_000_111; // HHMMSSuuuuuu
+        let stamp_type = TimeStampType::HHMMSSuuuuuu;
+        let timestamp = timestamp_converter.milli_timestamp_from_u64(timestamp_u64, stamp_type);
+        assert_eq!(timestamp.stamp, 12_30_20_000);
+    }
     #[test]
     fn test_chars_parser() {
         let s = b"1";

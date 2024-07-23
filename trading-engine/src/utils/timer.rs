@@ -54,6 +54,20 @@ pub fn get_unix_nano() -> u64 {
         + *UNIVERSIAL_SYSTEMTIME_ANCHOR
 }
 
+pub fn time_components_from_unix_nano(unix_nano: u64) -> (u8, u8, u8, u16) {
+    let total_seconds = unix_nano / 1_000_000_000;
+    let nanos = unix_nano % 1_000_000_000;
+    
+    let seconds_of_day = total_seconds % 86400;
+    
+    let hours = (seconds_of_day / 3600) as u8;
+    let minutes = ((seconds_of_day % 3600) / 60) as u8;
+    let seconds = (seconds_of_day % 60) as u8;
+    let millis = (nanos / 1_000_000) as u16;
+    
+    (hours, minutes, seconds, millis)
+}
+
 pub fn convert_unix_nano_to_datetime_format(unix_nano: u64, utc_offset_hour: i32) -> String {
     const NANOS_IN_SEC: u64 = 1_000_000_000;
     const NANOS_IN_MIN: u64 = 60 * NANOS_IN_SEC;
