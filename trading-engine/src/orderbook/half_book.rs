@@ -97,7 +97,27 @@ impl HalfBook {
 
     #[inline]
     pub fn change_price(&mut self, order_id: OrderId, new_price: BookPrice) -> Option<()> {
-        /* fill up */
+        if let Some(price) = self.cache.get(&order_id) {
+            if let Some(level) = self.levels.get_mut(&price) {
+                if let Some(order) = level.cancel_order(order_id) {
+                    self.cache.insert(order_id, new_price);
+
+                    self.levels.entry(new_price).or_insert(
+                        Level::initialize(new_price)
+                    ).orders.push_back((order.0, order.1));
+                    return Some(())
+                }
+            }
+            crate::log_warn!(
+                LogTopic::OrderNotFound, 
+                message = format!(
+                    "OrderId is in HalfBook.cache but not in the levels.\n\
+                    OrderId will be bound by bruteforce method\n\
+                    id = {}, price = {}", order_id, new_price)
+            );
+
+            // brute force fiding the order, if still not in the levels, then it is not in the book, error_log will be printed
+        }
 
         let msg = format!("Order not found in ChangePrice id = {}, price = {}", order_id, new_price);
         crate::log_warn!(LogTopic::OrderNotFound, message = msg);

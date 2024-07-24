@@ -1,5 +1,54 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
+fn bench_log_exp(c: &mut Criterion) {
+    let mut group = c.benchmark_group("10 log_exp");
+    let vec_f32: Vec<f32> = (1..=100).map(|x| x as f32).collect();
+    let vec_f64: Vec<f64> = (1..=100).map(|x| x as f64).collect();
+
+    group.bench_function("log f32", |b| {
+        b.iter(|| {
+            let mut sum = 0.0;
+            for i in vec_f32.iter() {
+                sum += black_box(i.ln());
+            }
+            sum
+        })
+    });
+
+    group.bench_function("exp f32", |b| {
+        b.iter(|| {
+            let mut sum = 0.0;
+            for i in vec_f32.iter() {
+                sum += black_box(i.exp());
+            }
+            sum
+        })
+    });
+
+    group.bench_function("log f64", |b| {
+        b.iter(|| {
+            let mut sum = 0.0;
+            for i in vec_f64.iter() {
+                sum += black_box(i.ln());
+            }
+            sum
+        })
+    });
+
+    group.bench_function("exp f64", |b| {
+        b.iter(|| {
+            let mut sum = 0.0;
+            for i in vec_f64.iter() {
+                sum += black_box(i.exp());
+            }
+            sum
+        })
+    });
+    
+
+    group.finish();
+}
+
 fn bench_remainder(c: &mut Criterion) {
     let mut group = c.benchmark_group("100 remainder");
     let vec_i32: Vec<i32> = (1..=100).collect();
@@ -286,7 +335,8 @@ fn bench_division(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_remainder,
+    bench_log_exp,
+    //bench_remainder,
     //bench_addition,
     //bench_multiply, bench_division,
 );
