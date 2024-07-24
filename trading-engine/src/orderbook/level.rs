@@ -1,16 +1,15 @@
 use crate::data::book_order::BookOrder;
-use crate::types::base::{BookPrice, OrderId};
-use crate::utils::numeric_converter::IntegerConverter;
+use crate::types::base::{BookPrice, OrderId, BookQuantity};
+use crate::types::enums::OrderSide;
 //
 use anyhow::{anyhow, Result};
-use std::collections::BTreeMap;
+use std::collections::VecDeque;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Level {
     pub book_price: BookPrice,
-    pub orders: BTreeMap<OrderId, BookOrder>,
-    arraival_order: Vec<OrderId>,
+    pub orders: VecDeque<(OrderId, BookQuantity)>,
 }
 
 impl Level {
@@ -19,21 +18,18 @@ impl Level {
     pub fn initialize(book_price: BookPrice) -> Self {
         Level {
             book_price,
-            orders: BTreeMap::new(),
-            arraival_order: Vec::new(), // *optimizable* assign with capacityk
+            orders: VecDeque::default(),
         }
     }
 
     #[must_use]
     #[inline]
     pub fn initialize_with_order(order: BookOrder) -> Self {
-        let mut orders = BTreeMap::new();
-        let order_clone = order.clone();
-        orders.insert(order.order_id, order);
+        let mut orders = VecDeque::default();
+        orders.push_back((order.order_id, order.quantity));
         Level {
-            book_price: order_clone.price,
+            book_price: order.price,
             orders,
-            arraival_order: vec![order_clone.order_id],
         }
     }
 
@@ -50,45 +46,39 @@ impl Level {
             };
             Err(lazy_error())
         } else {
-            self.arraival_order.push(order.order_id);
-            self.orders.insert(order.order_id, order);
+            self.orders.push_back((order.order_id, order.quantity));
             Ok(())
         }
     }
 
     #[inline]
-    pub fn remove_order(&mut self, order_id: OrderId) {
-        self.orders.remove(&order_id);
-        self.arraival_order.retain(|&x| x != order_id);
+    pub fn cancel_order(&mut self, order_id: OrderId) -> Option<(OrderId, BookQuantity)> {
+        if let Some(index) = self.orders.iter().position(|&(k, _)| k == order_id) {
+            self.orders.remove(index)
+        } else {
+            None
+        }
     }
 
     #[must_use]
     #[inline]
-    pub fn get_order(&self, order_id: OrderId) -> Option<&BookOrder> {
-        self.orders.get(&order_id)
+    pub fn get_order(&self, order_id: OrderId, order_side: OrderSide) -> Option<BookOrder> {
+        self.orders
+            .iter()
+            .find(|(k, _)| *k == order_id)
+            .map(|(k, v)| BookOrder {
+                order_id: *k,
+                price: self.book_price,
+                quantity: *v,
+                order_side,
+            })
     }
 
     #[must_use]
     #[inline]
-    pub fn price(&self, converter: &mut IntegerConverter) -> f64 {
-        converter.to_f64_from_i64(self.book_price)
+    pub fn is_empty(&self) -> bool {
+        self.orders.is_empty()
     }
-    /*
-    pub fn book_quanity_sum(&self) -> u64 {
-        warn!("book_quanity_sum is deprecated. Use quantity_sum instead.");
-        self.orders
-            .values()
-            .map(|order| order.quantity)
-            .sum()
-    }
-
-    pub fn quantity_sum(&self, prec_helper: PrecisionHelper) -> f64 {
-        self.orders
-            .values()
-            .map(|order| prec_helper.quantity_u64_to_f64(order.quantity))
-            .sum()
-    }
-     */
 
     #[must_use]
     #[inline]
@@ -96,18 +86,41 @@ impl Level {
         self.orders.len()
     }
 
-    #[must_use]
-    pub fn get_orders_in_arrival_order(&self) -> Vec<&BookOrder> {
-        self.arraival_order
-            .iter()
-            .filter_map(|&order_id| self.orders.get(&order_id))
-            .collect()
+    #[inline]
+    pub fn clear(&mut self) {
+        self.orders.clear();
     }
 
-    #[must_use]
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.orders.is_empty()
+    /// Returns the remaining quantity after trading
+    pub fn trade(&mut self, quantity: BookQuantity) -> BookQuantity {
+        let mut remaining = quantity;
+        if self.orders.is_empty() {
+            return remaining;
+        }
+
+        while remaining > 0 {
+            if let Some((_, q)) = self.orders.front_mut() {
+                if *q > remaining {
+                    *q -= remaining;
+                    remaining = 0;
+                } else {
+                    remaining -= *q;
+                    self.orders.pop_front();
+                }
+            } else {
+                break;
+            }
+        }
+        remaining
+    }
+
+    pub fn change_quantity(&mut self, order_id: OrderId, quantity: BookQuantity) -> Option<()> {
+        if let Some((_, q)) = self.orders.iter_mut().find(|(k, _)| *k == order_id) {
+            *q = quantity;
+            Some(())
+        } else {
+            None
+        }
     }
 }
 
@@ -118,7 +131,7 @@ mod tests {
     use crate::utils::numeric_converter::{IntegerConverter, NumReprCfg};
 
     #[test]
-    fn test_level() {
+    fn test_level() -> Result<()> {
         let cfg = NumReprCfg {
             digit_length: 7,
             decimal_point_length: 3,
@@ -153,6 +166,35 @@ mod tests {
 
         level.add_order(order2.clone()).unwrap();
         assert_eq!(level.order_count(), 2);
-        assert_eq!(level.is_empty(), false);
+
+        let order3 = BookOrder {
+            order_id: 3,
+            price: bp,
+            quantity: 50,
+            order_side: OrderSide::Bid,
+        };
+
+        level.add_order(order3.clone()).unwrap();
+        assert_eq!(level.order_count(), 3);
+
+        level.cancel_order(2);
+        assert_eq!(level.order_count(), 2);
+
+        let _ = level.trade(50);
+
+        assert_eq!(level.order_count(), 2);
+        assert_eq!(level.orders[0].1, 50);
+
+        let _ = level.trade(70);
+        assert_eq!(level.order_count(), 1);
+        assert_eq!(level.orders[0].1, 30);
+
+        let remaining = level.trade(50);
+        assert_eq!(remaining, 20);
+
+        let remaining = level.trade(30);
+        assert_eq!(remaining, 30);
+
+        Ok(())
     }
 }

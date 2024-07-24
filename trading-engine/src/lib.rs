@@ -6,9 +6,8 @@ pub mod utils;
 pub mod communication;
 pub mod instruments;
 pub mod shared_data;
-pub mod features;
 pub mod topics;
-pub mod trader;   
+pub mod strategy;   
 //
 //
 pub use logger::{LazyMessage, LogLevel, LogMessage, LOG_SENDER, MAX_LOG_LEVEL, TIMEZONE};

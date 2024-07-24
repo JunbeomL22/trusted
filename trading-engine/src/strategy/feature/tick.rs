@@ -18,6 +18,7 @@ use anyhow::{
     Result,
     anyhow,
 };
+use serde::{Serialize, Deserialize};
 const VWAP_NORM_FACTOR: Real = 100.0;
 
 #[derive(Debug, Clone)]
@@ -59,12 +60,13 @@ impl TradePrice {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Quotes {
     bids: Vec<Quote>,
     asks: Vec<Quote>,
     level_cut: usize,
     timestamp: MilliTimeStamp,
+    #[serde(skip)]
     order_converter: &'static OrderConverter,
 }
 
@@ -225,10 +227,11 @@ impl Quotes {
                 data.quote_level_cut
             );
             let self_cut = self.level_cut;
+            let data_clone = data.clone();
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 feature_level_cut = self_cut,
-                data = data.clone());
+                data = data_clone);
             return Err(err());
         }
         self.order_converter = data.order_converter;
@@ -261,10 +264,11 @@ impl Quotes {
                 data.quote_level_cut
             );
             let self_cut = self.level_cut;
+            let data_clone = data.clone();
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 feature_level_cut = self_cut,
-                data = data.clone());
+                data = data_clone);
             return Err(err());
         }
         self.order_converter = data.order_converter;
@@ -309,11 +313,12 @@ impl Quotes {
             );
 
             let self_clone = self.clone();
+            let arriving_quotes_clone = arriving_quotes.clone();
 
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 prev_quote = self_clone,
-                current_quotes = arriving_quotes.clone());
+                current_quotes = arriving_quotes_clone);
 
             return Err(err());
         }
@@ -351,11 +356,12 @@ impl Quotes {
             );
 
             let self_clone = self.clone();
+            let arriving_quotes_clone = arriving_quotes.clone();
 
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 prev_quote = self_clone,
-                current_quotes = arriving_quotes.clone());
+                current_quotes = arriving_quotes_clone);
 
             return Err(err());
         }
@@ -393,11 +399,12 @@ impl Quotes {
             );
 
             let self_clone = self.clone();
+            let arriving_quotes_clone = arriving_quotes.clone();
 
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 prev_quote = self_clone,
-                current_quotes = arriving_quotes.clone());
+                current_quotes = arriving_quotes_clone);
 
             return Err(err());
         }
@@ -409,9 +416,10 @@ impl Quotes {
             if current_ask.quantity > 0.0 {
                 -current_ask.quantity.ln()
             } else { 
+                let current_ask_clone = current_ask.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_ask = current_ask.clone()
+                    current_ask = current_ask_clone,
                 );
                 0.0 
             }
@@ -419,9 +427,10 @@ impl Quotes {
             if previous_ask.quantity > 0.0 {
                 (current_ask.quantity / previous_ask.quantity).ln()
             } else { 
+                let current_ask_clone = current_ask.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_ask = current_ask.clone(),
+                    current_ask = current_ask_clone,
                 );
                 0.0 
             }
@@ -429,9 +438,10 @@ impl Quotes {
             if current_ask.quantity > 0.0 {
                 current_ask.quantity.ln()
             } else { 
+                let current_ask_clone = current_ask.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_ask = current_ask.clone(),
+                    current_ask = current_ask_clone,
                 );
                 0.0 
             }
@@ -459,11 +469,12 @@ impl Quotes {
             );
 
             let self_clone = self.clone();
+            let arriving_quotes_clone = arriving_quotes.clone();
 
             crate::log_error!(
                 crate::LogTopic::OfiLevelMismatch.as_str(), 
                 prev_quote = self_clone,
-                current_quotes = arriving_quotes.clone());
+                current_quotes = arriving_quotes_clone);
 
             return Err(err());
         }
@@ -475,9 +486,10 @@ impl Quotes {
             if current_bid.quantity > 0.0 {
                 current_bid.quantity.ln()
             } else { 
+                let current_bid_clone = current_bid.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_bid = current_bid.clone(),
+                    current_bid = current_bid_clone,
                 );
                 0.0 
             }
@@ -485,9 +497,10 @@ impl Quotes {
             if previous_bid.quantity > 0.0 {
                 (current_bid.quantity / previous_bid.quantity).ln()
             } else { 
+                let current_bid_clone = current_bid.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_bid = current_bid.clone(),
+                    current_bid = current_bid_clone,
                 );
                 0.0 
             }
@@ -495,9 +508,10 @@ impl Quotes {
             if current_bid.quantity > 0.0 {
                 -current_bid.quantity.ln()
             } else { 
+                let current_bid_clone = current_bid.clone();
                 crate::log_warn!(
                     crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_bid = current_bid.clone(),
+                    current_bid = current_bid_clone,
                 );
                 0.0 
             }
@@ -510,22 +524,22 @@ impl Quotes {
         &self,
         level: usize,
         arriving_quotes: &Quotes,
-    ) -> NormalizedReal {
+    ) -> Result<NormalizedReal> {
         let bid_imbalance = self.get_bid_orderflow_imbalance(level, arriving_quotes)?;
         let ask_imbalance = self.get_ask_orderflow_imbalance(level, arriving_quotes)?;
 
-        bid_imbalance - ask_imbalance
+        Ok(bid_imbalance - ask_imbalance)
     }
 
     pub fn get_ln_orderflow_imbalance(
         &self,
         level: usize,
         arriving_quotes: &Quotes,
-    ) -> NormalizedReal {
+    ) -> Result<NormalizedReal> {
         let bid_imbalance = self.get_bid_ln_orderflow_imbalance(level, arriving_quotes)?;
         let ask_imbalance = self.get_ask_ln_orderflow_imbalance(level, arriving_quotes)?;
 
-        bid_imbalance - ask_imbalance
+        Ok(bid_imbalance - ask_imbalance)
     }
 
 }

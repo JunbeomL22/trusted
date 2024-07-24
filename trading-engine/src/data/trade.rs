@@ -86,7 +86,7 @@ impl TradeData {
 
     #[inline]
     #[must_use]
-    pub fn to_normalized_real(&self) -> f32 {
-        self.order_converter.price.normalized_f32_from_i64(self.trade_price)
+    pub fn to_normalized_real(&self) -> Real {
+        self.order_converter.price.normalized_real_from_i64(self.trade_price)
     }
 }

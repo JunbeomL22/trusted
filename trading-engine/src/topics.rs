@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub enum LogTopic{
     OfiLevelMismatch,
     ZeroQuantity,
+    OrderNotFound,
 }
 
 impl LogTopic {
@@ -10,6 +11,7 @@ impl LogTopic {
         match self {
             LogTopic::OfiLevelMismatch => "OfiLevelMismatch",
             LogTopic::ZeroQuantity => "ZeroQuantity",
+            LogTopic::OrderNotFound => "OrderNotFound",
         }
     }
 }

@@ -11,7 +11,6 @@ use crate::types::{
 use crate::utils::numeric_converter::{
     OrderConverter,
     OrderCounter,
-    CumQntConverter,
     TimeStampConverter,
 };
 
@@ -19,11 +18,11 @@ use crate::data::krx::krx_converter::{
     get_krx_base_bond_order_converter,
     get_krx_base_order_counter,
     get_krx_timestamp_converter,
-    get_krx_base_cum_qnt_converter,
 };
+use serde::Serialize;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct QuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
@@ -37,8 +36,11 @@ pub struct QuoteSnapshot {
     //
     pub all_lp_holdings: Option<BookQuantity>,
     //
+    #[serde(skip)]
     pub order_counter: &'static OrderCounter,
+    #[serde(skip)]
     pub order_converter: &'static OrderConverter,
+    #[serde(skip)]
     pub timestamp_converter: &'static TimeStampConverter,
 }
 

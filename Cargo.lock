@@ -2757,6 +2757,7 @@ dependencies = [
  "enum_dispatch",
  "fixed",
  "flexstr",
+ "indexmap",
  "itoa",
  "joinery",
  "lazy_format",

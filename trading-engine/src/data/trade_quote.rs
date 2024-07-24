@@ -24,9 +24,10 @@ use crate::data::krx::krx_converter::{
     get_krx_timestamp_converter,
     get_krx_base_cum_qnt_converter,
 };
+use serde::Serialize;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 //Serialize // this struct will not be in database directly. It will be converted to another struct
 pub struct TradeQuoteSnapshot {
     //data_code: LocalStr, // this will be sent to another thread anyway
@@ -47,9 +48,13 @@ pub struct TradeQuoteSnapshot {
     //
     pub all_lp_holdings: Option<BookQuantity>,
     //
+    #[serde(skip)]
     pub order_counter: &'static OrderCounter,
+    #[serde(skip)]
     pub order_converter: &'static OrderConverter,
+    #[serde(skip)]
     pub timestamp_converter: &'static TimeStampConverter,
+    #[serde(skip)]
     pub cumulative_qnt_converter: &'static CumQntConverter,
 }
 

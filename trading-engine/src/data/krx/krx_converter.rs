@@ -460,7 +460,7 @@ mod tests {
         let converted = unsafe { converter.to_cum_qnt_unchecked(raw) };
         assert_eq!(converted, 123456789012);
 
-        let val_f32 = converter.converter.normalized_f32_from_u64(converted);
+        let val_f32 = converter.converter.normalized_real_from_u64(converted);
         assert_eq!((val_f32 - 12345678.9012).abs() < f32::EPSILON, true);
 
         Ok(())
