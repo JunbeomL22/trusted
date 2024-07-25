@@ -331,7 +331,7 @@ impl Quotes {
         } else if current_bid.price == previous_bid.price {
             current_bid.quantity - previous_bid.quantity
         } else {
-            -current_bid.quantity
+            -previous_bid.quantity
         };
         
         return Ok(res);
@@ -370,7 +370,7 @@ impl Quotes {
         let current_ask = &arriving_quotes.asks[level - 1];
 
         let res = if current_ask.price > previous_ask.price {
-            -current_ask.quantity
+            - previous_ask.quantity
         } else if current_ask.price == previous_ask.price {
             current_ask.quantity - previous_ask.quantity
         } else {
@@ -414,7 +414,7 @@ impl Quotes {
 
         let res = if current_ask.price > previous_ask.price {
             if current_ask.quantity > 0.0 {
-                -current_ask.quantity.ln()
+                - previous_ask.quantity.ln()
             } else { 
                 let current_ask_clone = current_ask.clone();
                 crate::log_warn!(
@@ -506,7 +506,7 @@ impl Quotes {
             }
         } else {
             if current_bid.quantity > 0.0 {
-                -current_bid.quantity.ln()
+                - previous_bid.quantity.ln()
             } else { 
                 let current_bid_clone = current_bid.clone();
                 crate::log_warn!(

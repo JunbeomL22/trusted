@@ -102,6 +102,11 @@ impl MilliTimeStamp {
     pub fn to_micros(&self) -> Real {
         self.stamp as Real * 1000.0
     }
+
+    #[inline]
+    pub fn to_millis(&self) -> Real {
+        self.stamp as Real
+    }
 }
 
 impl Default for MilliTimeStamp {

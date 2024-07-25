@@ -24,6 +24,12 @@ impl Level {
 
     #[must_use]
     #[inline]
+    pub fn aggregate_quantity(&self) -> BookQuantity {
+        self.orders.iter().map(|(_, q)| *q).sum()
+    }
+    
+    #[must_use]
+    #[inline]
     pub fn initialize_with_order(order: BookOrder) -> Self {
         let mut orders = VecDeque::default();
         orders.push_back((order.order_id, order.quantity));
