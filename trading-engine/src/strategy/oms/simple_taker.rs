@@ -5,7 +5,7 @@ use crate::types::base::{
     Real,
     MilliTimeStamp,
 };
-use crate::data::book_order::BookOrder;
+use crate::data::order::LimitOrder;
 use crate::strategy::oms::OMS;
 //
 use rustc_hash::FxHashMap;
@@ -21,7 +21,7 @@ pub struct SimpleTaker {
     pub ask_lower: BookPrice,
     pub order_timestamp: MilliTimeStamp,
     pub timeout_milli: Real,
-    pub requested_orders: Vec<BookOrder>,
+    pub requested_orders: Vec<LimitOrder>,
     pub confirmed_orders: Vec<OrderId>,
     pub trade_amount: FxHashMap<OrderId, BookQuantity>
 } 

@@ -865,6 +865,7 @@ name = "examples-mem-investigation"
 version = "0.1.0"
 dependencies = [
  "quantlib",
+ "rustc-hash",
  "serde",
  "serde_json",
 ]

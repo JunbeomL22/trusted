@@ -1,6 +1,8 @@
+use crate::types::isin_code::IsinCode;
+use crate::types::enums::TimeStepUnit;
+use crate::types::venue::Venue;
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
-use crate::types::enums::TimeStepUnit;
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 pub type UnixNano = u64;
@@ -250,6 +252,33 @@ impl Eq for LevelSnapshot {}
 pub struct TimeInterval {
     pub unit: TimeStepUnit,
     pub interval: Real,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct InstrumentIdentifier {
+    isin: IsinCode, 
+    venue: Venue,
+}
+
+impl InstrumentIdentifier {
+    pub fn new(isin: IsinCode, venue: Venue) -> Self {
+        InstrumentIdentifier {
+            isin,
+            venue,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get_isin_code(&self) -> &IsinCode {
+        &self.isin
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get_venue(&self) -> Venue {
+        self.venue
+    }
 }
 
 #[cfg(test)]

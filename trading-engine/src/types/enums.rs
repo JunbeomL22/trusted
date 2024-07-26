@@ -12,7 +12,6 @@ pub trait FromU8 {
 )]
 pub enum OrderSide {
     #[default]
-    NoSide = 0,
     Ask = 1,
     Bid = 2,
 }
@@ -20,7 +19,6 @@ pub enum OrderSide {
 impl FromU8 for OrderSide {
     fn from_u8(v: u8) -> Result<Self> {
         match v {
-            0 => Ok(OrderSide::NoSide),
             1 => Ok(OrderSide::Ask),
             2 => Ok(OrderSide::Bid),
             _ => Err(anyhow!("Invalid OrderSide in from_u8")),

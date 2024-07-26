@@ -54,6 +54,9 @@ harness = false
 name = "update_status"
 harness = false
 
+[[bench]]
+name = "orderbook"
+harness = false
 
 [dependencies]
 anyhow = "1.0"

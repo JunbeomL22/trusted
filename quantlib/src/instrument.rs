@@ -3,7 +3,7 @@ use crate::definitions::Real;
 use crate::enums::{
     AccountingLevel, CreditRating, IssuerType, OptionDailySettlementType, OptionType, RankType,
 };
-/*
+
 use crate::instruments::schedule::Schedule;
 use crate::instruments::{
     bond::Bond,
@@ -16,7 +16,7 @@ use crate::instruments::{
     stock::Stock,
     vanilla_option::VanillaOption,
 };
-*/
+
 use crate::parameters::{
     past_price::DailyClosePrice, rate_index::RateIndex, zero_curve::ZeroCurve,
 };

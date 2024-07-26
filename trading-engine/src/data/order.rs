@@ -3,16 +3,17 @@ use crate::types::enums::OrderSide;
 //
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-
+pub trait OrderRequest {}
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct BookOrder {
+pub struct LimitOrder {
     pub price: BookPrice,
     pub quantity: BookQuantity,
     pub order_side: OrderSide, // should I keep this? book also has its side
     pub order_id: OrderId,
 }
 
-impl BookOrder {
+impl LimitOrder {
+    #[inline]
     pub fn new(
         price: BookPrice,
         quantity: BookQuantity,
@@ -28,6 +29,27 @@ impl BookOrder {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MarketOrder {
+    pub quantity: BookQuantity,
+    pub order_side: OrderSide,
+    pub order_id: OrderId,
+}
+
+impl MarketOrder {
+    #[inline]
+    pub fn new(quantity: BookQuantity, order_side: OrderSide, order_id: OrderId) -> Self {
+        Self {
+            quantity,
+            order_side,
+            order_id,
+        }
+    }
+}
+
+impl OrderRequest for LimitOrder {}
+impl OrderRequest for MarketOrder {}
+
 #[cfg(test)]
 mod tests {
 
@@ -42,7 +64,7 @@ mod tests {
         let order_side: OrderSide = OrderSide::Bid;
         let order_id: OrderId = 1;
 
-        let book_order = BookOrder::new(price, quantity, order_side, order_id);
+        let book_order = LimitOrder::new(price, quantity, order_side, order_id);
 
         assert_eq!(book_order.price, price);
         assert_eq!(book_order.quantity, quantity);

@@ -1,4 +1,4 @@
-use crate::data::book_order::BookOrder;
+use crate::data::order::LimitOrder;
 use crate::types::base::{BookPrice, OrderId, BookQuantity};
 use crate::types::enums::OrderSide;
 //
@@ -10,6 +10,7 @@ use std::fmt::Debug;
 pub struct Level {
     pub book_price: BookPrice,
     pub orders: VecDeque<(OrderId, BookQuantity)>,
+    pub total_quantity: BookQuantity,
 }
 
 impl Level {
@@ -19,27 +20,29 @@ impl Level {
         Level {
             book_price,
             orders: VecDeque::default(),
+            total_quantity: 0,
         }
     }
 
     #[must_use]
     #[inline]
     pub fn aggregate_quantity(&self) -> BookQuantity {
-        self.orders.iter().map(|(_, q)| *q).sum()
+        self.total_quantity
     }
     
     #[must_use]
     #[inline]
-    pub fn initialize_with_order(order: BookOrder) -> Self {
+    pub fn initialize_with_order(order: LimitOrder) -> Self {
         let mut orders = VecDeque::default();
         orders.push_back((order.order_id, order.quantity));
         Level {
             book_price: order.price,
             orders,
+            total_quantity: order.quantity,
         }
     }
 
-    pub fn add_order(&mut self, order: BookOrder) -> Result<()> {
+    pub fn add_limit_order(&mut self, order: LimitOrder) -> Result<()> {
         if self.book_price != order.price {
             let lazy_error = || {
                 anyhow!(
@@ -53,26 +56,32 @@ impl Level {
             Err(lazy_error())
         } else {
             self.orders.push_back((order.order_id, order.quantity));
+            self.total_quantity += order.quantity;
             Ok(())
         }
     }
 
+    /// Returns Option<(removed quantity, total quantity)>
+    /// None means the order is not found
     #[inline]
-    pub fn cancel_order(&mut self, order_id: OrderId) -> Option<(OrderId, BookQuantity)> {
-        if let Some(index) = self.orders.iter().position(|&(k, _)| k == order_id) {
-            self.orders.remove(index)
-        } else {
-            None
+    pub fn cancel_order(&mut self, order_id: OrderId) -> Option<(BookQuantity, BookQuantity)> {
+        match self.orders.iter().position(|(k, _)| *k == order_id) {
+            Some(idx) => {
+                let (_oid, q) = self.orders.remove(idx).unwrap();
+                self.total_quantity -= q;
+                Some((q, self.total_quantity))
+            }
+            None => None,
         }
     }
 
     #[must_use]
     #[inline]
-    pub fn get_order(&self, order_id: OrderId, order_side: OrderSide) -> Option<BookOrder> {
+    pub fn get_order(&self, order_id: OrderId, order_side: OrderSide) -> Option<LimitOrder> {
         self.orders
             .iter()
             .find(|(k, _)| *k == order_id)
-            .map(|(k, v)| BookOrder {
+            .map(|(k, v)| LimitOrder {
                 order_id: *k,
                 price: self.book_price,
                 quantity: *v,
@@ -97,27 +106,33 @@ impl Level {
         self.orders.clear();
     }
 
-    /// Returns the remaining quantity after trading
-    pub fn trade(&mut self, quantity: BookQuantity) -> BookQuantity {
+    /// Returns (all_traded_id, remaining quantity, total quantity remained in the level)
+    /// all_traded orderid is returned so that it is removed from half_book.cache
+    pub fn trade(&mut self, quantity: BookQuantity) -> (Vec<OrderId>, BookQuantity, BookQuantity) {
         let mut remaining = quantity;
+        let mut traded_ids = Vec::new();
         if self.orders.is_empty() {
-            return remaining;
+            return (traded_ids, remaining, self.total_quantity);
         }
 
         while remaining > 0 {
-            if let Some((_, q)) = self.orders.front_mut() {
+            if let Some((id, q)) = self.orders.front_mut() {
                 if *q > remaining {
                     *q -= remaining;
+                    self.total_quantity -= remaining;
                     remaining = 0;
                 } else {
                     remaining -= *q;
+                    self.total_quantity -= *q;
+                    traded_ids.push(*id);
                     self.orders.pop_front();
                 }
             } else {
                 break;
             }
         }
-        remaining
+        
+        (traded_ids, remaining, self.total_quantity)
     }
 
     pub fn change_quantity(&mut self, order_id: OrderId, quantity: BookQuantity) -> Option<()> {
@@ -152,7 +167,7 @@ mod tests {
         let price_str = b"05000111.19";
         let bp = conevrter.to_i64(price_str);
 
-        let order = BookOrder {
+        let order = LimitOrder {
             order_id: 1,
             price: bp,
             quantity: 100,
@@ -163,28 +178,30 @@ mod tests {
         assert_eq!(level.order_count(), 1);
         assert_eq!(level.is_empty(), false);
 
-        let order2 = BookOrder {
+        let order2 = LimitOrder {
             order_id: 2,
             price: bp,
             quantity: 200,
             order_side: OrderSide::Bid,
         };
 
-        level.add_order(order2.clone()).unwrap();
+        level.add_limit_order(order2.clone()).unwrap();
         assert_eq!(level.order_count(), 2);
 
-        let order3 = BookOrder {
+        let order3 = LimitOrder {
             order_id: 3,
             price: bp,
             quantity: 50,
             order_side: OrderSide::Bid,
         };
 
-        level.add_order(order3.clone()).unwrap();
+        level.add_limit_order(order3.clone()).unwrap();
         assert_eq!(level.order_count(), 3);
+        assert_eq!(level.aggregate_quantity(), 350);
 
         level.cancel_order(2);
         assert_eq!(level.order_count(), 2);
+        assert_eq!(level.aggregate_quantity(), 150);
 
         let _ = level.trade(50);
 
@@ -195,11 +212,15 @@ mod tests {
         assert_eq!(level.order_count(), 1);
         assert_eq!(level.orders[0].1, 30);
 
-        let remaining = level.trade(50);
-        assert_eq!(remaining, 20);
+        assert_eq!(level.aggregate_quantity(), 30);
 
-        let remaining = level.trade(30);
-        assert_eq!(remaining, 30);
+        let (_ids, remaining, total) = level.trade(10);
+        assert_eq!(remaining, 0);
+        assert_eq!(total, 20);
+
+        let (_ids, remaining, total) = level.trade(30);
+        assert_eq!(remaining, 10);
+        assert_eq!(total, 0);
 
         Ok(())
     }
