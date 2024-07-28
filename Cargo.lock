@@ -881,6 +881,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "examples-orderbook"
+version = "0.1.0"
+dependencies = [
+ "trading-engine",
+]
+
+[[package]]
 name = "examples-parser"
 version = "0.1.0"
 
@@ -2758,7 +2765,6 @@ dependencies = [
  "enum_dispatch",
  "fixed",
  "flexstr",
- "indexmap",
  "itoa",
  "joinery",
  "lazy_format",

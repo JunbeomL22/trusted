@@ -1,6 +1,7 @@
 use crate::types::isin_code::IsinCode;
 use crate::types::enums::TimeStepUnit;
 use crate::types::venue::Venue;
+use std::ops::{Index, IndexMut};
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub, AddAssign, SubAssign};
@@ -24,6 +25,87 @@ pub type OrderCount = u32;
 
 pub type Real = f32;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TradeHistory {
+    history: Vec<(BookPrice, BookQuantity)>,
+}
+
+impl Default for TradeHistory {
+    fn default() -> Self {
+        TradeHistory {
+            history: Vec::new(),
+        }
+    }
+}
+
+impl TradeHistory {
+    #[inline]
+    #[must_use]
+    pub fn new() -> Self {
+        TradeHistory {
+            history: Vec::new(),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn with_capacity(capacity: usize) -> Self {
+        TradeHistory {
+            history: Vec::with_capacity(capacity),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.history.len()
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.history.is_empty()
+    }
+
+    #[inline]
+    pub fn push(&mut self, price: BookPrice, quantity: BookQuantity) {
+        self.history.push((price, quantity));
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get_last_trade(&self) -> Option<(BookPrice, BookQuantity)> {
+        self.history.last().cloned()
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn average_trade_price(&self) -> Real {
+        let mut sum = 0;
+        let mut total_quantity = 0;
+        for (price, quantity) in self.history.iter() {
+            sum += price * (*quantity) as BookPrice;
+            total_quantity += quantity;
+        }
+        sum as Real / total_quantity as Real
+    }
+}
+
+// Implementing Index trait for immutable indexing
+impl Index<usize> for TradeHistory {
+    type Output = (BookPrice, BookQuantity);
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.history[index]
+    }
+}
+
+// Implementing IndexMut trait for mutable indexing
+impl IndexMut<usize> for TradeHistory {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.history[index]
+    }
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MicroTimeStamp{

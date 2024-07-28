@@ -51,10 +51,6 @@ name = "atomic"
 harness = false
 
 [[bench]]
-name = "update_status"
-harness = false
-
-[[bench]]
 name = "orderbook"
 harness = false
 
@@ -87,4 +83,4 @@ thiserror = "1.0"
 rustc-hash = "2.0"
 flexstr = {version = "0.9", features = ["fast_format", "fp_convert", "int_convert", "serde"]}
 smallvec = "1.13"
-indexmap = "2.2"
+#indexmap = "2.2"

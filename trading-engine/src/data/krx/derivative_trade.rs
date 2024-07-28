@@ -531,9 +531,7 @@ impl IFMSRPD0038 {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
 
-        let trade_price = unsafe { 
-            converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end])
-        };
+        let trade_price = converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
 
         let trade_quantity = unsafe {
             converter.to_book_quantity_unchecked(&payload[self.trade_quantity_slice.start..self.trade_quantity_slice.end])

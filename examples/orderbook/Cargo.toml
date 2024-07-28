@@ -1,0 +1,8 @@
+[package]
+name = "examples-orderbook"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+trading-engine = { version = "0.1", path = "../../trading-engine" }

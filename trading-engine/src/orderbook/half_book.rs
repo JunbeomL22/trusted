@@ -1,11 +1,10 @@
 use crate::data::order::{
     LimitOrder,
     MarketOrder,
-    OrderRequest,
 };
 use crate::orderbook::level::Level;
 use crate::types::{
-    base::{BookPrice, OrderId, BookQuantity},
+    base::{BookPrice, OrderId, BookQuantity, TradeHistory},
     enums::OrderSide,
 };
 use crate::topics::LogTopic;
@@ -30,6 +29,59 @@ pub struct HalfBook {
 }
 
 impl HalfBook {
+    pub fn to_string_upto_depth(&self, depth: Option<usize>) -> String {
+        match self.order_side {
+            OrderSide::Ask => self.ask_half_book_string(depth),
+            OrderSide::Bid => self.bid_half_book_string(depth),
+        }
+    }
+    
+    pub fn ask_half_book_string(&self, depth: Option<usize>) -> String {
+        let depth = depth.unwrap_or(self.len());
+        let half_book = self;
+        let mut output = String::new();
+        let header = format!(
+            "{:<15} | {:<8} | {:<12}\n", "Price", "Ask Cnt", "Ask Qty");
+        output.push_str(&header);
+        output.push_str(&"-".repeat(header.len()));
+        output.push('\n');
+    
+        for (price, level) in half_book.levels.iter().rev().take(depth) {
+            output.push_str(&format!(
+                "{:<15} | {:<8} | {:<12}\n",
+                price, level.orders.len(), level.total_quantity
+            ));
+        }
+    
+        output
+    }
+    
+    pub fn get_order(&self, order_id: OrderId) -> Option<LimitOrder> {
+        self.cache.get(&order_id).map(|price| {
+            let level = self.levels.get(price).unwrap();
+            level.get_order(order_id, self.order_side).unwrap()
+        })
+    }
+
+    pub fn bid_half_book_string(&self, depth: Option<usize>) -> String {
+        let depth = depth.unwrap_or(self.len());
+        let half_book = self;
+        let mut output = String::new();
+        let header = format!("{:>12} | {:>8} | {:>15}\n", "Bid Qty", "Bid Cnt", "Price");
+        output.push_str(&header);
+        output.push_str(&"-".repeat(header.len()));
+        output.push('\n');
+    
+        for (price, level) in half_book.levels.iter().take(depth) {
+            output.push_str(&format!(
+                "{:>12} | {:>8} | {:>15}\n",
+                level.total_quantity, level.orders.len(), price
+            ));
+        }
+    
+        output
+    }
+
     #[must_use]
     pub fn initialize(order_side: OrderSide) -> Self {
         let best_price = if order_side == OrderSide::Ask {
@@ -102,9 +154,9 @@ impl HalfBook {
             }
         } else {
             if self.order_side == OrderSide::Ask {
-                self.best_price = *self.levels.first_key_value().unwrap().0;
+                self.best_price = *self.levels.iter().next().unwrap().0;
             } else {
-                self.best_price = *self.levels.last_key_value().unwrap().0;
+                self.best_price = *self.levels.iter().next_back().unwrap().0;
             }
         }
     }
@@ -189,7 +241,7 @@ impl HalfBook {
     pub fn change_price(
         &mut self, 
         order_id: OrderId, 
-        new_price: BookPrice,
+        new_price: BookPrice, 
     ) -> Option<()> {    
         match self.cache.entry(order_id) {
             HmEntry::Occupied(mut entry) => { // cache has the order
@@ -213,18 +265,15 @@ impl HalfBook {
                             self.reinitialize_best_price();
                             return Some(())
                         } else {
-                            
                             return None
                         }
                     },
                     BtmEntry::Vacant(_) => { // level for the price does not exist
-                        
                         return None
                     },
                 }
             },
             HmEntry::Vacant(_) => { // cache does not have the order
-                
                 return None
             }
         }
@@ -235,43 +284,33 @@ impl HalfBook {
         &mut self, 
         order_id: OrderId, 
         new_quantity: BookQuantity,
-    ) -> Option<()> {
+    ) -> Option<()> {        
         if let Some(price) = self.cache.get(&order_id) {
             if let Some(level) = self.levels.get_mut(price) {
-                for (idx, (oid, q)) in level.orders.iter().enumerate() {
-                    if *oid == order_id {
-                        if q > &new_quantity {
-                            let diff = q - new_quantity;
-                            level.total_quantity -= diff;
-                            self.total_quantity -= diff;
-                        } else {
-                            let diff = new_quantity - q;
-                            level.total_quantity += diff;
-                            self.total_quantity += diff;
+                if let Some(original_qty) = level.change_quantity(order_id, new_quantity) {
+                    self.total_quantity -= original_qty;
+                    self.total_quantity += new_quantity;
+                    if level.total_quantity == 0 {
+                        self.levels.remove(price);
+                        if *price == self.best_price {
+                            self.reinitialize_best_price();
                         }
-
-                        level.orders[idx].1 = new_quantity;
-
-                        if level.total_quantity == 0 {
-                            self.levels.remove(price);
-                            if *price == self.best_price {
-                                self.reinitialize_best_price();
-                            }
-                        } 
-                        return Some(())
                     }
+                    return Some(())
                 }
+                return None
             }
+            None
+        } else {
+            let msg = format!(
+                "Order not found in ChangeQuantity id = {}, quantity = {}", 
+                order_id, 
+                new_quantity
+            );
+
+            crate::log_warn!(LogTopic::OrderNotFound, message = msg);
+            None
         }
-
-        let msg = format!(
-            "Order not found in ChangeQuantity id = {}, quantity = {}", 
-            order_id, 
-            new_quantity
-        );
-
-        crate::log_warn!(LogTopic::OrderNotFound, message = msg);
-        None
     }
 
     #[must_use]
@@ -286,35 +325,31 @@ impl HalfBook {
         self.total_quantity
     }
 
-    /// trade from the best_price and returns (last_trade_price, remaining quantity)
+    /// trade from the best_price and returns the trade history and remaining quantity
+    /// which is a vector of (traded_price, traded_quantity). The last element of the vector is the last trade.
+    /// None means no trade, the case happens when the order is the same side with the half_book
+    /// or the half_book is empty
     #[must_use]
     #[inline]
-    pub fn trade_market_order(&mut self, qty: BookQuantity) -> Option<(BookPrice, BookQuantity)> {
-        if self.is_empty() {
+    pub fn trade_market_order(
+        &mut self, 
+        market_order: &MarketOrder,
+    ) -> Option<(TradeHistory, BookQuantity)> {
+        if self.is_empty() || market_order.order_side == self.order_side {
             return None
         }
+
+        let qty = market_order.quantity;
+
         let mut remaining = qty;
-        let mut best_price = self.best_price; 
-        while remaining > 0 {
-            if self.is_empty() {
-                return Some((best_price, remaining))
-            }
-
-            best_price = self.best_price;
-            let level = self.levels.get_mut(&best_price).unwrap();
-            let (remove_ids, rem, level_total) = level.trade(remaining);
-            self.total_quantity -= remaining - rem;
-
-            if level_total == 0 {
-                self.levels.remove(&best_price);
-                self.reinitialize_best_price();
-            }
-            remaining = rem;
-            for id in remove_ids {
-                self.cache.remove(&id);
-            }
-        }
-        Some((best_price, remaining))
+        let mut remove_prices: Vec<BookPrice> = vec![];
+        let mut remove_ids: Vec<OrderId> = vec![];
+        let trade_history = match self.order_side {
+            OrderSide::Ask => self.ask_trade_market_order(&mut remaining, &mut remove_prices, &mut remove_ids),
+            OrderSide::Bid => self.bid_trade_market_order(&mut remaining, &mut remove_prices, &mut remove_ids),
+        };
+        self.cleanup_after_trade(&remove_prices, &remove_ids);
+        Some((trade_history, remaining))
     }
 
     #[inline]
@@ -322,72 +357,153 @@ impl HalfBook {
         self.levels.get_mut(&self.best_price)
     }
 
+    /// Returns a Vector of traded_price and traded_quantity
+    fn ask_trade_market_order(
+        &mut self,
+        remaining: &mut BookQuantity,
+        remove_prices: &mut Vec<BookPrice>, 
+        remove_ids: &mut Vec<OrderId>, 
+    ) -> TradeHistory {
+        let mut traded_res = TradeHistory::default();
+        for (price, level) in self.levels.iter_mut() {
+            let (rm_ids, rem, level_rem) = level.trade(*remaining);
+            remove_ids.extend(rm_ids);
+            let traded_qty = (*remaining).saturating_sub(rem);
+            if traded_qty > 0 {
+                traded_res.push(*price, traded_qty);
+                self.total_quantity -= traded_qty;
+            }
+            if level_rem == 0 { remove_prices.push(*price) }
+            *remaining = rem;
+            
+            if *remaining == 0 {
+                return traded_res
+            }
+        }
+        traded_res
+    }
+
+    /// Returns a Vector of traded_price and traded_quantity
+    fn bid_trade_market_order(
+        &mut self,
+        remaining: &mut BookQuantity,
+        remove_prices: &mut Vec<BookPrice>, 
+        remove_ids: &mut Vec<OrderId>, 
+    ) -> TradeHistory {
+        let mut traded_res = TradeHistory::default();
+        for (price, level) in self.levels.iter_mut().rev() {
+            let (rm_ids, rem, level_rem) = level.trade(*remaining);
+            remove_ids.extend(rm_ids);
+            let traded_qty = (*remaining).saturating_sub(rem);
+            if traded_qty > 0 {
+                traded_res.push(*price, traded_qty);
+                self.total_quantity -= traded_qty;
+            }
+
+            if level_rem == 0 { remove_prices.push(*price) }
+            *remaining = rem;
+
+            if *remaining == 0 {
+                return traded_res
+            }
+        }
+        traded_res
+    }
+
+    /// Returns a Vector of traded_price and traded_quantity
+    fn ask_trade_limit_order(
+        &mut self, 
+        order_price: BookPrice,
+        remaining: &mut BookQuantity,
+        remove_prices: &mut Vec<BookPrice>, 
+        remove_ids: &mut Vec<OrderId>, 
+    ) -> TradeHistory {
+        let mut traded_res = TradeHistory::default();
+        for (price, level) in self.levels.iter_mut() {
+            if *price > order_price || *remaining == 0 {
+                return traded_res
+            } else {
+                let (rm_ids, rem, level_rem) = level.trade(*remaining);
+                remove_ids.extend(rm_ids);
+                let traded_qty = (*remaining).saturating_sub(rem);
+                if traded_qty > 0 {
+                    traded_res.push(*price, traded_qty);
+                    self.total_quantity -= traded_qty;
+                }
+                
+                if level_rem == 0 { remove_prices.push(*price) }       
+                *remaining = rem;
+            }
+        }   
+        traded_res
+    }
+
+    /// Returns a Vector of traded_price and traded_quantity
+    fn bid_trade_limit_order(
+        &mut self, 
+        order_price: BookPrice,
+        remaining: &mut BookQuantity,
+        remove_prices: &mut Vec<BookPrice>, 
+        remove_ids: &mut Vec<OrderId>, 
+    ) -> TradeHistory {
+        let mut traded_res = TradeHistory::default();
+        for (price, level) in self.levels.iter_mut().rev() {
+            if *price < order_price || *remaining == 0 {
+                return traded_res
+            } else {
+                let (rm_ids, rem, level_rem) = level.trade(*remaining);
+                remove_ids.extend(rm_ids);
+                let traded_qty = (*remaining).saturating_sub(rem);
+                if traded_qty > 0 {
+                    traded_res.push(*price, traded_qty);
+                    self.total_quantity -= traded_qty;
+                }
+                
+                if level_rem == 0 { remove_prices.push(*price) }
+                *remaining = rem;
+            }
+        }
+        traded_res
+    }
+
+    fn cleanup_after_trade(&mut self, remove_price: &[BookPrice], remove_id: &[OrderId]) {
+        for id in remove_id {
+            self.cache.remove(id);
+        }
+        for price in remove_price {
+            self.levels.remove(price);
+        }
+        self.reinitialize_best_price();
+    }
+
     /// trade from the best_price and returns remaining quantit
     /// If the order is worse than the best price, it will return None directly.
-    /// Otherwise, it will trade from the best price and return the remaining quantity.
+    /// Otherwise, it will trade from the best price and return the traded history which is 
+    /// a vector of (traded_price, traded_quantity). The last element of the vector is the last trade.
     /// If the order is the same side with the half_book, it will return None.
     #[must_use]
     #[inline]
-    pub fn trade_limit_order(&mut self, order: &LimitOrder) -> Option<BookQuantity> {
+    pub fn trade_limit_order(&mut self, order: &LimitOrder) -> Option<(TradeHistory, BookQuantity)> {
         // nothinf to trade in the following cases
         if (self.order_side == order.order_side) || // same side
         self.is_empty() || // empty book
         (self.order_side == OrderSide::Ask && order.price < self.best_price) || // ask book and price is lower than the best price
-        (self.order_side == OrderSide::Bid && order.price > self.best_price) { // bid book and price is higher than the best price
+        (self.order_side == OrderSide::Bid && order.price > self.best_price) {  // bid book and price is higher than the best price
             return None
         }
 
         let mut remaining = order.quantity;
-        while remaining > 0 {
-            if self.order_side == OrderSide::Ask {
-                let mut remove_price: Vec<BookPrice> = vec![];
-                
-                for (price, level) in self.levels.iter_mut() {
-                    if *price > order.price {
-                        return Some(remaining)
-                    } else {
-                        let (remove_ids, rem, level_rem) = level.trade(remaining);
-                        self.total_quantity -= remaining - rem;
-                        if level_rem == 0 { remove_price.push(*price) }
-                        remaining = rem;
-                        for id in remove_ids {
-                            self.cache.remove(&id);
-                        }
-                    }
-                }
+        let order_price = order.price;
+        let mut remove_prices: Vec<BookPrice> = vec![];
+        let mut remove_ids: Vec<OrderId> = vec![];
+        
+        let trade_history = match self.order_side {
+            OrderSide::Ask => self.ask_trade_limit_order(order_price, &mut remaining, &mut remove_prices, &mut remove_ids),
+            OrderSide::Bid => self.bid_trade_limit_order(order_price, &mut remaining, &mut remove_prices, &mut remove_ids),
+        };
 
-                for price in remove_price {
-                    self.levels.remove(&price);
-                }
-                self.reinitialize_best_price();
-
-            } else if self.order_side == OrderSide::Bid {
-                let mut remove_price: Vec<BookPrice> = vec![];
-
-                for (price, level) in self.levels.iter_mut().rev() {
-                    if *price < order.price {
-                        return Some(remaining)
-                    } else {
-                        let (remove_ids, rem, level_rem) = level.trade(remaining);
-                        self.total_quantity -= remaining - rem;
-                        if level_rem == 0 { remove_price.push(*price) }
-                        remaining = rem;
-
-                        for id in remove_ids {
-                            self.cache.remove(&id);
-                        }
-                    }
-                }
-
-                for price in remove_price {
-                    self.levels.remove(&price);
-                }
-                self.reinitialize_best_price();
-            }
-        }
-
-        Some(remaining)
-            
+        self.cleanup_after_trade(&remove_prices, &remove_ids);
+        Some((trade_history, remaining))
     }
 }
 
@@ -395,10 +511,7 @@ impl HalfBook {
 mod tests {
     use super::*;
     use crate::types::enums::OrderSide;
-    use crate::data::order::{
-        LimitOrder,
-        MarketOrder,
-    };
+    use crate::data::order::LimitOrder;
 
     #[test]
     fn test_ask_half_book() -> Result<()> {
@@ -437,27 +550,25 @@ mod tests {
 
         assert_eq!(half_book.len(), 2);
         assert_eq!(half_book.aggregate_quantity(), 25);
-        
-        // dbg!(half_book.clone()); total_quantity = 25
 
         half_book.change_price(1, 99);
         assert_eq!(half_book.best_price, 99);
 
         // dbg!(half_book.clone()); wrong total quantity = 35 not 25
-
         half_book.change_quantity(2, 10);
         assert_eq!(half_book.aggregate_quantity_at_price(99), 10);
         assert_eq!(half_book.aggregate_quantity(), 30);
         assert_eq!(half_book.best_price, 99);
-
+        
         half_book.cancel_order(1);
         assert_eq!(half_book.aggregate_quantity(), 20);
         assert_eq!(half_book.best_price, 100);
-    
+        //
         assert_eq!(half_book.cache.len(), 2);
         assert_eq!(half_book.levels.len(), 2);
 
         half_book.cancel_order(2);
+        //
         assert_eq!(half_book.aggregate_quantity(), 10);
         assert_eq!(half_book.best_price, 101);
 
@@ -573,15 +684,48 @@ mod tests {
         let limit_order = LimitOrder {
             order_id: 4,
             price: 101,
-            quantity: 20,
+            quantity: 3,
+            order_side: OrderSide::Bid,
+        };
+        assert_eq!(half_book.best_price, 100);
+
+        let (trades, remaining) = half_book.trade_limit_order(&limit_order).unwrap();
+        assert_eq!(trades.get_last_trade(), Some((100, 3)));
+        assert_eq!(remaining, 0);
+
+        assert_eq!(half_book.aggregate_quantity(), 22);
+        assert_eq!(half_book.best_price, 100);
+        
+        let market_order = MarketOrder {
+            order_id: 5,
+            quantity: 1,
             order_side: OrderSide::Bid,
         };
 
-        dbg!(half_book.clone());
-        let x = half_book.trade_limit_order(&limit_order);
-        
-        println!("{:?}", x);
-        dbg!(half_book.clone());
+        let (trades, remaining) = half_book.trade_market_order(&market_order).unwrap();
+        assert_eq!(trades.get_last_trade(), Some((100, 1)));
+        assert_eq!(
+            (trades.average_trade_price() - 100.0).abs() < 0.000001, 
+            true
+        );
+
+        assert_eq!(remaining, 0);
+        assert_eq!(half_book.aggregate_quantity(), 21);
+
+        let market_order = MarketOrder {
+            order_id: 6,
+            quantity: 12,
+            order_side: OrderSide::Bid,
+        };
+
+        let (trades, remaining) = half_book.trade_market_order(&market_order).unwrap();
+        assert_eq!(trades.get_last_trade(), Some((101, 1)));
+        let ave = (101.0 * 1.0 + 100.0 * 11.0) / 12.0;
+        assert!((trades.average_trade_price() - ave).abs() < 0.000001);
+        assert_eq!(remaining, 0);    
+
+        let display = half_book.to_string_upto_depth(Some(3));
+        println!("{}", display);
 
         Ok(())
     }

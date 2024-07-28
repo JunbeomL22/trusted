@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+/// The VecDeque can be optimized by splitting the VecDeque into multiple VecDeque with a fixed size
 #[derive(Debug, Clone, Default)]
 pub struct Level {
     pub book_price: BookPrice,
@@ -135,10 +136,16 @@ impl Level {
         (traded_ids, remaining, self.total_quantity)
     }
 
-    pub fn change_quantity(&mut self, order_id: OrderId, quantity: BookQuantity) -> Option<()> {
+    /// Returns Option<original quantity>
+    #[must_use]
+    #[inline]
+    pub fn change_quantity(&mut self, order_id: OrderId, new_quantity: BookQuantity) -> Option<BookQuantity> {
         if let Some((_, q)) = self.orders.iter_mut().find(|(k, _)| *k == order_id) {
-            *q = quantity;
-            Some(())
+            let res = *q;
+            *q = new_quantity;
+            self.total_quantity += new_quantity
+                .saturating_sub(res);
+            Some(res)
         } else {
             None
         }
@@ -150,7 +157,6 @@ mod tests {
     use super::*;
     use crate::types::enums::OrderSide;
     use crate::utils::numeric_converter::{IntegerConverter, NumReprCfg};
-
     #[test]
     fn test_level() -> Result<()> {
         let cfg = NumReprCfg {

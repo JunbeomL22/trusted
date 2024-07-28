@@ -10,7 +10,7 @@ fn bench_counter_u64_access_group(c: &mut Criterion) {
     let thread_numbers = vec![1, 3, 5, 7, 9];
     let access_numbers = vec![100_000];
 
-    let counter = CounterU64::new(0, 100_000);
+    let counter = Arc::new(CounterU64::new(0, 100_000));
 
     group.sample_size(20);
     for thread_number in &thread_numbers {
@@ -27,7 +27,7 @@ fn bench_counter_u64_access_group(c: &mut Criterion) {
                                 thread::spawn(move || {
                                     for _ in 0..access_number {
                                         // Dereference `access_number` here
-                                        black_box(&counter_clone.get());
+                                        black_box(&counter_clone.next());
                                     }
                                 })
                             })

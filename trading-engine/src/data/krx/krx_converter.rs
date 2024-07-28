@@ -144,16 +144,6 @@ impl OrderConverter {
             float_normalizer: None,
         };
 
-        let count_cfg = NumReprCfg {
-            digit_length: 5,
-            decimal_point_length: 0,
-            is_signed: false,
-            unused_length: 0,
-            drop_decimal_point: false,
-            total_length: 5,
-            float_normalizer: None,
-        };
-
         let price = IntegerConverter::new(price_cfg).expect("failed to create price converter");
 
         let quantity =
