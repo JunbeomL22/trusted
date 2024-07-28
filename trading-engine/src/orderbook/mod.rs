@@ -8,6 +8,10 @@ use crate::data::order::{
     LimitOrder,
     MarketOrder,
 };
+use crate::data::{
+    quote::QuoteSnapshot,
+    trade_quote::TradeQuoteSnapshot,
+};
 use crate::topics::LogTopic;
 use crate::types::{
     isin_code::IsinCode,
@@ -20,7 +24,7 @@ use crate::types::{
     },
 };
 //
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 #[derive(Debug, Clone, Default)]
 pub struct OrderBook {
@@ -31,6 +35,43 @@ pub struct OrderBook {
 }
 
 impl OrderBook {
+    fn check_isin_venue(&self, isin_code: &IsinCode, venue: Venue) -> Result<()> {
+        if isin_code != &self.isin_code {
+            let err = || anyhow!(
+                "Isin code mismatch orderbook: {:?} input: {:?}",
+                self.isin_code, isin_code,
+            );
+            return Err(err());
+        } 
+        if venue != self.venue {
+            let err = || anyhow!(
+                "Venue mismatch orderbook: {:?} input: {:?}",
+                self.venue, venue,
+            );
+            return Err(err());
+        }
+        Ok(())
+    }
+
+    /// update by snapshot
+    #[inline]
+    pub fn update_from_quote_snapshot(&mut self, quote: &QuoteSnapshot) -> Result<()> {
+        self.check_isin_venue(&quote.isin_code, quote.venue)?;
+        self.asks.update_by_level_snapshot(&quote.ask_quote_data);
+        self.bids.update_by_level_snapshot(&quote.bid_quote_data);
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn update_from_trade_quote_snapshot(&mut self, trade_quote: &TradeQuoteSnapshot) -> Result<()> {
+        self.check_isin_venue(&trade_quote.isin_code, trade_quote.venue)?;
+        self.asks.update_by_level_snapshot(&trade_quote.ask_quote_data);
+        self.bids.update_by_level_snapshot(&trade_quote.bid_quote_data);
+
+        Ok(())
+    }
+
     pub fn to_string(&self) -> String {
         
         let mut output = String::new();
@@ -196,4 +237,19 @@ impl OrderBook {
         }
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_orderbook_initialize() {
+       unimplemented!();
+    }
+
+    #[test]
+    fn test_orderbook_update_from_quote_snapshot() {
+        unimplemented!();
+    }
 }

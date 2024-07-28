@@ -2,14 +2,18 @@ use crate::data::order::{
     LimitOrder,
     MarketOrder,
 };
+use crate::data::{
+    quote::QuoteSnapshot,
+    trade_quote::TradeQuoteSnapshot,
+};
 use crate::orderbook::level::Level;
 use crate::types::{
-    base::{BookPrice, OrderId, BookQuantity, TradeHistory},
+    base::{BookPrice, OrderId, BookQuantity, TradeHistory, LevelSnapshot},
     enums::OrderSide,
 };
 use crate::topics::LogTopic;
 //
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use rustc_hash::FxHashMap;
 use std::fmt::Debug;
 use std::collections::{
@@ -29,6 +33,41 @@ pub struct HalfBook {
 }
 
 impl HalfBook {
+    /// it cleans levels and cache then
+    /// LevelSnapshot is used as a single quote with fake orderid
+    pub fn update_by_level_snapshot(&mut self, level_snapshot: &Vec<LevelSnapshot>) {
+        self.levels.clear();
+        self.cache.clear();
+        self.total_quantity = 0;
+        self.best_price = if self.order_side == OrderSide::Ask {
+            BookPrice::MAX
+        } else {
+            BookPrice::MIN
+        };
+        
+        let mut order_id_generator = 0;
+        
+        for level in level_snapshot {
+            let price = level.book_price;
+            let quantity = level.book_quantity;
+            
+            let mut level = Level::initialize(price);
+            level.total_quantity = quantity;
+            let order_id = order_id_generator;
+            order_id_generator += 1;
+
+            level.orders.push_back((order_id, quantity));
+
+            self.cache.insert(order_id, price);
+            self.levels.insert(price, level);
+            self.total_quantity += quantity;
+            self.best_price = match self.order_side {
+                OrderSide::Ask => self.best_price.min(price),
+                OrderSide::Bid => self.best_price.max(price),
+            };
+        }
+    }
+
     pub fn to_string_upto_depth(&self, depth: Option<usize>) -> String {
         match self.order_side {
             OrderSide::Ask => self.ask_half_book_string(depth),

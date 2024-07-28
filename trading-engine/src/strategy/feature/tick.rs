@@ -18,7 +18,7 @@ use anyhow::{
     Result,
     anyhow,
 };
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 const VWAP_NORM_FACTOR: Real = 100.0;
 
 #[derive(Debug, Clone)]
@@ -60,6 +60,7 @@ impl TradePrice {
     }
 }
 
+/// L2 Snapshot of Quotes
 #[derive(Debug, Clone, Serialize)]
 pub struct Quotes {
     bids: Vec<Quote>,
