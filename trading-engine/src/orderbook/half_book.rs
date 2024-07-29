@@ -1,6 +1,8 @@
 use crate::data::order::{
     LimitOrder,
     MarketOrder,
+    RemoveAnyOrder,
+    RecoveredOrder,
 };
 use crate::data::{
     quote::QuoteSnapshot,
@@ -33,9 +35,16 @@ pub struct HalfBook {
 }
 
 impl HalfBook {
+    #[inline]
+    #[must_use]
+    pub fn get_total_quantity(&self) -> BookQuantity {
+        self.total_quantity
+    }
+    
     /// it cleans levels and cache then
     /// LevelSnapshot is used as a single quote with fake orderid
-    pub fn update_by_level_snapshot(&mut self, level_snapshot: &Vec<LevelSnapshot>) {
+    pub fn update_by_level_snapshot(&mut self, level_snapshot: &Vec<LevelSnapshot>) -> Vec<RecoveredOrder> {
+        let mut res = vec![];
         self.levels.clear();
         self.cache.clear();
         self.total_quantity = 0;
@@ -46,7 +55,8 @@ impl HalfBook {
         };
         
         let mut order_id_generator = 0;
-        
+        * you have to reuse not to create new order id
+        * modify so that it can return the recovered_order
         for level in level_snapshot {
             let price = level.book_price;
             let quantity = level.book_quantity;
@@ -164,6 +174,12 @@ impl HalfBook {
     pub fn clear(&mut self) {
         self.levels.clear();
         self.cache.clear();
+        self.total_quantity = 0;
+        self.best_price = if self.order_side == OrderSide::Ask {
+            BookPrice::MAX
+        } else {
+            BookPrice::MIN
+        };
     }
 
     #[inline]
@@ -220,6 +236,56 @@ impl HalfBook {
         }
         
         Ok(())
+    }
+    /// If threre is no order in the level, the level will be removed
+    /// None means the order side is not matched
+    #[inline]
+    pub fn remove_order(&mut self, order: RemoveAnyOrder) -> Option<BookQuantity> {
+        if self.order_side != order.order_side {
+            return None;
+        }
+
+        let order_price = order.price;
+        let mut remaining = order.quantity;
+        if let Some(level) = self.levels.get_mut(&order_price) {
+            while remaining > 0 {
+                let order_qty = {
+                    if let Some((order_id, order_qty)) = level.orders.back_mut() {
+                        let qty = *order_qty;
+                        if qty <= remaining {
+                            remaining -= qty;
+                            self.total_quantity -= qty;
+                            level.total_quantity -= qty;
+                            self.cache.remove(order_id);
+                            qty
+                        } else {
+                            *order_qty -= remaining;
+                            level.total_quantity -= remaining;
+                            self.total_quantity -= remaining;
+                            remaining = 0;
+                            0
+                        }
+                    } else {
+                        break
+                    }
+                };
+                if order_qty > 0 {
+                    level.orders.pop_back();
+                }
+            }
+        } else {
+            return Some(remaining);
+        }
+
+        if let Some(level) = self.levels.get(&order_price) {
+            if level.is_empty() {
+                //println!("Level is empty");
+                self.levels.remove(&order_price);                
+                self.reinitialize_best_price();
+            }
+        }
+
+        Some(remaining)
     }
 
     /// preprocess like exceptions must be handled before calling this function
@@ -329,6 +395,10 @@ impl HalfBook {
                 if let Some(original_qty) = level.change_quantity(order_id, new_quantity) {
                     self.total_quantity -= original_qty;
                     self.total_quantity += new_quantity;
+
+                    //level.total_quantity -= original_qty;
+                    //level.total_quantity += new_quantity;
+
                     if level.total_quantity == 0 {
                         self.levels.remove(price);
                         if *price == self.best_price {
@@ -411,6 +481,7 @@ impl HalfBook {
             if traded_qty > 0 {
                 traded_res.push(*price, traded_qty);
                 self.total_quantity -= traded_qty;
+                //level.total_quantity -= traded_qty;
             }
             if level_rem == 0 { remove_prices.push(*price) }
             *remaining = rem;
@@ -437,6 +508,7 @@ impl HalfBook {
             if traded_qty > 0 {
                 traded_res.push(*price, traded_qty);
                 self.total_quantity -= traded_qty;
+                level.total_quantity -= traded_qty;
             }
 
             if level_rem == 0 { remove_prices.push(*price) }
@@ -468,6 +540,7 @@ impl HalfBook {
                 if traded_qty > 0 {
                     traded_res.push(*price, traded_qty);
                     self.total_quantity -= traded_qty;
+                    //level.total_quantity -= traded_qty;
                 }
                 
                 if level_rem == 0 { remove_prices.push(*price) }       
@@ -496,6 +569,7 @@ impl HalfBook {
                 if traded_qty > 0 {
                     traded_res.push(*price, traded_qty);
                     self.total_quantity -= traded_qty;
+                    //level.total_quantity -= traded_qty;
                 }
                 
                 if level_rem == 0 { remove_prices.push(*price) }
@@ -543,6 +617,15 @@ impl HalfBook {
 
         self.cleanup_after_trade(&remove_prices, &remove_ids);
         Some((trade_history, remaining))
+    }
+
+    #[inline]
+    pub fn check_validity_quantity(&self) -> bool {
+        let mut total = 0;
+        for level in self.levels.values() {
+            total += level.total_quantity;
+        }
+        total == self.total_quantity
     }
 }
 
@@ -593,13 +676,20 @@ mod tests {
         half_book.change_price(1, 99);
         assert_eq!(half_book.best_price, 99);
 
+        assert!(half_book.check_validity_quantity());
+
         // dbg!(half_book.clone()); wrong total quantity = 35 not 25
         half_book.change_quantity(2, 10);
+
+        dbg!(half_book.clone());
+        assert!(half_book.check_validity_quantity());
+
         assert_eq!(half_book.aggregate_quantity_at_price(99), 10);
         assert_eq!(half_book.aggregate_quantity(), 30);
         assert_eq!(half_book.best_price, 99);
         
         half_book.cancel_order(1);
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.aggregate_quantity(), 20);
         assert_eq!(half_book.best_price, 100);
         //
@@ -608,21 +698,38 @@ mod tests {
 
         half_book.cancel_order(2);
         //
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.aggregate_quantity(), 10);
         assert_eq!(half_book.best_price, 101);
 
         // dbg!(half_book.clone()); ok!
         half_book.change_price(3, 99);
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.best_price, 99);
         let stress_test = half_book.change_price(4, 99);
         assert_eq!(stress_test, None);
-
-        half_book.change_quantity(3, 5);
         
+        half_book.change_quantity(3, 5);
+
+        dbg!(half_book.clone());
         assert_eq!(half_book.aggregate_quantity(), 5);
         let x = half_book.change_quantity(4, 0);
-
+        dbg!(half_book.clone());
+        assert!(half_book.check_validity_quantity());
+        
         assert_eq!(x, None);
+
+        let remove_order = RemoveAnyOrder {
+            price: 99,
+            quantity: 3,
+            order_side: OrderSide::Ask,
+        };
+
+        //dbg!(half_book.clone());
+        half_book.remove_order(remove_order).unwrap();
+        assert_eq!(half_book.aggregate_quantity(), 2);
+        assert_eq!(half_book.best_price, 99);
+        
         Ok(())
     }
 
@@ -638,7 +745,7 @@ mod tests {
         };
 
         half_book.add_limit_order(order)?;
-
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.len(), 1);
 
         let order = LimitOrder {
@@ -649,6 +756,7 @@ mod tests {
         };
 
         half_book.add_limit_order(order)?;
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.len(), 1);
         assert_eq!(half_book.aggregate_quantity(), 15);
         assert_eq!(half_book.best_price, 100);
@@ -661,7 +769,7 @@ mod tests {
         };
 
         half_book.add_limit_order(order)?;
-
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.len(), 2);
         assert_eq!(half_book.aggregate_quantity(), 25);
         assert_eq!(half_book.best_price, 101);
@@ -674,10 +782,12 @@ mod tests {
         // dbg!(half_book.clone()); wrong total quantity = 35 not 25
 
         half_book.change_quantity(2, 10);
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.aggregate_quantity(), 30);
         assert_eq!(half_book.best_price, 101);
 
         half_book.cancel_order(3);
+        assert!(half_book.check_validity_quantity());
         assert_eq!(half_book.aggregate_quantity(), 20);
         assert_eq!(half_book.best_price, 100);
         
@@ -729,6 +839,8 @@ mod tests {
         assert_eq!(half_book.best_price, 100);
 
         let (trades, remaining) = half_book.trade_limit_order(&limit_order).unwrap();
+        
+        assert!(half_book.check_validity_quantity());
         assert_eq!(trades.get_last_trade(), Some((100, 3)));
         assert_eq!(remaining, 0);
 
@@ -742,6 +854,7 @@ mod tests {
         };
 
         let (trades, remaining) = half_book.trade_market_order(&market_order).unwrap();
+        assert!(half_book.check_validity_quantity());
         assert_eq!(trades.get_last_trade(), Some((100, 1)));
         assert_eq!(
             (trades.average_trade_price() - 100.0).abs() < 0.000001, 
@@ -765,6 +878,16 @@ mod tests {
 
         let display = half_book.to_string_upto_depth(Some(3));
         println!("{}", display);
+
+        let remove_order = RemoveAnyOrder {
+            price: 101,
+            quantity: 10,
+            order_side: OrderSide::Ask,
+        };
+        let x = half_book.remove_order(remove_order).unwrap();
+        assert!(half_book.check_validity_quantity());
+        assert_eq!(x, 1);
+        assert_eq!(half_book.aggregate_quantity(), 0);
 
         Ok(())
     }

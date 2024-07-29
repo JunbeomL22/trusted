@@ -143,8 +143,8 @@ impl Level {
         if let Some((_, q)) = self.orders.iter_mut().find(|(k, _)| *k == order_id) {
             let res = *q;
             *q = new_quantity;
-            self.total_quantity += new_quantity
-                .saturating_sub(res);
+            self.total_quantity += new_quantity;
+            self.total_quantity -= res;
             Some(res)
         } else {
             None
