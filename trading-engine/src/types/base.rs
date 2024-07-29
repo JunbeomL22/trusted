@@ -11,6 +11,25 @@ pub type UnixNano = u64;
 /// I leave this primitive for performance reasons.
 pub type OrderId = u64;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VirtualOrderId {
+    pub order_id: OrderId,
+}
+impl Default for VirtualOrderId {
+    fn default() -> Self {
+        VirtualOrderId { order_id: 0 }
+    }
+}
+impl VirtualOrderId {
+    pub fn new(order_id: OrderId) -> Self {
+        VirtualOrderId { order_id }
+    }
+    pub fn next(&mut self) -> OrderId {
+        let res = self.order_id;
+        self.order_id += 1;
+        res
+    }
+}
 pub type AccountId = LocalStr;
 
 pub type TraderId = LocalStr;

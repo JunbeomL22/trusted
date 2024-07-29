@@ -1,8 +1,12 @@
 use crate::types::base::{BookPrice, BookQuantity, OrderId};
-use crate::types::enums::OrderSide;
+use crate::types::isin_code::IsinCode;
+use crate::types::enums::{OrderSide, TimeStampType};
+use crate::types::venue::Venue;
+
 //
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+
 pub trait OrderRequest {}
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LimitOrder {
@@ -97,10 +101,19 @@ impl RemoveAnyOrder {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum RecoveredOrder {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum OrderEnum {
     LimitOrder(LimitOrder),
     RemoveAnyOrder(RemoveAnyOrder),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DecomposedOrder {
+    pub order: OrderEnum,
+    pub timestamp: u64,
+    pub timetamp_type: TimeStampType,
+    pub isin_code: IsinCode,
+    pub venue: Venue,
 }
 
 impl OrderRequest for LimitOrder {}

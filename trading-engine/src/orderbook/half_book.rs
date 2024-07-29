@@ -2,7 +2,8 @@ use crate::data::order::{
     LimitOrder,
     MarketOrder,
     RemoveAnyOrder,
-    RecoveredOrder,
+    OrderEnum,
+    DecomposedOrder,
 };
 use crate::data::{
     quote::QuoteSnapshot,
@@ -10,8 +11,8 @@ use crate::data::{
 };
 use crate::orderbook::level::Level;
 use crate::types::{
-    base::{BookPrice, OrderId, BookQuantity, TradeHistory, LevelSnapshot},
-    enums::OrderSide,
+    base::{BookPrice, OrderId, BookQuantity, TradeHistory, LevelSnapshot, VirtualOrderId},
+    enums::{OrderSide, TimeStampType},
 };
 use crate::topics::LogTopic;
 //
@@ -40,42 +41,158 @@ impl HalfBook {
     pub fn get_total_quantity(&self) -> BookQuantity {
         self.total_quantity
     }
-    
-    /// it cleans levels and cache then
-    /// LevelSnapshot is used as a single quote with fake orderid
-    pub fn update_by_level_snapshot(&mut self, level_snapshot: &Vec<LevelSnapshot>) -> Vec<RecoveredOrder> {
-        let mut res = vec![];
-        self.levels.clear();
-        self.cache.clear();
-        self.total_quantity = 0;
-        self.best_price = if self.order_side == OrderSide::Ask {
-            BookPrice::MAX
+
+    fn remove_level(&mut self, price: BookPrice) {
+        let level_total = if let Some(level) = self.levels.get(&price) {
+            for order in level.orders.iter() {
+                self.cache.remove(&order.0);
+            }
+            level.total_quantity
         } else {
-            BookPrice::MIN
+            0
         };
-        
-        let mut order_id_generator = 0;
-        * you have to reuse not to create new order id
-        * modify so that it can return the recovered_order
+        self.total_quantity -= level_total;
+        self.levels.remove(&price);
+
+        if price == self.best_price {
+            self.reinitialize_best_price();
+        }
+    }
+
+    /// It cleans levels and cache then
+    /// LevelSnapshot is used as a single quote with fake orderid
+    /// This assumes that the orderbook was orignally Snapshot for performance, i.e., one order per level
+    /// So if there is a new order, it will reuse the existing orders
+    pub fn update_l2_snapshot(
+        &mut self, 
+        level_snapshot: &Vec<LevelSnapshot>,
+        mock_counter: &mut VirtualOrderId,
+    ) -> Result<()> {
+        let price_vec: Vec<BookPrice> = level_snapshot.iter().map(|x| x.book_price).collect();
+        // erase existing level where not in the snapshot
+        // Collect keys to be removed
+        let levels_to_remove: Vec<BookPrice> = self.levels.keys()
+            .filter(|level| !price_vec.contains(level))
+            .cloned()
+            .collect();
+
+        // Remove levels
+        for level in levels_to_remove {
+            self.remove_level(level);
+        }
+
         for level in level_snapshot {
             let price = level.book_price;
             let quantity = level.book_quantity;
             
-            let mut level = Level::initialize(price);
-            level.total_quantity = quantity;
-            let order_id = order_id_generator;
-            order_id_generator += 1;
-
-            level.orders.push_back((order_id, quantity));
-
-            self.cache.insert(order_id, price);
-            self.levels.insert(price, level);
-            self.total_quantity += quantity;
-            self.best_price = match self.order_side {
-                OrderSide::Ask => self.best_price.min(price),
-                OrderSide::Bid => self.best_price.max(price),
-            };
+            if let Some(level) = self.levels.get_mut(&price) {
+                // there is a level for the price
+                if let Some(order) = level.orders.back_mut() {
+                    self.total_quantity += quantity;
+                    self.total_quantity -= order.1;
+                    level.total_quantity = quantity;
+                    order.1 = quantity;
+                } else {
+                    return Err(anyhow!("In an L2-Book, there is a level for the price but no order"));
+                }
+            } else {
+                let mut level = Level::initialize(price);
+                level.total_quantity = quantity;
+                let order_id = mock_counter.next();
+                level.orders.push_back((order_id, quantity));    
+                self.levels.insert(price, level);
+                self.cache.insert(order_id, price);
+                self.total_quantity += quantity;
+            }
         }
+        
+        self.reinitialize_best_price();
+        
+        Ok(())
+    }
+
+    pub fn decomposed_orders_with_update(
+        &mut self, 
+        level_snapshot: &Vec<LevelSnapshot>,
+        virtual_counter: &mut VirtualOrderId,
+    ) -> Result<Vec<OrderEnum>> { // the order of vector is not important actually. Mostly this will be a single order
+        let price_vec: Vec<BookPrice> = level_snapshot.iter().map(|x| x.book_price).collect();
+        // erase existing level where not in the snapshot
+        // Collect keys to be removed
+        let levels_to_remove: Vec<BookPrice> = self.levels.keys()
+            .filter(|level| !price_vec.contains(level))
+            .cloned()
+            .collect();
+
+        let mut res_orders: Vec<OrderEnum> = vec![];
+        // Remove levels
+        for level in levels_to_remove {
+            let remove_order_primitive = RemoveAnyOrder {
+                price: level,
+                quantity: self.levels.get(&level).unwrap().total_quantity,
+                order_side: self.order_side,
+            };
+            let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
+            res_orders.push(remove_order);
+
+            self.remove_level(level);
+        }
+
+        for level in level_snapshot {
+            let price = level.book_price;
+            let quantity = level.book_quantity;
+            
+            if let Some(level) = self.levels.get_mut(&price) {
+                // there is a level for the price
+                if let Some(order) = level.orders.back_mut() {
+                    self.total_quantity += quantity;
+                    self.total_quantity -= order.1;
+                    
+                    if order.1 > quantity { // order removed
+                        let remove_order_primitive = RemoveAnyOrder {
+                            price,
+                            quantity: order.1 - quantity,
+                            order_side: self.order_side,
+                        };
+                        let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
+                        res_orders.push(remove_order);
+                    } else if order.1 < quantity { // order added
+                        let limit_order = LimitOrder {
+                            order_id: virtual_counter.next(),
+                            price,
+                            quantity: quantity - order.1,
+                            order_side: self.order_side,
+                        };
+                        let add_order = OrderEnum::LimitOrder(limit_order);
+                        res_orders.push(add_order);
+                    }
+
+                    level.total_quantity = quantity;
+                    order.1 = quantity;
+                } else {
+                    return Err(anyhow!("In an L2-Book, there is a level for the price but no order"));
+                }
+            } else {
+                let mut level = Level::initialize(price);
+                level.total_quantity = quantity;
+                let order_id = virtual_counter.next();
+
+                let limit_order = LimitOrder {
+                    order_id,
+                    price,
+                    quantity,
+                    order_side: self.order_side,
+                };
+                let add_order = OrderEnum::LimitOrder(limit_order);
+                res_orders.push(add_order);
+
+                level.orders.push_back((order_id, quantity));    
+                self.levels.insert(price, level);
+                self.cache.insert(order_id, price);
+                self.total_quantity += quantity;
+            }
+        }
+        Ok(res_orders)
     }
 
     pub fn to_string_upto_depth(&self, depth: Option<usize>) -> String {
