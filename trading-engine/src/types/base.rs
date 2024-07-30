@@ -1,12 +1,12 @@
 use crate::types::isin_code::IsinCode;
 use crate::types::enums::TimeStepUnit;
 use crate::types::venue::Venue;
+use crate::types::timestamp::{CorseTimeStamp, MicroTimeStamp, TimeStamp};
 use std::ops::{Index, IndexMut};
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
-pub type UnixNano = u64;
 /// if we encounter a venue using non u64 type OrderId, we must change this to enum OrderId.
 /// I leave this primitive for performance reasons.
 pub type OrderId = u64;
@@ -15,11 +15,13 @@ pub type OrderId = u64;
 pub struct VirtualOrderId {
     pub order_id: OrderId,
 }
+
 impl Default for VirtualOrderId {
     fn default() -> Self {
         VirtualOrderId { order_id: 0 }
     }
 }
+
 impl VirtualOrderId {
     pub fn new(order_id: OrderId) -> Self {
         VirtualOrderId { order_id }
@@ -41,8 +43,9 @@ pub type BookPrice = i64;
 pub type BookQuantity = u64;
 // 건수
 pub type OrderCount = u32;
-
+//
 pub type Real = f32;
+/
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TradeHistory {
@@ -126,166 +129,29 @@ impl IndexMut<usize> for TradeHistory {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct MicroTimeStamp{
-    // HHMMSSuuuuuu
-    pub stamp: u64,
-}
-
-impl MicroTimeStamp {
-    pub fn new(stamp: u64) -> Self {
-        MicroTimeStamp { stamp }
-    }
-}
-
-impl MicroTimeStamp {
-    #[inline]
-    pub fn as_real(&self) -> Real {
-        self.stamp as Real
-    }
-}
-impl Default for MicroTimeStamp {
-    fn default() -> Self {
-        MicroTimeStamp { stamp: 0 }
-    }
-}
-
-impl AddAssign<MicroTimeStamp> for MicroTimeStamp {
-    fn add_assign(&mut self, other: MicroTimeStamp) {
-        self.stamp += other.stamp;
-    }
-}
-
-impl SubAssign<MicroTimeStamp> for MicroTimeStamp {
-    fn sub_assign(&mut self, other: MicroTimeStamp) {
-        self.stamp -= other.stamp;
-    }
-}
-
-impl Add<MicroTimeStamp> for MicroTimeStamp {
-    type Output = MicroTimeStamp;
-
-    fn add(self, other: MicroTimeStamp) -> MicroTimeStamp {
-        MicroTimeStamp { stamp: self.stamp + other.stamp}
-    }
-}
-
-impl Sub<MicroTimeStamp> for MicroTimeStamp {
-    type Output = MicroTimeStamp;
-
-    fn sub(self, other: MicroTimeStamp) -> MicroTimeStamp {
-        MicroTimeStamp { stamp: self.stamp - other.stamp }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MilliTimeStamp{
-    // HHMMSSmmm
-    pub stamp: u32,
-}
-
-impl MilliTimeStamp {
-    pub fn new(stamp: u32) -> Self {
-        MilliTimeStamp { stamp }
-    }
-}
- 
-impl MilliTimeStamp {
-    #[inline]
-    pub fn as_real(&self) -> Real {
-        self.stamp as Real
-    }
-
-    #[inline]
-    pub fn to_seconds(&self) -> Real {
-        self.stamp as Real / 1000.0
-    }
-
-    #[inline]
-    pub fn to_micros(&self) -> Real {
-        self.stamp as Real * 1000.0
-    }
-
-    #[inline]
-    pub fn to_millis(&self) -> Real {
-        self.stamp as Real
-    }
-}
-
-impl Default for MilliTimeStamp {
-    fn default() -> Self {
-        MilliTimeStamp { stamp: 0 }
-    }
-}
-
-impl AddAssign<MilliTimeStamp> for MilliTimeStamp {
-    fn add_assign(&mut self, other: MilliTimeStamp) {
-        self.stamp += other.stamp;
-    }
-}
-
-impl SubAssign<MilliTimeStamp> for MilliTimeStamp {
-    fn sub_assign(&mut self, other: MilliTimeStamp) {
-        self.stamp -= other.stamp;
-    }
-}
-
-impl Add<MilliTimeStamp> for MilliTimeStamp {
-    type Output = MilliTimeStamp;
-
-    fn add(self, other: MilliTimeStamp) -> MilliTimeStamp {
-        MilliTimeStamp { stamp: self.stamp + other.stamp}
-    }
-}
-
-impl Sub<MilliTimeStamp> for MilliTimeStamp {
-    type Output = MilliTimeStamp;
-
-    fn sub(self, other: MilliTimeStamp) -> MilliTimeStamp {
-        MilliTimeStamp{ 
-            stamp: self.stamp - other.stamp
-        }
-    }
-}
-
-impl MicroTimeStamp {
-    /// cut off the last 3 digits, in other words, quotient of 1000
-    pub fn to_millis(&self) -> MilliTimeStamp {
-        MilliTimeStamp{
-            stamp: (self.stamp / 1000) as u32,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct CoarseTimeSeriesPoint {
-    pub timestamp: MilliTimeStamp, 
+    pub timestamp: CorseTimeStamp, 
     pub value: Real,
 }
 
-impl CoarseTimeSeriesPoint {
-    pub fn from_timestamp(timestamp: MilliTimeStamp) -> Self {
-        CoarseTimeSeriesPoint {
+impl TimeSeriesPoint {
+    pub fn from_timestamp(timestamp: TimeStamp) -> Self {
+        TimeSeriesPoint {
             timestamp,
             value: 0.0,
         }
     }
     
     pub fn null_point() -> Self {
-        CoarseTimeSeriesPoint {
-            timestamp: MilliTimeStamp { stamp: 0 },
+        TimeSeriesPoint {
+            timestamp: TimeStamp { stamp: 0 },
             value: 0.0,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct FineTimeSeriesPoint {
-    pub timestamp: MicroTimeStamp, 
-    pub value: Real,
-
-}
-
+#[warn(dead_code)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
     pub start: usize,
@@ -348,13 +214,14 @@ impl PartialEq<LevelSnapshot> for &LevelSnapshot {
 
 impl Eq for LevelSnapshot {}
 
-
+#[warn(dead_code)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimeInterval {
     pub unit: TimeStepUnit,
     pub interval: Real,
 }
 
+#[warn(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct InstrumentIdentifier {
     isin: IsinCode, 

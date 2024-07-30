@@ -8,8 +8,8 @@ use crate::{log_error, log_warn};
 use crate::types::base::{
     Real,
     NormalizedReal,
-    MicroTimeStamp,
     MilliTimeStamp,
+    MicroTimeStamp,
 };
 use crate::utils::timer::time_components_from_unix_nano;
 use crate::types::enums::TimeStampType;
@@ -517,6 +517,25 @@ impl TimeStampConverter {
                 timestamp += s as u32 * 1_000;
                 timestamp += mil as u32;
                 MilliTimeStamp { stamp: timestamp }
+            }
+        }
+    }
+
+    pub fn micro_timestamp_from_u64(&self, value: u64, stamp_type: TimeStampType) -> MicroTimeStamp {
+        match stamp_type {
+            TimeStampType::HHMMSSuuuuuu => {
+                MicroTimeStamp { 
+                    stamp: value,
+                }
+            },
+            TimeStampType::UnixNano => {
+                // HHMMSSuuuuuu
+                let (h, m, s, mil) = time_components_from_unix_nano(value);
+                let mut timestamp = (h + self.utc_offset_hour) as u32 * 10_000_000;
+                timestamp += m as u32 * 100_000;
+                timestamp += s as u32 * 1_000;
+                timestamp += mil as u32;
+                MicroTimeStamp { stamp: timestamp }
             }
         }
     }

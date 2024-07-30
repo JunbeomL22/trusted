@@ -24,10 +24,15 @@ use crate::types::{
         BookPrice,
         BookQuantity,
         TradeHistory,
+        VirtualOrderId,
     },
 };
 //
-use anyhow::{Result, anyhow};
+use anyhow::{
+    Result, 
+    anyhow, 
+    Context,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct OrderBook {
@@ -35,7 +40,7 @@ pub struct OrderBook {
     pub bids: HalfBook,
     isin_code: IsinCode,
     venue: Venue,
-    mock_order_id_counter: OrderId,
+    virtual_id_counter: VirtualOrderId,
 }
 
 impl OrderBook {
@@ -66,8 +71,10 @@ impl OrderBook {
     #[inline]
     pub fn update_from_quote_snapshot(&mut self, quote: &QuoteSnapshot) -> Result<()> {
         self.check_isin_venue(&quote.isin_code, quote.venue)?;
-        self.asks.update_by_level_snapshot(&quote.ask_quote_data);
-        self.bids.update_by_level_snapshot(&quote.bid_quote_data);
+        self.asks.update_l2_snapshot(&quote.ask_quote_data, &mut self.virtual_id_counter)
+            .context("Failed to update ask side by level snapshot")?;
+        self.bids.update_l2_snapshot(&quote.bid_quote_data, &mut self.virtual_id_counter)
+            .context("Failed to update bid side by level snapshot")?;
 
         Ok(())
     }
@@ -75,8 +82,10 @@ impl OrderBook {
     #[inline]
     pub fn update_from_trade_quote_snapshot(&mut self, trade_quote: &TradeQuoteSnapshot) -> Result<()> {
         self.check_isin_venue(&trade_quote.isin_code, trade_quote.venue)?;
-        self.asks.update_by_level_snapshot(&trade_quote.ask_quote_data);
-        self.bids.update_by_level_snapshot(&trade_quote.bid_quote_data);
+        self.asks.update_l2_snapshot(&trade_quote.ask_quote_data, &mut self.virtual_id_counter)
+            .context("Failed to update ask side by level snapshot")?;
+        self.bids.update_l2_snapshot(&trade_quote.bid_quote_data, &mut self.virtual_id_counter)
+            .context("Failed to update bid side by level snapshot")?;
 
         Ok(())
     }
@@ -124,7 +133,7 @@ impl OrderBook {
             bids: HalfBook::initialize(OrderSide::Bid),
             isin_code,
             venue,
-            mock_order_id_counter: 0,
+            virtual_id_counter: VirtualOrderId::new(0),
         }
     }
     

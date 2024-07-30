@@ -3,7 +3,10 @@ use crate::types::{
         LevelSnapshot,
         BookQuantity,
     },
-    enums::TimeStampType,
+    timestamp::{
+        TimeStampType,
+        TimeStamp,
+    },
     isin_code::IsinCode, 
     venue::Venue,
 };
@@ -28,7 +31,7 @@ pub struct QuoteSnapshot {
     pub isin_code: IsinCode, // this can be spread product
     //
     pub timestamp_type: TimeStampType,
-    pub timestamp: u64,      // HHMMSSuuuuuu
+    pub timestamp: TimeStamp,
     //
     pub ask_quote_data: Vec<LevelSnapshot>,
     pub bid_quote_data: Vec<LevelSnapshot>,
@@ -50,7 +53,7 @@ impl Default for QuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
             timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: 0,
+            timestamp: TimeStamp::new(0),
             ask_quote_data: Vec::new(),
             bid_quote_data: Vec::new(),
             quote_level_cut: 0,
@@ -72,7 +75,7 @@ impl QuoteSnapshot {
             isin_code: IsinCode::default(),
             //
             timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: 19700101,
+            timestamp: TimeStamp::new(19700101),
             ask_quote_data: vec![LevelSnapshot::default(); level],
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,

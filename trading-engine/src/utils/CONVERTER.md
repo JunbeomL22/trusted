@@ -4,8 +4,8 @@ reference: [here](https://rust-malaysia.github.io/code/2020/07/11/faster-integer
 ## Basic token
 * ascii number is from 0x30 (="0") ~ 0x39 ("9")
 ```Rust
-let x0 = b"0"; // = 0x31 = 0b 0011 0000
-let x1 = b"1"; // = 0x32 = 0b 0011 0001
+let x0 = b"0"; // = 0x30 = 0b 0011 0000
+let x1 = b"1"; // = 0x31 = 0b 0011 0001
 //..
 let x9 = b"9"; // = 0x39 = 0b 0011 0009
 ```

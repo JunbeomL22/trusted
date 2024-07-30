@@ -4,8 +4,9 @@ use crate::types::{
         BookQuantity,
         Real,
     },
-    enums::{
-        TradeType,
+    enums::TradeType,
+    timestamp::{
+        TimeStamp,
         TimeStampType,
     },
     isin_code::IsinCode,
@@ -29,7 +30,7 @@ pub struct TradeData {
     pub isin_code: IsinCode, // this can be spread product
     //
     pub timestamp_type: TimeStampType,
-    pub timestamp: u64,      // HHMMSSuuuuuu
+    pub timestamp: TimeStamp,      // HHMMSSuuuuuu
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
     pub trade_type: Option<TradeType>,
@@ -49,7 +50,7 @@ impl Default for TradeData {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
             timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: 0,
+            timestamp: TimeStamp::new(0),
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
@@ -69,7 +70,7 @@ impl TradeData {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
             timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: 09_00_00_000000,
+            timestamp: TimeStamp::new(09_00_00_000000),
             //
             trade_price: 0,
             trade_quantity: 0,
