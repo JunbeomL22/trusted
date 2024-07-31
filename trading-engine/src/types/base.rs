@@ -1,11 +1,8 @@
 use crate::types::isin_code::IsinCode;
-use crate::types::enums::TimeStepUnit;
 use crate::types::venue::Venue;
-use crate::types::timestamp::{CorseTimeStamp, MicroTimeStamp, TimeStamp};
 use std::ops::{Index, IndexMut};
 use flexstr::LocalStr;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 /// if we encounter a venue using non u64 type OrderId, we must change this to enum OrderId.
 /// I leave this primitive for performance reasons.
@@ -45,7 +42,8 @@ pub type BookQuantity = u64;
 pub type OrderCount = u32;
 //
 pub type Real = f32;
-/
+//
+pub type UnixNano = u64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TradeHistory {
@@ -129,28 +127,6 @@ impl IndexMut<usize> for TradeHistory {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct CoarseTimeSeriesPoint {
-    pub timestamp: CorseTimeStamp, 
-    pub value: Real,
-}
-
-impl TimeSeriesPoint {
-    pub fn from_timestamp(timestamp: TimeStamp) -> Self {
-        TimeSeriesPoint {
-            timestamp,
-            value: 0.0,
-        }
-    }
-    
-    pub fn null_point() -> Self {
-        TimeSeriesPoint {
-            timestamp: TimeStamp { stamp: 0 },
-            value: 0.0,
-        }
-    }
-}
-
 #[warn(dead_code)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct Slice {
@@ -214,12 +190,7 @@ impl PartialEq<LevelSnapshot> for &LevelSnapshot {
 
 impl Eq for LevelSnapshot {}
 
-#[warn(dead_code)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct TimeInterval {
-    pub unit: TimeStepUnit,
-    pub interval: Real,
-}
+
 
 #[warn(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -246,28 +217,5 @@ impl InstrumentIdentifier {
     #[must_use]
     pub fn get_venue(&self) -> Venue {
         self.venue
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::enums::TimeStepUnit;
-
-    #[test]
-    fn test_micro_to_milli() {
-        let micro = MicroTimeStamp{stamp: 123456789};
-        let milli = micro.to_millis();
-        assert_eq!(milli.stamp, 123456);
-    }
-
-    #[test]
-    fn test_time_interval() {
-        let ti = TimeInterval {
-            interval: 1.0,
-            unit: TimeStepUnit::Second,
-        };
-        assert_eq!((ti.interval - 1.0) < Real::EPSILON, true);
-        assert_eq!(ti.unit, TimeStepUnit::Second);
     }
 }

@@ -5,22 +5,17 @@ use crate::types::{
         Real,
     },
     enums::TradeType,
-    timestamp::{
-        TimeStamp,
-        TimeStampType,
-    },
+    timestamp::DateTimeStampInSec,
     isin_code::IsinCode,
     venue::Venue,
 };
 use crate::utils::numeric_converter::{
     OrderConverter,
     CumQntConverter,
-    TimeStampConverter,
 };
 
 use crate::data::krx::krx_converter::{
     get_krx_base_bond_order_converter,
-    get_krx_timestamp_converter,
     get_krx_base_cum_qnt_converter,
 };
 
@@ -29,8 +24,7 @@ pub struct TradeData {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
     //
-    pub timestamp_type: TimeStampType,
-    pub timestamp: TimeStamp,      // HHMMSSuuuuuu
+    pub timestamp: DateTimeStampInSec,
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
     pub trade_type: Option<TradeType>,
@@ -39,8 +33,6 @@ pub struct TradeData {
     //
     pub order_converter: &'static OrderConverter,
     pub cumulative_qnt_converter: &'static CumQntConverter,
-    pub timestamp_converter: &'static TimeStampConverter,
-
 }
 
 impl Default for TradeData {
@@ -49,8 +41,7 @@ impl Default for TradeData {
             //data_code: LocalStr::from(""),
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(0),
+            timestamp: DateTimeStampInSec::default(),
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
@@ -59,7 +50,6 @@ impl Default for TradeData {
             //
             order_converter: get_krx_base_bond_order_converter(),
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
         }
     }
 }
@@ -69,8 +59,7 @@ impl TradeData {
         TradeData {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(09_00_00_000000),
+            timestamp: DateTimeStampInSec::default(),
             //
             trade_price: 0,
             trade_quantity: 0,
@@ -81,7 +70,6 @@ impl TradeData {
             //
             order_converter: get_krx_base_bond_order_converter(),
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
         }
     }
 

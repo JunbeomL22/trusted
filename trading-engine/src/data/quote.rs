@@ -3,10 +3,7 @@ use crate::types::{
         LevelSnapshot,
         BookQuantity,
     },
-    timestamp::{
-        TimeStampType,
-        TimeStamp,
-    },
+    timestamp::DateTimeStampInSec,
     isin_code::IsinCode, 
     venue::Venue,
 };
@@ -14,13 +11,11 @@ use crate::types::{
 use crate::utils::numeric_converter::{
     OrderConverter,
     OrderCounter,
-    TimeStampConverter,
 };
 
 use crate::data::krx::krx_converter::{
     get_krx_base_bond_order_converter,
     get_krx_base_order_counter,
-    get_krx_timestamp_converter,
 };
 use serde::Serialize;
 
@@ -30,8 +25,7 @@ pub struct QuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
     //
-    pub timestamp_type: TimeStampType,
-    pub timestamp: TimeStamp,
+    pub timestamp: DateTimeStampInSec,
     //
     pub ask_quote_data: Vec<LevelSnapshot>,
     pub bid_quote_data: Vec<LevelSnapshot>,
@@ -43,8 +37,6 @@ pub struct QuoteSnapshot {
     pub order_counter: &'static OrderCounter,
     #[serde(skip)]
     pub order_converter: &'static OrderConverter,
-    #[serde(skip)]
-    pub timestamp_converter: &'static TimeStampConverter,
 }
 
 impl Default for QuoteSnapshot {
@@ -52,8 +44,7 @@ impl Default for QuoteSnapshot {
         QuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(0),
+            timestamp: DateTimeStampInSec::default(),
             ask_quote_data: Vec::new(),
             bid_quote_data: Vec::new(),
             quote_level_cut: 0,
@@ -62,7 +53,6 @@ impl Default for QuoteSnapshot {
             //
             order_counter: get_krx_base_order_counter(),
             order_converter: get_krx_base_bond_order_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
         }
     }
 
@@ -74,8 +64,7 @@ impl QuoteSnapshot {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
             //
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(19700101),
+            timestamp: DateTimeStampInSec::default(),
             ask_quote_data: vec![LevelSnapshot::default(); level],
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,
@@ -84,7 +73,6 @@ impl QuoteSnapshot {
             //
             order_counter: get_krx_base_order_counter(),
             order_converter: get_krx_base_bond_order_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
         }
     }
 

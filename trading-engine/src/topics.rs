@@ -4,6 +4,11 @@ pub enum LogTopic{
     OfiLevelMismatch,
     ZeroQuantity,
     OrderNotFound,
+    UnsupportedDigitSize,
+    TooLongDigit,
+    UnorderedTimeStamp,
+    //
+    DateInUtcShift,
 }
 
 impl LogTopic {
@@ -12,6 +17,10 @@ impl LogTopic {
             LogTopic::OfiLevelMismatch => "OfiLevelMismatch",
             LogTopic::ZeroQuantity => "ZeroQuantity",
             LogTopic::OrderNotFound => "OrderNotFound",
+            LogTopic::UnsupportedDigitSize => "UnsupportedDigitSize",
+            LogTopic::TooLongDigit => "TooLongDigit",
+            LogTopic::UnorderedTimeStamp => "UnorderedTimeStamp",
+            LogTopic::DateInUtcShift => "DateInUtcShift",
         }
     }
 }

@@ -8,6 +8,13 @@ use crate::utils::numeric_converter::{
     OrderCounter,
 };
 use crate::types::isin_code::IsinCode;
+use crate::types::timestamp::{
+    DateStampGenerator,
+    DateStamp,
+    DateTimeStampInSec,
+    TimeStampType,
+};
+//
 use once_cell::sync::Lazy;
 impl OrderCounter {
     pub fn krx_base_order_counter() -> Self {
@@ -268,10 +275,7 @@ impl TimeStampConverter {
             IntegerConverter::new(time_cfg).expect("failed to create time converter");
 
         let utc_offset_hour = 9;
-        TimeStampConverter { 
-            converter,
-            utc_offset_hour,
-        }
+        TimeStampConverter::new(converter, utc_offset_hour, TimeStampType::HHMMSSuuuuuu)
     }
 }
 

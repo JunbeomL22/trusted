@@ -12,7 +12,7 @@ use crate::data::{
 use crate::orderbook::level::Level;
 use crate::types::{
     base::{BookPrice, OrderId, BookQuantity, TradeHistory, LevelSnapshot, VirtualOrderId},
-    enums::{OrderSide, TimeStampType},
+    enums::OrderSide,
 };
 use crate::topics::LogTopic;
 //

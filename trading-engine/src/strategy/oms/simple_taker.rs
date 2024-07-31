@@ -3,8 +3,8 @@ use crate::types::base::{
     BookQuantity,
     OrderId,
     Real,
-    MilliTimeStamp,
 };
+use crate::types::timestamp::DateTimeStampInSec;
 use crate::data::order::LimitOrder;
 use crate::strategy::oms::OMS;
 //
@@ -19,7 +19,7 @@ pub struct SimpleTaker {
     pub enter_price: FxHashMap<OrderId, BookPrice>,
     pub bid_upper: BookPrice,
     pub ask_lower: BookPrice,
-    pub order_timestamp: MilliTimeStamp,
+    pub timestamp: DateTimeStampInSec,
     pub timeout_milli: Real,
     pub requested_orders: Vec<LimitOrder>,
     pub confirmed_orders: Vec<OrderId>,

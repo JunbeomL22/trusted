@@ -448,9 +448,12 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0034 = crate::data::krx::derivative_quote::IFMSRPD0034::default();
         
-        let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data)
-            .expect("failed to parse IFMSRPD0034");
+        let mut date_gen = crate::types::timestamp::DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap()
+        );
 
+        let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data, &mut date_gen)
+            .expect("failed to parse IFMSRPD0034");
         
         let mut order_book = OrderBook::initialize_with_isin_venue(quote_snapshot.isin_code.clone(), quote_snapshot.venue.clone());
         order_book.update_from_quote_snapshot(&quote_snapshot).unwrap();

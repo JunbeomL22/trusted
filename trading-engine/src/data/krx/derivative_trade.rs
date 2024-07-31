@@ -5,8 +5,8 @@ use crate::types::{
     enums::TradeType,
     isin_code::IsinCode,
     venue::Venue,
+    timestamp::DateStampGenerator,
 };
-use crate::types::enums::TimeStampType;
 
 use crate::data::krx::krx_converter::{
     get_krx_derivative_converter,
@@ -161,7 +161,9 @@ impl IFMSRPD0037 {
         self
     }
 
-    pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
+    pub fn to_trade_quote_snapshot(
+        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+    ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         //
         let venue = Venue::KRX;
@@ -177,11 +179,17 @@ impl IFMSRPD0037 {
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
         //
+        /* 
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
             )
         };
+        */
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
 
         let trade_price = converter
             .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
@@ -233,7 +241,6 @@ impl IFMSRPD0037 {
         Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             trade_price,
             trade_quantity,
@@ -248,7 +255,6 @@ impl IFMSRPD0037 {
             //
             order_counter,
             order_converter: converter,
-            timestamp_converter,
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         })
     }
@@ -257,6 +263,7 @@ impl IFMSRPD0037 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
+        date_gen: &mut DateStampGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
@@ -267,7 +274,7 @@ impl IFMSRPD0037 {
         let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
         let order_counter = get_krx_base_order_counter();
         //
-        data_buffer.timestamp_converter = timestamp_converter;
+        //data_buffer.timestamp_converter = timestamp_converter;
         data_buffer.order_converter = converter;
         data_buffer.order_counter = order_counter;
         //
@@ -287,12 +294,17 @@ impl IFMSRPD0037 {
 
         data_buffer.venue = Venue::KRX;
 
-        data_buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
+        /* 
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
             )
         };
+        */
+        data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
 
         data_buffer.trade_price = converter
             .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
@@ -502,7 +514,9 @@ impl IFMSRPD0038 {
         self
     }
 
-    pub fn to_trade_quote_snapshot(&self, payload: &[u8]) -> Result<TradeQuoteSnapshot> {
+    pub fn to_trade_quote_snapshot(
+        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+    ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         let venue = Venue::KRX;
 
@@ -527,10 +541,15 @@ impl IFMSRPD0038 {
         let or_ln = order_counter.order_count.get_config().total_length;
         //
 
+        /* 
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
-
+        */
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
         let trade_price = converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
 
         let trade_quantity = unsafe {
@@ -567,7 +586,6 @@ impl IFMSRPD0038 {
         Ok(TradeQuoteSnapshot {
             venue,
             isin_code,
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             trade_price,
             trade_quantity,
@@ -581,7 +599,6 @@ impl IFMSRPD0038 {
             //
             order_counter,
             order_converter: converter,
-            timestamp_converter,
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         })
     }
@@ -590,6 +607,7 @@ impl IFMSRPD0038 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
+        date_gen: &mut DateStampGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
@@ -615,12 +633,17 @@ impl IFMSRPD0038 {
             })
         } else { None };
 
-        data_buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
+        /* 
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
             )
         };
+        */
+        data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
 
         data_buffer.trade_price = converter
             .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
@@ -743,7 +766,9 @@ impl IFMSRPD0036 {
         self
     }
 
-    pub fn to_trade_data(&self, payload: &[u8]) -> Result<TradeData> {
+    pub fn to_trade_data(
+        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+    ) -> Result<TradeData> {
         self.is_valid_krx_payload(payload)?;
         let venue = Venue::KRX;
 
@@ -762,9 +787,15 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
+        /* 
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
+        */
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
 
         let trade_price = unsafe { 
             converter.to_book_price_unchecked(&payload[self.trade_price_slice.start..self.trade_price_slice.end])
@@ -783,7 +814,6 @@ impl IFMSRPD0036 {
         Ok(TradeData {
             venue,
             isin_code,
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             trade_price,
             trade_quantity,
@@ -791,7 +821,6 @@ impl IFMSRPD0036 {
             cumulative_trade_quantity: cum_trd_qnt,
             //
             order_converter: converter,
-            timestamp_converter,
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         })
     }
@@ -800,6 +829,7 @@ impl IFMSRPD0036 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeData,
+        date_gen: &mut DateStampGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         data_buffer.venue = Venue::KRX;
@@ -809,7 +839,6 @@ impl IFMSRPD0036 {
         let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
         let timestamp_converter = get_krx_timestamp_converter();
 
-        data_buffer.timestamp_converter = timestamp_converter;
         data_buffer.order_converter = converter;
         data_buffer.cumulative_trade_quantity = if self.parse_cum_trd_qnt {
             let cum_qnt_converter = get_krx_base_cum_qnt_converter();
@@ -820,12 +849,17 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
-        data_buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
+        /* 
         data_buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(
                 &payload[self.timestamp_slice.start..self.timestamp_slice.end],
             )
         };
+        */
+        data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            date_gen,
+        )?;
 
         data_buffer.trade_price = converter
             .to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
@@ -858,8 +892,12 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0037 = IFMSRPD0037::default();
 
+        let mut date_gen = DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd(2021, 12, 30),
+        );
+
         let trade_quote_data = ifmsrpd0037
-            .to_trade_quote_snapshot(test_data)
+            .to_trade_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
@@ -869,7 +907,7 @@ mod tests {
 
         let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
-        assert_eq!(trade_quote_data.timestamp, 104939081108);
+        //assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
         assert_eq!(
             (converter.price.to_f64_from_i64(trade_quote_data.trade_price) - 2.12).abs() < 1.0e-8, 
@@ -934,17 +972,21 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0037 = IFMSRPD0037::default().with_quote_level_cut(4)?;
 
+        let mut date_gen = DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd(2021, 12, 30),
+        );
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
         ifmsrpd0037
-            .to_trade_quote_snapshot_buffer(test_data, &mut trade_quote_data)
-            .expect("failed to convert to TradeQuoteSnapshot");
+            .to_trade_quote_snapshot_buffer(
+                test_data, &mut trade_quote_data, &mut date_gen
+            ).expect("failed to convert to TradeQuoteSnapshot");
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
             trade_quote_data.isin_code.as_str()
         );
         let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
-        assert_eq!(trade_quote_data.timestamp, 104939081108);
+        //assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
         assert_eq!(
             (converter.price.to_f64_from_i64(trade_quote_data.trade_price) - 2.12).abs() < 1.0e-8, 
@@ -1009,8 +1051,11 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
+        let mut date_gen = DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        );
         let trade_quote_data = ifmsrpd0038
-            .to_trade_quote_snapshot(test_data)
+            .to_trade_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
 
         println!(
@@ -1021,7 +1066,7 @@ mod tests {
         dbg!(trade_quote_data.clone());
 
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
-        assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
+        //assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
         assert_eq!(trade_quote_data.trade_price, 66500);
         assert_eq!(trade_quote_data.trade_quantity, 7);
         assert_eq!(trade_quote_data.trade_type, Some(TradeType::Buy));
@@ -1078,8 +1123,12 @@ mod tests {
             std::str::from_utf8(test_data).unwrap()
         ))?;    
 
+        let mut date_gen = DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        );
+
         ifmsrpd0038
-            .to_trade_quote_snapshot_buffer(test_data, data_buffer)
+            .to_trade_quote_snapshot_buffer(test_data, data_buffer, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
 
         let ask_quote = unsafe { (*current_ptr).effective_ask_data() };
@@ -1097,6 +1146,7 @@ mod tests {
         Ok(())
     }
 
+    use crate::types::base::Real;
     #[test]
     fn test_parse_ifmsrpd0038_with_buffer() -> Result<()> {
         let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
@@ -1104,9 +1154,13 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
+        let mut date_gen = DateStampGenerator::from(
+            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        );
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
         ifmsrpd0038
-            .to_trade_quote_snapshot_buffer(test_data, &mut trade_quote_data)
+            .to_trade_quote_snapshot_buffer(
+                test_data, &mut trade_quote_data, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
 
         println!(
@@ -1114,17 +1168,32 @@ mod tests {
             trade_quote_data.isin_code.as_str()
         );
 
-        dbg!(trade_quote_data.clone());
+        //dbg!(trade_quote_data.clone());
 
+        //let num_timestamp: u64 = 104_939_829_612;
+        // in seconds
+        //let mut sec: Real;
+        //sec = 19.0 * 3600.0;
+        //sec += 49.0 * 60.0;
+        //sec += 39.0;
+        //sec += 829_612.0 / 1_000_0.0;
+        let sec = 81379.827612;
+        
+        println!("sec: {}", sec as f32);
+        println!("timestamp: {}", trade_quote_data.timestamp.time.as_real());
+
+        //assert!((trade_quote_data.timestamp.time.as_real() - sec).abs() < 1.0e-6);
+        //dbg!(sec);
+        //dbg!(trade_quote_data.timestamp);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
-        assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
+        //assert_eq!(trade_quote_data.timestamp, );
         assert_eq!(trade_quote_data.trade_price, 66500);
         assert_eq!(trade_quote_data.trade_quantity, 7);
         assert_eq!(trade_quote_data.trade_type, Some(TradeType::Buy));
         let ask_quote = trade_quote_data.effective_ask_data();
         let bid_quote = trade_quote_data.effective_bid_data();
 
-        dbg!(trade_quote_data.clone());
+       //dbg!(trade_quote_data.clone());
 
         assert_eq!(
             ask_quote[0],

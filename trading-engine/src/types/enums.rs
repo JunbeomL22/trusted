@@ -64,21 +64,3 @@ impl FromU8 for TradeType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum QuoteDataType {
-    #[default]
-    Price,
-    Quantity,
-    OrderCount,
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn show_me_the_memory() {
-        println!("Size of TimeStampType: {}", std::mem::size_of::<TimeStampType>());
-    }
-}

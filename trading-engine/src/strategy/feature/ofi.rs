@@ -3,7 +3,7 @@ use crate::types::base::{
     UnixNano,
 };
 use crate::utils::numeric_converter::OrderConverter; 
-use crate::types::enums::TimeStampType;
+use crate::types::timestamp::TimeStampType;
 
 pub struct MetaData {
     level: u8, // best or second best, etc

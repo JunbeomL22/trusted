@@ -2768,6 +2768,7 @@ dependencies = [
  "itoa",
  "joinery",
  "lazy_format",
+ "lazy_static",
  "minstant",
  "once_cell",
  "parking_lot",

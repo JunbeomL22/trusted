@@ -5,10 +5,7 @@ use crate::types::{
         LevelSnapshot,
     },
     enums::TradeType,
-    timestamp::{
-        TimeStampType,
-        TimeStamp,
-    },
+    timestamp::DateTimeStampInSec,
     isin_code::IsinCode,
     venue::Venue,
 };
@@ -16,13 +13,11 @@ use crate::utils::numeric_converter::{
     OrderConverter,
     OrderCounter,
     CumQntConverter,
-    TimeStampConverter,
 };
 
 use crate::data::krx::krx_converter::{
     get_krx_base_bond_order_converter,
     get_krx_base_order_counter,
-    get_krx_timestamp_converter,
     get_krx_base_cum_qnt_converter,
 };
 use serde::Serialize;
@@ -35,8 +30,7 @@ pub struct TradeQuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
     //
-    pub timestamp_type: TimeStampType,
-    pub timestamp: TimeStamp,
+    pub timestamp: DateTimeStampInSec,
     //
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
@@ -54,8 +48,6 @@ pub struct TradeQuoteSnapshot {
     #[serde(skip)]
     pub order_converter: &'static OrderConverter,
     #[serde(skip)]
-    pub timestamp_converter: &'static TimeStampConverter,
-    #[serde(skip)]
     pub cumulative_qnt_converter: &'static CumQntConverter,
 }
 
@@ -67,8 +59,7 @@ impl Default for TradeQuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
             //
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(09_00_00_000000),
+            timestamp: DateTimeStampInSec::default(),
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
@@ -82,7 +73,6 @@ impl Default for TradeQuoteSnapshot {
             //
             order_counter: get_krx_base_order_counter(),
             order_converter: get_krx_base_bond_order_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         }
     }
@@ -94,8 +84,8 @@ impl TradeQuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
             //
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
-            timestamp: TimeStamp::new(09_00_00_000000),
+            
+            timestamp: DateTimeStampInSec::default(),
             //
             trade_price: 0,
             trade_quantity: 0,
@@ -110,7 +100,6 @@ impl TradeQuoteSnapshot {
             //
             order_counter: get_krx_base_order_counter(),
             order_converter: get_krx_base_bond_order_converter(),
-            timestamp_converter: get_krx_timestamp_converter(),
             cumulative_qnt_converter: get_krx_base_cum_qnt_converter(),
         }
     }

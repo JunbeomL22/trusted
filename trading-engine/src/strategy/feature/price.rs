@@ -1,12 +1,10 @@
 use crate::utils::numeric_converter::OrderConverter;
 use crate::data::krx::krx_converter::get_krx_base_bond_order_converter;
-use crate::types::enums::TimeStampType;
 
 #[derive(Debug, Clone)]
 pub struct MetaData {
     pub is_normalised: bool,
     pub utc: u8, // 0 ~ 24
-    pub timestamp_type: TimeStampType,
     pub converter: &'static OrderConverter,
 }
 
@@ -15,7 +13,6 @@ impl Default for MetaData {
         MetaData {
             is_normalised: true,
             utc: 9, // Seoul
-            timestamp_type: TimeStampType::default(),
             converter: get_krx_base_bond_order_converter(),
         }
     }

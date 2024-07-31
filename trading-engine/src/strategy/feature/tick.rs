@@ -2,8 +2,8 @@ use crate::types::base::{
     Quote,
     Real,
     NormalizedReal,
-    MilliTimeStamp,
 };
+use crate::types::timestamp::DateTimeStampInSec;
 use crate::data::{
     trade_quote::TradeQuoteSnapshot,
     quote::QuoteSnapshot,
@@ -24,7 +24,7 @@ const VWAP_NORM_FACTOR: Real = 100.0;
 #[derive(Debug, Clone)]
 pub struct TradePrice {
     value: NormalizedReal,
-    timestamp: MilliTimeStamp,
+    timestamp: DateTimeStampInSec,
     converter: &'static IntegerConverter, // to roll-back to the original value
 }
 
@@ -33,7 +33,7 @@ impl Default for TradePrice {
         let converter = get_default_order_converter();
         Self {
             value: 0.0,
-            timestamp: MilliTimeStamp::default(),
+            timestamp: DateTimeStampInSec::default(),
             converter: &converter.price,
         }
     }
@@ -42,21 +42,17 @@ impl Default for TradePrice {
 impl TradePrice {
     pub fn new_from_trade_data(data: &TradeData) -> Self {
         let order_converter = data.order_converter;
-        let timestamp_converter = data.timestamp_converter;
+        let timestamp = data.timestamp;
         Self {
             value: data.to_normalized_real(),
-            timestamp: timestamp_converter.milli_timestamp_from_u64(
-                data.timestamp, 
-                data.timestamp_type),
+            timestamp,
             converter: &order_converter.price,
         }
     }
 
     pub fn update_trade_data(&mut self, data: &TradeData) {
         self.value = data.to_normalized_real();
-        self.timestamp = data.timestamp_converter.milli_timestamp_from_u64(
-            data.timestamp, 
-            data.timestamp_type);
+        self.timestamp = data.timestamp;
     }
 }
 
@@ -66,7 +62,7 @@ pub struct Quotes {
     bids: Vec<Quote>,
     asks: Vec<Quote>,
     level_cut: usize,
-    timestamp: MilliTimeStamp,
+    timestamp: DateTimeStampInSec,
     #[serde(skip)]
     order_converter: &'static OrderConverter,
 }
@@ -78,7 +74,7 @@ impl Default for Quotes {
             bids: Vec::new(),
             asks: Vec::new(),
             level_cut: 0,
-            timestamp: MilliTimeStamp::default(),
+            timestamp: DateTimeStampInSec::default(),
             order_converter: &order_converter,
         }
     }
@@ -91,7 +87,7 @@ impl Quotes {
             bids: Vec::with_capacity(capacity),
             asks: Vec::with_capacity(capacity),
             level_cut: capacity,
-            timestamp: MilliTimeStamp::default(),
+            timestamp: DateTimeStampInSec::default(),
             order_converter: &converter,
         }
     }
@@ -159,7 +155,6 @@ impl Quotes {
 
     pub fn new_from_quote_sanpshot(data: &QuoteSnapshot) -> Self {
         let order_converter = data.order_converter;
-        let timestamp_converter = data.timestamp_converter;
         //
         let quote_cut = data.quote_level_cut;
         let iter_nuum = data.effective_bid_data().len().min(quote_cut);
@@ -181,16 +176,13 @@ impl Quotes {
             bids,
             asks,
             level_cut: quote_cut,
-            timestamp: timestamp_converter.milli_timestamp_from_u64(
-                data.timestamp, 
-                data.timestamp_type),
+            timestamp: data.timestamp,
             order_converter: &order_converter,
         }
     }
 
     pub fn new_from_trade_quote_snapshot(data: &TradeQuoteSnapshot) -> Self {
         let order_converter = data.order_converter;
-        let timestamp_converter = data.timestamp_converter;
         //
         let quote_cut = data.quote_level_cut;
         let iter_nuum = data.bid_quote_data.len().min(quote_cut);
@@ -212,9 +204,7 @@ impl Quotes {
             bids,
             asks,
             level_cut: quote_cut,
-            timestamp: timestamp_converter.milli_timestamp_from_u64(
-                data.timestamp, 
-                data.timestamp_type),
+            timestamp: data.timestamp,
             order_converter: &order_converter,
         }
     }
@@ -236,10 +226,7 @@ impl Quotes {
             return Err(err());
         }
         self.order_converter = data.order_converter;
-        self.timestamp = data.timestamp_converter.milli_timestamp_from_u64(
-            data.timestamp, 
-            data.timestamp_type
-        );
+        self.timestamp = data.timestamp;
 
         for i in 0..self.level_cut {
             self.bids[i].price = self.order_converter.price.normalized_real_from_i64(
@@ -273,10 +260,7 @@ impl Quotes {
             return Err(err());
         }
         self.order_converter = data.order_converter;
-        self.timestamp = data.timestamp_converter.milli_timestamp_from_u64(
-            data.timestamp, 
-            data.timestamp_type
-        );
+        self.timestamp = data.timestamp;
 
         for i in 0..self.level_cut {
             self.bids[i].price = self.order_converter.price.normalized_real_from_i64(

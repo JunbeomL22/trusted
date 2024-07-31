@@ -3,8 +3,8 @@ use crate::types::{
     base::{LevelSnapshot, Slice},
     isin_code::IsinCode,
     venue::Venue,
+    timestamp::DateStampGenerator,
 };
-use crate::types::enums::TimeStampType;
 use crate::data::checker::Checker;
 use crate::{
     parse_unroll,
@@ -123,7 +123,7 @@ impl IFMSRPD0034 {
         Ok(self)
     }
 
-    pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
+    pub fn to_quote_snapshot(&self, payload: &[u8], date_gen: &mut DateStampGenerator) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         let venue = Venue::KRX;
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
@@ -136,9 +136,12 @@ impl IFMSRPD0034 {
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
 
+        /* 
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
+        */
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(&payload[self.timestamp_slice.start..self.timestamp_slice.end], date_gen)?;
         
         let quote_level_cut = self.quote_level_cut;
         let quote_start_index = self.quote_start_index;
@@ -163,7 +166,6 @@ impl IFMSRPD0034 {
         Ok(QuoteSnapshot {
             venue,
             isin_code,
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             ask_quote_data,
             bid_quote_data,
@@ -172,11 +174,15 @@ impl IFMSRPD0034 {
             //
             order_counter: order_counter,
             order_converter: converter,
-            timestamp_converter,
         })
     }
 
-    pub fn to_quote_snapshot_buffer(&self, payload: &[u8], buffer: &mut QuoteSnapshot) -> Result<()> {
+    pub fn to_quote_snapshot_buffer(
+        &self, 
+        payload: &[u8], 
+        buffer: &mut QuoteSnapshot,
+        date_gen: &mut DateStampGenerator
+    ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
@@ -189,16 +195,17 @@ impl IFMSRPD0034 {
 
         buffer.order_converter = converter;
         buffer.order_counter = order_counter;
-        buffer.timestamp_converter = timestamp_converter;
 
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
 
-        buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
+        buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(&payload[self.timestamp_slice.start..self.timestamp_slice.end], date_gen)?;
+        /*
         buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
+        */
 
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
         let quote_level_cut = self.quote_level_cut;
@@ -357,7 +364,7 @@ impl IFMSRPD0035 {
         Ok(self)
     }
 
-    pub fn to_quote_snapshot(&self, payload: &[u8]) -> Result<QuoteSnapshot> {
+    pub fn to_quote_snapshot(&self, payload: &[u8], date_gen: &mut DateStampGenerator) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
 
         let venue = Venue::KRX;
@@ -371,9 +378,12 @@ impl IFMSRPD0035 {
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
 
+        /* 
         let timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
+        */
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(&payload[self.timestamp_slice.start..self.timestamp_slice.end], date_gen)?;
         
         let quote_level_cut = self.quote_level_cut;
         let quote_start_index = self.quote_start_index;
@@ -399,7 +409,6 @@ impl IFMSRPD0035 {
         Ok(QuoteSnapshot {
             venue,
             isin_code,
-            timestamp_type: TimeStampType::HHMMSSuuuuuu,
             timestamp,
             ask_quote_data,
             bid_quote_data,
@@ -408,11 +417,11 @@ impl IFMSRPD0035 {
             //
             order_counter: order_counter,
             order_converter: converter,
-            timestamp_converter,
         })
     }
 
-    pub fn to_quote_snapshot_buffer(&self, payload: &[u8], buffer: &mut QuoteSnapshot) -> Result<()> {
+    pub fn to_quote_snapshot_buffer(
+        &self, payload: &[u8], buffer: &mut QuoteSnapshot, date_gen: &mut DateStampGenerator) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
@@ -425,15 +434,16 @@ impl IFMSRPD0035 {
 
         buffer.order_converter = converter;
         buffer.order_counter = order_counter;
-        buffer.timestamp_converter = timestamp_converter;
+        
         let pr_ln = converter.price.get_config().total_length;
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
-
-        buffer.timestamp_type = TimeStampType::HHMMSSuuuuuu;
+        /* 
         buffer.timestamp = unsafe {
             timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
         };
+        */
+        buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(&payload[self.timestamp_slice.start..self.timestamp_slice.end], date_gen)?;
 
         let offset = pr_ln * 2 + qn_ln * 2 + or_ln * 2;
 
@@ -460,6 +470,7 @@ impl IFMSRPD0035 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
 
     #[test]
     fn test_parse_ifmsrpd0034() -> Result<()> {
@@ -467,8 +478,8 @@ mod tests {
         test_data_vec.push(255);
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0034 = IFMSRPD0034::default();
-        
-        let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data)
+        let mut date_gen = &mut DateStampGenerator::from(NaiveDate::from_ymd_opt(2023, 12, 30).unwrap());
+        let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to parse IFMSRPD0034");
 
         assert_eq!(quote_snapshot.isin_code.as_str(), "KR4106V30004");
@@ -507,8 +518,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0034 = IFMSRPD0034::default();
         let mut quote_snapshot = QuoteSnapshot::with_quote_level(5);
-        
-        ifmsrpd0034.to_quote_snapshot_buffer(test_data, &mut quote_snapshot)
+        let mut date_gen = &mut DateStampGenerator::from(NaiveDate::from_ymd_opt(2023, 12, 30).unwrap());
+        ifmsrpd0034.to_quote_snapshot_buffer(test_data, &mut quote_snapshot, &mut date_gen)
             .expect("failed to parse IFMSRPD0034");
 
         assert_eq!(quote_snapshot.isin_code.as_str(), "KR4106V30004");

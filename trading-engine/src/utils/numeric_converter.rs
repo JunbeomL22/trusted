@@ -4,18 +4,22 @@ use crate::types::base::{
     OrderCount,
     BookYield,
 };
-use crate::{log_error, log_warn};
+use crate::topics::LogTopic;
 use crate::types::base::{
     Real,
     NormalizedReal,
-    MilliTimeStamp,
-    MicroTimeStamp,
 };
-use crate::utils::timer::time_components_from_unix_nano;
-use crate::types::enums::TimeStampType;
+
+use crate::types::timestamp::{
+    TimeStampInSec,
+    DateTimeStampInSec,
+    DateStampGenerator,
+    TimeStampType,
+};
 use anyhow::{anyhow, bail, Result};
 use serde::{de::Deserializer, Deserialize, Serialize};
 use std::ptr::read_unaligned;
+use chrono::NaiveDate;
 
 /// decimal_point_length includes the decimal point itself
 /// ex) 123.45 => digit_length: 3, decimal_point_length: 3, total_length: 6
@@ -196,7 +200,34 @@ pub fn parse_under32_with_floating_point(u: &[u8], length: usize, point_length: 
         }
     }
 }
+#[inline(always)]
+pub fn parse_2digits(u: &[u8]) -> u16 {
+    let chunk: u16 = unsafe { read_unaligned(u.as_ptr() as *const u16) };
+    let lower = (chunk & 0x0f00) >> 8;
+    let upper = (chunk & 0x000f) * 10;
+    lower + upper
+}
 
+#[inline(always)]
+pub fn parse_3digits(u: &[u8]) -> u32 {
+    let mut chunk: u32 = unsafe { read_unaligned(u.as_ptr() as *const u32) };
+    chunk = chunk << 8;
+
+    let lower: u32 = (chunk & 0x0f000f00) >> 8; 
+    // [0x04, 0x00, 0x02, 0x00] >> 8 = [0x00, 0x04, 0x00, 0x02]
+    let upper: u32 = (chunk & 0x000f000f) * 10; 
+    // [0x00, 0x03, 0x00, 0x01] * 10 =  [00, 30, 00, 10] (formally, not rigorous bit representation)
+    chunk = lower + upper;
+    // [00, 34, 00, 12]
+    let lower: u32 = (chunk & 0x00ff0000) >> 16; 
+    // [00, 34, 00, 12] >> 16 = [00, 00, 00, 34] = 34
+    let upper: u32 = (chunk & 0x000000ff) * 100; 
+    //   [00, 34, 00, 12] 
+    //   &
+    //   [00, 00, 00, ff]
+    // = [00, 00, 00, 12] => *100 => 1200
+    lower + upper // 34 + 1200
+}
 #[inline(always)]
 pub fn parse_under8(u: &[u8], length: usize) -> u64 {
     debug_assert!(
@@ -303,19 +334,13 @@ impl IntegerConverter {
             0..=8 => parse_under8_with_floating_point,
             9..=16 => parse_under16_with_floating_point,
             17..=18 => {
-                log_warn!(
-                    "long digit",
-                    number_config = numcfg,
-                    all_digit_size = all_digit_size
-                );
                 parse_under32_with_floating_point
             }
             _ => {
-                log_error!(
-                    "unsupported digit size", 
-                    number_config = numcfg,
-                    digit_size = all_digit_size,
-                    message = "number show digit is larger than 18 digits is over the capacity of u64 type",
+                crate::log_error!(
+                    LogTopic::UnsupportedDigitSize.as_str(),
+                    struct_info = numcfg.clone(),
+                    message = "number over 18 digits can't be handled by u64"
                 );
                 bail!("unsupported digit size");
             }
@@ -486,59 +511,70 @@ impl OrderConverter {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TimeStampConverter {
     pub converter: IntegerConverter,
-    pub utc_offset_hour: u8,
+    utc_offset_hour: u16,
+    stamp_type: TimeStampType,
 }
 
 impl TimeStampConverter {
-    #[inline]
-    pub fn to_timestamp(&self, val: &[u8]) -> u64 {
-        self.converter.to_u64(val)
+    pub fn new(converter: IntegerConverter, utc_offset_hour: u16, stamp_type: TimeStampType) -> Self {
+        TimeStampConverter {
+            converter,
+            utc_offset_hour,
+            stamp_type,
+        }
     }
 
+    #[inline]
+    pub fn parse_hhmmssuuuuuu(
+        &self, 
+        val: &[u8],
+        date_generator: &mut DateStampGenerator,
+    ) -> Result<DateTimeStampInSec> {
+        let mut secs;
+        secs = parse_under8(&val[6..12], 6) as Real / 1_000_000.0;
+        secs += parse_2digits(&val[4..6]) as Real; // SS
+        secs += parse_2digits(&val[2..4]) as Real * 60.0; // MM
+        secs += ((parse_2digits(&val[0..2]) + self.utc_offset_hour) % 24) as Real * 3600.0; // HH
+
+
+        if secs >= 86_400.0 {
+            anyhow::bail!("TimeStampConverter::parse_hhmmssuuuuuu => secs must be < 86,400.0")
+        }
+
+        let timestamp_in_sec = TimeStampInSec::new(secs);
+
+        let prev_timestamp_in_sec = date_generator.get_cached_timestamp_in_sec();
+
+        if (prev_timestamp_in_sec - timestamp_in_sec.stamp) > 70_000.0 {
+            let prev_timestamp_in_sec = prev_timestamp_in_sec;
+            crate::log_info!(
+                LogTopic::DateInUtcShift.as_str(),
+                message = "timestampsinsec drops more than 70,000 secs, so date generator set to today",
+                struct_metadata = "(self.prev_timestamp_in_sec, timestamp_in_sec)",
+                struct_value = (prev_timestamp_in_sec, timestamp_in_sec)
+            );
+            date_generator.set_today();
+        } else if prev_timestamp_in_sec > timestamp_in_sec.stamp {
+            crate::log_warn!(
+                LogTopic::UnorderedTimeStamp.as_str(),
+                message = "current timestamp is smaller than the previous timestamp. This will be ignored",
+                struct_metadata = "(self.prev_timestamp_in_sec, timestamp_in_sec)",
+                struct_value = (prev_timestamp_in_sec, timestamp_in_sec)
+            );
+        }
+        date_generator.set_cached_timestamp_in_sec(secs);
+        let date = date_generator.get();
+        Ok(DateTimeStampInSec::new(date, timestamp_in_sec))
+    }
+
+    /*
     /// # Safety
     /// This function is unsafe because it does not check the input format.
     #[inline]
     pub unsafe fn to_timestamp_unchecked(&self, val: &[u8]) -> u64 {
         self.converter.to_u64_unchecked(val)
     }
-
-    pub fn milli_timestamp_from_u64(&self, value: u64, stamp_type: TimeStampType) -> MilliTimeStamp {
-        match stamp_type {
-            TimeStampType::HHMMSSuuuuuu => {
-                MilliTimeStamp { 
-                    stamp: (value / 1000) as u32,
-                }
-            },
-            TimeStampType::UnixNano => {
-                // HHMMSSmmm
-                let (h, m, s, mil) = time_components_from_unix_nano(value);
-                let mut timestamp = (h + self.utc_offset_hour) as u32 * 10_000_000;
-                timestamp += m as u32 * 100_000;
-                timestamp += s as u32 * 1_000;
-                timestamp += mil as u32;
-                MilliTimeStamp { stamp: timestamp }
-            }
-        }
-    }
-
-    pub fn micro_timestamp_from_u64(&self, value: u64, stamp_type: TimeStampType) -> MicroTimeStamp {
-        match stamp_type {
-            TimeStampType::HHMMSSuuuuuu => {
-                MicroTimeStamp { 
-                    stamp: value,
-                }
-            },
-            TimeStampType::UnixNano => {
-                // HHMMSSuuuuuu
-                let (h, m, s, mil) = time_components_from_unix_nano(value);
-                let mut timestamp = (h + self.utc_offset_hour) as u32 * 10_000_000;
-                timestamp += m as u32 * 100_000;
-                timestamp += s as u32 * 1_000;
-                timestamp += mil as u32;
-                MicroTimeStamp { stamp: timestamp }
-            }
-        }
-    }
+    */
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -585,10 +621,12 @@ mod tests {
     #[test]
     fn test_micro_to_milli() {
         let timestamp_converter = get_krx_timestamp_converter();
-        let timestamp_u64: u64 = 12_30_20_000_111; // HHMMSSuuuuuu
-        let stamp_type = TimeStampType::HHMMSSuuuuuu;
-        let timestamp = timestamp_converter.milli_timestamp_from_u64(timestamp_u64, stamp_type);
-        assert_eq!(timestamp.stamp, 12_30_20_000);
+        let dt = NaiveDate::from_ymd_opt(2023, 12, 30).unwrap();
+        let mut date_generator = DateStampGenerator::from(dt);
+        let timestamp_bytes = b"123020000111";
+
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(timestamp_bytes, &mut date_generator).unwrap();
+        dbg!(timestamp);
     }
     #[test]
     fn test_chars_parser() {
