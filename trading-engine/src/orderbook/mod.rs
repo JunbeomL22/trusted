@@ -448,8 +448,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0034 = crate::data::krx::derivative_quote::IFMSRPD0034::default();
         
-        let mut date_gen = crate::types::timestamp::DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap()
+        let mut date_gen = crate::types::timestamp::DateUnixNanoGenerator::from(
+            time::macros::date!(2021-12-30)
         );
 
         let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data, &mut date_gen)
@@ -460,6 +460,6 @@ mod tests {
         
         let display = order_book.to_string();
         println!("{}", display);
-        dbg!(order_book.clone());
+        //dbg!(order_book.clone());
     }
 }

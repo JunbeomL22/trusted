@@ -2,7 +2,7 @@ use crate::types::base::{BookPrice, BookQuantity, OrderId};
 use crate::types::isin_code::IsinCode;
 use crate::types::enums::OrderSide;
 use crate::types::venue::Venue;
-use crate::types::timestamp::DateTimeStampInSec;
+use crate::types::timestamp::TimeStamp;
 
 //
 use serde::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ pub enum OrderEnum {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DecomposedOrder {
     pub order: OrderEnum,
-    pub timestamp: DateTimeStampInSec,
+    pub timestamp: TimeStamp,
     pub isin_code: IsinCode,
     pub venue: Venue,
 }

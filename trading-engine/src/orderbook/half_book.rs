@@ -335,6 +335,11 @@ impl HalfBook {
 
     #[inline]
     pub fn add_limit_order(&mut self, order: LimitOrder) -> Result<()> {
+        if order.order_side != self.order_side {
+            let lazy_err = || anyhow!("Order side is not matched, order : {:?}", order);
+            return Err(lazy_err());
+        }
+
         self.update_best_price(order.price);
 
         self.cache.insert(order.order_id, order.price);

@@ -21,6 +21,11 @@ use trading_engine::utils::numeric_converter::{
     parse_under8_with_floating_point, IntegerConverter,
 };
 use trading_engine::utils::timer::{convert_unix_nano_to_datetime_format, get_unix_nano};
+use trading_engine::{
+    TimeStamp,
+    types::timestamp::DateUnixNanoGenerator,
+    data::krx::krx_converter::get_krx_timestamp_converter,
+};
 
 fn bench_intger_and_float(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("integer_and_float");
@@ -368,10 +373,11 @@ fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
 
     let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
 
+    let mut date_generator = DateUnixNanoGenerator::from(time::macros::date!(2023-12-28));
     group.bench_function("parse stock derivative (G704F, cut 4)", |b| {
         b.iter(|| {
             ifmsrpd0038
-                .to_trade_quote_snapshot(black_box(test_data))
+                .to_trade_quote_snapshot(black_box(test_data), &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -379,7 +385,7 @@ fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
     group.bench_function("parse stock derivative with buffer (G704F, cut 4)", |b| {
         b.iter(|| {
             ifmsrpd0038
-                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data)
+                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data, &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -389,7 +395,7 @@ fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
     group.bench_function("parse stock derivative (G704F, cut 6)", |b| {
         b.iter(|| {
             ifmrspd0038
-                .to_trade_quote_snapshot(black_box(test_data))
+                .to_trade_quote_snapshot(black_box(test_data), &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -398,7 +404,7 @@ fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
     group.bench_function("parse stock derivative with buffer (G704F, cut 6)", |b| {
         b.iter(|| {
             ifmrspd0038
-                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data)
+                .to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data, &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -407,32 +413,33 @@ fn bench_parse_stock_derivative_trade_quote(c: &mut Criterion) {
 fn bench_parse_derivative_trade_quote(c: &mut Criterion) {
     let mut bgroup = c.benchmark_group("parse derivative trade quote");
 
+    let mut date_generator = DateUnixNanoGenerator::from(time::macros::date!(2023-12-28));
     bgroup.warm_up_time(std::time::Duration::from_secs(4));
     let mut test_data_vec = b"G703F        G140KR4301V13502001656104939081108000002.12000000005000000.00000000.00000002.83000002.93000002.06000002.11000000021511000000013250790000.0002000006.86000000.01000002.12000002.110000000100000000100000300006000002.13000002.100000000330000000410001100011000002.14000002.090000000290000000430000800010000002.15000002.080000000380000000370000900013000002.16000002.0700000001800000006200007000110000017960000059190049400380".to_vec();
     test_data_vec.push(255);
     let test_data = test_data_vec.as_slice();
     let interface = IFMSRPD0037::default().with_quote_level_cut(4).expect("");
     bgroup.bench_function("parse non-stock (g703f, cut 4)", |b| {
-        b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data)));
+        b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data), &mut date_generator));
     });
 
     let mut trade_quote_data_buffer = TradeQuoteSnapshot::with_quote_level(4);
 
     bgroup.bench_function("parse non-stock with buffer (g703f, cut 4)", |b| {
         b.iter(|| {
-            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer)
+            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer, &mut date_generator)
         });
     });
 
     let interface = IFMSRPD0037::default().with_quote_level_cut(5).expect("");
     bgroup.bench_function("parse non-stock (g703f, cut 5)", |b| {
-        b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data)));
+        b.iter(|| interface.to_trade_quote_snapshot(black_box(test_data), &mut date_generator));
     });
 
     let mut trade_quote_data_buffer = TradeQuoteSnapshot::with_quote_level(5);
     bgroup.bench_function("parse non-stock with buffer (g703f, cut 5)", |b| {
         b.iter(|| {
-            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer)
+            interface.to_trade_quote_snapshot_buffer(black_box(test_data), &mut trade_quote_data_buffer, &mut date_generator)
         });
     });
 
@@ -444,13 +451,14 @@ fn bench_derivative_quote(c: &mut Criterion) {
     let mut test_data_vec = b"B602F        G140KR4106V30004000020104939405656001379.70001379.500000000030000000030000300003001379.80001379.400000000040000000040000400004001379.90001379.300000000070000000050000600005001380.00001379.200000000050000000070000500007001380.10001379.1000000000500000000500005000050000009020000025920031700642000000.00000000000".to_vec();
     test_data_vec.push(255);
     let test_data = test_data_vec.as_slice();
+    let mut date_generator = DateUnixNanoGenerator::from(time::macros::date!(2023-12-28));
 
     let ifmsrpd0034 = IFMSRPD0034::default().with_quote_level_cut(4).expect("");
-
+    let mut quote_data = QuoteSnapshot::with_quote_level(4);
     group.bench_function("parse non-stock derivative quote (b602f) (4 cut)", |b| {
         b.iter(|| {
             ifmsrpd0034
-                .to_quote_snapshot(black_box(test_data))
+                .to_quote_snapshot(black_box(test_data), &mut date_generator)
         });
     });
 
@@ -458,7 +466,7 @@ fn bench_derivative_quote(c: &mut Criterion) {
     group.bench_function("parse non-stock derivative quote with buffer (b602f) (4 cut)", |b| {
         b.iter(|| {
             ifmsrpd0034
-                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data)
+                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data, &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -467,7 +475,7 @@ fn bench_derivative_quote(c: &mut Criterion) {
     group.bench_function("parse non-stock derivative quote (b602f) (5 cut)", |b| {
         b.iter(|| {
             ifmsrpd0034
-                .to_quote_snapshot(black_box(test_data))
+                .to_quote_snapshot(black_box(test_data), &mut date_generator)
         });
     });
 
@@ -475,7 +483,7 @@ fn bench_derivative_quote(c: &mut Criterion) {
     group.bench_function("parse non-stock derivative quote with buffer (b602f) (5 cut)", |b| {
         b.iter(|| {
             ifmsrpd0034
-                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data)
+                .to_quote_snapshot_buffer(black_box(test_data), &mut quote_data, &mut date_generator)
                 .expect("failed to parse")
         });
     });
@@ -484,8 +492,34 @@ fn bench_derivative_quote(c: &mut Criterion) {
 
 }
 
+fn bench_timestamp_conversion(c: &mut Criterion) {
+    let timestamp_converter = get_krx_timestamp_converter();
+    let dt = time::macros::date!(2023-12-28);
+    
+    let mut date_generator = DateUnixNanoGenerator::from(dt);
+    
+    let timestamp_bytes = b"163020300111";
+
+    let mut bgroup = c.benchmark_group("timestamp_conversion");
+
+    let system_time = TimeStamp { stamp: crate::get_unix_nano() };
+    bgroup.bench_function("convert_timestamp", |b| {
+        b.iter(|| 
+            {
+            let _timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+                timestamp_bytes, 
+                Some(system_time),
+                &mut date_generator
+            ).unwrap();
+        });
+    });
+
+    bgroup.finish();
+}
+
 criterion_group!(
     benches,
+    bench_timestamp_conversion,
     bench_derivative_quote,
     bench_parse_stock_derivative_trade_quote,
     bench_parse_derivative_trade_quote,

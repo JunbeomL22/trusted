@@ -3,7 +3,7 @@ use crate::types::base::{
     Real,
     NormalizedReal,
 };
-use crate::types::timestamp::DateTimeStampInSec;
+use crate::types::timestamp::TimeStamp;
 use crate::data::{
     trade_quote::TradeQuoteSnapshot,
     quote::QuoteSnapshot,
@@ -24,7 +24,7 @@ const VWAP_NORM_FACTOR: Real = 100.0;
 #[derive(Debug, Clone)]
 pub struct TradePrice {
     value: NormalizedReal,
-    timestamp: DateTimeStampInSec,
+    timestamp: TimeStamp,
     converter: &'static IntegerConverter, // to roll-back to the original value
 }
 
@@ -33,7 +33,7 @@ impl Default for TradePrice {
         let converter = get_default_order_converter();
         Self {
             value: 0.0,
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
             converter: &converter.price,
         }
     }
@@ -62,7 +62,7 @@ pub struct Quotes {
     bids: Vec<Quote>,
     asks: Vec<Quote>,
     level_cut: usize,
-    timestamp: DateTimeStampInSec,
+    timestamp: TimeStamp,
     #[serde(skip)]
     order_converter: &'static OrderConverter,
 }
@@ -74,7 +74,7 @@ impl Default for Quotes {
             bids: Vec::new(),
             asks: Vec::new(),
             level_cut: 0,
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
             order_converter: &order_converter,
         }
     }
@@ -87,7 +87,7 @@ impl Quotes {
             bids: Vec::with_capacity(capacity),
             asks: Vec::with_capacity(capacity),
             level_cut: capacity,
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
             order_converter: &converter,
         }
     }

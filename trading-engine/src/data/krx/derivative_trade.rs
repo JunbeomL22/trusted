@@ -5,8 +5,12 @@ use crate::types::{
     enums::TradeType,
     isin_code::IsinCode,
     venue::Venue,
-    timestamp::DateStampGenerator,
+    timestamp::{
+        DateUnixNanoGenerator,
+        TimeStamp,
+    },
 };
+use crate::get_unix_nano;
 
 use crate::data::krx::krx_converter::{
     get_krx_derivative_converter,
@@ -19,7 +23,7 @@ use crate::{
     parse_unroll_with_buffer,
 };
 use crate::data::checker::Checker;
-use anyhow::{anyhow, Result, Context};
+use anyhow::{anyhow, Result};
 
 /// Message Structure:
 /// 파생 체결 + 우선호가 (우선호가 5단계)
@@ -162,7 +166,7 @@ impl IFMSRPD0037 {
     }
 
     pub fn to_trade_quote_snapshot(
-        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+        &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         //
@@ -179,15 +183,11 @@ impl IFMSRPD0037 {
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
         //
-        /* 
-        let timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(
-                &payload[self.timestamp_slice.start..self.timestamp_slice.end],
-            )
-        };
-        */
+        
+        let system_timestamp = TimeStamp { stamp: get_unix_nano() };
         let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(system_timestamp),
             date_gen,
         )?;
 
@@ -242,6 +242,7 @@ impl IFMSRPD0037 {
             venue,
             isin_code,
             timestamp,
+            system_timestamp,
             trade_price,
             trade_quantity,
             trade_type,
@@ -263,7 +264,7 @@ impl IFMSRPD0037 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
-        date_gen: &mut DateStampGenerator,
+        date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
@@ -294,15 +295,10 @@ impl IFMSRPD0037 {
 
         data_buffer.venue = Venue::KRX;
 
-        /* 
-        data_buffer.timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(
-                &payload[self.timestamp_slice.start..self.timestamp_slice.end],
-            )
-        };
-        */
+        data_buffer.system_timestamp.stamp = get_unix_nano();
         data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(data_buffer.system_timestamp),
             date_gen,
         )?;
 
@@ -515,7 +511,7 @@ impl IFMSRPD0038 {
     }
 
     pub fn to_trade_quote_snapshot(
-        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+        &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         let venue = Venue::KRX;
@@ -540,14 +536,10 @@ impl IFMSRPD0038 {
         let qn_ln = converter.quantity.get_config().total_length;
         let or_ln = order_counter.order_count.get_config().total_length;
         //
-
-        /* 
-        let timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
-        };
-        */
+        let system_timestamp = TimeStamp { stamp: get_unix_nano() };
         let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(system_timestamp),
             date_gen,
         )?;
         let trade_price = converter.to_book_price(&payload[self.trade_price_slice.start..self.trade_price_slice.end]);
@@ -587,6 +579,7 @@ impl IFMSRPD0038 {
             venue,
             isin_code,
             timestamp,
+            system_timestamp,
             trade_price,
             trade_quantity,
             trade_type,
@@ -607,7 +600,7 @@ impl IFMSRPD0038 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeQuoteSnapshot,
-        date_gen: &mut DateStampGenerator,
+        date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
@@ -633,15 +626,10 @@ impl IFMSRPD0038 {
             })
         } else { None };
 
-        /* 
-        data_buffer.timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(
-                &payload[self.timestamp_slice.start..self.timestamp_slice.end],
-            )
-        };
-        */
+        data_buffer.system_timestamp.stamp = get_unix_nano();
         data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(data_buffer.system_timestamp),
             date_gen,
         )?;
 
@@ -767,7 +755,7 @@ impl IFMSRPD0036 {
     }
 
     pub fn to_trade_data(
-        &self, payload: &[u8], date_gen: &mut DateStampGenerator,
+        &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<TradeData> {
         self.is_valid_krx_payload(payload)?;
         let venue = Venue::KRX;
@@ -787,13 +775,10 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
-        /* 
-        let timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(&payload[self.timestamp_slice.start..self.timestamp_slice.end])
-        };
-        */
+        let system_timestamp = TimeStamp { stamp: get_unix_nano() };
         let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(system_timestamp),
             date_gen,
         )?;
 
@@ -815,6 +800,7 @@ impl IFMSRPD0036 {
             venue,
             isin_code,
             timestamp,
+            system_timestamp,
             trade_price,
             trade_quantity,
             trade_type,
@@ -829,7 +815,7 @@ impl IFMSRPD0036 {
         &self,
         payload: &[u8],
         data_buffer: &mut TradeData,
-        date_gen: &mut DateStampGenerator,
+        date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         data_buffer.venue = Venue::KRX;
@@ -849,15 +835,10 @@ impl IFMSRPD0036 {
             })
         } else { None };
 
-        /* 
-        data_buffer.timestamp = unsafe {
-            timestamp_converter.to_timestamp_unchecked(
-                &payload[self.timestamp_slice.start..self.timestamp_slice.end],
-            )
-        };
-        */
+        data_buffer.system_timestamp.stamp = get_unix_nano();
         data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
             &payload[self.timestamp_slice.start..self.timestamp_slice.end],
+            Some(data_buffer.system_timestamp),
             date_gen,
         )?;
 
@@ -884,6 +865,14 @@ impl IFMSRPD0036 {
 mod tests {
     use super::*;
     use std::sync::atomic::AtomicPtr;
+    use crate::types::timestamp::{
+        MICRO_NANOSCALE,
+        MILLI_NANOSCALE,
+        SECOND_NANOSCALE,
+        MINUTE_NANOSCALE,
+        HOUR_NANOSCALE,
+        DAY_NANOSCALE,
+    };
 
     #[test]
     fn test_parse() -> Result<()> {
@@ -892,8 +881,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0037 = IFMSRPD0037::default();
 
-        let mut date_gen = DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd(2021, 12, 30),
+        let mut date_gen = DateUnixNanoGenerator::from(
+            time::macros::date!(2021-12-30),
         );
 
         let trade_quote_data = ifmsrpd0037
@@ -903,7 +892,7 @@ mod tests {
             "\n* G703F parsing for isin code: {:?}\n",
             trade_quote_data.isin_code.as_str()
         );
-        dbg!(trade_quote_data.clone());
+        //dbg!(trade_quote_data.clone());
 
         let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
@@ -972,8 +961,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0037 = IFMSRPD0037::default().with_quote_level_cut(4)?;
 
-        let mut date_gen = DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd(2021, 12, 30),
+        let mut date_gen = DateUnixNanoGenerator::from(
+            time::macros::date!(2021-12-30),
         );
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(4);
         ifmsrpd0037
@@ -1051,8 +1040,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
-        let mut date_gen = DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        let mut date_gen = DateUnixNanoGenerator::from(
+            time::macros::date!(2021-12-30),
         );
         let trade_quote_data = ifmsrpd0038
             .to_trade_quote_snapshot(test_data, &mut date_gen)
@@ -1063,7 +1052,7 @@ mod tests {
             trade_quote_data.isin_code.as_str()
         );
 
-        dbg!(trade_quote_data.clone());
+        //dbg!(trade_quote_data.clone());
 
         assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
         //assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
@@ -1123,8 +1112,8 @@ mod tests {
             std::str::from_utf8(test_data).unwrap()
         ))?;    
 
-        let mut date_gen = DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        let mut date_gen = DateUnixNanoGenerator::from(
+            time::macros::date!(2021-12-30),
         );
 
         ifmsrpd0038
@@ -1146,7 +1135,6 @@ mod tests {
         Ok(())
     }
 
-    use crate::types::base::Real;
     #[test]
     fn test_parse_ifmsrpd0038_with_buffer() -> Result<()> {
         let mut test_data_vec = b"G704F        G140KR41CNV10006003661104939829612000066500000000007000000000000000000000070300000070900000066100000066400000000041770000000028415067000.000200006990000006310000006660000006640000000006900000006800010000060000667000000663000000000810000001630001200011000066800000066200000000066000000049000120000700006690000006610000000004400000012900013000200000670000000660000000000300000000970000900016000067100000065900000000030000000036000060000600006720000006580000000009100000002300007000080000673000000657000000000290000000160001000005000067400000065600000000026000000043000060001100006750000006550000000004500000004000011000080000023600000021120046600205".to_vec();
@@ -1154,8 +1142,8 @@ mod tests {
         let test_data = test_data_vec.as_slice();
         let ifmsrpd0038 = IFMSRPD0038::default().with_quote_level_cut(6)?;
 
-        let mut date_gen = DateStampGenerator::from(
-            chrono::NaiveDate::from_ymd_opt(2021, 12, 30).unwrap(),
+        let mut date_gen = DateUnixNanoGenerator::from(
+            time::macros::date!(2023-12-28),
         );
         let mut trade_quote_data = TradeQuoteSnapshot::with_quote_level(6);
         ifmsrpd0038
@@ -1171,16 +1159,29 @@ mod tests {
         //dbg!(trade_quote_data.clone());
 
         //let num_timestamp: u64 = 104_939_829_612;
-        // in seconds
-        //let mut sec: Real;
-        //sec = 19.0 * 3600.0;
-        //sec += 49.0 * 60.0;
-        //sec += 39.0;
-        //sec += 829_612.0 / 1_000_0.0;
-        let sec = 81379.827612;
         
-        println!("sec: {}", sec as f32);
-        println!("timestamp: {}", trade_quote_data.timestamp.time.as_real());
+        let mut nanos = date_gen.utcdate_unix_nano;
+        nanos += 10 * HOUR_NANOSCALE;
+        nanos += 49 * MINUTE_NANOSCALE;
+        nanos += 39 * SECOND_NANOSCALE;
+        nanos += 829_612 * MICRO_NANOSCALE;
+        nanos += 9 * HOUR_NANOSCALE;
+        
+        
+        let parsed_nano = trade_quote_data.timestamp;
+        let system_nano = trade_quote_data.system_timestamp;
+        let dt = time::OffsetDateTime::from_unix_timestamp_nanos(nanos as i128)?;
+        let system_dt = time::OffsetDateTime::from_unix_timestamp_nanos(system_nano.stamp as i128)?;
+        let pared_dt = parsed_nano.to_datetime()?;
+        let date_gen_dt = time::OffsetDateTime::from_unix_timestamp_nanos(date_gen.utcdate_unix_nano as i128)?;
+        dbg!(nanos);
+        dbg!(parsed_nano);
+        dbg!(dt);
+        dbg!(pared_dt);
+        dbg!(system_dt);
+        dbg!(date_gen_dt);
+        assert_eq!(pared_dt, dt);
+        //println!("timestamp: {}", trade_quote_data.timestamp.time.as_real());
 
         //assert!((trade_quote_data.timestamp.time.as_real() - sec).abs() < 1.0e-6);
         //dbg!(sec);

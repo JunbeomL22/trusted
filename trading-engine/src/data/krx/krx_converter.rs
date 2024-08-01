@@ -9,10 +9,10 @@ use crate::utils::numeric_converter::{
 };
 use crate::types::isin_code::IsinCode;
 use crate::types::timestamp::{
-    DateStampGenerator,
-    DateStamp,
-    DateTimeStampInSec,
-    TimeStampType,
+    DateUnixNanoGenerator,
+    TimeStamp,
+    UnixNano,
+    HOUR_NANOSCALE,
 };
 //
 use once_cell::sync::Lazy;
@@ -274,8 +274,8 @@ impl TimeStampConverter {
         let converter =
             IntegerConverter::new(time_cfg).expect("failed to create time converter");
 
-        let utc_offset_hour = 9;
-        TimeStampConverter::new(converter, utc_offset_hour, TimeStampType::HHMMSSuuuuuu)
+        let offset_nano = 9 * HOUR_NANOSCALE;
+        TimeStampConverter::new(converter, offset_nano)
     }
 }
 
@@ -455,7 +455,7 @@ mod tests {
         assert_eq!(converted, 123456789012);
 
         let val_f32 = converter.converter.normalized_real_from_u64(converted);
-        assert_eq!((val_f32 - 12345678.9012).abs() < f32::EPSILON, true);
+        assert_eq!((val_f32 - 12345678.9012).abs() < 5e-7, true);
 
         Ok(())
     }

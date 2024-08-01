@@ -3,7 +3,7 @@ use crate::types::{
         LevelSnapshot,
         BookQuantity,
     },
-    timestamp::DateTimeStampInSec,
+    timestamp::TimeStamp,
     isin_code::IsinCode, 
     venue::Venue,
 };
@@ -25,7 +25,8 @@ pub struct QuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
     //
-    pub timestamp: DateTimeStampInSec,
+    pub timestamp: TimeStamp,
+    pub system_timestamp: TimeStamp, // this is stamped in parsing the packet
     //
     pub ask_quote_data: Vec<LevelSnapshot>,
     pub bid_quote_data: Vec<LevelSnapshot>,
@@ -44,7 +45,8 @@ impl Default for QuoteSnapshot {
         QuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
+            system_timestamp: TimeStamp::default(),
             ask_quote_data: Vec::new(),
             bid_quote_data: Vec::new(),
             quote_level_cut: 0,
@@ -64,7 +66,8 @@ impl QuoteSnapshot {
             venue: Venue::KRX,
             isin_code: IsinCode::default(),
             //
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
+            system_timestamp: TimeStamp::default(),
             ask_quote_data: vec![LevelSnapshot::default(); level],
             bid_quote_data: vec![LevelSnapshot::default(); level],
             quote_level_cut: level,

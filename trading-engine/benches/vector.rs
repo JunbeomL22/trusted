@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use smallvec::{smallvec, SmallVec};
-use trading_engine::types::base::{
-    CoarseTimeSeriesPoint,
-    MilliTimeStamp,
+use trading_engine::types::{
+    timeseries::TimeSeriesPoint,
+    timestamp::TimeStamp,
 };
 use std::collections::VecDeque;
 
@@ -259,14 +259,14 @@ fn bench_copy_element(c: &mut Criterion) {
 
 fn bench_vecdeque_coarse(c: &mut Criterion) {
     let mut group = c.benchmark_group("vecdeque coarse");
-    let mut v = VecDeque::<CoarseTimeSeriesPoint>::new();
-    let mut v_with_capacity = VecDeque::<CoarseTimeSeriesPoint>::with_capacity(1024);
+    let mut v = VecDeque::<TimeSeriesPoint>::new();
+    let mut v_with_capacity = VecDeque::<TimeSeriesPoint>::with_capacity(1024);
 
     group.bench_function("vecdeque push 1024", |b| {
         b.iter(|| {
             for _ in 0..1024 {
-                v_with_capacity.push_back(black_box(CoarseTimeSeriesPoint {
-                    timestamp: MilliTimeStamp { stamp: 0 },
+                v_with_capacity.push_back(black_box(TimeSeriesPoint {
+                    timestamp: TimeStamp { stamp: 0 },
                     value: 0.0,
                 }));
             }
@@ -277,8 +277,8 @@ fn bench_vecdeque_coarse(c: &mut Criterion) {
     group.bench_function("with capacity 1024 but push 1025", |b| {
         b.iter(|| {
             for _ in 0..1025 {
-                v_with_capacity.push_back(black_box(CoarseTimeSeriesPoint {
-                    timestamp: MilliTimeStamp { stamp: 0 },
+                v_with_capacity.push_back(black_box(TimeSeriesPoint {
+                    timestamp: TimeStamp { stamp: 0 },
                     value: 0.0,
                 }));
             }

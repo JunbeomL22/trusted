@@ -5,7 +5,7 @@ use crate::types::{
         LevelSnapshot,
     },
     enums::TradeType,
-    timestamp::DateTimeStampInSec,
+    timestamp::TimeStamp,
     isin_code::IsinCode,
     venue::Venue,
 };
@@ -30,7 +30,8 @@ pub struct TradeQuoteSnapshot {
     pub venue: Venue,
     pub isin_code: IsinCode, // this can be spread product
     //
-    pub timestamp: DateTimeStampInSec,
+    pub timestamp: TimeStamp,
+    pub system_timestamp: TimeStamp, // this is the timestamp when the data is received by the system
     //
     pub trade_price: BookPrice,
     pub trade_quantity: BookQuantity,
@@ -59,7 +60,8 @@ impl Default for TradeQuoteSnapshot {
             venue: Venue::default(),
             isin_code: IsinCode::default(),
             //
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
+            system_timestamp: TimeStamp::default(),
             trade_price: 0,
             trade_quantity: 0,
             trade_type: None,
@@ -85,7 +87,8 @@ impl TradeQuoteSnapshot {
             isin_code: IsinCode::default(),
             //
             
-            timestamp: DateTimeStampInSec::default(),
+            timestamp: TimeStamp::default(),
+            system_timestamp: TimeStamp::default(),
             //
             trade_price: 0,
             trade_quantity: 0,

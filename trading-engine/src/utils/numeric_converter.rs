@@ -4,6 +4,7 @@ use crate::types::base::{
     OrderCount,
     BookYield,
 };
+use crate::get_unix_nano;
 use crate::topics::LogTopic;
 use crate::types::base::{
     Real,
@@ -11,15 +12,15 @@ use crate::types::base::{
 };
 
 use crate::types::timestamp::{
-    TimeStampInSec,
-    DateTimeStampInSec,
-    DateStampGenerator,
-    TimeStampType,
+    TimeStamp,
+    DateUnixNanoGenerator,
+    SECOND_NANOSCALE,
+    DAY_NANOSCALE,
+    FIFTEEN_HOURS_NANOSCALE,
 };
 use anyhow::{anyhow, bail, Result};
 use serde::{de::Deserializer, Deserialize, Serialize};
 use std::ptr::read_unaligned;
-use chrono::NaiveDate;
 
 /// decimal_point_length includes the decimal point itself
 /// ex) 123.45 => digit_length: 3, decimal_point_length: 3, total_length: 6
@@ -76,6 +77,36 @@ fn div_rem_u64(u: u64, v: u64) -> (u64, u64) {
     let quotient = u / v;
     let remainder = u - (quotient * v);
     (quotient, remainder)
+}
+
+#[inline(always)]
+pub fn parse_hhmmss_to_nanos(u: &[u8]) -> u64 {
+    // "123456" => [?, ?, "6", "5", "4", "3", "2", "1"]
+    let mut seconds: u64 = unsafe { read_unaligned(u.as_ptr() as *const u64) };
+    // [?, ?, "6", "5", "4", "3", "2", "1"] => ["6", "5", "4", "3", "2", "1", 0, 0] = b"00123456"
+    seconds <<= 16;
+    // lower_digits = [6, 0, 4, 0, 2, 0, 0, 0] => [0, 6, 0, 4, 0, 2, 0, 0]
+    let lower_digits = (seconds & 0x0f000f000f000f00) >> 8;
+    // upper_digits = [0, 5, 0, 3, 0, 1, 0, 0] => [0, 50, 0, 30, 0, 10, 0, 0]
+    let upper_digits = (seconds & 0x000f000f000f000f) * 10;
+    // seconds = [0, 56, 0, 34, 0, 12, 0, 0]
+    seconds = lower_digits + upper_digits;
+
+    // lower_digits = [0, 0, 0, 56, 0, 0, 0, 12]
+    let lower_digits = (seconds & 0x00ff000000ff0000) >> 16;
+    // upper_digits = [0, 0, 34, 0, 0, 0, 0, 0] => [0, 0, 34 * 60, 0, 0, 0, 0, 0]
+    let upper_digits = (seconds & 0x000000ff000000ff) * 60;
+    // seconds = [0, 0, 34 * 60, 56, 0, 0, 0, 12]
+    seconds = lower_digits + upper_digits;
+
+    // lower_digits = [0, 0, 0, 0, 0, 0, 34 * 60, 56]
+    let lower_digits = (seconds & 0x0000ffff00000000) >> 32;
+    // upper_digits = [0, 0, 0, 0, 0, 0, 0, 12 * 3600]
+    let upper_digits = (seconds & 0x000000000000ffff) * 3_600;
+    seconds = lower_digits + upper_digits;
+
+    seconds * SECOND_NANOSCALE
+
 }
 
 #[inline(always)]
@@ -432,7 +463,7 @@ impl IntegerConverter {
         match self.numcfg.float_normalizer {
             Some(normalizer) => {
                 let added_normalizer = normalizer + self.decimal_number_point_length_i32;
-                let denominator = 10_f32.powi(added_normalizer);
+                let denominator = (10.0 as Real).powi(added_normalizer);
                 let (quotient, remainder) = div_rem(value, 10_i64.pow(added_normalizer as u32));
 
                 quotient as Real + (remainder as Real / denominator)
@@ -511,16 +542,14 @@ impl OrderConverter {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TimeStampConverter {
     pub converter: IntegerConverter,
-    utc_offset_hour: u16,
-    stamp_type: TimeStampType,
+    offset_nanos: u64, // offset in nano seconds. e.g., in Seoul, it is 9 * 3600 * 1_000_000_000
 }
 
 impl TimeStampConverter {
-    pub fn new(converter: IntegerConverter, utc_offset_hour: u16, stamp_type: TimeStampType) -> Self {
+    pub fn new(converter: IntegerConverter, offset_nanos: u64) -> TimeStampConverter {
         TimeStampConverter {
             converter,
-            utc_offset_hour,
-            stamp_type,
+            offset_nanos,
         }
     }
 
@@ -528,43 +557,35 @@ impl TimeStampConverter {
     pub fn parse_hhmmssuuuuuu(
         &self, 
         val: &[u8],
-        date_generator: &mut DateStampGenerator,
-    ) -> Result<DateTimeStampInSec> {
-        let mut secs;
-        secs = parse_under8(&val[6..12], 6) as Real / 1_000_000.0;
-        secs += parse_2digits(&val[4..6]) as Real; // SS
-        secs += parse_2digits(&val[2..4]) as Real * 60.0; // MM
-        secs += ((parse_2digits(&val[0..2]) + self.utc_offset_hour) % 24) as Real * 3600.0; // HH
+        system_timestamp: Option<TimeStamp>,
+        date_generator: &mut DateUnixNanoGenerator,
+    ) -> Result<TimeStamp> {
+        let mut current_timestamp = parse_under8(&val[6..12], 6) * 1000;
+        current_timestamp += parse_hhmmss_to_nanos(&val[0..6]);
+        current_timestamp = current_timestamp + self.offset_nanos + date_generator.utcdate_unix_nano;
 
+        let prev_timestamp = date_generator.prev_timestamp;
 
-        if secs >= 86_400.0 {
-            anyhow::bail!("TimeStampConverter::parse_hhmmssuuuuuu => secs must be < 86,400.0")
-        }
-
-        let timestamp_in_sec = TimeStampInSec::new(secs);
-
-        let prev_timestamp_in_sec = date_generator.get_cached_timestamp_in_sec();
-
-        if (prev_timestamp_in_sec - timestamp_in_sec.stamp) > 70_000.0 {
-            let prev_timestamp_in_sec = prev_timestamp_in_sec;
+        while prev_timestamp >= FIFTEEN_HOURS_NANOSCALE + current_timestamp { // 1 day elapsed
             crate::log_info!(
                 LogTopic::DateInUtcShift.as_str(),
                 message = "timestampsinsec drops more than 70,000 secs, so date generator set to today",
-                struct_metadata = "(self.prev_timestamp_in_sec, timestamp_in_sec)",
-                struct_value = (prev_timestamp_in_sec, timestamp_in_sec)
+                struct_info = "struct1: prev_timestamp, struct2: current_timestamp",
+                struct1 = TimeStamp { stamp: prev_timestamp },
+                struct2 = TimeStamp { stamp: current_timestamp },
             );
-            date_generator.set_today();
-        } else if prev_timestamp_in_sec > timestamp_in_sec.stamp {
-            crate::log_warn!(
-                LogTopic::UnorderedTimeStamp.as_str(),
-                message = "current timestamp is smaller than the previous timestamp. This will be ignored",
-                struct_metadata = "(self.prev_timestamp_in_sec, timestamp_in_sec)",
-                struct_value = (prev_timestamp_in_sec, timestamp_in_sec)
-            );
-        }
-        date_generator.set_cached_timestamp_in_sec(secs);
-        let date = date_generator.get();
-        Ok(DateTimeStampInSec::new(date, timestamp_in_sec))
+            if let Some(sys) = system_timestamp {
+                date_generator.increment(sys.stamp);
+            } else {
+                date_generator.increment(get_unix_nano());
+            }
+            
+            current_timestamp += DAY_NANOSCALE;
+        } 
+
+        date_generator.prev_timestamp = current_timestamp;
+        
+        Ok(TimeStamp { stamp: current_timestamp })
     }
 
     /*
@@ -618,16 +639,107 @@ mod tests {
     use super::*;
     use crate::data::krx::krx_converter::get_krx_timestamp_converter;
 
-    #[test]
-    fn test_micro_to_milli() {
-        let timestamp_converter = get_krx_timestamp_converter();
-        let dt = NaiveDate::from_ymd_opt(2023, 12, 30).unwrap();
-        let mut date_generator = DateStampGenerator::from(dt);
-        let timestamp_bytes = b"123020000111";
+    use crate::types::timestamp::{
+        MICRO_NANOSCALE,
+        MILLI_NANOSCALE,
+        SECOND_NANOSCALE,
+        MINUTE_NANOSCALE,   
+        HOUR_NANOSCALE,
+    };
 
-        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(timestamp_bytes, &mut date_generator).unwrap();
-        dbg!(timestamp);
+    #[test]
+    fn test_timestamp_converter() -> Result<()> {
+        let timestamp_converter = get_krx_timestamp_converter();
+        let dt = time::macros::date!(2023-12-28);
+        
+        let mut date_generator = DateUnixNanoGenerator::from(dt);
+        let first_date_gen_nano = date_generator.utcdate_unix_nano;
+        
+        let timestamp_bytes = b"163020300111";
+        
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            timestamp_bytes, 
+            Some(TimeStamp { stamp: crate::get_unix_nano() }),
+            &mut date_generator
+        ).unwrap();
+        assert_eq!(first_date_gen_nano, date_generator.utcdate_unix_nano);
+        
+        let mut expected_nano = date_generator.utcdate_unix_nano;
+        expected_nano += 16*HOUR_NANOSCALE;
+        expected_nano += 30*MINUTE_NANOSCALE;
+        expected_nano += 20*SECOND_NANOSCALE;
+        expected_nano += 300*MILLI_NANOSCALE;
+        expected_nano += 111*MICRO_NANOSCALE;
+        //
+        expected_nano += timestamp_converter.offset_nanos;
+
+        dbg!(date_generator);
+        assert_eq!(timestamp.stamp, expected_nano);
+        assert_eq!(date_generator.utcdate_unix_nano, first_date_gen_nano);
+        
+        let timestamp_bytes = b"003020300111";
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            timestamp_bytes, 
+            Some(TimeStamp { stamp: crate::get_unix_nano() }),
+            &mut date_generator
+        ).unwrap();
+        
+        let mut expected_nano = date_generator.utcdate_unix_nano;
+        expected_nano += 30 * MINUTE_NANOSCALE;
+        expected_nano += 20 * SECOND_NANOSCALE;
+        expected_nano += 300 * MILLI_NANOSCALE;
+        expected_nano += 111 * MICRO_NANOSCALE;
+        //
+        expected_nano += 9 * HOUR_NANOSCALE;
+
+        dbg!(date_generator);
+        assert_eq!(timestamp.stamp, expected_nano);
+        assert_eq!(first_date_gen_nano + DAY_NANOSCALE, date_generator.utcdate_unix_nano);
+    
+        let timestamp_bytes = b"183020300111";
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            timestamp_bytes, 
+            Some(TimeStamp { stamp: crate::get_unix_nano() }),
+            &mut date_generator
+        ).unwrap();
+
+        
+        let mut expected_nano = date_generator.utcdate_unix_nano;
+        expected_nano += 18 * HOUR_NANOSCALE;
+        expected_nano += 30 * MINUTE_NANOSCALE;
+        expected_nano += 20 * SECOND_NANOSCALE;
+        expected_nano += 300 * MILLI_NANOSCALE;
+        expected_nano += 111 * MICRO_NANOSCALE;
+        //
+        expected_nano += 9 * HOUR_NANOSCALE;
+        //
+        dbg!(date_generator);
+        assert_eq!(timestamp.stamp, expected_nano);
+        assert_eq!(first_date_gen_nano + DAY_NANOSCALE, date_generator.utcdate_unix_nano);
+        //
+        let timestamp_bytes = b"023020300111";
+        let timestamp = timestamp_converter.parse_hhmmssuuuuuu(
+            timestamp_bytes, 
+            Some(TimeStamp { stamp: crate::get_unix_nano() }),
+            &mut date_generator
+        ).unwrap();
+
+        let mut expected_nano = date_generator.utcdate_unix_nano;
+        expected_nano += 2 * HOUR_NANOSCALE;
+        expected_nano += 30 * MINUTE_NANOSCALE;
+        expected_nano += 20 * SECOND_NANOSCALE;
+        expected_nano += 300 * MILLI_NANOSCALE;
+        expected_nano += 111 * MICRO_NANOSCALE;
+        //
+        expected_nano += 9 * HOUR_NANOSCALE;
+        //
+        dbg!(date_generator);
+        assert_eq!(timestamp.stamp, expected_nano);
+        assert_eq!(first_date_gen_nano + 2*DAY_NANOSCALE, date_generator.utcdate_unix_nano);
+
+        Ok(())
     }
+    
     #[test]
     fn test_chars_parser() {
         let s = b"1";

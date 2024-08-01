@@ -41,9 +41,8 @@ pub type BookQuantity = u64;
 // 건수
 pub type OrderCount = u32;
 //
-pub type Real = f32;
-//
-pub type UnixNano = u64;
+pub type Real = f64;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TradeHistory {
