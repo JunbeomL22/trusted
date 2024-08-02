@@ -9,7 +9,8 @@ use crate::data::order::{
     MarketOrder,
     CancelOrder,
     ModifyOrder,
-    RemoveAnyOrder
+    RemoveAnyOrder,
+    DecomposedOrder,
 };
 use crate::data::{
     quote::QuoteSnapshot,
@@ -25,7 +26,9 @@ use crate::types::{
         BookQuantity,
         TradeHistory,
         VirtualOrderId,
+        LevelSnapshot,
     },
+    timestamp::TimeStamp,
 };
 //
 use anyhow::{
@@ -41,9 +44,59 @@ pub struct OrderBook {
     isin_code: IsinCode,
     venue: Venue,
     virtual_id_counter: VirtualOrderId,
+    timestamp: TimeStamp,
+    system_time: TimeStamp,
 }
 
 impl OrderBook {
+    #[inline]
+    #[must_use]
+    pub fn bid_level_snapshot(&self) -> Vec<LevelSnapshot> {
+        self.bids.to_level_snapshot()
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn ask_level_snapshot(&self) -> Vec<LevelSnapshot> {
+        self.asks.to_level_snapshot()
+    }
+    #[must_use]
+    pub fn eq_level(&self, other: &Self) -> bool {
+        self.asks.eq_level(&other.asks) && self.bids.eq_level(&other.bids)
+    }
+
+    #[must_use]
+    pub fn decomposed_orders_with_update(
+        &mut self,
+        ask_level_snapshot: &Vec<LevelSnapshot>,
+        bid_level_snapshot: &Vec<LevelSnapshot>,
+    ) -> Result<Vec<DecomposedOrder>> {
+        let mut decomposed_orders = Vec::<DecomposedOrder>::default();
+        let ask_order_vec = self.asks.decomposed_orders_with_update(ask_level_snapshot, &mut self.virtual_id_counter)?;
+        let bid_order_vec = self.bids.decomposed_orders_with_update(bid_level_snapshot, &mut self.virtual_id_counter)?;
+
+        for order in ask_order_vec.into_iter() {
+            let decompsed_order = DecomposedOrder {
+                order,
+                timestamp: self.timestamp,
+                isin_code: self.isin_code.clone(),
+                venue: self.venue,
+            };
+            decomposed_orders.push(decompsed_order);
+        }
+
+        for order in bid_order_vec.into_iter() {
+            let decompsed_order = DecomposedOrder {
+                order,
+                timestamp: self.timestamp,
+                isin_code: self.isin_code.clone(),
+                venue: self.venue,
+            };
+            decomposed_orders.push(decompsed_order);
+        }
+
+        Ok(decomposed_orders)
+    }
     #[inline]
     pub fn check_validity_quantity(&self) -> bool {
         self.asks.check_validity_quantity() && self.bids.check_validity_quantity()
@@ -134,6 +187,8 @@ impl OrderBook {
             isin_code,
             venue,
             virtual_id_counter: VirtualOrderId::new(0),
+            timestamp: TimeStamp::default(),
+            system_time: TimeStamp::default(),
         }
     }
     

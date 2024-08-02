@@ -102,10 +102,17 @@ impl RemoveAnyOrder {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NullOrder {}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OrderEnum {
+    NullOrder(NullOrder),
     LimitOrder(LimitOrder),
     RemoveAnyOrder(RemoveAnyOrder),
+    //MarketOrder(MarketOrder),
+    CancelOrder(CancelOrder),
+    ModifyOrder(ModifyOrder),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

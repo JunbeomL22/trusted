@@ -1,13 +1,14 @@
-use crate::data::order::LimitOrder;
 use crate::types::base::{BookPrice, OrderId, BookQuantity};
 use crate::types::enums::OrderSide;
+use crate::types::base::LevelSnapshot;
+use crate::data::order::LimitOrder;
 //
 use anyhow::{anyhow, Result};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
 /// The VecDeque can be optimized by splitting the VecDeque into multiple VecDeque with a fixed size
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Level {
     pub book_price: BookPrice,
     pub orders: VecDeque<(OrderId, BookQuantity)>,
@@ -15,6 +16,16 @@ pub struct Level {
 }
 
 impl Level {
+    #[must_use]
+    #[inline]
+    pub fn to_level_snapshot(&self) -> LevelSnapshot {
+        LevelSnapshot {
+            lp_quantity: None,
+            book_price: self.book_price,
+            book_quantity: self.total_quantity,
+            order_count: Some(self.orders.len() as u32),
+        }
+    }
     #[must_use]
     #[inline]
     pub fn initialize(book_price: BookPrice) -> Self {

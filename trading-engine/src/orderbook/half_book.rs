@@ -5,10 +5,6 @@ use crate::data::order::{
     OrderEnum,
     DecomposedOrder,
 };
-use crate::data::{
-    quote::QuoteSnapshot,
-    trade_quote::TradeQuoteSnapshot,
-};
 use crate::orderbook::level::Level;
 use crate::types::{
     base::{BookPrice, OrderId, BookQuantity, TradeHistory, LevelSnapshot, VirtualOrderId},
@@ -24,7 +20,7 @@ use std::collections::{
     hash_map::Entry as HmEntry,
 };
     
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HalfBook {
     pub order_side: OrderSide,
     // wow! this can be gigantic
@@ -36,6 +32,28 @@ pub struct HalfBook {
 }
 
 impl HalfBook {
+    #[must_use]
+    pub fn eq_level(&self, other: &HalfBook) -> bool {
+        let mut res = self.total_quantity == other.total_quantity;
+        if res {
+            for (price, level) in self.levels.iter() {
+                if let Some(other_level) = other.levels.get(price) {
+                    res = res && level.total_quantity == other_level.total_quantity
+                } else {
+                    res = false;
+                }
+            }
+        }
+        res
+    }
+    #[inline]
+    #[must_use]
+    pub fn to_level_snapshot(&self) -> Vec<LevelSnapshot> {
+        self.levels.iter().map(|(_price, level)| {
+            level.to_level_snapshot()
+        }).collect()
+    }
+
     #[inline]
     #[must_use]
     pub fn get_total_quantity(&self) -> BookQuantity {
@@ -113,86 +131,77 @@ impl HalfBook {
 
     pub fn decomposed_orders_with_update(
         &mut self, 
-        level_snapshot: &Vec<LevelSnapshot>,
+        level_snapshot_vec: &Vec<LevelSnapshot>,
         virtual_counter: &mut VirtualOrderId,
     ) -> Result<Vec<OrderEnum>> { // the order of vector is not important actually. Mostly this will be a single order
-        let price_vec: Vec<BookPrice> = level_snapshot.iter().map(|x| x.book_price).collect();
-        // erase existing level where not in the snapshot
-        // Collect keys to be removed
-        let levels_to_remove: Vec<BookPrice> = self.levels.keys()
-            .filter(|level| !price_vec.contains(level))
-            .cloned()
-            .collect();
-
-        let mut res_orders: Vec<OrderEnum> = vec![];
-        // Remove levels
-        for level in levels_to_remove {
-            let remove_order_primitive = RemoveAnyOrder {
-                price: level,
-                quantity: self.levels.get(&level).unwrap().total_quantity,
-                order_side: self.order_side,
-            };
-            let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
-            res_orders.push(remove_order);
-
-            self.remove_level(level);
-        }
-
-        for level in level_snapshot {
-            let price = level.book_price;
-            let quantity = level.book_quantity;
-            
-            if let Some(level) = self.levels.get_mut(&price) {
-                // there is a level for the price
-                if let Some(order) = level.orders.back_mut() {
-                    self.total_quantity += quantity;
-                    self.total_quantity -= order.1;
-                    
-                    if order.1 > quantity { // order removed
-                        let remove_order_primitive = RemoveAnyOrder {
-                            price,
-                            quantity: order.1 - quantity,
-                            order_side: self.order_side,
-                        };
-                        let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
-                        res_orders.push(remove_order);
-                    } else if order.1 < quantity { // order added
-                        let limit_order = LimitOrder {
-                            order_id: virtual_counter.next(),
-                            price,
-                            quantity: quantity - order.1,
-                            order_side: self.order_side,
-                        };
-                        let add_order = OrderEnum::LimitOrder(limit_order);
-                        res_orders.push(add_order);
-                    }
-
-                    level.total_quantity = quantity;
-                    order.1 = quantity;
-                } else {
-                    return Err(anyhow!("In an L2-Book, there is a level for the price but no order"));
+        let mut order_enum_vec = Vec::<OrderEnum>::default();
+        for level_snapshot in level_snapshot_vec {
+            let price = level_snapshot.book_price;
+            let current_qty = level_snapshot.book_quantity;
+            if let Some(level) = self.levels.get(&price) { // there is a price so remove or add
+                let prev_qty = level.total_quantity;
+                if prev_qty > current_qty {
+                    let remove_qty = prev_qty - current_qty;
+                    let remove_order_primitive = RemoveAnyOrder {
+                        price,
+                        quantity: remove_qty,
+                        order_side: self.order_side,
+                    };
+                    let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
+                    order_enum_vec.push(remove_order);
+                    //self.remove_order(remove_order_primitive);
+                } else if prev_qty < current_qty {
+                    let add_qty = current_qty - prev_qty;
+                    let limit_order = LimitOrder {
+                        order_id: virtual_counter.next(),
+                        price,
+                        quantity: add_qty,
+                        order_side: self.order_side,
+                    };
+                    let add_order = OrderEnum::LimitOrder(limit_order);
+                    order_enum_vec.push(add_order);
+                    //self.add_limit_order(limit_order).unwrap();
                 }
-            } else {
-                let mut level = Level::initialize(price);
-                level.total_quantity = quantity;
-                let order_id = virtual_counter.next();
-
+            } else { // threre was no such price so something must have been added
                 let limit_order = LimitOrder {
-                    order_id,
+                    order_id: virtual_counter.next(),
                     price,
-                    quantity,
+                    quantity: current_qty,
                     order_side: self.order_side,
                 };
                 let add_order = OrderEnum::LimitOrder(limit_order);
-                res_orders.push(add_order);
-
-                level.orders.push_back((order_id, quantity));    
-                self.levels.insert(price, level);
-                self.cache.insert(order_id, price);
-                self.total_quantity += quantity;
+                order_enum_vec.push(add_order);
+                //self.add_limit_order(limit_order).unwrap();
             }
         }
-        Ok(res_orders)
+
+        let new_price_vec = level_snapshot_vec.iter().map(|x| x.book_price).collect::<Vec<BookPrice>>();
+        for (price, level) in self.levels.iter() { // there may be a disappeared price
+            if !new_price_vec.contains(&price) {
+                let remove_order_primitive = RemoveAnyOrder {
+                    price: *price,
+                    quantity: level.total_quantity,
+                    order_side: self.order_side,
+                };
+                let remove_order = OrderEnum::RemoveAnyOrder(remove_order_primitive);
+                order_enum_vec.push(remove_order);
+                //self.remove_order(remove_order_primitive);
+            }
+        }
+        for order_enum in &order_enum_vec {
+            match order_enum {
+                OrderEnum::LimitOrder(limit_order) => {
+                    self.add_limit_order(limit_order.clone())?;
+                },
+                OrderEnum::RemoveAnyOrder(remove_any_order) => {
+                    self.remove_order(remove_any_order.clone());
+                },
+                _ => {},
+            }
+        }
+        
+        Ok(order_enum_vec)
+
     }
 
     pub fn to_string_upto_depth(&self, depth: Option<usize>) -> String {
