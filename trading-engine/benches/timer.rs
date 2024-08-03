@@ -4,9 +4,8 @@ use core_affinity;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::thread;
 use time;
-use time::format_description::well_known::Rfc3339;
 use trading_engine::timer::{
-    convert_unix_nano_to_datetime_format, get_thread_local_unix_nano, get_unix_nano,
+    convert_unix_nano_to_date_and_time, get_thread_local_unix_nano, get_unix_nano,
 };
 
 fn bench_nows(c: &mut Criterion) {

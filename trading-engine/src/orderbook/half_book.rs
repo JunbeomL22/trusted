@@ -3,7 +3,6 @@ use crate::data::order::{
     MarketOrder,
     RemoveAnyOrder,
     OrderEnum,
-    DecomposedOrder,
 };
 use crate::orderbook::level::Level;
 use crate::types::{
@@ -116,7 +115,7 @@ impl HalfBook {
             } else {
                 let mut level = Level::initialize(price);
                 level.total_quantity = quantity;
-                let order_id = mock_counter.next();
+                let order_id = mock_counter.next_id();
                 level.orders.push_back((order_id, quantity));    
                 self.levels.insert(price, level);
                 self.cache.insert(order_id, price);
@@ -153,7 +152,7 @@ impl HalfBook {
                 } else if prev_qty < current_qty {
                     let add_qty = current_qty - prev_qty;
                     let limit_order = LimitOrder {
-                        order_id: virtual_counter.next(),
+                        order_id: virtual_counter.next_id(),
                         price,
                         quantity: add_qty,
                         order_side: self.order_side,
@@ -164,7 +163,7 @@ impl HalfBook {
                 }
             } else { // threre was no such price so something must have been added
                 let limit_order = LimitOrder {
-                    order_id: virtual_counter.next(),
+                    order_id: virtual_counter.next_id(),
                     price,
                     quantity: current_qty,
                     order_side: self.order_side,
@@ -177,7 +176,7 @@ impl HalfBook {
 
         let new_price_vec = level_snapshot_vec.iter().map(|x| x.book_price).collect::<Vec<BookPrice>>();
         for (price, level) in self.levels.iter() { // there may be a disappeared price
-            if !new_price_vec.contains(&price) {
+            if !new_price_vec.contains(price) {
                 let remove_order_primitive = RemoveAnyOrder {
                     price: *price,
                     quantity: level.total_quantity,
@@ -453,12 +452,12 @@ impl HalfBook {
                                 }
                             }
                         }
-                        return Some(())
+                        Some(())
                     } else {
-                        return None
+                        None
                     }
                 } else {
-                    return None
+                    None
                 }
             }
             HmEntry::Vacant(_) => {
@@ -499,18 +498,18 @@ impl HalfBook {
                             }).unwrap();
                             //
                             self.reinitialize_best_price();
-                            return Some(())
+                            Some(())
                         } else {
-                            return None
+                            None
                         }
                     },
                     BtmEntry::Vacant(_) => { // level for the price does not exist
-                        return None
+                        None
                     },
                 }
             },
             HmEntry::Vacant(_) => { // cache does not have the order
-                return None
+                None
             }
         }
     }

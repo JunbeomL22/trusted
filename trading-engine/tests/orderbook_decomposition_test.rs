@@ -5,9 +5,6 @@ mod tests {
         half_book::HalfBook,
     };
     use trading_engine::types::base::{
-        BookPrice,
-        BookQuantity,
-        OrderId,
         VirtualOrderId,
         LevelSnapshot,
     };
@@ -21,10 +18,8 @@ mod tests {
         ModifyOrder,
         CancelOrder,
         NullOrder,
-        RemoveAnyOrder,
         DecomposedOrder,
     };
-    use trading_engine::types::timestamp::TimeStamp;
     use anyhow::Result;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,7 +37,7 @@ mod tests {
         for i in 0..ask_levels.len() {
             for j in qtys.clone().into_iter() {
                 ask_order_vec.push(LimitOrder {
-                    order_id: order_counter.next(),
+                    order_id: order_counter.next_id(),
                     price: ask_levels[i],
                     quantity: j as u64,
                     order_side: OrderSide::Ask,
@@ -56,7 +51,7 @@ mod tests {
         for i in 0..bid_levels.len() {
             for j in qtys.clone().into_iter() {
                 bid_order_vec.push(LimitOrder {
-                    order_id: order_counter.next(),
+                    order_id: order_counter.next_id(),
                     price: bid_levels[i],
                     quantity: j as u64,
                     order_side: OrderSide::Bid,
@@ -69,7 +64,8 @@ mod tests {
         let mut original_orderbook_series = Vec::<OrderBook>::default();
         let mut ask_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();
         let mut bid_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();
-        let mut order_book = OrderBook::initialize_with_isin_venue(isin_code, venue);
+        let mut order_book = OrderBook::initialize_with_isin_venue(isin_code.clone(), venue);
+
         original_orderbook_series.push(order_book.clone());
         ask_level_snapshots_series.push(order_book.ask_level_snapshot());
         bid_level_snapshots_series.push(order_book.bid_level_snapshot());
@@ -89,20 +85,35 @@ mod tests {
             bid_level_snapshots_series.push(order_book.bid_level_snapshot());
         }
 
-        original_orderbook_series.push(order_book.clone());
+        for i in 0..ask_order_vec.len() {
+            let modify_order = ModifyOrder {
+                order_id: ask_order_vec[i].order_id,
+                price: ask_order_vec[i].price.saturating_sub(10),
+                quantity: ask_order_vec[i].quantity + 1,
+            };
+            order_book.modify_order(modify_order.clone());
+            original_orderbook_series.push(order_book.clone());
+            ask_level_snapshots_series.push(order_book.ask_level_snapshot());
+            bid_level_snapshots_series.push(order_book.bid_level_snapshot());
+        }
+
+        for i in 0..ask_order_vec.len() {
+            let cancel_order = CancelOrder {
+                order_id: ask_order_vec[i].order_id,
+            };
+            order_book.cancel_order(cancel_order.clone());
+            original_orderbook_series.push(order_book.clone());
+            ask_level_snapshots_series.push(order_book.ask_level_snapshot());
+            bid_level_snapshots_series.push(order_book.bid_level_snapshot());
+        }
+
+        //original_orderbook_series.push(order_book.clone());
         println!("* head original orderbook:\n{}", original_orderbook_series.first().unwrap().to_string());
         println!("* tail original orderbook:\n{}", original_orderbook_series.last().unwrap().to_string());
 
         let mut book_series = original_orderbook_series.clone();
         let mut order_enum_vec = Vec::<(usize, Vec<DecomposedOrder>)>::default();
-        let initializing_order = DecomposedOrder {
-            order: OrderEnum::NullOrder(NullOrder {}),
-            timestamp: TimeStamp { stamp: 0 },
-            isin_code: IsinCode::new(b"KRXXXXXXXXXX").unwrap(),
-            venue: Venue::KRX,
-        };
-        
-        order_enum_vec.push((0, vec![initializing_order]));
+
         for k in 0..(book_series.len()-1) {
             let order_enum = book_series[k].decomposed_orders_with_update(
                 &ask_level_snapshots_series[k+1],
@@ -112,25 +123,40 @@ mod tests {
         }
 
         
-        let mut recovered_orderbook_series = vec![OrderBook::initialize_with_isin_venue(isin_code.clone(), venue)];
+        let mut recovered_orderbook = OrderBook::initialize_with_isin_venue(isin_code.clone(), venue);
+        let mut recovered_orderbook_series = vec![recovered_orderbook.clone()];
 
-        for (k, decomposed_orders) in order_enum_vec.iter() {
+        for (_k, decomposed_orders) in order_enum_vec.iter() {
             for decomposed_order in decomposed_orders.iter() {
                 match &decomposed_order.order {
                     OrderEnum::LimitOrder(limit_order) => {
-                        recovered_orderbook_series[k].add_limit_order(limit_order.clone())?;
+                        recovered_orderbook.add_limit_order(limit_order.clone())?;
                     },
                     OrderEnum::RemoveAnyOrder(remove_any_order) => {
-                        recovered_orderbook_series[k].remove_order(remove_any_order.clone());
+                        recovered_orderbook.remove_order(remove_any_order.clone());
                     },
                     _ => {},
                 }
             }
-            recovered_orderbook_series.push(recovered_orderbook_series[k].clone());
+            recovered_orderbook_series.push(recovered_orderbook.clone());
+        }
+
+        for (k, (original_orderbook, recovered_orderbook)) in original_orderbook_series.iter().zip(recovered_orderbook_series.iter()).enumerate() {
+            println!("\n* stage {} *\n", k);
+            println!("* original orderbook:\n{}", original_orderbook.to_string());
+            println!("* recovered orderbook:\n{}", recovered_orderbook.to_string());
+            assert!(
+                original_orderbook.eq_level(recovered_orderbook),
+                "original orderbook:\n {}\
+                recovered orderbook:\n {}",
+                original_orderbook.to_string(),
+                recovered_orderbook.to_string(),
+            );
         }
 
         Ok(())
     }
+
     #[test]
     fn decompose_half_book() -> Result<()> {
         println!("We will 1) construct an half book 2) decompose it to orders 3) dockit back");
@@ -142,7 +168,7 @@ mod tests {
         book_series.push((OrderEnum::NullOrder(NullOrder {}) , half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 100,
             quantity: 10,
             order_side: OrderSide::Ask,
@@ -153,7 +179,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));        
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 101,
             quantity: 20,
             order_side: OrderSide::Ask,
@@ -164,7 +190,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 102,
             quantity: 30,
             order_side: OrderSide::Ask,
@@ -175,7 +201,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 99,
             quantity: 40,
             order_side: OrderSide::Ask,
@@ -186,7 +212,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 101,
             quantity: 50,
             order_side: OrderSide::Ask,
@@ -197,7 +223,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 110,
             quantity: 60,
             order_side: OrderSide::Ask,
@@ -208,7 +234,7 @@ mod tests {
         book_series.push((OrderEnum::LimitOrder(limit_order.clone()), half_book.clone()));
 
         let limit_order = LimitOrder {
-            order_id: id_generator.next(),
+            order_id: id_generator.next_id(),
             price: 100,
             quantity: 200,
             order_side: OrderSide::Ask,

@@ -8,22 +8,17 @@ use serde::{Deserialize, Serialize};
 /// I leave this primitive for performance reasons.
 pub type OrderId = u64;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct VirtualOrderId {
     pub order_id: OrderId,
-}
-
-impl Default for VirtualOrderId {
-    fn default() -> Self {
-        VirtualOrderId { order_id: 0 }
-    }
 }
 
 impl VirtualOrderId {
     pub fn new(order_id: OrderId) -> Self {
         VirtualOrderId { order_id }
     }
-    pub fn next(&mut self) -> OrderId {
+    
+    pub fn next_id(&mut self) -> OrderId {
         let res = self.order_id;
         self.order_id += 1;
         res
@@ -49,6 +44,7 @@ pub struct TradeHistory {
     history: Vec<(BookPrice, BookQuantity)>,
 }
 
+/// For explicity, we implement Default trait
 impl Default for TradeHistory {
     fn default() -> Self {
         TradeHistory {
@@ -141,23 +137,12 @@ pub struct Quote {
     pub quantity: NormalizedReal,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct LevelSnapshot {
     pub order_count: Option<OrderCount>,
     pub book_price: BookPrice,
     pub book_quantity: BookQuantity,
     pub lp_quantity: Option<BookQuantity>,
-}
-
-impl Default for LevelSnapshot {
-    fn default() -> Self {
-        LevelSnapshot {
-            order_count: None,
-            book_price: 0,
-            book_quantity: 0,
-            lp_quantity: None,
-        }
-    }
 }
 
 impl PartialEq for LevelSnapshot {

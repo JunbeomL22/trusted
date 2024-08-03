@@ -1,109 +1,101 @@
-use std::sync::atomic::{
-    AtomicU16, 
-    AtomicPtr,
-    Ordering,
+use std::fmt::Debug;
+use anyhow::{Result, bail};
+use std::sync::{
+    RwLock,
+    RwLockReadGuard,
+    RwLockWriteGuard,
 };
 
-#[derive(Debug)]
-pub struct UpdateStatus {
-    pub status: [AtomicU16; 2],
+pub type IdType = u32;
+pub type WorkerStatus = u32;
+
+const ID_BOUND: IdType = 16;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct WorkerId {
+    pub id: IdType, // 0 to 63
+    pub id_bit: IdType, // 1 << id
 }
 
-impl Default for UpdateStatus {
-    fn default() -> Self { 
-        Self {status: [AtomicU16::new(0), AtomicU16::new(0)] }
-    }
-}
-
-/// writer update data from the first data
-/// if a reader still reading the data (i.e., self.status.status1 > 0), then the writer will update the second data
-/// when writer wants to update a data, it keeps reading the status until the status is 0
-pub struct SharedData<T> {
-    data: [AtomicPtr<T>; 2],
-    status: UpdateStatus,
-}
-
-impl<T> SharedData<T> {
-    pub fn new(data1: *mut T, data2: *mut T) -> Self {
-        Self {
-            data: [AtomicPtr::new(data1), AtomicPtr::new(data2)],
-            status: UpdateStatus::default(),
+impl WorkerId {
+    pub fn new(id: IdType) -> Result<Self> {
+        if id > ID_BOUND {
+            bail!("WorkerId::new() id must be between 0 and 63");
         }
-    }
-
-    pub fn updatable_place(&self) -> usize {
-        loop {
-            let status1 = self.status.status[0].load(Ordering::Acquire);
-            if status1 == 0 {
-                return 0;
-            }
-            let status2 = self.status.status[1].load(Ordering::Acquire);
-            if status2 == 0 {
-                return 1;
-            }
-        }
-    }
-
-    pub fn updated(&self) -> Option<(usize, *mut T)> {
-        let status1 = self.status.status[0].load(Ordering::Acquire);
-        if status1 > 0 {
-            return Some((0, self.data[0].load(Ordering::Relaxed)));
-        }
-        let status2 = self.status.status[1].load(Ordering::Acquire);
-        if status2 > 0 {
-            return Some((1, self.data[1].load(Ordering::Relaxed)));
-        }
-        None
-    }
-
-    pub fn notify_consumption_completion(&self, place: usize) {
-        self.status.status[place].fetch_sub(1, Ordering::Release);
-    }
         
-}
+        Ok(WorkerId {
+            id,
+            id_bit: 1 << id,
+        })
+    }
 
-impl<T> Drop for SharedData<T> {
-    fn drop(&mut self) {
-        let data1 = self.data[0].load(Ordering::Acquire);
-        let data2 = self.data[1].load(Ordering::Acquire);
-        if !data1.is_null() {
-            unsafe {
-                let _ = Box::from_raw(data1);
-            }
-        }
-        if !data2.is_null() {
-            unsafe {
-                let _ = Box::from_raw(data2);
-            }
-        }
+    #[inline]
+    #[must_use]
+    pub fn work_done_mask(&self) -> IdType { // and mask
+        !self.id_bit
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug)]
+pub struct SharedData<T>
+where T: Clone + Debug + Default
+{
+    data: RwLock<T>,
+    work_status: RwLock<WorkerStatus>, // 0 means there is nothing to work on
+    workers: Vec<WorkerId>, // can't be bigger than 64
+}
 
-    #[test]
-    fn test_shared_data() {
-        let data1 = Box::into_raw(Box::new(1));
-        let data2 = Box::into_raw(Box::new(2));
-        let shared_data = SharedData::new(data1, data2);
-        assert_eq!(shared_data.updatable_place(), 0);
-        shared_data.status.status[0].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 1);
-        shared_data.status.status[1].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 0);
-        shared_data.status.status[0].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 1);
-        shared_data.status.status[1].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 0);
-        shared_data.status.status[0].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 1);
-        shared_data.status.status[1].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 0);
-        shared_data.status.status[0].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 1);
-        shared_data.status.status[1].store(1, Ordering::Release);
-        assert_eq!(shared_data.updatable_place(), 0);
+impl<T> SharedData<T> 
+where 
+    T: Clone + Debug + Default
+{
+    pub fn new(data: T, workers: Vec<WorkerId>) -> Self {
+        SharedData {
+            data: RwLock::new(data),
+            work_status: RwLock::new(0),
+            workers,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn ready_to_update(&self) -> bool {
+        *self.work_status.read().unwrap() == 0
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get_mut(&self) -> Option<RwLockWriteGuard<T>> {
+        match self.ready_to_update() {
+            true => Some(self.data.write().unwrap()),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn ready_to_read(&self, worker_id: &WorkerId) -> bool {
+        *self.work_status.read().unwrap() & worker_id.id_bit == 0
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn get(&self, worker_id: &WorkerId) -> Option<RwLockReadGuard<T>> {
+        match self.ready_to_read(worker_id) {
+            true => Some(self.data.read().unwrap()),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub fn notify_all_workers(&self) {
+        let bits_sum = self.workers.iter().fold(0, |acc, worker| acc | worker.id_bit);
+        *self.work_status.write().unwrap() = bits_sum;
+    }
+
+    #[inline]
+    pub fn work_done(&self, worker_id: &WorkerId) {
+        let mask = worker_id.work_done_mask();
+        *self.work_status.write().unwrap() &= mask;
     }
 }

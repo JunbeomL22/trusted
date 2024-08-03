@@ -808,6 +808,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "examples-atomic"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "parking_lot",
+ "trading-engine",
+]
+
+[[package]]
 name = "examples-communication"
 version = "0.1.0"
 dependencies = [

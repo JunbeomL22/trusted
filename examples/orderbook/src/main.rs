@@ -13,7 +13,7 @@ use trading_engine::types::{
 };
 use trading_engine::orderbook::half_book::HalfBook;
 use trading_engine::orderbook::OrderBook;
-use trading_engine::types::venues::krx::MockOrderIdCounter;
+use trading_engine::types::base::VirtualOrderId;
 
 fn half_book_display(half_book: &HalfBook, depth: Option<usize>) {
     let display = half_book.to_string_upto_depth(depth);
@@ -30,7 +30,7 @@ fn orderbook_example() {
     println!("* OrderBook Example *");
     println!("*********************");
 
-    let order_counter = MockOrderIdCounter::new(0, OrderId::MAX);
+    let mut order_counter = VirtualOrderId::new(0);
     let ask_levels = vec![102, 101, 100];
     let qtys = vec![1, 2, 3];
     let mut ask_order_vec: Vec<LimitOrder> = Vec::new();
@@ -38,7 +38,7 @@ fn orderbook_example() {
     for i in 0..ask_levels.len() {
         for j in qtys.clone().into_iter() {
             ask_order_vec.push(LimitOrder {
-                order_id: order_counter.next().unwrap(),
+                order_id: order_counter.next_id(),
                 price: ask_levels[i],
                 quantity: j as u64,
                 order_side: OrderSide::Ask,
@@ -52,7 +52,7 @@ fn orderbook_example() {
     for i in 0..bid_levels.len() {
         for j in qtys.clone().into_iter() {
             bid_order_vec.push(LimitOrder {
-                order_id: order_counter.next().unwrap(),
+                order_id: order_counter.next_id(),
                 price: bid_levels[i],
                 quantity: j as u64,
                 order_side: OrderSide::Bid,
@@ -75,7 +75,7 @@ fn orderbook_example() {
     order_book_display(&order_book);
 
     let market_order = MarketOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         quantity: 2,
         order_side: OrderSide::Bid,
     };
@@ -88,7 +88,7 @@ fn orderbook_example() {
     order_book_display(&order_book);
 
     let limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 102,
         quantity: 2,
         order_side: OrderSide::Bid,
@@ -102,7 +102,7 @@ fn orderbook_example() {
     order_book_display(&order_book);
 
     let ask_limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 102,
         quantity: 4,
         order_side: OrderSide::Bid,
@@ -115,7 +115,7 @@ fn orderbook_example() {
     order_book_display(&order_book);
 
     let bid_limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 101,
         quantity: 6,
         order_side: OrderSide::Bid,
@@ -127,7 +127,7 @@ fn orderbook_example() {
     println!("Remaining: {:?}", rem);
     order_book_display(&order_book);
     let ask_limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 104,
         quantity: 1,
         order_side: OrderSide::Ask,
@@ -138,7 +138,7 @@ fn orderbook_example() {
     order_book_display(&order_book);
 
     let ask_limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 103,
         quantity: 10,
         order_side: OrderSide::Ask,
@@ -209,11 +209,11 @@ fn half_book_example() {
     let qtys = vec![1, 2, 3];
     let mut order_vec: Vec<LimitOrder> = Vec::new();
     
-    let order_counter = MockOrderIdCounter::new(0, OrderId::MAX);
+    let mut order_counter = VirtualOrderId::new(0);
     for i in 0..price_levels.len() {
         for j in qtys.clone().into_iter() {
             order_vec.push(LimitOrder {
-                order_id: order_counter.next().unwrap(),
+                order_id: order_counter.next_id(),
                 price: price_levels[i],
                 quantity: j as u64,
                 order_side: OrderSide::Bid,
@@ -229,7 +229,7 @@ fn half_book_example() {
     half_book_display(&half_book, None);
 
     let market_order = MarketOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         quantity: 2,
         order_side: OrderSide::Bid,
     };
@@ -243,7 +243,7 @@ fn half_book_example() {
     half_book_display(&half_book, None);
 
     let limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 102,
         quantity: 2,
         order_side: OrderSide::Bid,
@@ -256,7 +256,7 @@ fn half_book_example() {
     half_book_display(&half_book, None);
 
     let limit_order = LimitOrder {
-        order_id: order_counter.next().unwrap(),
+        order_id: order_counter.next_id(),
         price: 102,
         quantity: 4,
         order_side: OrderSide::Bid,

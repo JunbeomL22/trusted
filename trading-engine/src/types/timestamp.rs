@@ -143,7 +143,6 @@ impl std::fmt::Debug for TimeStamp {
 
 impl TimeStamp {
     #[inline]
-    #[must_use]
     pub fn to_datetime(&self) -> Result<OffsetDateTime> {
         let res = OffsetDateTime::from_unix_timestamp_nanos(self.stamp as i128)?;
         Ok(res)

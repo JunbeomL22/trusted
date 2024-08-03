@@ -75,7 +75,7 @@ impl Default for Quotes {
             asks: Vec::new(),
             level_cut: 0,
             timestamp: TimeStamp::default(),
-            order_converter: &order_converter,
+            order_converter,
         }
     }
 }
@@ -88,7 +88,7 @@ impl Quotes {
             asks: Vec::with_capacity(capacity),
             level_cut: capacity,
             timestamp: TimeStamp::default(),
-            order_converter: &converter,
+            order_converter: converter,
         }
     }
 
@@ -116,7 +116,7 @@ impl Quotes {
             return None;
         }
         
-        return Some(total_value / total_quantity * VWAP_NORM_FACTOR);
+        Some(total_value / total_quantity * VWAP_NORM_FACTOR)
         
     }
 
@@ -177,7 +177,7 @@ impl Quotes {
             asks,
             level_cut: quote_cut,
             timestamp: data.timestamp,
-            order_converter: &order_converter,
+            order_converter,
         }
     }
 
@@ -205,7 +205,7 @@ impl Quotes {
             asks,
             level_cut: quote_cut,
             timestamp: data.timestamp,
-            order_converter: &order_converter,
+            order_converter,
         }
     }
 
@@ -319,7 +319,7 @@ impl Quotes {
             -previous_bid.quantity
         };
         
-        return Ok(res);
+        Ok(res)
     }
 
     pub fn get_ask_orderflow_imbalance(
@@ -362,7 +362,7 @@ impl Quotes {
             current_ask.quantity
         };
 
-        return Ok(res);
+        Ok(res)
     }
 
     pub fn get_ask_ln_orderflow_imbalance(
@@ -432,7 +432,7 @@ impl Quotes {
             }
         };
 
-        return Ok(res);
+        Ok(res)
     }
 
     pub fn get_bid_ln_orderflow_imbalance(
@@ -489,20 +489,18 @@ impl Quotes {
                 );
                 0.0 
             }
-        } else {
-            if current_bid.quantity > 0.0 {
-                - previous_bid.quantity.ln()
-            } else { 
-                let current_bid_clone = current_bid.clone();
-                crate::log_warn!(
-                    crate::LogTopic::ZeroQuantity.as_str(), 
-                    current_bid = current_bid_clone,
-                );
-                0.0 
-            }
+        } else if current_bid.quantity > 0.0 {
+            - previous_bid.quantity.ln()
+        } else { 
+            let current_bid_clone = current_bid.clone();
+            crate::log_warn!(
+                crate::LogTopic::ZeroQuantity.as_str(), 
+                current_bid = current_bid_clone,
+            );
+            0.0 
         };
 
-        return Ok(res);
+        Ok(res)
     }
 
     pub fn get_orederflow_imbalance(

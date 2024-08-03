@@ -204,9 +204,8 @@ impl OrderBook {
     #[inline]
     pub fn cancel_order(&mut self, order: CancelOrder) -> Option<()> {
         let order_id = order.order_id;
-        if let Some(_) = self.asks.cancel_order(order_id) {
-            Some(())
-        } else if let Some(_) = self.bids.cancel_order(order_id) {
+        if self.asks.cancel_order(order_id).is_some() ||
+        self.bids.cancel_order(order_id).is_some() {
             Some(())
         } else {
             let message = format!(
@@ -233,10 +232,7 @@ impl OrderBook {
             if price == &order.price { // same price so just change quantity
                 self.asks.change_quantity(order_id, order.quantity);
                 None
-            } else if order.price > self.bids.best_price { // change price without trade
-                self.change_price(order_id, order.price);
-                None
-            } else { // trade with other side
+            } else { 
                 let limit_order = LimitOrder {
                     order_id,
                     price: order.price,
@@ -244,25 +240,21 @@ impl OrderBook {
                     order_side: OrderSide::Ask,
                 };
                 self.asks.cancel_order(order_id);
-                let res = self.process_limit_order(limit_order);
-                res
+                self.process_limit_order(limit_order)
             }
         } else if let Some(price) = self.bids.cache.get(&order_id) {
             if price == &order.price { // same price so just change quantity
                 self.bids.change_quantity(order_id, order.quantity);
                 None
-            } else if order.price < self.asks.best_price { // change price without trade
-                self.change_price(order_id, order.price);
-                None
-            } else { // trade with other side
+            } else { 
                 let limit_order = LimitOrder {
                     order_id,
                     price: order.price,
                     quantity: order.quantity,
                     order_side: OrderSide::Bid,
                 };
-                let res = self.process_limit_order(limit_order);
-                res
+                self.bids.cancel_order(order_id);
+                self.process_limit_order(limit_order)
             }
         } else {
             let message = format!(
@@ -279,10 +271,11 @@ impl OrderBook {
 
     /// None means order_id not found, either in cache or levels
     #[inline]
-    pub fn change_price(&mut self, order_id: OrderId, new_price: BookPrice) -> Option<()> {
-        if let Some(_) = self.asks.change_price(order_id, new_price) {
+    #[deprecated]
+    fn change_price(&mut self, order_id: OrderId, new_price: BookPrice) -> Option<()> {
+        if self.asks.change_price(order_id, new_price).is_some() {
             Some(())
-        } else if let Some(_) = self.bids.change_price(order_id, new_price) {
+        } else if self.bids.change_price(order_id, new_price).is_some() {
             Some(())
         } else {
             let message = format!(
@@ -298,9 +291,8 @@ impl OrderBook {
     /// None means order_id not found, either in cache or levels
     #[inline]
     pub fn change_quantity(&mut self, order_id: OrderId, new_quantity: BookQuantity) -> Option<()> {
-        if let Some(_) = self.asks.change_quantity(order_id, new_quantity) {
-            Some(())
-        } else if let Some(_) = self.bids.change_quantity(order_id, new_quantity) {
+        if self.asks.change_quantity(order_id, new_quantity).is_some() || 
+        self.bids.change_quantity(order_id, new_quantity).is_some() {
             Some(())
         } else {
             let message = format!(
@@ -375,10 +367,9 @@ impl OrderBook {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::venues::krx::MockOrderIdCounter;
     #[test]
     fn test_orderbook() {
-        let order_counter = MockOrderIdCounter::new(0, OrderId::MAX);
+        let mut order_counter = VirtualOrderId::new(0);
         let ask_levels = vec![102, 101, 100];
         let qtys = vec![1, 2, 3];
         let mut ask_order_vec: Vec<LimitOrder> = Vec::new();
@@ -386,7 +377,7 @@ mod tests {
         for i in 0..ask_levels.len() {
             for j in qtys.clone().into_iter() {
                 ask_order_vec.push(LimitOrder {
-                    order_id: order_counter.next().unwrap(),
+                    order_id: order_counter.next_id(),
                     price: ask_levels[i],
                     quantity: j as u64,
                     order_side: OrderSide::Ask,
@@ -400,7 +391,7 @@ mod tests {
         for i in 0..bid_levels.len() {
             for j in qtys.clone().into_iter() {
                 bid_order_vec.push(LimitOrder {
-                    order_id: order_counter.next().unwrap(),
+                    order_id: order_counter.next_id(),
                     price: bid_levels[i],
                     quantity: j as u64,
                     order_side: OrderSide::Bid,
@@ -427,7 +418,7 @@ mod tests {
         assert_eq!(order_book.bids.get_total_quantity(), 18);
 
         let market_order = MarketOrder {
-            order_id: order_counter.next().unwrap(),
+            order_id: order_counter.next_id(),
             quantity: 2,
             order_side: OrderSide::Bid,
         };
@@ -441,7 +432,7 @@ mod tests {
         assert_eq!(order_book.asks.get_total_quantity(), 16);
 
         let limit_order = LimitOrder {
-            order_id: order_counter.next().unwrap(),
+            order_id: order_counter.next_id(),
             price: 102,
             quantity: 2,
             order_side: OrderSide::Bid,
@@ -453,7 +444,7 @@ mod tests {
         assert_eq!(order_book.asks.best_price, 100);
 
         let ask_limit_order = LimitOrder {
-            order_id: order_counter.next().unwrap(),
+            order_id: order_counter.next_id(),
             price: 102,
             quantity: 4,
             order_side: OrderSide::Bid,
@@ -467,7 +458,7 @@ mod tests {
         assert_eq!(order_book.asks.best_price, 101);
 
         let bid_limit_order = LimitOrder {
-            order_id: order_counter.next().unwrap(),
+            order_id: order_counter.next_id(),
             price: 101,
             quantity: 6,
             order_side: OrderSide::Bid,

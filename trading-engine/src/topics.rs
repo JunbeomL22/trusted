@@ -9,6 +9,8 @@ pub enum LogTopic{
     UnorderedTimeStamp,
     //
     DateInUtcShift,
+    //
+    TimeOut,
 }
 
 impl LogTopic {
@@ -21,6 +23,7 @@ impl LogTopic {
             LogTopic::TooLongDigit => "TooLongDigit",
             LogTopic::UnorderedTimeStamp => "UnorderedTimeStamp",
             LogTopic::DateInUtcShift => "DateInUtcShift",
+            LogTopic::TimeOut => "TimeOut",
         }
     }
 }

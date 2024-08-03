@@ -242,7 +242,7 @@ pub fn parse_2digits(u: &[u8]) -> u16 {
 #[inline(always)]
 pub fn parse_3digits(u: &[u8]) -> u32 {
     let mut chunk: u32 = unsafe { read_unaligned(u.as_ptr() as *const u32) };
-    chunk = chunk << 8;
+    chunk <<= 8;
 
     let lower: u32 = (chunk & 0x0f000f00) >> 8; 
     // [0x04, 0x00, 0x02, 0x00] >> 8 = [0x00, 0x04, 0x00, 0x02]
@@ -628,6 +628,8 @@ impl CumQntConverter {
         self.converter.to_u64_unchecked(val)
     }
 
+    /// # Safety
+    /// This function is unsafe because it does not check the input format.
     #[inline]
     pub unsafe fn to_long_cum_qnt_unchecked(&self, val: &[u8]) -> BookQuantity {
         self.converter.to_long_u64_unchecked(val)

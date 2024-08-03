@@ -68,7 +68,7 @@ pub fn time_components_from_unix_nano(unix_nano: u64) -> (u8, u8, u8, u16) {
     (hours, minutes, seconds, millis)
 }
 
-pub fn convert_unix_nano_to_datetime_format(unix_nano: u64, utc_offset_hour: i32) -> String {
+pub fn convert_unix_nano_to_date_and_time(unix_nano: u64, utc_offset_hour: i32) -> (String, String) {
     const NANOS_IN_SEC: u64 = 1_000_000_000;
     const NANOS_IN_MIN: u64 = 60 * NANOS_IN_SEC;
     const NANOS_IN_HOUR: u64 = 60 * NANOS_IN_MIN;
@@ -106,10 +106,10 @@ pub fn convert_unix_nano_to_datetime_format(unix_nano: u64, utc_offset_hour: i32
 
     let (year, month, day) = days_to_date(total_days as u32);
 
-    format!(
-        "{:04}{:02}{:02} {:02}:{:02}:{:02} {:03}:{:03}:{:03}",
-        year, month, day, total_hours, minutes, seconds, millis, micros, nanos
-    )
+    let date = format!("{:04}{:02}{:02}", year, month, day);
+    let time = format!("{:02}:{:02}:{:02}.{:03}:{:03}:{:03}", total_hours, minutes, seconds, millis, micros, nanos);
+    
+    (date, time)
 }
 
 fn days_to_date(mut days: u32) -> (i32, u32, u32) {

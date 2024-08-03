@@ -1,0 +1,10 @@
+[package]
+name = "examples-atomic"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+trading-engine = { version = "0.1", path = "../../trading-engine" }
+parking_lot = "0.12"
+anyhow = "1.0"

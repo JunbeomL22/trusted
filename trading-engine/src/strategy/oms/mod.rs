@@ -1,9 +1,6 @@
 pub mod simple_taker;
 
-use crate::types::timestamp::{
-    TimeStamp,
-    UnixNano,
-};
+use crate::types::timestamp::UnixNano;
 use anyhow::Result;
 pub trait OMS {
     fn cancel_order_by_timeout(&self, elapsed_time: UnixNano) -> Result<()>;
