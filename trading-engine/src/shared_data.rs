@@ -9,12 +9,13 @@ use std::sync::{
 pub type IdType = u32;
 pub type WorkerStatus = u32;
 
-const ID_BOUND: IdType = 16;
+const ID_BOUND: IdType = 31;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WorkerId {
     pub id: IdType, // 0 to 63
     pub id_bit: IdType, // 1 << id
+    pub id_bit_neg: IdType, // !id_bit
 }
 
 impl WorkerId {
@@ -23,16 +24,18 @@ impl WorkerId {
             bail!("WorkerId::new() id must be between 0 and 63");
         }
         
+        let id_bit = 1 << id;
         Ok(WorkerId {
             id,
-            id_bit: 1 << id,
+            id_bit,
+            id_bit_neg: !id_bit,
         })
     }
 
     #[inline]
     #[must_use]
     pub fn work_done_mask(&self) -> IdType { // and mask
-        !self.id_bit
+        self.id_bit_neg
     }
 }
 
@@ -42,7 +45,8 @@ where T: Clone + Debug + Default
 {
     data: RwLock<T>,
     work_status: RwLock<WorkerStatus>, // 0 means there is nothing to work on
-    workers: Vec<WorkerId>, // can't be bigger than 64
+    full_status: IdType,
+    //workers: Vec<WorkerId>, // can't be bigger than 64
 }
 
 impl<T> SharedData<T> 
@@ -50,10 +54,11 @@ where
     T: Clone + Debug + Default
 {
     pub fn new(data: T, workers: Vec<WorkerId>) -> Self {
+        let full_status = workers.iter().fold(0, |acc, worker| acc | worker.id_bit);
         SharedData {
             data: RwLock::new(data),
             work_status: RwLock::new(0),
-            workers,
+            full_status,
         }
     }
 
@@ -89,8 +94,7 @@ where
 
     #[inline]
     pub fn notify_all_workers(&self) {
-        let bits_sum = self.workers.iter().fold(0, |acc, worker| acc | worker.id_bit);
-        *self.work_status.write().unwrap() = bits_sum;
+        *self.work_status.write().unwrap() = self.full_status;
     }
 
     #[inline]

@@ -17,6 +17,7 @@ const ID_BOUND: IdType = 15;
 pub struct WorkerId {
     pub id: IdType, // 0 to 63
     pub id_bit: IdType, // 1 << id
+    pub id_bit_neg: IdType, // !id_bit
 }
 
 impl WorkerId {
@@ -25,16 +26,18 @@ impl WorkerId {
             bail!("WorkerId::new() id must be between 0 and 63");
         }
         
+        let id_bit = 1 << id;
         Ok(WorkerId {
             id,
-            id_bit: 1 << id,
+            id_bit,
+            id_bit_neg: !id_bit,
         })
     }
 
     #[inline]
     #[must_use]
     pub fn work_done_mask(&self) -> IdType { // and mask
-        !self.id_bit
+        self.id_bit_neg
     }
 }
 
@@ -44,7 +47,8 @@ where T: Clone + Debug + Default
 {
     pub data_buffer: AtomicPtr<T>,
     worker_status: WorkerStatus, // 0 means there is nothing to work on
-    workers: Vec<WorkerId>, // can't be bigger than 64
+    full_status: IdType,
+    //workers: Vec<WorkerId>, // can't be bigger than 64
     //timestamp: TimeStamp,
 }
 
@@ -66,7 +70,8 @@ where T: Clone + Debug + Default
         DataSpinQueue {
             data_buffer: AtomicPtr::default(),
             worker_status: WorkerStatus::new(0),
-            workers: Vec::new(),
+            full_status: 0,
+            //workers: Vec::new(),
             //timestamp: TimeStamp::default(),
         }
     }
@@ -88,10 +93,13 @@ where T: Clone + Debug + Default
             worker_ids.push(worker.id);
         }
 
+        let full_status = worker_ids.iter().fold(0, |acc, worker_id| acc | (1 << worker_id));
+
         Ok(DataSpinQueue {
             data_buffer: AtomicPtr::new(Box::into_raw(Box::new(data.clone()))),
             worker_status: WorkerStatus::new(0),
-            workers,
+            full_status,
+            //workers,
             //timestamp: TimeStamp {stamp: get_unix_nano()},
         })
     }
@@ -133,8 +141,8 @@ where T: Clone + Debug + Default
     #[inline]
     // notify workers that the data is ready
     pub fn notify_all_workers(&self) {
-        let sum_of_id_bits = self.workers.iter().fold(0, |acc, worker| acc | worker.id_bit);
-        self.worker_status.store(sum_of_id_bits, Ordering::Release);
+        //let sum_of_id_bits = self.workers.iter().fold(0, |acc, worker| acc | worker.id_bit);
+        self.worker_status.store(self.full_status, Ordering::Release);
     }
 
     #[inline]

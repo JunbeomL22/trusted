@@ -3,6 +3,7 @@ use std::sync::atomic::{
     AtomicPtr,
     Ordering,
 };
+use criterion::black_box;
 use std::sync::Arc;
 use parking_lot::Mutex;
 use trading_engine::spinqueue::{
@@ -237,11 +238,12 @@ fn data_spin_queue(
     let spin_queue = DataSpinQueue::new(data, workers)?;
     let arc_spin_queue = Arc::new(spin_queue);
     
-
-    let start = get_unix_nano();
     let arc_clone = arc_spin_queue.clone();
     
+    let start_time = get_unix_nano();
     let sender = std::thread::spawn(move || {
+        // set core affinity
+        core_affinity::set_for_current(core_affinity::CoreId { id: 0 });
         let mut i = 1;
         loop {
             if let Some(data) = arc_clone.get_mut() {
@@ -261,6 +263,7 @@ fn data_spin_queue(
         let worker_id = arc_workers[id].clone();
         let mut move_value = TestU64::default();
         let handle = std::thread::spawn(move || {
+            core_affinity::set_for_current(core_affinity::CoreId { id: id+1 as usize });
             let mut count = 1;
             loop {
                 if let Some(data) = reader_spin_queue.get(&worker_id) {
@@ -282,12 +285,13 @@ fn data_spin_queue(
         handle.join().unwrap();
     }
     
-    let end = get_unix_nano();
-    let st_stamp = TimeStamp {stamp: start};
-    let end_stamp = TimeStamp {stamp: end};
+    let end_time = get_unix_nano();
+    let st_stamp = TimeStamp {stamp: start_time};
+    let end_stamp = TimeStamp {stamp: end_time};
     let elapsed_sec = end_stamp.diff_in_secs(st_stamp);
     let average_milli_over_iteration = elapsed_sec / ((iterations / 1000)) as Real;
     let average_nano_over_iteration = average_milli_over_iteration * 1_000_000.0;
+    let nano_diff = end_time - start_time;
     
     println!(
         "ordering: {:?} iterations: {} num_thrds: {} elapsed_sec: {} average_nano: {}",
@@ -301,50 +305,90 @@ fn data_spin_queue(
     Ok(())    
 }
 
-pub fn shared_data_test(
+fn only_mutate_test(
+    iterations: usize,
+) -> Result<()> {
+    let data = TestU64 {value: 0};
+    let mut workers = vec![];
+    for i in 0..5 {
+        workers.push(WorkerId::new(i as IdType)?);
+    }
+    let arc_workers = Arc::new(workers.clone());
+    let spin_queue = DataSpinQueue::new(data, workers)?;
+    let arc_spin_queue = Arc::new(spin_queue);
+    
+
+    let start = get_unix_nano();
+    let arc_clone = arc_spin_queue.clone();
+    
+    let sender = std::thread::spawn(move || {
+        // set core affinity
+        core_affinity::set_for_current(core_affinity::CoreId { id: 0 });
+        let mut i = 1;
+        loop {
+            let check = arc_clone.ready_to_update();
+            let ptr = arc_clone.data_buffer.load(Ordering::Acquire);
+            unsafe { (*ptr).value = black_box(i as u64); }
+            arc_clone.notify_all_workers();
+            i += 1;
+            if i > iterations {
+                break;
+            }
+        }
+    });
+
+    sender.join().unwrap();
+    
+    let end = get_unix_nano();
+    let st_stamp = TimeStamp {stamp: start};
+    let end_stamp = TimeStamp {stamp: end};
+    let elapsed_sec = end_stamp.diff_in_secs(st_stamp);
+    let average_milli_over_iteration = elapsed_sec / ((iterations / 1000)) as Real;
+    let average_nano_over_iteration = average_milli_over_iteration * 1_000_000.0;
+
+    println!(
+        "ordering: {:?} iterations: {} elapsed_sec: {} average_nano: {}",
+        "not given",
+        iterations,
+        elapsed_sec,
+        average_nano_over_iteration,
+    );
+
+    Ok(())
+}
+
+fn only_receive(
     iterations: usize,
     num_thrds: usize,
 ) -> Result<()> {
     let data = TestU64 {value: 0};
     let mut workers = vec![];
     for i in 0..num_thrds {
-        workers.push(SharedWorkerId::new(i as SharedIdType)?);
+        workers.push(WorkerId::new(i as IdType)?);
     }
     let arc_workers = Arc::new(workers.clone());
-    let shared_data = SharedData::new(data, workers);
-    let arc_shared_data = Arc::new(shared_data);
-    let start = get_unix_nano();
-    let arc_clone = arc_shared_data.clone();
+    let spin_queue = DataSpinQueue::new(data, workers)?;
+    let arc_spin_queue = Arc::new(spin_queue);
     
-    let sender = std::thread::spawn(move || {
-        let mut i = 1;
-        loop {
-            if let Some(mut data) = arc_clone.get_mut() {
-                data.value = i as u64;
-                arc_clone.notify_all_workers();
-                i += 1;
-                if i > iterations {
-                    break;
-                }
-            }
-        }
-    });
 
+    let start = get_unix_nano();
+    let arc_clone = arc_spin_queue.clone();
+    
     let mut handles = vec![];
     for id in 0..num_thrds {
-        let reader_shared_data = arc_shared_data.clone();
+        let reader_spin_queue = arc_spin_queue.clone();
         let worker_id = arc_workers[id].clone();
         let mut move_value = TestU64::default();
         let handle = std::thread::spawn(move || {
+            core_affinity::set_for_current(core_affinity::CoreId { id: id as usize });
             let mut count = 1;
             loop {
-                if let Some(data) = reader_shared_data.get(&worker_id) {
-                    move_value.value = data.value;
-                    reader_shared_data.work_done(&worker_id);
-                    count += 1;
-                    if count > iterations {
-                        break;
-                    }
+                let ptr = reader_spin_queue.data_buffer.load(Ordering::Acquire);
+                move_value.value = unsafe { (*ptr).value};
+                reader_spin_queue.work_done(&worker_id);
+                count += 1;
+                if count > iterations {
+                    break;
                 }
             }
             //println!("worker_id: {:?}", sum);
@@ -352,7 +396,6 @@ pub fn shared_data_test(
         handles.push(handle);
     }
 
-    sender.join().unwrap();
     for handle in handles {
         handle.join().unwrap();
     }
@@ -365,20 +408,20 @@ pub fn shared_data_test(
     let average_nano_over_iteration = average_milli_over_iteration * 1_000_000.0;
     
     println!(
-        "ordering: {:?} iterations: {} num_thrds: {} elapsed_sec: {} average_nano: {}",
+        "ordering: {:?} iterations: {} elapsed_sec: {} average_nano: {}",
         "not given",
         iterations,
-        num_thrds,
         elapsed_sec,
         average_nano_over_iteration,
     );
 
-    Ok(())
+    Ok(())    
 }
 
 fn main () {
-    let iterations = 1000_000;
-    let num_thrds = 7;
+    let iterations = 100_000;
+    let num_thrds = 4;
+    /*
     println!("static crude atomic");
     crude_atomic_test(iterations, num_thrds, Ordering::Relaxed);
     crude_atomic_test(iterations, num_thrds, Ordering::Acquire);
@@ -406,14 +449,18 @@ fn main () {
     arc_atomic_ptr_test(iterations, num_thrds, Ordering::Release);
     //arc_atomic_ptr_test(iterations, num_thrds, Ordering::AcqRel);
     arc_atomic_ptr_test(iterations, num_thrds, Ordering::SeqCst);
-
+     */
     println!("arc mutex");
     arc_mutex_test(iterations, num_thrds);
 
     println!("data spin queue");
     data_spin_queue(iterations, num_thrds).unwrap();
 
-    //println!("shared data");
-    //shared_data_test(iterations, num_thrds).unwrap();
+    println!("only mutate");
+    only_mutate_test(iterations).unwrap();
+
+    println!("only receive");
+    only_receive(iterations, num_thrds).unwrap();
+    
 
 }

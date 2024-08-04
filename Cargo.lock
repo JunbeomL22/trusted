@@ -812,6 +812,8 @@ name = "examples-atomic"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "core_affinity 0.8.1",
+ "criterion",
  "parking_lot",
  "trading-engine",
 ]
