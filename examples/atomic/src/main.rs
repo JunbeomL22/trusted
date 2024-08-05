@@ -11,11 +11,6 @@ use trading_engine::spinqueue::{
     DataSpinQueue,
     IdType,
 };
-use trading_engine::shared_data::{
-    SharedData,
-    IdType as SharedIdType,
-    WorkerId as SharedWorkerId,
-};
 
 use trading_engine::{
     get_unix_nano,  

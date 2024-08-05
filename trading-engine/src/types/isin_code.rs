@@ -2,64 +2,118 @@ use crate::utils::checkers;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
-use std::str::from_utf8_unchecked;
+use std::ptr::eq as ptr_eq;
+use rustc_hash::FxHashMap;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+use serde::{Deserializer, Serializer};
 
-#[derive(Debug, Clone, Eq, Deserialize, Serialize)]
+lazy_static! {
+    static ref ISIN_CACHE: Mutex<FxHashMap<[u8; 12], &'static [u8; 12]>> = Mutex::new(FxHashMap::default());
+}
+
+#[derive(Debug, Clone)]
 pub struct IsinCode {
-    isin: [u8; 12],
+    //isin: [u8; 12],
+    isin: &'static [u8; 12],
 }
 
 impl Default for IsinCode {
     fn default() -> Self {
-        IsinCode { isin: [48; 12] }
+        IsinCode { isin: b"000000000000" }
+    }
+}
+
+impl Serialize for IsinCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = std::str::from_utf8(self.isin).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for IsinCode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let bytes = s.as_bytes();
+        if checkers::contains_white_space(bytes) {
+            return Err(serde::de::Error::custom("contains white space"));
+        }
+
+        if !checkers::is_ascii(bytes) {
+            return Err(serde::de::Error::custom("not ascii"));
+        }
+        if bytes.len() != 12 {
+            return Err(serde::de::Error::custom("length should be 12"));
+        }
+
+        let mut code = [0u8; 12];
+        code.copy_from_slice(bytes);
+
+        let mut cache = ISIN_CACHE.lock().unwrap();
+        let interned = cache.entry(code).or_insert_with(|| {
+            let boxed = Box::leak(Box::new(code));
+            boxed
+        });
+
+        Ok(IsinCode { isin: *interned })
     }
 }
 
 impl PartialEq for IsinCode {
     fn eq(&self, other: &Self) -> bool {
-        self.isin == other.isin
+        ptr_eq(self.isin, other.isin)
     }
 }
+
+impl Eq for IsinCode {}
 
 impl Hash for IsinCode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.isin.hash(state);
-    }
-}
-
-impl PartialEq<[u8; 12]> for IsinCode {
-    fn eq(&self, other: &[u8; 12]) -> bool {
-        self.isin == *other
+        (self.isin as *const [u8; 12]).hash(state);
     }
 }
 
 impl IsinCode {
-    /// # Safety
-    /// This function is unsafe because it does not check the validity of the input.
-    pub unsafe fn from_u8_unchecked(isin: &[u8]) -> Self {
-        IsinCode {
-            isin: *isin.as_ptr().cast::<[u8; 12]>(),
+    pub fn new(bytes: &[u8]) -> Result<Self> {
+        if checkers::contains_white_space(bytes) {
+            let err = || anyhow!("Invalid ISIN code: contains white space: {:?}", bytes);
+            return Err(err());
         }
+
+        if !checkers::is_ascii(bytes) {
+            let err = || anyhow!("Invalid ISIN code: not ascii: {:?}", bytes);
+            return Err(err());
+        }
+
+        if bytes.len() != 12 {
+            let err = || anyhow!("Invalid ISIN code: length should be 12: {:?}", bytes);
+            return Err(err());
+        }
+        let mut code = [0u8; 12];
+        code.copy_from_slice(bytes);
+
+        let mut cache = ISIN_CACHE.lock().unwrap();
+        let interned = cache.entry(code).or_insert_with(|| {
+            let boxed = Box::leak(Box::new(code));
+            boxed
+        });
+
+        Ok(IsinCode { isin: *interned })
+    }
+
+    pub fn as_bytes(&self) -> &[u8; 12] {
+        self.isin
     }
 
     pub fn as_str(&self) -> &str {
-        unsafe { from_utf8_unchecked(&self.isin) }
-    }
-
-    pub fn new(isin: &[u8]) -> Result<Self> {
-        if checkers::contains_white_space(isin) {
-            let err = || anyhow!("Invalid ISIN code: contains white space: {:?}", isin);
-            return Err(err());
-        }
-
-        if !checkers::is_ascii(isin) {
-            let err = || anyhow!("Invalid ISIN code: not ascii: {:?}", isin);
-            return Err(err());
-        }
-
-        Ok(IsinCode {
-            isin: unsafe { *isin.as_ptr().cast::<[u8; 12]>() },
-        })
+        // This is safe because we know ISINs are always valid UTF-8
+        unsafe { std::str::from_utf8_unchecked(self.isin) }
     }
 
     pub fn starts_with(&self, prefix: &[u8]) -> bool {
@@ -107,7 +161,7 @@ mod tests {
         let isin = b"KR7005930003";
         let isin_code = IsinCode::new(isin).expect("failed to create IsinCode");
 
-        assert_eq!(isin_code, isin.to_vec());
+        assert_eq!(isin_code.as_bytes(), isin);
         Ok(())
     }
 

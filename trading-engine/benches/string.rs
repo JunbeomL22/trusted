@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion, black_box};
 use flexstr::{IntoSharedStr, LocalStr, SharedStr};
 use std::str::{from_utf8, from_utf8_unchecked};
 
@@ -43,31 +43,36 @@ fn bench_string_creation(c: &mut Criterion) {
 
 fn bench_comparison(c: &mut Criterion) {
     let str_data = "KR0123456789";
-    let mut group = c.benchmark_group("String Comparison 1_000_000 time");
+    let mut group = c.benchmark_group("String Comparison 1_000 time");
     let s1 = String::from(str_data);
     let s3 = LocalStr::from(str_data);
     let s4 = SharedStr::from(str_data);
 
+    let str_data_vec = (0..1000).map(|_| str_data.clone()).collect::<Vec<&str>>();
+    let s1_vec = (0..1000).map(|_| s1.clone()).collect::<Vec<String>>();
+    let s3_vec = (0..1000).map(|_| s3.clone()).collect::<Vec<LocalStr>>();
+    let s4_vec = (0..1000).map(|_| s4.clone()).collect::<Vec<SharedStr>>();
+    
     group.bench_function("std::String::eq", |b| {
         b.iter(|| {
-            for _ in 0..1_000_000 {
-                let _ = s1 == str_data;
+            for i in 0..1_000 {
+                let _ = s1_vec[i] == black_box(str_data_vec[i]);
             }
         })
     });
 
     group.bench_function("LocalStr::eq", |b| {
         b.iter(|| {
-            for _ in 0..1_000_000 {
-                let _ = s3 == str_data;
+            for i in 0..1_000 {
+                let _ = s3_vec[i] == black_box(str_data_vec[i]);
             }
         })
     });
 
     group.bench_function("SharedStr::eq", |b| {
         b.iter(|| {
-            for _ in 0..1_000_000 {
-                let _ = s4 == str_data;
+            for i in 0..1_000 {
+                let _ = s4_vec[i] == black_box(str_data_vec[i]);
             }
         })
     });
@@ -166,9 +171,9 @@ fn bench_conversion(c: &mut Criterion) {
 }
 criterion_group!(
     benches,
+    bench_comparison,
     bench_conversion,
     bench_byte_conversions,
-    bench_comparison,
     bench_string_creation,
 );
 criterion_main!(benches);

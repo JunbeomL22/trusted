@@ -6,7 +6,6 @@ pub mod utils;
 pub mod communication;
 pub mod instruments;
 pub mod spinqueue;
-pub mod shared_data;
 pub mod topics;
 pub mod strategy;   
 //
@@ -29,3 +28,5 @@ pub use types::timestamp::{
     TimeStamp,
     UnixNano,
 };
+
+pub use types::isin_code::IsinCode;
