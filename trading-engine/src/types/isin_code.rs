@@ -155,7 +155,23 @@ impl PartialEq<IsinCode> for Vec<u8> {
 mod tests {
     use super::*;
     use rustc_hash::FxHashMap;
+    use crate::utils::memory_investigation::print_struct_info;
 
+
+    pub struct DirectIsin([u8; 12]);
+
+    #[test]
+    fn test_isin_code_size() {
+        let isin_code = IsinCode::default();
+        let direct_isin_code = DirectIsin([0u8; 12]);
+        println!("IsinCode size: {}", std::mem::size_of_val(&isin_code));
+        print_struct_info(isin_code);
+
+        println!("DirectIsin size: {}", std::mem::size_of_val(&direct_isin_code));
+        print_struct_info(direct_isin_code);
+
+        assert!(true);
+    }
     #[test]
     fn test_isin_code() -> Result<()> {
         let isin = b"KR7005930003";

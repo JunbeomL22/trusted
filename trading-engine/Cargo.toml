@@ -54,6 +54,10 @@ harness = false
 name = "orderbook"
 harness = false
 
+[[bench]]
+name = "isin_code"
+harness = false
+
 [dependencies]
 anyhow = "1.0"
 criterion = "0.5"

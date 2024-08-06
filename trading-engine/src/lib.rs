@@ -7,7 +7,7 @@ pub mod communication;
 pub mod instruments;
 pub mod spinqueue;
 pub mod topics;
-pub mod strategy;   
+pub mod conductor;
 //
 //
 pub use logger::{LazyMessage, LogLevel, LogMessage, LOG_SENDER, MAX_LOG_LEVEL, TIMEZONE};
@@ -30,3 +30,4 @@ pub use types::timestamp::{
 };
 
 pub use types::isin_code::IsinCode;
+pub use types::enums::Currency;

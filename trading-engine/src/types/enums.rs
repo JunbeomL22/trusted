@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use crate::types::base::Real;
+use crate::types::isin_code::IsinCode;
 pub trait FromU8 {
     fn from_u8(v: u8) -> Result<Self>
     where
@@ -61,6 +61,54 @@ impl FromU8 for TradeType {
             2 => Ok(TradeType::Buy),
             _ => Err(anyhow!("Invalid TradeType in from_u8")),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum Currency {
+    #[default]
+    KRW,
+    USD,
+    EUR,
+    GBP,
+    JPY,
+    CNY,
+    HKD,
+}
+
+impl Currency {
+    #[inline]
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Currency::KRW => "KRW",
+            Currency::USD => "USD",
+            Currency::EUR => "EUR",
+            Currency::GBP => "GBP",
+            Currency::JPY => "JPY",
+            Currency::CNY => "CNY",
+            Currency::HKD => "HKD",
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn as_isin_bytes(&self) -> &'static [u8; 12] {
+        match self {
+            Currency::KRW => b"KRW000000000",
+            Currency::USD => b"USD000000000",
+            Currency::EUR => b"EUR000000000",
+            Currency::GBP => b"GBP000000000",
+            Currency::JPY => b"JPY000000000",
+            Currency::CNY => b"CNY000000000",
+            Currency::HKD => b"HKD000000000",
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn as_isin_code(&self) -> IsinCode {
+        IsinCode::new(self.as_isin_bytes()).expect("failed to create IsinCode from Currency")
     }
 }
 

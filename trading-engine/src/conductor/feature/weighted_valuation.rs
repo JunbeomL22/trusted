@@ -1,6 +1,6 @@
 use crate::types::base::Real;
 use crate::types::timestamp::TimeStamp;
-use crate::strategy::feature::weight::TimeSeriesWeight;
+use crate::conductor::feature::weight::TimeSeriesWeight;
 /// Exponential Weighted Moving Average
 /// value_t = (1 - weight) * value_t-1 + weight * value_t
 #[derive(Debug, Clone)]
