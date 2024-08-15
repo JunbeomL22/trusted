@@ -1,9 +1,7 @@
 use crate::utils::checkers;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
-use std::ptr::eq as ptr_eq;
-use serde::{Serialize, Deserialize};
+use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct IsinCode {
@@ -43,6 +41,10 @@ impl IsinCode {
 
     pub fn starts_with(&self, prefix: &[u8]) -> bool {
         self.isin.starts_with(prefix)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.isin
     }
 }
 

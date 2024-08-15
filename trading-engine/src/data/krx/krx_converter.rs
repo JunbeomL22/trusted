@@ -7,7 +7,7 @@ use crate::utils::numeric_converter::{
     YieldConverter,
     OrderCounter,
 };
-use crate::types::isin_code::IsinCode;
+use crate::types::id::isin_code::IsinCode;
 use crate::types::timestamp::{
     DateUnixNanoGenerator,
     TimeStamp,

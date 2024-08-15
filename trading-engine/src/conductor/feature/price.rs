@@ -17,33 +17,3 @@ impl Default for MetaData {
         }
     }
 }
-/*
-/ These are keyed by (Venue, IsinCode)
-#[derive(Debug, Clone)]
-pub struct MidPrice { // 
-    pub metadata: MetaData,
-    pub date: u32, // YYYYMMDD
-    pub values: Vec<TimeSeriesPoint>,
-}
-
-impl Default for MidPrice {
-    fn default() -> Self {
-        MidPrice {
-            metadata: MetaData::default(),
-            date: 19700101,
-            values: Vec::new(),
-        }
-    }
-}
-
-impl MidPrice {
-    pub fn with_capacity(n: usize) -> Self {
-        MidPrice {
-            metadata: MetaData::default(),
-            date: 19700101,
-            values: Vec::with_capacity(n),
-        }
-    }
-}
- */
-//

@@ -1,5 +1,5 @@
 use crate::instruments::instrument::InstrumentTrait;
-use crate::types::{isin_code::IsinCode, venue::Venue};
+use crate::types::{id::isin_code::IsinCode, venue::Venue};
 use crate::utils::numeric_converter::NumReprCfg;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -56,48 +56,6 @@ impl MockInstrument {
 }
 
 impl InstrumentTrait for MockInstrument {
-    #[inline]
-    #[must_use]
-    fn get_price_num_repr_cfg(&self) -> NumReprCfg {
-        self.price_repr_cfg
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_quantity_num_repr_cfg(&self) -> NumReprCfg {
-        self.quantity_repr_cfg
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_price_precision(&self) -> usize {
-        self.price_repr_cfg.decimal_point_length
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_quantity_precision(&self) -> usize {
-        self.quantity_repr_cfg.decimal_point_length
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_price_length(&self) -> usize {
-        self.price_repr_cfg.total_length
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_quantity_length(&self) -> usize {
-        self.quantity_repr_cfg.total_length
-    }
-
-    #[inline]
-    #[must_use]
-    fn get_isin_code(&self) -> &IsinCode {
-        &self.ising_code
-    }
-
     #[inline]
     #[must_use]
     fn get_venue(&self) -> Venue {

@@ -17,7 +17,14 @@ use trading_engine::{
     TimeStamp,
     Real,
 };
+use trading_engine::data::{
+    krx::derivative_quote::IFMSRPD0034,
+    quote::QuoteSnapshot,
+};
+use trading_engine::types::timestamp::DateUnixNanoGenerator;
 use anyhow::Result;
+use time::macros::date;
+use trading_engine::conductor::feature::tick::Quotes;
 
 
 #[derive(Debug, Clone, Default)]
@@ -300,90 +307,63 @@ fn data_spin_queue(
     Ok(())    
 }
 
-fn only_mutate_test(
-    iterations: usize,
-) -> Result<()> {
-    let data = TestU64 {value: 0};
-    let mut workers = vec![];
-    for i in 0..5 {
-        workers.push(WorkerId::new(i as IdType)?);
-    }
-    let arc_workers = Arc::new(workers.clone());
-    let spin_queue = DataSpinQueue::new(data, workers)?;
-    let arc_spin_queue = Arc::new(spin_queue);
-    
-
-    let start = get_unix_nano();
-    let arc_clone = arc_spin_queue.clone();
-    
-    let sender = std::thread::spawn(move || {
-        // set core affinity
-        core_affinity::set_for_current(core_affinity::CoreId { id: 0 });
-        let mut i = 1;
-        loop {
-            let check = arc_clone.ready_to_update();
-            let ptr = arc_clone.data_buffer.load(Ordering::Acquire);
-            unsafe { (*ptr).value = black_box(i as u64); }
-            arc_clone.notify_all_workers();
-            i += 1;
-            if i > iterations {
-                break;
-            }
-        }
-    });
-
-    sender.join().unwrap();
-    
-    let end = get_unix_nano();
-    let st_stamp = TimeStamp {stamp: start};
-    let end_stamp = TimeStamp {stamp: end};
-    let elapsed_sec = end_stamp.diff_in_secs(st_stamp);
-    let average_milli_over_iteration = elapsed_sec / ((iterations / 1000)) as Real;
-    let average_nano_over_iteration = average_milli_over_iteration * 1_000_000.0;
-
-    println!(
-        "ordering: {:?} iterations: {} elapsed_sec: {} average_nano: {}",
-        "not given",
-        iterations,
-        elapsed_sec,
-        average_nano_over_iteration,
-    );
-
-    Ok(())
-}
-
-fn only_receive(
+fn share_derivative_quotes(
     iterations: usize,
     num_thrds: usize,
 ) -> Result<()> {
-    let data = TestU64 {value: 0};
+    let data_buffer = QuoteSnapshot::with_quote_level(5);   
+
     let mut workers = vec![];
     for i in 0..num_thrds {
         workers.push(WorkerId::new(i as IdType)?);
     }
     let arc_workers = Arc::new(workers.clone());
-    let spin_queue = DataSpinQueue::new(data, workers)?;
+    let spin_queue = DataSpinQueue::new(data_buffer, workers)?;
     let arc_spin_queue = Arc::new(spin_queue);
     
-
-    let start = get_unix_nano();
     let arc_clone = arc_spin_queue.clone();
-    
+
+    let start_time = get_unix_nano();
+    let sender = std::thread::spawn(move || {
+        // set core affinity
+        core_affinity::set_for_current(core_affinity::CoreId { id: 0 });
+        let tr_code = IFMSRPD0034::default();
+        let date_gen = &mut DateUnixNanoGenerator::from(date!(2023-12-30));
+        let mut test_data_vec = b"B602F        G140KR4106V30004000020104939405656001379.70001379.500000000030000000030000300003001379.80001379.400000000040000000040000400004001379.90001379.300000000070000000050000600005001380.00001379.200000000050000000070000500007001380.10001379.1000000000500000000500005000050000009020000025920031700642000000.00000000000".to_vec();
+        test_data_vec.push(255);
+        let test_data = test_data_vec.as_slice();
+        let mut i = 1;
+        loop {
+            if let Some(buffer) = arc_clone.get_mut() {
+                let buffer_ref = unsafe {&mut *buffer};
+                tr_code.to_quote_snapshot_buffer(test_data, buffer_ref, date_gen).unwrap();
+                arc_clone.notify_all_workers();
+                i += 1;
+                if i > iterations {
+                    break;
+                }
+            }
+        }
+    });
+
     let mut handles = vec![];
     for id in 0..num_thrds {
         let reader_spin_queue = arc_spin_queue.clone();
         let worker_id = arc_workers[id].clone();
-        let mut move_value = TestU64::default();
+        
+
         let handle = std::thread::spawn(move || {
-            core_affinity::set_for_current(core_affinity::CoreId { id: id as usize });
+            core_affinity::set_for_current(core_affinity::CoreId { id: id+1 as usize });
+            let mut quotes = Quotes::default();
             let mut count = 1;
             loop {
-                let ptr = reader_spin_queue.data_buffer.load(Ordering::Acquire);
-                move_value.value = unsafe { (*ptr).value};
-                reader_spin_queue.work_done(&worker_id);
-                count += 1;
-                if count > iterations {
-                    break;
+                if let Some(data) = reader_spin_queue.get(&worker_id) {
+                    quotes.update_quote_snapshot(unsafe {&*data}).unwrap();
+                    reader_spin_queue.work_done(&worker_id);
+                    count += 1;
+                    if count > iterations {
+                        break;
+                    }
                 }
             }
             //println!("worker_id: {:?}", sum);
@@ -391,71 +371,41 @@ fn only_receive(
         handles.push(handle);
     }
 
+    sender.join().unwrap();
     for handle in handles {
         handle.join().unwrap();
     }
     
-    let end = get_unix_nano();
-    let st_stamp = TimeStamp {stamp: start};
-    let end_stamp = TimeStamp {stamp: end};
+    let end_time = get_unix_nano();
+    let st_stamp = TimeStamp {stamp: start_time};
+    let end_stamp = TimeStamp {stamp: end_time};
     let elapsed_sec = end_stamp.diff_in_secs(st_stamp);
     let average_milli_over_iteration = elapsed_sec / ((iterations / 1000)) as Real;
     let average_nano_over_iteration = average_milli_over_iteration * 1_000_000.0;
-    
+    let nano_diff = end_time - start_time;
+
     println!(
-        "ordering: {:?} iterations: {} elapsed_sec: {} average_nano: {}",
+        "ordering: {:?} iterations: {} num_thrds: {} elapsed_sec: {} average_nano: {}",
         "not given",
         iterations,
+        num_thrds,
         elapsed_sec,
         average_nano_over_iteration,
     );
 
-    Ok(())    
+    Ok(())
 }
 
 fn main () {
-    let iterations = 100_000;
-    let num_thrds = 4;
-    /*
-    println!("static crude atomic");
-    crude_atomic_test(iterations, num_thrds, Ordering::Relaxed);
-    crude_atomic_test(iterations, num_thrds, Ordering::Acquire);
-    crude_atomic_test(iterations, num_thrds, Ordering::Release);
-    crude_atomic_test(iterations, num_thrds, Ordering::AcqRel);
-    crude_atomic_test(iterations, num_thrds, Ordering::SeqCst);
+    let iterations = 5_000_000;
+    let num_thrds = 5;
 
-    println!("arc atomic");
-    arc_atomic_test(iterations, num_thrds, Ordering::Relaxed);
-    arc_atomic_test(iterations, num_thrds, Ordering::Acquire);
-    arc_atomic_test(iterations, num_thrds, Ordering::Release);
-    arc_atomic_test(iterations, num_thrds, Ordering::AcqRel);
-    arc_atomic_test(iterations, num_thrds, Ordering::SeqCst);
+    //println!("arc mutex");
+    //arc_mutex_test(iterations, num_thrds);
 
-    println!("static atomic ptr");
-    static_atomic_ptr_test(iterations, num_thrds, Ordering::Relaxed);
-    //static_atomic_ptr_test(iterations, num_thrds, Ordering::Acquire);
-    static_atomic_ptr_test(iterations, num_thrds, Ordering::Release);
-    //static_atomic_ptr_test(iterations, num_thrds, Ordering::AcqRel);
-    static_atomic_ptr_test(iterations, num_thrds, Ordering::SeqCst);
+    //println!("data spin queue");
+    //data_spin_queue(iterations, num_thrds).unwrap();
 
-    println!("arc atomic ptr");
-    arc_atomic_ptr_test(iterations, num_thrds, Ordering::Relaxed);
-    //arc_atomic_ptr_test(iterations, num_thrds, Ordering::Acquire);
-    arc_atomic_ptr_test(iterations, num_thrds, Ordering::Release);
-    //arc_atomic_ptr_test(iterations, num_thrds, Ordering::AcqRel);
-    arc_atomic_ptr_test(iterations, num_thrds, Ordering::SeqCst);
-     */
-    println!("arc mutex");
-    arc_mutex_test(iterations, num_thrds);
-
-    println!("data spin queue");
-    data_spin_queue(iterations, num_thrds).unwrap();
-
-    println!("only mutate");
-    only_mutate_test(iterations).unwrap();
-
-    println!("only receive");
-    only_receive(iterations, num_thrds).unwrap();
-    
-
+    println!("share derivative quotes");
+    share_derivative_quotes(iterations, num_thrds).unwrap();
 }

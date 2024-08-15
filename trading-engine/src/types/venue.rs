@@ -3,8 +3,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
 pub enum Venue {
     Undefined,
+    CCP,
     #[default]
     KRX,
+    KIS,
+    SI,
 }
 
 pub trait VenueTrait {

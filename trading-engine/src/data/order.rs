@@ -1,5 +1,5 @@
 use crate::types::base::{BookPrice, BookQuantity, OrderId};
-use crate::types::isin_code::IsinCode;
+use crate::types::id::isin_code::IsinCode;
 use crate::types::enums::OrderSide;
 use crate::types::venue::Venue;
 use crate::types::timestamp::TimeStamp;

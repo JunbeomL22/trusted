@@ -1,7 +1,7 @@
 use crate::data::quote::QuoteSnapshot;
 use crate::types::{
     base::{LevelSnapshot, Slice},
-    isin_code::IsinCode,
+    id::isin_code::IsinCode,
     venue::Venue,
     timestamp::{
         DateUnixNanoGenerator,

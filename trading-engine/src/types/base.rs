@@ -1,4 +1,4 @@
-use crate::types::isin_code::IsinCode;
+use crate::types::id::isin_code::IsinCode;
 use crate::types::venue::Venue;
 use std::ops::{Index, IndexMut};
 use flexstr::LocalStr;
@@ -37,6 +37,8 @@ pub type BookQuantity = u64;
 pub type OrderCount = u32;
 //
 pub type Real = f64;
+//
+pub type NormalizedReal = f64;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -127,14 +129,6 @@ impl IndexMut<usize> for TradeHistory {
 pub struct Slice {
     pub start: usize,
     pub end: usize,
-}
-
-pub type NormalizedReal = Real;
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct Quote {
-    pub price: NormalizedReal,
-    pub quantity: NormalizedReal,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]

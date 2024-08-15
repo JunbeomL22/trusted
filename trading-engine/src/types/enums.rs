@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use crate::types::isin_code::IsinCode;
+use crate::types::id::isin_code::IsinCode;
 pub trait FromU8 {
     fn from_u8(v: u8) -> Result<Self>
     where

@@ -1,7 +1,9 @@
 use crate::types::base::{
-    Quote,
     Real,
     NormalizedReal,
+    LevelSnapshot,
+    BookPrice,
+    BookQuantity,
 };
 use crate::types::timestamp::TimeStamp;
 use crate::data::{
@@ -56,11 +58,17 @@ impl TradePrice {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
+pub struct SimpleSnapshot {
+    price: NormalizedReal,
+    quantity: NormalizedReal,
+}
+
 /// L2 Snapshot of Quotes
 #[derive(Debug, Clone, Serialize)]
 pub struct Quotes {
-    bids: Vec<Quote>,
-    asks: Vec<Quote>,
+    bids: Vec<SimpleSnapshot>,
+    asks: Vec<SimpleSnapshot>,
     level_cut: usize,
     timestamp: TimeStamp,
     #[serde(skip)]
@@ -160,13 +168,13 @@ impl Quotes {
         let iter_nuum = data.effective_bid_data().len().min(quote_cut);
         //
         let bids = data.effective_bid_data().iter().take(iter_nuum).map(|quote| 
-            Quote {
+           SimpleSnapshot {
                 price: order_converter.price.normalized_real_from_i64(quote.book_price),
                 quantity: order_converter.quantity.normalized_real_from_u64(quote.book_quantity),
             }
         ).collect();
         let asks = data.effective_ask_data().iter().take(iter_nuum).map(|quote| 
-            Quote {
+            SimpleSnapshot {
                 price: order_converter.price.normalized_real_from_i64(quote.book_price),
                 quantity: order_converter.quantity.normalized_real_from_u64(quote.book_quantity),
             }
@@ -188,13 +196,13 @@ impl Quotes {
         let iter_nuum = data.bid_quote_data.len().min(quote_cut);
         //
         let bids = data.bid_quote_data.iter().take(iter_nuum).map(|quote| 
-            Quote {
+            SimpleSnapshot {
                 price: order_converter.price.normalized_real_from_i64(quote.book_price),
                 quantity: order_converter.quantity.normalized_real_from_u64(quote.book_quantity),
             }
         ).collect();
         let asks = data.ask_quote_data.iter().take(iter_nuum).map(|quote| 
-            Quote {
+            SimpleSnapshot {
                 price: order_converter.price.normalized_real_from_i64(quote.book_price),
                 quantity: order_converter.quantity.normalized_real_from_u64(quote.book_quantity),
             }

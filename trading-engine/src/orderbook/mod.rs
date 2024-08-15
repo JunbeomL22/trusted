@@ -18,7 +18,7 @@ use crate::data::{
 };
 use crate::topics::LogTopic;
 use crate::types::{
-    isin_code::IsinCode,
+    id::isin_code::IsinCode,
     venue::Venue,
     base::{
         OrderId,

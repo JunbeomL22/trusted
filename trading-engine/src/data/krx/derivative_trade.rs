@@ -3,7 +3,7 @@ use crate::data::trade::TradeData;
 use crate::types::{
     base::{LevelSnapshot, Slice},
     enums::TradeType,
-    isin_code::IsinCode,
+    id::isin_code::IsinCode,
     venue::Venue,
     timestamp::{
         DateUnixNanoGenerator,

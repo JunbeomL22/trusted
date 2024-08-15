@@ -24,7 +24,7 @@ impl Default for Ticker {
 impl Ticker {
     pub fn new(bytes: &[u8]) -> Result<Self> {
         if bytes.len() > 32 {
-            let err = || anyhow!("Ticker(={}) length should be less than 32", from_utf8(bytes));
+            let err = || anyhow!("Ticker(={:?}) length should be less than 32", from_utf8(bytes));
             return Err(err());
         }
         let mut ticker = [0u8; 32];

@@ -1,4 +1,4 @@
-use crate::types::isin_code::IsinCode;
+use crate::types::id::isin_code::IsinCode;
 use crate::types::base::Real;
 use serde::{Deserialize, Serialize};
 use anyhow::Result;

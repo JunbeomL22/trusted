@@ -815,6 +815,7 @@ dependencies = [
  "core_affinity 0.8.1",
  "criterion",
  "parking_lot",
+ "time",
  "trading-engine",
 ]
 

@@ -6,7 +6,7 @@ use crate::types::{
     },
     enums::TradeType,
     timestamp::TimeStamp,
-    isin_code::IsinCode,
+    id::isin_code::IsinCode,
     venue::Venue,
 };
 use crate::utils::numeric_converter::{

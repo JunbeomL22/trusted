@@ -4,5 +4,4 @@ pub mod venue;
 pub mod venues;
 pub mod timestamp;
 pub mod timeseries;
-pub mod instrument_code;
 pub mod id;
