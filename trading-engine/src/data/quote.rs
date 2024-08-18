@@ -4,7 +4,7 @@ use crate::types::{
         BookQuantity,
     },
     timestamp::TimeStamp,
-    id::isin_code::IsinCode, 
+    id::InstId,
     venue::Venue,
 };
 
@@ -22,8 +22,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QuoteSnapshot {
-    pub venue: Venue,
-    pub isin_code: IsinCode, // this can be spread product
+    pub id: InstId,
     //
     pub timestamp: TimeStamp,
     pub system_timestamp: TimeStamp, // this is stamped in parsing the packet
@@ -43,8 +42,7 @@ pub struct QuoteSnapshot {
 impl Default for QuoteSnapshot {
     fn default() -> Self {
         QuoteSnapshot {
-            venue: Venue::default(),
-            isin_code: IsinCode::default(),
+            id: InstId::default(),
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),
             ask_quote_data: Vec::new(),
@@ -63,8 +61,7 @@ impl Default for QuoteSnapshot {
 impl QuoteSnapshot {
     pub fn with_quote_level(level: usize) -> Self {
         QuoteSnapshot {
-            venue: Venue::KRX,
-            isin_code: IsinCode::default(),
+            id: InstId::default(),
             //
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),

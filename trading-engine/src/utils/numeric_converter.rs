@@ -18,7 +18,7 @@ use crate::types::timestamp::{
     DAY_NANOSCALE,
     FIFTEEN_HOURS_NANOSCALE,
 };
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 use serde::{de::Deserializer, Deserialize, Serialize};
 use std::ptr::read_unaligned;
 
@@ -344,7 +344,7 @@ impl IntegerConverter {
     pub fn new(numcfg: NumReprCfg) -> Result<IntegerConverter> {
         numcfg.check_validity()?;
         if !cfg!(target_endian = "little") {
-            bail!("IntegerConverter parse by bit operations based only on little endian")
+            return Err(anyhow!("IntegerConverter parse by bit operations based only on little endian"));
         }
 
         let is_sigined_usize = numcfg.is_signed as usize;
@@ -373,7 +373,7 @@ impl IntegerConverter {
                     struct_info = numcfg.clone(),
                     message = "number over 18 digits can't be handled by u64"
                 );
-                bail!("unsupported digit size");
+                return Err(anyhow!("number over 18 digits can't be handled by u64"));
             }
         };
 

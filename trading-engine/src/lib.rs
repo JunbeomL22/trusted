@@ -8,6 +8,7 @@ pub mod instruments;
 pub mod spinqueue;
 pub mod topics;
 pub mod conductor;
+pub mod feature;
 //
 //
 pub use logger::{LazyMessage, LogLevel, LogMessage, LOG_SENDER, MAX_LOG_LEVEL, TIMEZONE};
@@ -34,3 +35,5 @@ pub use types::enums::Currency;
 pub use types::venue::Venue;
 pub use types::id::ticker::Ticker;
 pub use types::id::InstId;
+pub use utils::lazy_string::LazyString;
+

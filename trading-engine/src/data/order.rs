@@ -1,7 +1,6 @@
 use crate::types::base::{BookPrice, BookQuantity, OrderId};
-use crate::types::id::isin_code::IsinCode;
+use crate::types::id::InstId;
 use crate::types::enums::OrderSide;
-use crate::types::venue::Venue;
 use crate::types::timestamp::TimeStamp;
 
 //
@@ -119,8 +118,7 @@ pub enum OrderEnum {
 pub struct DecomposedOrder {
     pub order: OrderEnum,
     pub timestamp: TimeStamp,
-    pub isin_code: IsinCode,
-    pub venue: Venue,
+    pub id: InstId,
 }
 
 impl OrderRequest for LimitOrder {}

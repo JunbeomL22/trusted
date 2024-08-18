@@ -14,28 +14,61 @@ use serde::{
 };
 use std::hash::{Hash, Hasher};
 use std::ptr::eq as ptr_eq;
+
 //
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Symbol {
     Isin(IsinCode),
     Ticker(Ticker),
 }
+
+impl Default for Symbol {
+    fn default() -> Self {
+        Symbol::Isin(IsinCode::default())
+    }
+}
 //
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct IdData {
     pub symbol: Symbol,
     pub venue: Venue,
 }
 
 lazy_static! {
-    static ref ID_CACHE: Mutex<FxHashMap<IdData, &'static IdData>> = Mutex::new(FxHashMap::default());
+    static ref ID_CACHE: Mutex<FxHashMap<IdData, &'static IdData>> = {
+        let mut map = FxHashMap::default();
+        let default_id_data = IdData::default();
+        
+        let id_ptr: &'static IdData = Box::leak(Box::new(default_id_data.clone()));
+        
+        map.insert(default_id_data, id_ptr);
+
+        Mutex::new(map)
+    };
+
+    static ref DEFAULT_ID_PTR: &'static IdData = ID_CACHE.lock().unwrap().get(&IdData::default()).unwrap();
 }
 
 /// ID is a pointer to { (Symbol, Venue) }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Clone, Serialize, Copy)]
 pub struct InstId {
     #[serde(flatten)]
     id_ptr: &'static IdData,
+}
+
+impl std::fmt::Debug for InstId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstId")
+            .field("symbol", &self.id_ptr.symbol)
+            .field("venue", &self.id_ptr.venue)
+            .finish()
+    }
+}
+
+impl Default for InstId {
+    fn default() -> Self {
+        InstId { id_ptr: *DEFAULT_ID_PTR }
+    }
 }
 
 impl<'de> Deserialize<'de> for InstId {
@@ -68,6 +101,17 @@ impl InstId {
     #[must_use]
     pub fn get_id(&self) -> &'static IdData {
         self.id_ptr
+    }
+
+    pub fn symbol_str(&self) -> &str {
+        match &self.id_ptr.symbol {
+            Symbol::Isin(isin) => isin.as_str(),
+            Symbol::Ticker(ticker) => ticker.as_str(),
+        }
+    }
+
+    pub fn venue(&self) -> Venue {
+        self.id_ptr.venue
     }
 }
 

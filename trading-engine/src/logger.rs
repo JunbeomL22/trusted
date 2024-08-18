@@ -19,8 +19,8 @@ use std::{
     thread,
 };
 
-const LOG_MESSAGE_BUFFER_SIZE: usize = 1_000_000; // string length
-const LOG_MESSAGE_FLUSH_INTERVAL: u64 = 1_000_000; // 1 second
+const LOG_MESSAGE_BUFFER_SIZE: usize = 2_000_000; // string length
+const LOG_MESSAGE_FLUSH_INTERVAL: u64 = 2_000_000; // 2 second
 
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> =
     Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));

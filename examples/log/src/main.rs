@@ -4,7 +4,7 @@ use trading_engine::utils::timer::get_unix_nano;
 use trading_engine::{
     info, log_info,
     logger::{LogLevel, Logger, TimeZone},
-    timer,
+    utils::timer,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

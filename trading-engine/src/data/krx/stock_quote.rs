@@ -4,7 +4,11 @@ use crate::{
             LevelSnapshot,
             Slice,
         },
-        id::isin_code::IsinCode,
+        id::{
+            isin_code::IsinCode,
+            Symbol,
+            InstId,
+        },
         venue::Venue,
         timestamp::{
             DateUnixNanoGenerator,
@@ -150,8 +154,10 @@ impl IFMSRPD0002 {
         self.is_valid_krx_payload(payload)?;
 
         let venue = Venue::KRX;
-
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let symbol = Symbol::Isin(isin_code.clone());
+        let id = InstId::new(symbol, venue);
+
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -185,8 +191,7 @@ impl IFMSRPD0002 {
         );
 
         Ok(QuoteSnapshot {
-            venue,
-            isin_code,
+            id, 
             timestamp,
             system_timestamp,
             ask_quote_data,
@@ -209,9 +214,9 @@ impl IFMSRPD0002 {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        buffer.venue = Venue::KRX;
-
-        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let symbol = Symbol::Isin(isin_code.clone());
+        buffer.id = InstId::new(symbol, Venue::KRX);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -386,9 +391,10 @@ impl IFMSRPD0003 {
     ) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
 
-        let venue = Venue::KRX;
-
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let symbol = Symbol::Isin(isin_code.clone());
+        let id = InstId::new(symbol, Venue::KRX);
+
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -422,8 +428,7 @@ impl IFMSRPD0003 {
         );
 
         Ok(QuoteSnapshot {
-            venue,
-            isin_code,
+            id, 
             timestamp,
             system_timestamp,
             ask_quote_data,
@@ -446,8 +451,9 @@ impl IFMSRPD0003 {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        buffer.venue = Venue::KRX;
-        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let symbol = Symbol::Isin(isin_code.clone());
+        buffer.id = InstId::new(symbol, Venue::KRX);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();

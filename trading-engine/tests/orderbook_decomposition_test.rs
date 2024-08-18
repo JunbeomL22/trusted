@@ -9,7 +9,7 @@ mod tests {
         LevelSnapshot,
     };
     use trading_engine::types::venue::Venue;
-    use trading_engine::types::isin_code::IsinCode;
+    use trading_engine::types::id::isin_code::IsinCode;
 
     use trading_engine::types::enums::OrderSide;
     use trading_engine::data::order::{
@@ -19,6 +19,10 @@ mod tests {
         CancelOrder,
         NullOrder,
         DecomposedOrder,
+    };
+    use trading_engine::types::id::{
+        InstId,
+        Symbol,
     };
     use anyhow::Result;
 
@@ -61,10 +65,11 @@ mod tests {
 
         let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
         let venue = Venue::KRX;
+        let id = InstId::new(Symbol::Isin(isin_code.clone()), venue);
         let mut original_orderbook_series = Vec::<OrderBook>::default();
         let mut ask_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();
         let mut bid_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();
-        let mut order_book = OrderBook::initialize_with_isin_venue(isin_code.clone(), venue);
+        let mut order_book = OrderBook::initialize_with_id(id);
 
         original_orderbook_series.push(order_book.clone());
         ask_level_snapshots_series.push(order_book.ask_level_snapshot());
@@ -123,7 +128,7 @@ mod tests {
         }
 
         
-        let mut recovered_orderbook = OrderBook::initialize_with_isin_venue(isin_code.clone(), venue);
+        let mut recovered_orderbook = OrderBook::initialize_with_id(id);
         let mut recovered_orderbook_series = vec![recovered_orderbook.clone()];
 
         for (_k, decomposed_orders) in order_enum_vec.iter() {

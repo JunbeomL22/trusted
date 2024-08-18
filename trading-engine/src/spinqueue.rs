@@ -1,16 +1,14 @@
 use std::sync::atomic::{
     AtomicPtr,
-    AtomicU64,
     AtomicU16,
     Ordering,
-    AtomicU8,
 };
 use std::fmt::Debug;
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow};
 
 pub type IdType = u16;
-pub type WorkerStatus = AtomicU16;
 
+pub type WorkerStatus = AtomicU16;
 const ID_BOUND: IdType = 15;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -23,7 +21,7 @@ pub struct WorkerId {
 impl WorkerId {
     pub fn new(id: IdType) -> Result<Self> {
         if id > ID_BOUND {
-            bail!("WorkerId::new() id must be between 0 and 63");
+            return Err(anyhow!("WorkerId::new() id must be between 0 and 63"));
         }
         
         let id_bit = 1 << id;

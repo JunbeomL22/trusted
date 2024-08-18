@@ -10,6 +10,18 @@ pub enum Venue {
     SI,
 }
 
+impl Venue {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Venue::Undefined => "Undefined",
+            Venue::CCP => "CCP",
+            Venue::KRX => "KRX",
+            Venue::KIS => "KIS",
+            Venue::SI => "SI",
+        }
+    }
+}
+
 pub trait VenueTrait {
     fn check_account_id(&self, _: &str) -> bool {
         unimplemented!("check_account not implemented")

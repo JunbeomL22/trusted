@@ -18,8 +18,7 @@ use crate::data::{
 };
 use crate::topics::LogTopic;
 use crate::types::{
-    id::isin_code::IsinCode,
-    venue::Venue,
+    id::InstId,
     base::{
         OrderId,
         BookPrice,
@@ -41,8 +40,7 @@ use anyhow::{
 pub struct OrderBook {
     pub asks: HalfBook,
     pub bids: HalfBook,
-    isin_code: IsinCode,
-    venue: Venue,
+    id: InstId,
     virtual_id_counter: VirtualOrderId,
     timestamp: TimeStamp,
     system_time: TimeStamp,
@@ -79,8 +77,7 @@ impl OrderBook {
             let decompsed_order = DecomposedOrder {
                 order,
                 timestamp: self.timestamp,
-                isin_code: self.isin_code.clone(),
-                venue: self.venue,
+                id: self.id,
             };
             decomposed_orders.push(decompsed_order);
         }
@@ -89,8 +86,7 @@ impl OrderBook {
             let decompsed_order = DecomposedOrder {
                 order,
                 timestamp: self.timestamp,
-                isin_code: self.isin_code.clone(),
-                venue: self.venue,
+                id: self.id,
             };
             decomposed_orders.push(decompsed_order);
         }
@@ -102,28 +98,27 @@ impl OrderBook {
         self.asks.check_validity_quantity() && self.bids.check_validity_quantity()
     }
 
-    fn check_isin_venue(&self, isin_code: &IsinCode, venue: Venue) -> Result<()> {
-        if isin_code != &self.isin_code {
-            let err = || anyhow!(
-                "Isin code mismatch orderbook: {:?} input: {:?}",
-                self.isin_code, isin_code,
-            );
-            return Err(err());
-        } 
-        if venue != self.venue {
-            let err = || anyhow!(
-                "Venue mismatch orderbook: {:?} input: {:?}",
-                self.venue, venue,
-            );
-            return Err(err());
+    fn check_id(&self, id: InstId) -> Result<()> {
+        if self.id == id {
+            Ok(())
+        } else {
+            let lazy_msg = || {
+                anyhow!(
+                    "Id mismatch\n\
+                    orderbook id: {:?}\n\
+                    input id: {:?}",
+                    self.id,
+                    id,
+                )
+            };
+            Err(anyhow!(lazy_msg()))
         }
-        Ok(())
     }
 
     /// update by snapshot
     #[inline]
     pub fn update_from_quote_snapshot(&mut self, quote: &QuoteSnapshot) -> Result<()> {
-        self.check_isin_venue(&quote.isin_code, quote.venue)?;
+        self.check_id(quote.id)?;
         self.asks.update_l2_snapshot(&quote.ask_quote_data, &mut self.virtual_id_counter)
             .context("Failed to update ask side by level snapshot")?;
         self.bids.update_l2_snapshot(&quote.bid_quote_data, &mut self.virtual_id_counter)
@@ -134,7 +129,8 @@ impl OrderBook {
 
     #[inline]
     pub fn update_from_trade_quote_snapshot(&mut self, trade_quote: &TradeQuoteSnapshot) -> Result<()> {
-        self.check_isin_venue(&trade_quote.isin_code, trade_quote.venue)?;
+        self.check_id(trade_quote.id)?;
+        
         self.asks.update_l2_snapshot(&trade_quote.ask_quote_data, &mut self.virtual_id_counter)
             .context("Failed to update ask side by level snapshot")?;
         self.bids.update_l2_snapshot(&trade_quote.bid_quote_data, &mut self.virtual_id_counter)
@@ -180,12 +176,11 @@ impl OrderBook {
     }
 
     #[inline]
-    pub fn initialize_with_isin_venue(isin_code: IsinCode, venue: Venue) -> Self {
+    pub fn initialize_with_id(id: InstId) -> Self {
         OrderBook {
             asks: HalfBook::initialize(OrderSide::Ask),
             bids: HalfBook::initialize(OrderSide::Bid),
-            isin_code,
-            venue,
+            id,
             virtual_id_counter: VirtualOrderId::new(0),
             timestamp: TimeStamp::default(),
             system_time: TimeStamp::default(),
@@ -210,8 +205,9 @@ impl OrderBook {
         } else {
             let message = format!(
                 "Order {} not found\n\
-                isin: {}, venue: {:?}",
-                order_id, self.isin_code.as_str(), self.venue);
+                id: {:?}",
+                order_id, self.id
+            );
 
             crate::log_warn!(LogTopic::OrderNotFound, message = message);
             None
@@ -257,12 +253,14 @@ impl OrderBook {
                 self.process_limit_order(limit_order)
             }
         } else {
-            let message = format!(
-                "Order {} not found in modification\n\
-                isin: {}, venue: {:?}",
-                order_id, 
-                self.isin_code.as_str(), 
-                self.venue);
+            let copied_id = self.id;
+            let message = crate::LazyString::new(move || 
+                format!(
+                    "Order {} not found\n\
+                    id: {:?}",
+                    order_id, copied_id
+                )
+            );
 
             crate::log_warn!(LogTopic::OrderNotFound, message = message);
             None
@@ -278,10 +276,14 @@ impl OrderBook {
         } else if self.bids.change_price(order_id, new_price).is_some() {
             Some(())
         } else {
-            let message = format!(
-                "Order {} not found\n\
-                isin: {}, venue: {:?}",
-                order_id, self.isin_code.as_str(), self.venue);
+            let copied_id = self.id;
+            let message = crate::LazyString::new(move || 
+                format!(
+                    "Order {} not found\n\
+                    id: {:?}",
+                    order_id, copied_id
+                )
+            );
 
             crate::log_warn!(LogTopic::OrderNotFound, message = message);
             None
@@ -297,8 +299,10 @@ impl OrderBook {
         } else {
             let message = format!(
                 "Order {} not found\n\
-                isin: {}, venue: {:?}",
-                order_id, self.isin_code.as_str(), self.venue);
+                id: {:?}",
+                order_id, 
+                self.id
+            );
 
             crate::log_warn!(LogTopic::OrderNotFound, message = message);
             None
@@ -367,6 +371,11 @@ impl OrderBook {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::id::{
+        isin_code::IsinCode,
+        Symbol,
+    };
+    use crate::types::venue::Venue;
     #[test]
     fn test_orderbook() {
         let mut order_counter = VirtualOrderId::new(0);
@@ -401,7 +410,8 @@ mod tests {
     
         let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
         let venue = Venue::KRX;
-        let mut order_book = OrderBook::initialize_with_isin_venue(isin_code, venue);
+        let id = InstId::new(Symbol::Isin(isin_code), venue);
+        let mut order_book = OrderBook::initialize_with_id(id);
     
         for order in bid_order_vec.clone().into_iter() {
             order_book.add_limit_order(order).unwrap();
@@ -501,7 +511,7 @@ mod tests {
         let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to parse IFMSRPD0034");
         
-        let mut order_book = OrderBook::initialize_with_isin_venue(quote_snapshot.isin_code.clone(), quote_snapshot.venue.clone());
+        let mut order_book = OrderBook::initialize_with_id(quote_snapshot.id);
         order_book.update_from_quote_snapshot(&quote_snapshot).unwrap();
         
         let display = order_book.to_string();

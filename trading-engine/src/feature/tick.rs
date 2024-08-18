@@ -1,9 +1,6 @@
 use crate::types::base::{
     Real,
     NormalizedReal,
-    LevelSnapshot,
-    BookPrice,
-    BookQuantity,
 };
 use crate::types::timestamp::TimeStamp;
 use crate::data::{

@@ -1,7 +1,12 @@
 use crate::data::quote::QuoteSnapshot;
 use crate::types::{
     base::{LevelSnapshot, Slice},
-    id::isin_code::IsinCode,
+    id::{
+        InstId,
+        Symbol,
+        ticker::Ticker,
+        isin_code::IsinCode,
+    },
     venue::Venue,
     timestamp::{
         DateUnixNanoGenerator,
@@ -131,10 +136,13 @@ impl IFMSRPD0034 {
         &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
-        let venue = Venue::KRX;
+        
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
-
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+
+        let symbol = Symbol::Isin(isin_code);
+        let id = InstId::new(symbol, Venue::KRX);
+        
         let timestamp_converter = get_krx_timestamp_converter();
         let order_counter = get_krx_base_order_counter();
 
@@ -170,8 +178,7 @@ impl IFMSRPD0034 {
         );
 
         Ok(QuoteSnapshot {
-            venue,
-            isin_code,
+            id, 
             timestamp,
             system_timestamp,
             ask_quote_data,
@@ -193,10 +200,12 @@ impl IFMSRPD0034 {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        buffer.venue = Venue::KRX;
-        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
-        let converter = get_krx_derivative_converter(&payload[..5], &buffer.isin_code);
+        let symbol = Symbol::Isin(isin_code);
+        buffer.id = InstId::new(symbol, Venue::KRX);
+
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -377,10 +386,13 @@ impl IFMSRPD0035 {
     ) -> Result<QuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
 
-        let venue = Venue::KRX;
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
-
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+
+        let symbol = Symbol::Isin(isin_code);
+
+        let id = InstId::new(symbol, Venue::KRX);
+
         let timestamp_converter = get_krx_timestamp_converter();
         let order_counter = get_krx_base_order_counter();
 
@@ -416,8 +428,7 @@ impl IFMSRPD0035 {
         );
 
         Ok(QuoteSnapshot {
-            venue,
-            isin_code,
+            id,
             timestamp,
             system_timestamp,
             ask_quote_data,
@@ -436,10 +447,13 @@ impl IFMSRPD0035 {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_quote_snapshot_buffer(payload, buffer)?;
 
-        buffer.venue = Venue::KRX;
-        buffer.isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
-        let converter = get_krx_derivative_converter(&payload[..5], &buffer.isin_code);
+        let symbol = Symbol::Isin(isin_code);
+        buffer.id = InstId::new(symbol, Venue::KRX);
+
+        
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -496,7 +510,7 @@ mod tests {
         let quote_snapshot = ifmsrpd0034.to_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to parse IFMSRPD0034");
 
-        assert_eq!(quote_snapshot.isin_code.as_str(), "KR4106V30004");
+        assert_eq!(quote_snapshot.id.symbol_str(), "KR4106V30004");
         let ask_quote_data = quote_snapshot.effective_ask_data();
         let bid_quote_data = quote_snapshot.effective_bid_data();
         
@@ -536,7 +550,7 @@ mod tests {
         ifmsrpd0034.to_quote_snapshot_buffer(test_data, &mut quote_snapshot, &mut date_gen)
             .expect("failed to parse IFMSRPD0034");
 
-        assert_eq!(quote_snapshot.isin_code.as_str(), "KR4106V30004");
+        assert_eq!(quote_snapshot.id.symbol_str(), "KR4106V30004");
         let ask_quote_data = quote_snapshot.effective_ask_data();
         let bid_quote_data = quote_snapshot.effective_bid_data();
         

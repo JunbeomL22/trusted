@@ -1,6 +1,9 @@
 use serde::{Serialize, Deserialize};
 use anyhow::{anyhow, Result};
-use std::str::from_utf8;
+use std::str::{
+    from_utf8,
+    from_utf8_unchecked,
+};
 use std::hash::{Hash, Hasher};
 
 /// The code length is not fixed. So, it may be tempted to use a Vec<u8> or String.
@@ -30,6 +33,11 @@ impl Ticker {
         let mut ticker = [0u8; 32];
         ticker[..bytes.len()].copy_from_slice(bytes);
         Ok(Ticker { ticker })
+    }
+
+    pub fn as_str(&self) -> &str {
+        // This is safe because we know Tickers are always valid UTF-8
+        unsafe { from_utf8_unchecked(self.ticker.as_ref()) }
     }
 }
 

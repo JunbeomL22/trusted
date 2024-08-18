@@ -3,7 +3,11 @@ use crate::data::trade::TradeData;
 use crate::types::{
     base::{LevelSnapshot, Slice},
     enums::TradeType,
-    id::isin_code::IsinCode,
+    id::{
+        isin_code::IsinCode,
+        InstId,
+        Symbol,
+    },
     venue::Venue,
     timestamp::{
         DateUnixNanoGenerator,
@@ -170,12 +174,13 @@ impl IFMSRPD0037 {
     ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
         //
-        let venue = Venue::KRX;
-
         let isin_code =
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
-
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+
+        let symbol = Symbol::Isin(isin_code);
+        let id = InstId::new(symbol, Venue::KRX);
+        
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -239,8 +244,7 @@ impl IFMSRPD0037 {
         );
 
         Ok(TradeQuoteSnapshot {
-            venue,
-            isin_code,
+            id,
             timestamp,
             system_timestamp,
             trade_price,
@@ -268,11 +272,13 @@ impl IFMSRPD0037 {
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
-        data_buffer.isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;        
-        
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;        
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+
+        let symbol = Symbol::Isin(isin_code);
+        data_buffer.id = InstId::new(symbol, Venue::KRX);
+
         let timestamp_converter = get_krx_timestamp_converter();
-        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
         let order_counter = get_krx_base_order_counter();
         //
         //data_buffer.timestamp_converter = timestamp_converter;
@@ -292,8 +298,6 @@ impl IFMSRPD0037 {
                 )
             })
         } else { None };
-
-        data_buffer.venue = Venue::KRX;
 
         data_buffer.system_timestamp.stamp = get_unix_nano();
         data_buffer.timestamp = timestamp_converter.parse_hhmmssuuuuuu(
@@ -514,12 +518,14 @@ impl IFMSRPD0038 {
         &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<TradeQuoteSnapshot> {
         self.is_valid_krx_payload(payload)?;
-        let venue = Venue::KRX;
 
         let isin_code =
             IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+        let symbol = Symbol::Isin(isin_code);
+        let id = InstId::new(symbol, Venue::KRX);
+
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -576,8 +582,7 @@ impl IFMSRPD0038 {
         );
         
         Ok(TradeQuoteSnapshot {
-            venue,
-            isin_code,
+            id,
             timestamp,
             system_timestamp,
             trade_price,
@@ -604,12 +609,14 @@ impl IFMSRPD0038 {
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
         self.is_valid_trade_quote_snapshot_buffer(payload, data_buffer)?;
-        data_buffer.venue = Venue::KRX;
 
-        data_buffer.isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
 
-        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+
+        let symbol = Symbol::Isin(isin_code);
+        data_buffer.id = InstId::new(symbol, Venue::KRX);
+
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -758,12 +765,12 @@ impl IFMSRPD0036 {
         &self, payload: &[u8], date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<TradeData> {
         self.is_valid_krx_payload(payload)?;
-        let venue = Venue::KRX;
 
-        let isin_code =
-            IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
-
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
+        let symbol = Symbol::Isin(isin_code);
+        let id = InstId::new(symbol, Venue::KRX);
+
         let timestamp_converter = get_krx_timestamp_converter();
 
         let cum_trd_qnt = if self.parse_cum_trd_qnt {
@@ -797,8 +804,7 @@ impl IFMSRPD0036 {
         };
 
         Ok(TradeData {
-            venue,
-            isin_code,
+            id,
             timestamp,
             system_timestamp,
             trade_price,
@@ -818,11 +824,13 @@ impl IFMSRPD0036 {
         date_gen: &mut DateUnixNanoGenerator,
     ) -> Result<()> {
         self.is_valid_krx_payload(payload)?;
-        data_buffer.venue = Venue::KRX;
-        data_buffer.isin_code = IsinCode::new(
-            &payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+    
+        let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
+        let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
-        let converter = get_krx_derivative_converter(&payload[..5], &data_buffer.isin_code);
+        let symbol = Symbol::Isin(isin_code);
+        data_buffer.id = InstId::new(symbol, Venue::KRX);
+
         let timestamp_converter = get_krx_timestamp_converter();
 
         data_buffer.order_converter = converter;
@@ -890,12 +898,14 @@ mod tests {
             .expect("failed to convert to TradeQuoteSnapshot");
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
-            trade_quote_data.isin_code.as_str()
+            trade_quote_data.id.symbol_str()
         );
         //dbg!(trade_quote_data.clone());
 
-        let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
-        assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
+        let code_str = trade_quote_data.id.symbol_str();
+        let isin_code = IsinCode::new(code_str.as_bytes())?;
+        let converter = get_krx_derivative_converter(&test_data[..5], &isin_code);
+        assert_eq!(code_str, "KR4301V13502");
         //assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
         assert_eq!(
@@ -969,12 +979,15 @@ mod tests {
             .to_trade_quote_snapshot_buffer(
                 test_data, &mut trade_quote_data, &mut date_gen
             ).expect("failed to convert to TradeQuoteSnapshot");
+        let code_str = trade_quote_data.id.symbol_str();
         println!(
             "\n* G703F parsing for isin code: {:?}\n",
-            trade_quote_data.isin_code.as_str()
+            code_str
         );
-        let converter = get_krx_derivative_converter(&test_data[..5], &trade_quote_data.isin_code);
-        assert_eq!(trade_quote_data.isin_code.as_str(), "KR4301V13502");
+
+        let isin_code = IsinCode::new(code_str.as_bytes())?;
+        let converter = get_krx_derivative_converter(&test_data[..5], &isin_code);
+        assert_eq!(trade_quote_data.id.symbol_str(), "KR4301V13502");
         //assert_eq!(trade_quote_data.timestamp, 104939081108);
         assert_eq!(trade_quote_data.trade_price, 212);
         assert_eq!(
@@ -1047,14 +1060,15 @@ mod tests {
             .to_trade_quote_snapshot(test_data, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
 
+        let code_str = trade_quote_data.id.symbol_str();
         println!(
             "\n* G704F parsing for isin code: {:?}\n",
-            trade_quote_data.isin_code.as_str()
+            code_str
         );
 
-        //dbg!(trade_quote_data.clone());
+        let isin_code = IsinCode::new(code_str.as_bytes())?;
 
-        assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
+        assert_eq!(trade_quote_data.id.symbol_str(), "KR41CNV10006");
         //assert_eq!(trade_quote_data.timestamp, 104_939_829_612);
         assert_eq!(trade_quote_data.trade_price, 66500);
         assert_eq!(trade_quote_data.trade_quantity, 7);
@@ -1151,14 +1165,13 @@ mod tests {
                 test_data, &mut trade_quote_data, &mut date_gen)
             .expect("failed to convert to TradeQuoteSnapshot");
 
+        let code_str = trade_quote_data.id.symbol_str();
         println!(
             "\n* G704F parsing for isin code: {:?}\n",
-            trade_quote_data.isin_code.as_str()
+            code_str
         );
 
-        //dbg!(trade_quote_data.clone());
-
-        //let num_timestamp: u64 = 104_939_829_612;
+        let isin_code = IsinCode::new(code_str.as_bytes())?;
         
         let mut nanos = date_gen.utcdate_unix_nano;
         nanos += 10 * HOUR_NANOSCALE;
@@ -1186,7 +1199,7 @@ mod tests {
         //assert!((trade_quote_data.timestamp.time.as_real() - sec).abs() < 1.0e-6);
         //dbg!(sec);
         //dbg!(trade_quote_data.timestamp);
-        assert_eq!(trade_quote_data.isin_code.as_str(), "KR41CNV10006");
+        assert_eq!(trade_quote_data.id.symbol_str(), "KR41CNV10006");
         //assert_eq!(trade_quote_data.timestamp, );
         assert_eq!(trade_quote_data.trade_price, 66500);
         assert_eq!(trade_quote_data.trade_quantity, 7);
