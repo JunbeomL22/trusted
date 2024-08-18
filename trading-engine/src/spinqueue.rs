@@ -46,8 +46,6 @@ where T: Clone + Debug + Default
     pub data_buffer: AtomicPtr<T>,
     worker_status: WorkerStatus, // 0 means there is nothing to work on
     full_status: IdType,
-    //workers: Vec<WorkerId>, // can't be bigger than 64
-    //timestamp: TimeStamp,
 }
 
 impl<T> Drop for DataSpinQueue<T> 
@@ -86,7 +84,7 @@ where T: Clone + Debug + Default
         let mut worker_ids = Vec::new();
         for worker in workers.iter() {
             if worker_ids.contains(&worker.id) {
-                bail!("WorkerId::new() duplicate worker id");
+                return Err(anyhow!("WorkerId::new() duplicate worker id"));
             }
             worker_ids.push(worker.id);
         }

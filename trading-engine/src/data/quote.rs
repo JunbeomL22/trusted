@@ -5,7 +5,6 @@ use crate::types::{
     },
     timestamp::TimeStamp,
     id::InstId,
-    venue::Venue,
 };
 
 use crate::utils::numeric_converter::{

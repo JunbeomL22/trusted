@@ -63,16 +63,17 @@ pub struct SimpleSnapshot {
 
 /// L2 Snapshot of Quotes
 #[derive(Debug, Clone, Serialize)]
-pub struct Quotes {
+pub struct SimpleQuotes {
     bids: Vec<SimpleSnapshot>,
     asks: Vec<SimpleSnapshot>,
     level_cut: usize,
     timestamp: TimeStamp,
+    system_time: TimeStamp,
     #[serde(skip)]
     order_converter: &'static OrderConverter,
 }
 
-impl Default for Quotes {
+impl Default for SimpleQuotes {
     fn default() -> Self {
         let order_converter = get_default_order_converter();
         Self {
@@ -80,12 +81,13 @@ impl Default for Quotes {
             asks: Vec::new(),
             level_cut: 0,
             timestamp: TimeStamp::default(),
+            system_time: TimeStamp::default(),
             order_converter,
         }
     }
 }
 
-impl Quotes {
+impl SimpleQuotes {
     pub fn with_capacity(capacity: usize) -> Self {
         let converter = get_default_order_converter();
         Self {
@@ -93,6 +95,7 @@ impl Quotes {
             asks: Vec::with_capacity(capacity),
             level_cut: capacity,
             timestamp: TimeStamp::default(),
+            system_time: TimeStamp::default(),
             order_converter: converter,
         }
     }
