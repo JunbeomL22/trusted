@@ -24,7 +24,7 @@ use trading_engine::data::{
 use trading_engine::types::timestamp::DateUnixNanoGenerator;
 use anyhow::Result;
 use time::macros::date;
-use trading_engine::conductor::feature::tick::Quotes;
+use trading_engine::feature::tick::SimpleQuotes;
 
 
 #[derive(Debug, Clone, Default)]
@@ -354,7 +354,7 @@ fn share_derivative_quotes(
 
         let handle = std::thread::spawn(move || {
             core_affinity::set_for_current(core_affinity::CoreId { id: id+1 as usize });
-            let mut quotes = Quotes::default();
+            let mut quotes = SimpleQuotes::default();
             let mut count = 1;
             loop {
                 if let Some(data) = reader_spin_queue.get(&worker_id) {

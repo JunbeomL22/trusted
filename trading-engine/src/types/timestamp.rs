@@ -148,6 +148,10 @@ impl TimeStamp {
         Ok(res)
     }
     
+    pub fn utc_now() -> Self {
+        TimeStamp { stamp: get_unix_nano() }
+    }
+    
     #[inline]
     #[must_use]
     pub fn new(unix_nano: UnixNano) -> Self {

@@ -185,6 +185,7 @@ impl SimpleQuotes {
             asks,
             level_cut: quote_cut,
             timestamp: data.timestamp,
+            system_time: data.system_timestamp,
             order_converter,
         }
     }
@@ -213,6 +214,7 @@ impl SimpleQuotes {
             asks,
             level_cut: quote_cut,
             timestamp: data.timestamp,
+            system_time: data.system_timestamp,
             order_converter,
         }
     }
@@ -286,11 +288,11 @@ impl SimpleQuotes {
     }
 }
 
-impl Quotes {
+impl SimpleQuotes {
     pub fn get_bid_orderflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         if level == 0 {
             return Err(anyhow!("as a convention, ofi level starts from 1"));
@@ -333,7 +335,7 @@ impl Quotes {
     pub fn get_ask_orderflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         if level == 0 {
             return Err(anyhow!("as a convention, ofi level starts from 1"));
@@ -376,7 +378,7 @@ impl Quotes {
     pub fn get_ask_ln_orderflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         if level == 0 {
             return Err(anyhow!("as a convention, ofi level starts from 1"));
@@ -446,7 +448,7 @@ impl Quotes {
     pub fn get_bid_ln_orderflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         if level == 0 {
             return Err(anyhow!("as a convention, ofi level starts from 1"));
@@ -514,7 +516,7 @@ impl Quotes {
     pub fn get_orederflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         let bid_imbalance = self.get_bid_orderflow_imbalance(level, arriving_quotes)?;
         let ask_imbalance = self.get_ask_orderflow_imbalance(level, arriving_quotes)?;
@@ -525,7 +527,7 @@ impl Quotes {
     pub fn get_ln_orderflow_imbalance(
         &self,
         level: usize,
-        arriving_quotes: &Quotes,
+        arriving_quotes: &SimpleQuotes,
     ) -> Result<NormalizedReal> {
         let bid_imbalance = self.get_bid_ln_orderflow_imbalance(level, arriving_quotes)?;
         let ask_imbalance = self.get_ask_ln_orderflow_imbalance(level, arriving_quotes)?;

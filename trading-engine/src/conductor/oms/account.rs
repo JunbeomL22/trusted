@@ -6,26 +6,20 @@ use crate::types::inst_info::BaseInstMap;
 use crate::BookQuantity;
 use crate::types::enums::OrderSide;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum Side {
-    #[default]
-    Buy,
-    Sell,
-}
 
-impl Side {
+impl OrderSide {
     #[inline]
     pub fn opposite(&self) -> Self {
         match self {
-            Side::Buy => Side::Sell,
-            Side::Sell => Side::Buy,
+            OrderSide::Bid => OrderSide::Ask,
+            OrderSide::Ask => OrderSide::Bid,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Balance {
-    pub side: Side,
+    pub side: OrderSide,
     pub outstanding: BookQuantity,
     pub pending_order: BookQuantity,
     pub liquidatable: BookQuantity,
@@ -34,7 +28,7 @@ pub struct Balance {
 }
 
 impl Balance {
-    pub fn initialize(side: Side, outstanding: BookQuantity) -> Self {
+    pub fn initialize(side: OrderSide, outstanding: BookQuantity) -> Self {
         Balance {
             side,
             outstanding,
@@ -65,21 +59,4 @@ impl Balance {
     pub fn is_empty(&self) -> bool {
         self.outstanding == 0
     }
-
-    pub fn order_available(&self, side: OrderSide, inst_id: InstId, base_inst_map: &BaseInstMap) -> BookQuantity {
-        let base_inst = base_inst_map.get(inst_id).unwrap();
-        let mut available = self.liquidatable;
-        if let Some(upper_bound) = self.outstanding_upper_bound {
-            available = available.min(upper_bound - self.outstanding);
-        }
-        if let Some(lower_bound) = self.outstanding_lower_bound {
-            available = available.max(lower_bound - self.outstanding);
-        }
-        match side {
-            OrderSide::Buy => available.min(base_inst.max_buy),
-            OrderSide::Sell => available.min(base_inst.max_sell),
-        }
-    }
-
-
 }

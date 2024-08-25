@@ -44,4 +44,12 @@ impl BaseInstMap {
             map: FxHashMap::default(),
         }
     }
+
+    pub fn insert(&mut self, inst_id: InstId, inst_info: BaseInstInfo) {
+        self.map.insert(inst_id, inst_info);
+    }
+
+    pub fn get(&self, inst_id: InstId) -> Option<&BaseInstInfo> {
+        self.map.get(&inst_id)
+    }
 }

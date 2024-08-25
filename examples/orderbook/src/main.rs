@@ -6,9 +6,10 @@ use trading_engine::data::order::{
     RemoveAnyOrder,
 };
 use trading_engine::types::{
-    base::OrderId,
+    id::Symbol,
     enums::OrderSide,
-    isin_code::IsinCode,
+    id::isin_code::IsinCode,
+    id::InstId,
     venue::Venue,
 };
 use trading_engine::orderbook::half_book::HalfBook;
@@ -62,7 +63,9 @@ fn orderbook_example() {
 
     let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
     let venue = Venue::KRX;
-    let mut order_book = OrderBook::initialize_with_isin_venue(isin_code, venue);
+    let inst_id = InstId::new(Symbol::Isin(isin_code), venue);
+
+    let mut order_book = OrderBook::initialize_with_id(inst_id);
 
     for order in bid_order_vec.clone().into_iter() {
         order_book.add_limit_order(order).unwrap();
