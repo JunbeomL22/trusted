@@ -15,6 +15,4 @@ opt-level = 3
 [workspace.dependencies]
 num-format = "0.4.0"
 tracing = "0.1.25"
-chrono = "0.4"
-minstant = { version = "0.1", features = ["fallback-coarse"]}
 criterion = { version = "0.5.1"}

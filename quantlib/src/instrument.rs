@@ -1,11 +1,12 @@
 use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::enums::{
-    AccountingLevel, CreditRating, IssuerType, OptionDailySettlementType, OptionType, RankType,
+    CreditRating, IssuerType, OptionDailySettlementType, OptionType, RankType,
 };
 
 use crate::instruments::schedule::Schedule;
 use crate::instruments::{
+    AccountingLevel,
     bond::Bond,
     bond_futures::BondFutures,
     cash::Cash,
@@ -31,85 +32,79 @@ use std::{
     ops::Index,
     rc::Rc,
 };
+use crate::InstInfo;
 use time::OffsetDateTime;
 
 #[enum_dispatch]
 pub trait InstrumentTrait {
     // The following methods are mandatory for all instruments
-    fn get_name(&self) -> &String;
-    fn get_code(&self) -> &String;
-    fn get_currency(&self) -> &Currency;
-    fn get_unit_notional(&self) -> Real;
-    fn get_type_name(&self) -> &'static str;
-    fn get_average_trade_price(&self) -> Real {
-        0.0
-    }
-    //
-    fn get_accountring_level(&self) -> AccountingLevel {
-        AccountingLevel::Level1
-    }
+    fn get_inst_info(&self) -> &InstInfo;
+    fn get_name(&self) -> &String { self.get_inst_info().get_name() }
+    fn get_symbol_str(&self) -> &str { self.get_inst_info().symbol_str() }
+    fn get_currency(&self) -> Currency { self.get_inst_info().currency }
+    fn get_unit_notional(&self) -> Real { self.get_inst_info().unit_notional }
+    fn get_type_name(&self) -> &'static str { self.get_inst_info().type_name() }
+    fn get_average_trade_price(&self) -> Real { 0.0 }
+    fn get_accountring_level(&self) -> AccountingLevel { self.get_inst_info().accounting_level }
+    fn get_code(&self) -> String { self.get_symbol_str().to_string() }
     //
     // There is an instrument that does not have maturity date, so it is optional
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        None
-    }
+    fn get_maturity(&self) -> Option<&OffsetDateTime> { self.get_inst_info().get_maturity() }
+    fn get_issue_date(&self) -> Option<&OffsetDateTime> { self.get_inst_info().get_issue_date() }
     // There is an instrument that does not have underlying names,
     // so the default action is to return an empty vector
-    fn get_underlying_codes(&self) -> Vec<&String> {
-        vec![]
-    }
+    fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
 
-    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> {
-        vec![]
-    }
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> { vec![] }
 
-    fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
-        vec![]
-    }
+    fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
 
-    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> {
-        vec![]
-    }
-    // only for bonds, so None must be allowed
-    fn get_credit_rating(&self) -> Result<&CreditRating> {
-        Err(anyhow!(
+    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> { vec![] }
+    /// only for bonds, so None must be allowed
+    fn get_credit_rating(&self) -> Result<CreditRating> {
+        let err = || anyhow!(
             "({}:{}) not supported instrument type on get_credit_rating",
             file!(),
             line!()
-        ))
+        );
+        Err(err())
     }
-    // only for bonds, so None must be allowed
-    fn get_issuer_type(&self) -> Result<&IssuerType> {
-        Err(anyhow!(
+    /// only for bonds, so None must be allowed
+    fn get_issuer_type(&self) -> Result<IssuerType> {
+        let lazy_err = || anyhow!(
             "({}:{}) not supported instrument type on get_issuer_type",
             file!(),
             line!()
-        ))
+        );
+        Err(lazy_err())
     }
-    // only for bonds, so None must be allowed
-    fn get_rank_type(&self) -> Result<&RankType> {
-        Err(anyhow!(
+    /// only for bonds, so None must be allowed
+    fn get_rank_type(&self) -> Result<RankType> {
+        let lazy_err = || anyhow!(
             "({}:{}) not supported instrument type on get_rank_type",
             file!(),
             line!()
-        ))
+        );
+        Err(lazy_err())
     }
     // only for bonds, so None must be allowed
     fn get_issuer_name(&self) -> Result<&String> {
-        Err(anyhow!(
+        let err = || anyhow!(
             "({}:{}) not supported instrument type on get_issuer_name",
             file!(),
             line!()
-        ))
+        );
+        Err(err())
     }
 
     // only for FloatingRateNote, IRS, OIS, and other swaps
     fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
-        Err(anyhow!(
+        let err = || anyhow!(
             "({}:{}) not supported instrument type on get_rate_index",
             file!(),
             line!()
-        ))
+        );
+        Err(err())
     }
 
     fn get_bond_futures_borrowing_curve_tags(&self) -> Vec<&String> {
@@ -169,10 +164,6 @@ pub trait InstrumentTrait {
         Err(anyhow!("not supported instrument type on get_calendar"))
     }
 
-    fn get_issue_date(&self) -> Result<&OffsetDateTime> {
-        Err(anyhow!("not supported instrument type on issue_date"))
-    }
-
     fn get_virtual_bond_npv(&self, _bond_yield: Real) -> Result<Real> {
         Err(anyhow!(
             "not supported instrument type on get_virtual_bond_npv"
@@ -183,19 +174,19 @@ pub trait InstrumentTrait {
         Err(anyhow!("not supported instrument type on get_schedule"))
     }
 
-    fn get_fixed_leg_currency(&self) -> Result<&Currency> {
+    fn get_fixed_leg_currency(&self) -> Result<Currency> {
         Err(anyhow!(
             "not supported instrument type on get_fixed_leg_currency"
         ))
     }
 
-    fn get_floating_leg_currency(&self) -> Result<&Currency> {
+    fn get_floating_leg_currency(&self) -> Result<Currency> {
         Err(anyhow!(
             "not supported instrument type on get_floating_leg_currency"
         ))
     }
 
-    fn get_underlying_currency(&self) -> Result<&Currency> {
+    fn get_underlying_currency(&self) -> Result<Currency> {
         Err(anyhow!(
             "not supported instrument type on get_underlying_currency"
         ))
@@ -338,8 +329,8 @@ impl Instruments {
         type_names
     }
 
-    pub fn get_all_currencies(&self) -> Result<Vec<&Currency>> {
-        let mut currencies = Vec::<&Currency>::new();
+    pub fn get_all_currencies(&self) -> Result<Vec<Currency>> {
+        let mut currencies = Vec::<Currency>::new();
         for instrument in self.instruments.iter() {
             let currency = instrument.get_currency();
             if !currencies.contains(&currency) {
@@ -398,7 +389,7 @@ impl Instruments {
         res
     }
 
-    pub fn instruments_with_currency(&self, currency: &Currency) -> Vec<Rc<Instrument>> {
+    pub fn instruments_with_currency(&self, currency: Currency) -> Vec<Rc<Instrument>> {
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
             if instrument.get_currency() == currency {

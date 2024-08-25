@@ -1,6 +1,6 @@
 use crate::currency::Currency;
 use crate::definitions::{Integer, Real};
-use crate::instruments::instrument_info::InstrumentInfo;
+use crate::instruments::inst_info::InstrumentInfo;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::utils::number_format::{formatted_number, write_number_with_commas};
 use anyhow::{anyhow, Result};
@@ -616,7 +616,7 @@ mod tests {
     use crate::{
         currency::Currency,
         instrument::Instrument,
-        instruments::{futures::Futures, instrument_info::InstrumentInfo},
+        instruments::{futures::Futures, inst_info::InstInfo},
     };
     use time::macros::datetime;
 

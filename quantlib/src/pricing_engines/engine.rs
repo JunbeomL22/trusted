@@ -4,7 +4,7 @@ use crate::definitions::{
 };
 use crate::evaluation_date::EvaluationDate;
 use crate::instrument::{Instrument, InstrumentTrait, Instruments};
-use crate::instruments::instrument_info::InstrumentInfo;
+use crate::instruments::inst_info::InstrumentInfo;
 use crate::parameters::volatilities::local_volatility_surface::LocalVolatilitySurface;
 use crate::parameters::{
     discrete_ratio_dividend::DiscreteRatioDividend, market_price::MarketPrice,

@@ -8,8 +8,9 @@ pub enum Compounding {
     Continuous = 1,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Default)]
 pub enum CreditRating {
+    #[default]
     None = 0,
     AAA = 1,
     AAp = 2,
@@ -31,8 +32,9 @@ pub enum CreditRating {
     Undefined = 18,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Default)]
 pub enum IssuerType {
+    #[default]
     None = 0,
     Government = 1,
     Public = 2,
@@ -42,8 +44,9 @@ pub enum IssuerType {
     Undefined = 6,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Default)]
 pub enum RankType {
+    #[default]
     None = 0,
     Senior = 1,
     Subordinated = 2,
@@ -53,21 +56,16 @@ pub enum RankType {
     Undefined = 6,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
-pub enum AccountingLevel {
-    Level1 = 1,
-    Level2 = 2,
-    Level3 = 3,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy, Default)]
 pub enum OptionType {
+    #[default]
     Call,
     Put,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy, Default)]
 pub enum OptionExerciseType {
+    #[default]
     European,
     American,
     Bermudan,

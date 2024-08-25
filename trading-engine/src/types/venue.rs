@@ -8,6 +8,7 @@ pub enum Venue {
     KRX,
     KIS,
     SI,
+    OTC,
 }
 
 impl Venue {

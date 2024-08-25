@@ -5,3 +5,4 @@ pub mod make_fx;
 pub mod number_format;
 pub mod string_arithmetic;
 pub mod tracing_timer;
+pub mod memory_investigation;

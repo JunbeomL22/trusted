@@ -1,97 +1,74 @@
 use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
+use crate::InstInfo;
 //
-use anyhow::Result;
+use anyhow::{
+    anyhow,
+    Result
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Futures {
-    average_trade_price: Real,
-    first_trade_date: OffsetDateTime,
-    last_trade_date: OffsetDateTime,
-    maturity: OffsetDateTime,
-    settlement_date: OffsetDateTime,
-    unit_notional: Real,
-    currency: Currency,
-    underlying_currency: Currency,
-    underlying_codes: Vec<String>,
-    name: String,
-    code: String,
+    pub inst_info: InstInfo,
+    pub average_trade_price: Real,
+    pub first_trade_date: OffsetDateTime,
+    pub last_trade_date: OffsetDateTime,
+    pub settlement_date: OffsetDateTime,
+    pub underlying_currency: Currency,
+    pub underlying_codes: Vec<String>,
 }
 
 impl Default for Futures {
     fn default() -> Futures {
         Futures {
+            inst_info: InstInfo::default(),
             average_trade_price: 0.0,
             first_trade_date: OffsetDateTime::now_utc(),
             last_trade_date: OffsetDateTime::now_utc(),
-            maturity: OffsetDateTime::now_utc(),
             settlement_date: OffsetDateTime::now_utc(),
-            unit_notional: 0.0,
-            currency: Currency::KRW,
             underlying_currency: Currency::KRW,
             underlying_codes: vec![],
-            name: String::from(""),
-            code: String::from(""),
         }
     }
 }
 
 impl Futures {
-    #[allow(clippy::too_many_arguments)]
+    //#[allow(clippy::too_many_arguments)]
     pub fn new(
+        inst_info: InstInfo,
         average_trade_price: Real,
         first_trade_date: OffsetDateTime,
         last_trade_date: OffsetDateTime,
-        maturity: OffsetDateTime,
         settlement_date: OffsetDateTime,
-        unit_notional: Real,
-        currency: Currency,
         underlying_currency: Currency,
         underlying_code: String,
-        name: String,
-        code: String,
     ) -> Futures {
         Futures {
+            inst_info,
             average_trade_price,
             first_trade_date,
             last_trade_date,
-            maturity,
             settlement_date,
-            unit_notional,
-            currency,
             underlying_currency,
             underlying_codes: vec![underlying_code],
-            name,
-            code,
         }
     }
 }
 
 impl InstrumentTrait for Futures {
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-    fn get_code(&self) -> &String {
-        &self.code
+    fn get_inst_info(&self) ->  &InstInfo {
+        &self.inst_info
     }
 
-    fn get_currency(&self) -> &Currency {
-        &self.currency
+    fn get_currency(&self) -> Currency {
+        self.currency
     }
 
-    fn get_underlying_currency(&self) -> Result<&Currency> {
-        Ok(&self.underlying_currency)
-    }
-
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        Some(&self.maturity)
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
+    fn get_underlying_currency(&self) -> Result<Currency> {
+        Ok(self.underlying_currency)
     }
 
     fn get_type_name(&self) -> &'static str {

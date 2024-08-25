@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::fmt::Display;
 use std::hash::Hash;
 
-#[derive(
-    Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default,
-)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Currency {
     #[default]
     NIL,
@@ -19,41 +17,6 @@ pub enum Currency {
     CAD,
     CHF,
     NZD,
-    SEK,
-    NOK,
-    MXN,
-    ZAR,
-    BRL,
-    INR,
-    RUB,
-    TRY,
-    HKD,
-    SGD,
-    TWD,
-    THB,
-    IDR,
-    MYR,
-    PHP,
-    VND,
-    PKR,
-    LKR,
-    BDT,
-    NPR,
-    KZT,
-    UZS,
-    KGS,
-    TJS,
-    MNT,
-    AED,
-    SAR,
-    QAR,
-    OMR,
-    KWD,
-    BHD,
-    JOD,
-    ILS,
-    EGP,
-    ZMW,
 }
 
 impl std::fmt::Display for Currency {
@@ -67,7 +30,6 @@ impl std::fmt::Display for Currency {
 impl From<&str> for Currency {
     fn from(s: &str) -> Self {
         match s {
-            "NIL" => Currency::NIL,
             "KRW" => Currency::KRW,
             "USD" => Currency::USD,
             "EUR" => Currency::EUR,
@@ -79,41 +41,6 @@ impl From<&str> for Currency {
             "CAD" => Currency::CAD,
             "CHF" => Currency::CHF,
             "NZD" => Currency::NZD,
-            "SEK" => Currency::SEK,
-            "NOK" => Currency::NOK,
-            "MXN" => Currency::MXN,
-            "ZAR" => Currency::ZAR,
-            "BRL" => Currency::BRL,
-            "INR" => Currency::INR,
-            "RUB" => Currency::RUB,
-            "TRY" => Currency::TRY,
-            "HKD" => Currency::HKD,
-            "SGD" => Currency::SGD,
-            "TWD" => Currency::TWD,
-            "THB" => Currency::THB,
-            "IDR" => Currency::IDR,
-            "MYR" => Currency::MYR,
-            "PHP" => Currency::PHP,
-            "VND" => Currency::VND,
-            "PKR" => Currency::PKR,
-            "LKR" => Currency::LKR,
-            "BDT" => Currency::BDT,
-            "NPR" => Currency::NPR,
-            "KZT" => Currency::KZT,
-            "UZS" => Currency::UZS,
-            "KGS" => Currency::KGS,
-            "TJS" => Currency::TJS,
-            "MNT" => Currency::MNT,
-            "AED" => Currency::AED,
-            "SAR" => Currency::SAR,
-            "QAR" => Currency::QAR,
-            "OMR" => Currency::OMR,
-            "KWD" => Currency::KWD,
-            "BHD" => Currency::BHD,
-            "JOD" => Currency::JOD,
-            "ILS" => Currency::ILS,
-            "EGP" => Currency::EGP,
-            "ZMW" => Currency::ZMW,
             _ => Currency::NIL,
         }
     }
@@ -134,41 +61,6 @@ impl Currency {
             Currency::CAD => "CAD",
             Currency::CHF => "CHF",
             Currency::NZD => "NZD",
-            Currency::SEK => "SEK",
-            Currency::NOK => "NOK",
-            Currency::MXN => "MXN",
-            Currency::ZAR => "ZAR",
-            Currency::BRL => "BRL",
-            Currency::INR => "INR",
-            Currency::RUB => "RUB",
-            Currency::TRY => "TRY",
-            Currency::HKD => "HKD",
-            Currency::SGD => "SGD",
-            Currency::TWD => "TWD",
-            Currency::THB => "THB",
-            Currency::IDR => "IDR",
-            Currency::MYR => "MYR",
-            Currency::PHP => "PHP",
-            Currency::VND => "VND",
-            Currency::PKR => "PKR",
-            Currency::LKR => "LKR",
-            Currency::BDT => "BDT",
-            Currency::NPR => "NPR",
-            Currency::KZT => "KZT",
-            Currency::UZS => "UZS",
-            Currency::KGS => "KGS",
-            Currency::TJS => "TJS",
-            Currency::MNT => "MNT",
-            Currency::AED => "AED",
-            Currency::SAR => "SAR",
-            Currency::QAR => "QAR",
-            Currency::OMR => "OMR",
-            Currency::KWD => "KWD",
-            Currency::BHD => "BHD",
-            Currency::JOD => "JOD",
-            Currency::ILS => "ILS",
-            Currency::EGP => "EGP",
-            Currency::ZMW => "ZMW",
         }
     }
 }
@@ -242,6 +134,15 @@ impl From<&str> for FxCode {
 mod tests {
     use super::*;
     use serde_json::{from_str, json, to_string};
+    use crate::utils::memory_investigation::print_struct_info;
+
+    #[test]
+    fn show_memory_size() {
+        print_struct_info(Currency::NIL);
+        print_struct_info(&Currency::NIL);
+        print_struct_info(FxCode::default());
+    }
+
     #[test]
     fn test_currency_serialization() {
         let currency = Currency::KRW;

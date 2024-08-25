@@ -10,69 +10,62 @@ use crate::time::{
     conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency},
     jointcalendar::JointCalendar,
 };
+use crate::InstInfo;
 //
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use time::OffsetDateTime;
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct BondInfo {
+    pub issuer_type: IssuerType,
+    pub credit_rating: CreditRating,
+    pub issuer_name: String,
+    pub rank: RankType,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bond {
-    issuer_type: IssuerType,
-    credit_rating: CreditRating,
-    issuer_name: String,
-    rank: RankType,
-    currency: Currency,
+    pub inst_info: InstInfo,
+    pub bond_info: BondInfo,
     //
-    unit_notional: Real,
-    is_coupon_strip: bool,
+    pub is_coupon_strip: bool,
     //
-    schedule: Schedule,
-    floating_coupon_spread: Option<Real>,
-    rate_index: Option<RateIndex>,
-    floating_compound_tenor: Option<String>,
-    fixed_coupon_rate: Option<Real>,
+    pub schedule: Schedule,
+    pub floating_coupon_spread: Option<Real>,
+    pub rate_index: Option<RateIndex>,
+    pub floating_compound_tenor: Option<String>,
+    pub fixed_coupon_rate: Option<Real>,
     //
-    issue_date: OffsetDateTime,
-    effective_date: OffsetDateTime,
-    pricing_date: Option<OffsetDateTime>,
-    maturity: OffsetDateTime,
+    pub effective_date: OffsetDateTime,
+    pub pricing_date: Option<OffsetDateTime>,
     //
-    calendar: JointCalendar,
+    pub calendar: JointCalendar,
     //
-    daycounter: DayCountConvention,
-    busi_convention: BusinessDayConvention,
-    payment_frequency: PaymentFrequency,
-    payment_gap_days: i64,
-    fixing_gap_days: i64,
-    //
-    name: String,
-    code: String,
+    pub daycounter: DayCountConvention,
+    pub busi_convention: BusinessDayConvention,
+    pub payment_frequency: PaymentFrequency,
+    pub payment_gap_days: i64,
+    pub fixing_gap_days: i64,
 }
 
 impl Bond {
-    #[allow(clippy::too_many_arguments)]
+    //#[allow(clippy::too_many_arguments)]
     pub fn new(
-        issuer_type: IssuerType,
-        credit_rating: CreditRating,
-        issuer_name: String,
-        rank: RankType,
-        currency: Currency,
-        //
-        unit_notional: Real,
+        inst_info: InstInfo,
+        bond_info: BondInfo,
+        //  
         is_coupon_strip: bool,
         //
         schedule: Schedule,
-        //
-        fixed_coupon_rate: Option<Real>,
         floating_coupon_spread: Option<Real>,
         rate_index: Option<RateIndex>,
         floating_compound_tenor: Option<String>,
+        fixed_coupon_rate: Option<Real>,
         //
-        issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
         pricing_date: Option<OffsetDateTime>,
-        maturity: OffsetDateTime,
         //
         calendar: JointCalendar,
         //
@@ -81,53 +74,43 @@ impl Bond {
         payment_frequency: PaymentFrequency,
         payment_gap_days: i64,
         fixing_gap_days: i64,
-        //
-        name: String,
-        code: String,
     ) -> Result<Bond> {
         // fixed_rate_coupon and rate_index can not be both None
         if fixed_coupon_rate.is_none() && rate_index.is_none() {
-            return Err(anyhow!(
-                "{}:{} name = {}, code = {}\n\
+            let err = || anyhow!(
+                "{}:{} id = {:?},\n\
                 Both fixed_coupon_rate and rate_index can not be None",
                 file!(),
                 line!(),
-                &name,
-                &code
-            ));
+                &inst_info.id
+            );
+            return Err(err());
         }
         // fixed_rate_coupon and rate_index can not be both Some
         if fixed_coupon_rate.is_some() && rate_index.is_some() {
             return Err(anyhow!(
-                "{}:{} name = {}, code = {}\n\
+                "{}:{} id = {:?},\n\
                 Both fixed_coupon_rate and rate_index can not be Some",
                 file!(),
                 line!(),
-                &name,
-                &code
+                &inst_info.id
             ));
         }
+
         Ok(Bond {
-            issuer_type,
-            credit_rating,
-            issuer_name,
-            rank,
-            currency,
+            inst_info,
+            bond_info,
             //
-            unit_notional,
             is_coupon_strip,
             //
             schedule,
-            //
-            fixed_coupon_rate,
             floating_coupon_spread,
             rate_index,
             floating_compound_tenor,
+            fixed_coupon_rate,
             //
-            issue_date,
             effective_date,
             pricing_date,
-            maturity,
             //
             calendar,
             //
@@ -136,27 +119,18 @@ impl Bond {
             payment_frequency,
             payment_gap_days,
             fixing_gap_days,
-            //
-            name,
-            code,
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
+    //#[allow(clippy::too_many_arguments)]
     pub fn new_from_conventions(
-        issuer_type: IssuerType,
-        credit_rating: CreditRating,
-        issuer_name: String,
-        rank: RankType,
-        currency: Currency,
+        inst_info: InstInfo,
+        bond_info: BondInfo,
         //
-        unit_notional: Real,
         is_coupon_strip: bool,
         //
-        issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
         pricing_date: Option<OffsetDateTime>,
-        maturity: OffsetDateTime,
         //
         fixed_coupon_rate: Option<Real>,
         floating_coupon_spread: Option<Real>,
@@ -171,14 +145,20 @@ impl Bond {
         payment_frequency: PaymentFrequency,
         fixing_gap_days: i64,
         payment_gap_days: i64,
-        //
-        name: String,
-        code: String,
     ) -> Result<Bond> {
+        let maturity = inst_info.get_maturity().ok_or_else(|| {
+            anyhow!(
+                "{}:{} id = {:?},\n\
+                Failed to get maturity date",
+                file!(),
+                line!(),
+                &inst_info.id
+            )
+        })?;
         let schedule = build_schedule(
             forward_generation,
             &effective_date,
-            &maturity,
+            maturity,
             &calendar,
             &busi_convention,
             &payment_frequency,
@@ -187,20 +167,15 @@ impl Bond {
         )
         .with_context(|| {
             anyhow!(
-                "Failed to build schedule in FloatingRateNote: {} ({})",
-                &name,
-                &code
+                "Failed to build schedule in FloatingRateNote: {:?}",
+                inst_info.id
             )
         })?;
 
         Ok(Bond {
-            issuer_type,
-            credit_rating,
-            issuer_name,
-            rank,
-            currency,
+            inst_info,
+            bond_info,
             //
-            unit_notional,
             is_coupon_strip,
             //
             schedule,
@@ -210,10 +185,8 @@ impl Bond {
             rate_index,
             floating_compound_tenor,
             //
-            issue_date,
             effective_date,
             pricing_date,
-            maturity,
             //
             calendar,
             //
@@ -222,10 +195,6 @@ impl Bond {
             payment_frequency,
             fixing_gap_days,
             payment_gap_days,
-
-            //
-            name,
-            code,
         })
     }
 
@@ -239,8 +208,8 @@ impl InstrumentTrait for Bond {
         Ok(self.pricing_date.as_ref())
     }
 
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        Some(&self.maturity)
+    fn get_inst_info(&self) ->  &InstInfo {
+        &self.inst_info
     }
 
     fn get_schedule(&self) -> Result<&Schedule> {
@@ -263,36 +232,16 @@ impl InstrumentTrait for Bond {
         Ok(self.rate_index.as_ref())
     }
 
-    fn get_credit_rating(&self) -> Result<&CreditRating> {
-        Ok(&self.credit_rating)
+    fn get_credit_rating(&self) -> Result<CreditRating> {
+        Ok(self.bond_info.credit_rating)
     }
 
-    fn get_issuer_type(&self) -> Result<&IssuerType> {
-        Ok(&self.issuer_type)
+    fn get_issuer_type(&self) -> Result<IssuerType> {
+        Ok(self.bond_info.issuer_type)
     }
 
     fn get_issuer_name(&self) -> Result<&String> {
-        Ok(&self.issuer_name)
-    }
-
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    fn get_currency(&self) -> &Currency {
-        &self.currency
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
-    }
-
-    fn get_issue_date(&self) -> Result<&OffsetDateTime> {
-        Ok(&self.issue_date)
+        Ok(&self.bond_info.issuer_name)
     }
 
     fn is_coupon_strip(&self) -> Result<bool> {
@@ -362,8 +311,18 @@ impl InstrumentTrait for Bond {
             } // end of branch of optional given amount
         }
 
-        if !self.is_coupon_strip()? && self.maturity.date() >= pricing_date.date() {
-            res.entry(self.maturity)
+        let maturity = self.inst_info.get_maturity().ok_or_else(|| {
+            anyhow!(
+                "{}:{} id = {:?},\n\
+                Failed to get maturity date",
+                file!(),
+                line!(),
+                &self.inst_info.id
+            )
+        })?;
+
+        if !self.is_coupon_strip()? && maturity.date() >= pricing_date.date() {
+            res.entry(*maturity)
                 .and_modify(|e| *e += 1.0)
                 .or_insert(1.0);
         }
