@@ -4,7 +4,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use time::{Date, Month, OffsetDateTime, UtcOffset, Weekday};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum UnitedStatesType {
     Settlement,
     Nyse,
@@ -226,7 +226,7 @@ impl Holidays for UnitedStatesType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UnitedStates {
     name: String,
     utc_offset: UtcOffset,

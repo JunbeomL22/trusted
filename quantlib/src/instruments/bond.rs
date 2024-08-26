@@ -17,15 +17,17 @@ use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use time::OffsetDateTime;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct BondInfo {
     pub issuer_type: IssuerType,
     pub credit_rating: CreditRating,
     pub issuer_name: String,
     pub rank: RankType,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// None effective_date means issue date
+/// None pricing_date means evaluation date
+/// None settlement_date means maturity date
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Bond {
     pub inst_info: InstInfo,
     pub bond_info: BondInfo,
@@ -40,6 +42,7 @@ pub struct Bond {
     //
     pub effective_date: OffsetDateTime,
     pub pricing_date: Option<OffsetDateTime>,
+    pub settlement_date: OffsetDateTime,
     //
     pub calendar: JointCalendar,
     //
@@ -48,6 +51,40 @@ pub struct Bond {
     pub payment_frequency: PaymentFrequency,
     pub payment_gap_days: i64,
     pub fixing_gap_days: i64,
+}
+
+impl Default for Bond {
+    fn default() -> Bond {
+        Bond {
+            inst_info: InstInfo::default(),
+            bond_info: BondInfo {
+                issuer_type: IssuerType::Undefined,
+                credit_rating: CreditRating::Undefined,
+                issuer_name: "".to_string(),
+                rank: RankType::Undefined,
+            },
+            //
+            is_coupon_strip: false,
+            //
+            schedule: Schedule::default(),
+            floating_coupon_spread: None,
+            rate_index: None,
+            floating_compound_tenor: None,
+            fixed_coupon_rate: None,
+            //
+            effective_date: OffsetDateTime::now_utc(),
+            pricing_date: None,
+            settlement_date: OffsetDateTime::now_utc(),
+            //
+            calendar: JointCalendar::default(),
+            //
+            daycounter: DayCountConvention::Actual365Fixed,
+            busi_convention: BusinessDayConvention::Following,
+            payment_frequency: PaymentFrequency::SemiAnnually,
+            payment_gap_days: 0,
+            fixing_gap_days: 0,
+        }
+    }
 }
 
 impl Bond {
@@ -64,8 +101,9 @@ impl Bond {
         floating_compound_tenor: Option<String>,
         fixed_coupon_rate: Option<Real>,
         //
-        effective_date: OffsetDateTime,
+        effective_date: Option<OffsetDateTime>,
         pricing_date: Option<OffsetDateTime>,
+        settlement_date: Option<OffsetDateTime>,
         //
         calendar: JointCalendar,
         //
@@ -97,6 +135,44 @@ impl Bond {
             ));
         }
 
+        let effective_date = match effective_date {
+            Some(date) => date,
+            None => {
+                if let Some(issue_date) = inst_info.get_issue_date() {
+                    *issue_date
+                } else {
+                    let err = || anyhow!(
+                        "{}:{} id = {:?},\n\
+                        Failed to get issue date",
+                        file!(),
+                        line!(),
+                        &inst_info.id
+                    );
+
+                    return Err(err());
+                }
+            },
+        };
+                    
+        let settlement_date = match settlement_date {
+            Some(date) => date,
+            None => {
+                if let Some(maturity) = inst_info.get_maturity() {
+                    *maturity
+                } else {
+                    let err = || anyhow!(
+                        "{}:{} id = {:?},\n\
+                        Failed to get maturity date",
+                        file!(),
+                        line!(),
+                        &inst_info.id
+                    );
+
+                    return Err(err());
+                }
+            },
+        };
+        
         Ok(Bond {
             inst_info,
             bond_info,
@@ -111,6 +187,7 @@ impl Bond {
             //
             effective_date,
             pricing_date,
+            settlement_date,
             //
             calendar,
             //
@@ -129,8 +206,9 @@ impl Bond {
         //
         is_coupon_strip: bool,
         //
-        effective_date: OffsetDateTime,
+        effective_date: Option<OffsetDateTime>,
         pricing_date: Option<OffsetDateTime>,
+        settlement_date: Option<OffsetDateTime>,
         //
         fixed_coupon_rate: Option<Real>,
         floating_coupon_spread: Option<Real>,
@@ -155,6 +233,27 @@ impl Bond {
                 &inst_info.id
             )
         })?;
+
+        let effective_date = match effective_date {
+            Some(date) => date,
+            None => {
+                if let Some(issue_date) = inst_info.get_issue_date() {
+                    *issue_date
+                } else {
+                    let err = || anyhow!(
+                        "{}:{} id = {:?},\n\
+                        Failed to get issue date",
+                        file!(),
+                        line!(),
+                        &inst_info.id
+                    );
+
+                    return Err(err());
+                }
+            },
+        };
+
+        let maturity = inst_info.get_maturity().unwrap();
         let schedule = build_schedule(
             forward_generation,
             &effective_date,
@@ -172,6 +271,11 @@ impl Bond {
             )
         })?;
 
+        let settlement_date = match settlement_date {
+            Some(date) => date,
+            None => *maturity,
+        };
+
         Ok(Bond {
             inst_info,
             bond_info,
@@ -187,6 +291,7 @@ impl Bond {
             //
             effective_date,
             pricing_date,
+            settlement_date,
             //
             calendar,
             //

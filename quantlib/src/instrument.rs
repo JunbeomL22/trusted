@@ -107,7 +107,7 @@ pub trait InstrumentTrait {
         Err(err())
     }
 
-    fn get_bond_futures_borrowing_curve_tags(&self) -> Vec<&String> {
+    fn get_bond_futures_borrowing_curve_codes(&self) -> Vec<&String> {
         vec![]
     }
 
@@ -206,11 +206,11 @@ pub trait InstrumentTrait {
         ))
     }
 
-    fn get_fxfutres_und_fxcode(&self) -> Result<&FxCode> {
+    fn get_fxfutres_und_fxcode(&self) -> Result<FxCode> {
         Err(anyhow!("not supported instrument type on get_fx_code"))
     }
 
-    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<&FxCode>> {
+    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<FxCode>> {
         Err(anyhow!(
             "get_floating_to_fixed_fx allowed only for PlainSwap"
         ))

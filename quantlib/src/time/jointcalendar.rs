@@ -1,14 +1,26 @@
 use crate::definitions::Time;
 use crate::time::calendar::Calendar;
 use crate::time::calendar_trait::CalendarTrait;
+use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct JointCalendar {
     name: String,
     calendars: Vec<Calendar>,
+}
+
+impl Default for JointCalendar {
+    fn default() -> JointCalendar {
+        let sk = SouthKorea::new(SouthKoreaType::Settlement);
+        let sk_cal = Calendar::SouthKorea(sk);
+        JointCalendar {
+            name: sk.calendar_name().clone(),
+            calendars: vec![sk_cal],
+        }
+    }
 }
 
 impl JointCalendar {

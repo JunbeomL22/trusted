@@ -9,11 +9,6 @@ use crate::{
     AccountingLevel,
 };
 
-use anyhow::{
-    Result,
-    anyhow,
-};
-
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstInfo {
     pub id: InstId,

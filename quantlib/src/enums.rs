@@ -75,9 +75,10 @@ pub enum OptionExerciseType {
 /// HKEX settles the amount of option MtM on a daily basis, as in Futures.
 /// KRX, Eurex, CME, and OKX does not settle the amount of option MtM on a daily basis.
 /// If it is settled, the option value does not need to be discounted, again as in Futures.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Copy, Default)]
 pub enum OptionDailySettlementType {
     Settled,
+    #[default]
     NotSettled,
 }
 
@@ -88,15 +89,17 @@ pub enum StickynessType {
     StickyToStrike,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy, Default)]
 pub enum VanillaOptionCalculationMethod {
     MonteCarlo = 0,
     FiniteDifference = 1,
+    #[default]
     Analytic = 2,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy, Default)]
 pub enum StockRankType {
+    #[default]
     Common = 0,
     Preferred = 1,
     Warrant = 2,

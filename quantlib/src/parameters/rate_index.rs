@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, rc::Rc};
 use time::{Duration, OffsetDateTime};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// * Tenor is forward curve calculation period\n
 /// * Compounding_tenor (Option<String>) is the period of compounding\n
 /// At each the end date of the previous compounding_tenor,
@@ -28,7 +28,7 @@ pub struct RateIndex {
     curve_tenor: String,
     currency: Currency,
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
-    code: String,
+    code: String, // USD3M, EUR6M, CD91, etc
 }
 
 impl RateIndex {

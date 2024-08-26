@@ -5,7 +5,7 @@ use crate::InstInfo;
 //
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Cash {
     inst_info: InstInfo,
 }

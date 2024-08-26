@@ -4,7 +4,7 @@ use crate::time::calendars::{
 use enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[enum_dispatch::enum_dispatch(CalendarTrait)]
 pub enum Calendar {
     NullCalendar(NullCalendar),

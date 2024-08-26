@@ -13,6 +13,13 @@ pub enum SouthKoreaType {
 }
 
 impl SouthKoreaType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SouthKoreaType::Krx => "KRX",
+            SouthKoreaType::Settlement => "Settlement",
+        }
+    }
+    
     fn is_lunar_new_year(&self, date: &OffsetDateTime) -> bool {
         let date = date.date();
         let year = date.year();
@@ -693,7 +700,7 @@ impl Holidays for SouthKoreaType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SouthKorea {
     name: String,
     utc_offset: UtcOffset,

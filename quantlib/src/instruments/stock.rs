@@ -3,20 +3,18 @@ use crate::definitions::Real;
 use crate::enums::StockRankType;
 use crate::instrument::InstrumentTrait;
 use serde::{Deserialize, Serialize};
+use crate::InstInfo;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Stock {
-    name: String,
-    code: String,
+    inst_info: InstInfo,
     underlying_codes: Vec<String>,
-    currency: Currency,
     rank_type: StockRankType,
 }
 
 impl Stock {
     pub fn new(
-        name: String,
-        code: String,
+        inst_info: InstInfo,
         underlying_codes: Vec<String>,
         currency: Currency,
         rank_type: Option<StockRankType>,

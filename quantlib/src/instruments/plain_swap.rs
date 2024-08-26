@@ -7,6 +7,7 @@ use crate::parameters::rate_index::RateIndex;
 use crate::parameters::zero_curve::ZeroCurve;
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
 use crate::time::{calendar_trait::CalendarTrait, jointcalendar::JointCalendar};
+use crate::InstInfo;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -39,44 +40,46 @@ impl PlainSwapType {
 /// 4) FxForward (schedule are empty and initial swap is None but last swap is Some(Real))
 /// 5) FxSpot (same as FxForward but effective_date <= issue_date + 2 days)
 /// Roughly in Fx or CRS case, fixed side is mostly KRW and Floating side is mostly USD
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PlainSwap {
-    fixed_legs: Schedule,
-    floating_legs: Schedule,
-    fixed_rate: Option<Real>,
-    rate_index: Option<RateIndex>,
-    floating_compound_tenor: Option<String>,
-    calendar: JointCalendar,
-    unit_notional: Real,
+    pub inst_info: InstInfo,
     //
-    issue_date: OffsetDateTime,
-    effective_date: OffsetDateTime,
-    maturity: OffsetDateTime,
+    pub fixed_legs: Schedule,
+    pub floating_legs: Schedule,
+    pub fixed_rate: Option<Real>,
+    pub rate_index: Option<RateIndex>,
+    pub floating_compound_tenor: Option<String>,
+    pub calendar: JointCalendar,
+    //unit_notional: Real,
     //
-    fixed_leg_currency: Currency,
-    floating_leg_currency: Currency,
-    floating_to_fixed_fxcode: Option<FxCode>,
+    //issue_date: OffsetDateTime,
+    pub effective_date: OffsetDateTime,
+    //maturity: OffsetDateTime,
     //
-    initial_fixed_side_endorsement: Option<Real>,
-    initial_floating_side_payment: Option<Real>,
-    last_fixed_side_payment: Option<Real>,
-    last_floating_side_endorsement: Option<Real>,
+    pub fixed_leg_currency: Currency,
+    pub floating_leg_currency: Currency,
+    pub floating_to_fixed_fxcode: Option<FxCode>,
     //
-    fixed_daycounter: DayCountConvention,
-    floating_daycounter: DayCountConvention,
+    pub initial_fixed_side_endorsement: Option<Real>,
+    pub initial_floating_side_payment: Option<Real>,
+    pub last_fixed_side_payment: Option<Real>,
+    pub last_floating_side_endorsement: Option<Real>,
     //
-    fixed_busi_convention: BusinessDayConvention,
-    floating_busi_convention: BusinessDayConvention,
+    pub fixed_daycounter: DayCountConvention,
+    pub floating_daycounter: DayCountConvention,
     //
-    fixed_frequency: PaymentFrequency,
-    floating_frequency: PaymentFrequency,
+    pub fixed_busi_convention: BusinessDayConvention,
+    pub floating_busi_convention: BusinessDayConvention,
     //
-    fixing_gap_days: i64,
-    payment_gap_days: i64,
+    pub fixed_frequency: PaymentFrequency,
+    pub floating_frequency: PaymentFrequency,
     //
-    specific_type: PlainSwapType,
-    name: String,
-    code: String,
+    pub fixing_gap_days: i64,
+    pub payment_gap_days: i64,
+    //
+    pub specific_type: PlainSwapType,
+    //name: String,
+    //code: String,
 }
 
 impl PlainSwap {
@@ -89,17 +92,19 @@ impl PlainSwap {
     /// Roughly in Fx or CRS case, fixed side is mostly KRW and Floating side is mostly USD
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        inst_info: InstInfo,
+        //
         fixed_legs: Schedule,
         floating_legs: Schedule,
         fixed_rate: Option<Real>,
         rate_index: Option<RateIndex>,
         floating_compound_tenor: Option<String>,
         calendar: JointCalendar,
-        unit_notional: Real,
+        //unit_notional: Real,
         //
-        issue_date: OffsetDateTime,
+        //issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
-        maturity: OffsetDateTime,
+        //maturity: OffsetDateTime,
         //
         fixed_leg_currency: Currency,
         floating_leg_currency: Currency,
@@ -121,10 +126,12 @@ impl PlainSwap {
         fixing_gap_days: i64,
         payment_gap_days: i64,
         //
-        name: String,
-        code: String,
+        //name: String,
+        //code: String,
     ) -> Result<PlainSwap> {
         let specific_type: PlainSwapType;
+        let issue_date = inst_info.issue_date.unwrap();
+        let maturity = inst_info.maturity.unwrap();
         // IRS: initial and last swap amounts are all None but rate_index and fixed_rate are Some(Real)
         if initial_fixed_side_endorsement.is_none()
             && initial_floating_side_payment.is_none()
@@ -179,8 +186,8 @@ impl PlainSwap {
                 specific_type = PlainSwapType::FxForward;
             }
         } else {
-            return Err(anyhow!(
-                "({}:{}) Invalid PlainSwap type: {} ({})\n\
+            let err = || anyhow!(
+                "({}:{}) Invalid PlainSwap type: {:?} \n\
                 initial_fixed_side_endorsement: {:?}\n\
                 initial_floating_side_payment: {:?}\n\
                 last_fixed_side_payment: {:?}\n\
@@ -189,15 +196,16 @@ impl PlainSwap {
                 fixed_rate: {:?}",
                 file!(),
                 line!(),
-                name,
-                code,
+                inst_info.id,
                 initial_fixed_side_endorsement,
                 initial_floating_side_payment,
                 last_fixed_side_payment,
                 last_floating_side_endorsement,
                 rate_index,
                 fixed_rate
-            ));
+            );
+
+            return Err(err());
         }
 
         let floating_to_fixed_fxcode = match fixed_leg_currency == floating_leg_currency {
@@ -206,17 +214,16 @@ impl PlainSwap {
         };
 
         Ok(PlainSwap {
+            inst_info,
+            //
             fixed_legs,
             floating_legs,
             fixed_rate,
             rate_index,
             floating_compound_tenor,
             calendar,
-            unit_notional,
             //
-            issue_date,
             effective_date,
-            maturity,
             //
             fixed_leg_currency,
             floating_leg_currency,
