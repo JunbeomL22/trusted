@@ -2,48 +2,46 @@ use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
 use crate::instrument::InstrumentTrait;
+use crate::InstInfo;
 //
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 //
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VanillaOption {
+    inst_info: InstInfo,
     strike: Real,
-    unit_notional: Real,
-    issue_date: OffsetDateTime,
-    last_trade_date: OffsetDateTime,
-    maturity: OffsetDateTime,
+    //unit_notional: Real,
+    //issue_date: OffsetDateTime,
+    //last_trade_date: OffsetDateTime,
+    //maturity: OffsetDateTime,
     settlement_date: OffsetDateTime,
     underlying_codes: Vec<String>,
     underlying_currency: Currency,
-    currency: Currency,
+    //currency: Currency,
     quanto_fx_code: Option<FxCode>,
     option_type: OptionType,
     exercise_type: OptionExerciseType,
     daily_settlement_type: OptionDailySettlementType,
-    name: String,
-    code: String,
+    //name: String,
+    //code: String,
 }
 
 impl Default for VanillaOption {
     fn default() -> VanillaOption {
+        let inst_info = InstInfo::default();
+        let settlement_date = inst_info.maturity.unwrap().clone();
         VanillaOption {
+            inst_info,
             strike: 0.0,
-            unit_notional: 0.0,
-            issue_date: OffsetDateTime::now_utc(),
-            last_trade_date: OffsetDateTime::now_utc(),
-            maturity: OffsetDateTime::now_utc(),
-            settlement_date: OffsetDateTime::now_utc(),
+            settlement_date,
             underlying_codes: vec![],
             underlying_currency: Currency::KRW,
-            currency: Currency::KRW,
             quanto_fx_code: None,
             exercise_type: OptionExerciseType::European,
             option_type: OptionType::Call,
             daily_settlement_type: OptionDailySettlementType::NotSettled,
-            name: String::from(""),
-            code: String::from(""),
         }
     }
 }
@@ -51,21 +49,23 @@ impl Default for VanillaOption {
 impl VanillaOption {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        inst_info: InstInfo,
         strike: Real,
-        unit_notional: Real,
-        issue_date: OffsetDateTime,
-        last_trade_date: OffsetDateTime,
-        maturity: OffsetDateTime,
-        settlement_date: OffsetDateTime,
+        //unit_notional: Real,
+        //issue_date: OffsetDateTime,
+        //last_trade_date: OffsetDateTime,
+        //maturity: OffsetDateTime,
+        settlement_date: Option<OffsetDateTime>,
         underlying_codes: Vec<String>,
         underlying_currency: Currency,
-        currency: Currency,
         option_type: OptionType,
         exercise_type: OptionExerciseType,
         option_daily_settlement_type: OptionDailySettlementType,
-        name: String,
-        code: String,
+        
     ) -> VanillaOption {
+        let currency = inst_info.currency;
+        let settlement_date = settlement_date.unwrap_or(inst_info.maturity.unwrap().clone());
+
         let quanto_fx_code = if currency != underlying_currency {
             Some(FxCode::new(underlying_currency, currency))
         } else {
@@ -73,21 +73,15 @@ impl VanillaOption {
         };
 
         VanillaOption {
+            inst_info,
             strike,
-            unit_notional,
-            issue_date,
-            last_trade_date,
-            maturity,
             settlement_date,
             underlying_codes,
             underlying_currency,
             quanto_fx_code,
-            currency,
             option_type,
             exercise_type,
             daily_settlement_type: option_daily_settlement_type,
-            name,
-            code,
         }
     }
 

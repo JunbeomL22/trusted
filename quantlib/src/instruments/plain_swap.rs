@@ -106,7 +106,7 @@ impl PlainSwap {
         effective_date: OffsetDateTime,
         //maturity: OffsetDateTime,
         //
-        fixed_leg_currency: Currency,
+        //fixed_leg_currency: Currency,
         floating_leg_currency: Currency,
         //
         initial_fixed_side_endorsement: Option<Real>,
@@ -132,6 +132,7 @@ impl PlainSwap {
         let specific_type: PlainSwapType;
         let issue_date = inst_info.issue_date.unwrap();
         let maturity = inst_info.maturity.unwrap();
+        let fixed_leg_currency = inst_info.currency;
         // IRS: initial and last swap amounts are all None but rate_index and fixed_rate are Some(Real)
         if initial_fixed_side_endorsement.is_none()
             && initial_floating_side_payment.is_none()
@@ -247,8 +248,6 @@ impl PlainSwap {
             payment_gap_days,
             //
             specific_type,
-            name,
-            code,
         })
     }
     /// By the conbination of the attributes, we can represent
@@ -260,9 +259,11 @@ impl PlainSwap {
     /// Roughly in Fx or CRS case, fixed side is mostly KRW and Floating side is mostly USD
     /// construct IRS using PaymentFrequency, BusinessDayConvention, DayCountConvention
     /// without schedule given directly
-    #[allow(clippy::too_many_arguments)]
+    //#[allow(clippy::too_many_arguments)]
     pub fn new_from_conventions(
-        fixed_leg_currency: Currency,
+        inst_info: InstInfo,    
+        //
+        //fixed_leg_currency: Currency,
         floating_leg_currency: Currency,
         //
         initial_fixed_side_endorsement: Option<Real>,
@@ -270,10 +271,7 @@ impl PlainSwap {
         last_fixed_side_payment: Option<Real>,
         last_floating_side_endorsement: Option<Real>,
         //
-        unit_notional: Real,
-        issue_date: OffsetDateTime,
         effective_date: OffsetDateTime,
-        maturity: OffsetDateTime,
         //
         fixed_rate: Option<Real>,
         rate_index: Option<RateIndex>,
@@ -291,13 +289,14 @@ impl PlainSwap {
         payment_gap_days: i64,
         //
         calendar: JointCalendar,
-        name: String,
-        code: String,
     ) -> Result<PlainSwap> {
+        let maturity = inst_info.get_maturity().unwrap();
+        let issue_date = inst_info.get_issue_date().unwrap();
+        let fixed_leg_currency = inst_info.currency;
         let fixed_legs = schedule::build_schedule(
             forward_generation,
             &effective_date,
-            &maturity,
+            maturity,
             &calendar,
             &fixed_busi_convention,
             &fixed_frequency,
@@ -306,11 +305,10 @@ impl PlainSwap {
         )
         .with_context(|| {
             anyhow!(
-                "({}:{}) Failed to build fixed legs in IRS: {}({})",
+                "({}:{}) Failed to build fixed legs in IRS: ({:?})",
                 file!(),
                 line!(),
-                &name,
-                &code
+                inst_info.id
             )
         })?;
 
@@ -326,11 +324,10 @@ impl PlainSwap {
         )
         .with_context(|| {
             anyhow!(
-                "({}:{}) Failed to build floating legs in IRS: {}({})",
+                "({}:{}) Failed to build floating legs in IRS: ({:?}) ",
                 file!(),
                 line!(),
-                &name,
-                &code
+                inst_info.id
             )
         })?;
 
@@ -389,7 +386,7 @@ impl PlainSwap {
             }
         } else {
             return Err(anyhow!(
-                "({}:{}) Invalid PlainSwap type: {} ({})\n\
+                "({}:{}) Invalid PlainSwap type: ({:?})\n\
                 initial_fixed_side_endorsement: {:?}\n\
                 initial_floating_side_payment: {:?}\n\
                 last_fixed_side_payment: {:?}\n\
@@ -398,8 +395,7 @@ impl PlainSwap {
                 fixed_rate: {:?}",
                 file!(),
                 line!(),
-                name,
-                code,
+                inst_info.id,
                 initial_fixed_side_endorsement,
                 initial_floating_side_payment,
                 last_fixed_side_payment,
@@ -414,17 +410,16 @@ impl PlainSwap {
             false => Some(FxCode::new(floating_leg_currency, fixed_leg_currency)),
         };
         Ok(PlainSwap {
+            inst_info,
+            //
             fixed_legs,
             floating_legs,
             fixed_rate,
             rate_index,
             floating_compound_tenor,
             calendar,
-            unit_notional,
             //
-            issue_date,
             effective_date,
-            maturity,
             //
             fixed_leg_currency,
             floating_leg_currency,
@@ -448,13 +443,15 @@ impl PlainSwap {
             payment_gap_days,
             //
             specific_type,
-            name,
-            code,
         })
     }
 }
 
 impl InstrumentTrait for PlainSwap {
+    fn get_inst_info(&self) ->  &InstInfo {
+        &self.inst_info
+    }
+
     fn get_fixed_cashflows(
         &self,
         pricing_date: &OffsetDateTime,
@@ -468,8 +465,9 @@ impl InstrumentTrait for PlainSwap {
             res.insert(self.effective_date, initial_value);
         }
 
-        if self.maturity.date() >= pricing_date.date() && self.last_fixed_side_payment.is_some() {
-            res.insert(self.maturity, -self.last_fixed_side_payment.unwrap());
+        let maturity = self.get_maturity().unwrap();
+        if maturity.date() >= pricing_date.date() && self.last_fixed_side_payment.is_some() {
+            res.insert(maturity.clone(), -self.last_fixed_side_payment.unwrap());
         }
 
         if self.fixed_rate.is_none() || self.fixed_legs.is_empty() {
@@ -515,10 +513,12 @@ impl InstrumentTrait for PlainSwap {
             initial_value = self.initial_floating_side_payment.unwrap();
             res.insert(self.effective_date, -initial_value);
         }
-        if self.maturity.date() >= pricing_date.date()
+
+        let maturity = self.get_maturity().unwrap();
+        if maturity.date() >= pricing_date.date()
             && self.last_floating_side_endorsement.is_some()
         {
-            res.insert(self.maturity, self.last_floating_side_endorsement.unwrap());
+            res.insert(maturity.clone(), self.last_floating_side_endorsement.unwrap());
         }
 
         if self.rate_index.is_none() || self.floating_legs.is_empty() {
@@ -555,26 +555,6 @@ impl InstrumentTrait for PlainSwap {
         Ok(res)
     }
 
-    fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    fn get_currency(&self) -> &Currency {
-        &self.fixed_leg_currency
-    }
-
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        Some(&self.maturity)
-    }
-
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
-    }
-
     fn get_rate_index(&self) -> Result<Option<&RateIndex>> {
         Ok(self.rate_index.as_ref())
     }
@@ -584,20 +564,20 @@ impl InstrumentTrait for PlainSwap {
         self.specific_type.as_str()
     }
 
-    fn get_fixed_leg_currency(&self) -> Result<&Currency> {
-        Ok(&self.fixed_leg_currency)
+    fn get_fixed_leg_currency(&self) -> Result<Currency> {
+        Ok(self.fixed_leg_currency)
     }
 
-    fn get_floating_leg_currency(&self) -> Result<&Currency> {
-        Ok(&self.floating_leg_currency)
+    fn get_floating_leg_currency(&self) -> Result<Currency> {
+        Ok(self.floating_leg_currency)
     }
 
     fn get_specific_plain_swap_type(&self) -> Result<PlainSwapType> {
         Ok(self.specific_type)
     }
 
-    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<&FxCode>> {
-        Ok(self.floating_to_fixed_fxcode.as_ref())
+    fn get_floating_to_fixed_fxcode(&self) -> Result<Option<FxCode>> {
+        Ok(self.floating_to_fixed_fxcode)
     }
 
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
@@ -663,8 +643,24 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
+        let instid = crate::InstId::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
+            crate::Venue::KRX,
+        );
+
+        let inst_info = crate::InstInfo::new(
+            instid,
+            "MockCRS".to_string(),
+            crate::InstType::PlainSwap,
+            Currency::KRW,
+            10_000_000.0,
+            Some(issue_date.clone()),
+            Some(maturity.clone()),
+            crate::AccountingLevel::L2,
+        );
+        
         let crs = PlainSwap::new_from_conventions(
-            fixed_currency,
+            inst_info.clone(),
             floating_currency,
             //
             initial_fixed_side_endorsement,
@@ -672,10 +668,7 @@ mod tests {
             last_fixed_side_payment,
             last_floating_side_endorsement,
             //
-            unit_notional,
-            issue_date.clone(),
             effective_date.clone(),
-            maturity.clone(),
             //
             Some(fixed_rate),
             Some(rate_index),
@@ -693,11 +686,13 @@ mod tests {
             payment_gap_days,
             //
             calendar,
-            "MockCRS".to_string(),
-            "MockCode".to_string(),
         )?;
 
+        let ser = serde_json::to_string(&crs)?;
+        let deser = serde_json::from_str(&ser)?;
+
         assert_eq!(crs.get_specific_plain_swap_type()?, PlainSwapType::CRS,);
+        assert_eq!(crs.clone(), deser, "Failed to serialize and deserialize");
 
         let usdirs_data = VectorData::new(
             array![0.04, 0.04],
@@ -780,18 +775,29 @@ mod tests {
         let last_fixed_side_payment = Some(last_fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
+        let instid = crate::InstId::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
+            crate::Venue::KRX,
+        );
+        let inst_info = crate::InstInfo::new(
+            instid,
+            "MockFxSwap".to_string(),
+            crate::InstType::PlainSwap,
+            Currency::KRW,
+            1.0,
+            Some(issue_date.clone()),
+            Some(maturity.clone()),
+            crate::AccountingLevel::L2,
+        );
         let fx_swap = PlainSwap::new(
+            inst_info.clone(),
             Schedule::default(),
             Schedule::default(),
             None,
             None,
             None,
             calendar,
-            1.0,
             issue_date.clone(),
-            issue_date.clone(),
-            maturity.clone(),
-            fixed_currency,
             floating_currency,
             initial_fixed_side_endorsement,
             initial_floating_side_payment,
@@ -809,9 +815,6 @@ mod tests {
             //
             fixing_gap_days,
             payment_gap_days,
-            //
-            "MockFxSwap".to_string(),
-            "MockCode".to_string(),
         )?;
 
         let fixed_cashflows = fx_swap.get_fixed_cashflows(&issue_date)?;
@@ -878,18 +881,31 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
+        let instid = crate::InstId::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
+            crate::Venue::KRX,
+        );
+
+        let inst_info = crate::InstInfo::new(
+            instid,
+            "MockFxSpot".to_string(),
+            crate::InstType::PlainSwap,
+            Currency::KRW,
+            1.0,
+            Some(issue_date.clone()),
+            Some(maturity.clone()),
+            crate::AccountingLevel::L2,
+        );
+
         let fx_spot = PlainSwap::new(
+            inst_info.clone(),
             Schedule::default(),
             Schedule::default(),
             None,
             None,
             None,
             calendar,
-            1.0,
-            issue_date.clone(),
             maturity.clone(),
-            maturity.clone(),
-            fixed_currency,
             floating_currency,
             initial_fixed_side_endorsement,
             initial_floating_side_payment,
@@ -907,10 +923,10 @@ mod tests {
             //
             fixing_gap_days,
             payment_gap_days,
-            //
-            "MockFxSpot".to_string(),
-            "MockCode".to_string(),
         )?;
+        let ser = serde_json::to_string(&fx_spot)?;
+        let deser = serde_json::from_str(&ser)?;
+        assert_eq!(fx_spot.clone(), deser, "Failed to serialize and deserialize");
         assert_eq!(
             fx_spot.get_specific_plain_swap_type()?,
             PlainSwapType::FxSpot

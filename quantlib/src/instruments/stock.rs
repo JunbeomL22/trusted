@@ -7,42 +7,31 @@ use crate::InstInfo;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Stock {
-    inst_info: InstInfo,
-    underlying_codes: Vec<String>,
-    rank_type: StockRankType,
+    pub inst_info: InstInfo,
+    pub underlying_codes: Vec<String>,
+    pub rank_type: StockRankType,
 }
 
 impl Stock {
     pub fn new(
         inst_info: InstInfo,
         underlying_codes: Vec<String>,
-        currency: Currency,
         rank_type: Option<StockRankType>,
     ) -> Stock {
         let rank_type = rank_type.unwrap_or(StockRankType::Undefined);
         Stock {
-            name,
-            code,
+            inst_info,
             underlying_codes,
-            currency,
             rank_type,
         }
     }
 }
 
 impl InstrumentTrait for Stock {
-    fn get_name(&self) -> &String {
-        &self.name
+    fn get_inst_info(&self) ->  &InstInfo {
+        &self.inst_info
     }
-
-    fn get_code(&self) -> &String {
-        &self.code
-    }
-
-    fn get_currency(&self) -> &Currency {
-        &self.currency
-    }
-
+    
     fn get_type_name(&self) -> &'static str {
         "Stock"
     }
@@ -53,5 +42,41 @@ impl InstrumentTrait for Stock {
 
     fn get_underlying_codes(&self) -> Vec<&String> {
         vec![&self.underlying_codes[0]]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::currency::Currency;
+    use crate::InstInfo;
+    use crate::enums::StockRankType;
+
+    #[test]
+    fn test_stock() {
+        let instid = crate::InstId::new(
+            crate::Symbol::Isin(crate::IsinCode::new(b"stock1").unwrap()),
+            crate::Venue::KRX,
+        );
+
+        let inst_info = InstInfo::new(
+            instid,
+            "stock1".to_string(),
+            crate::InstType::Stock,
+            Currency::KRW,
+            1.0,
+            None,
+            None,
+            crate::AccountingLevel::L1,
+        );
+
+        
+
+        let underlying_codes = vec!["stock2".to_string()];
+        let stock = Stock::new(inst_info, underlying_codes, None);
+        
+        let ser = serde_json::to_string(&stock).unwrap();
+        let de: Stock = serde_json::from_str(&ser).unwrap();
+        assert_eq!(stock, de);
     }
 }
