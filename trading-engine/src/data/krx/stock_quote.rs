@@ -7,7 +7,7 @@ use crate::{
         id::{
             isin_code::IsinCode,
             Symbol,
-            InstId,
+            ID,
         },
         venue::Venue,
         timestamp::{
@@ -156,7 +156,7 @@ impl IFMSRPD0002 {
         let venue = Venue::KRX;
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let symbol = Symbol::Isin(isin_code.clone());
-        let id = InstId::new(symbol, venue);
+        let id = ID::new(symbol, venue);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -216,7 +216,7 @@ impl IFMSRPD0002 {
 
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let symbol = Symbol::Isin(isin_code.clone());
-        buffer.id = InstId::new(symbol, Venue::KRX);
+        buffer.id = ID::new(symbol, Venue::KRX);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -393,7 +393,7 @@ impl IFMSRPD0003 {
 
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let symbol = Symbol::Isin(isin_code.clone());
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -453,7 +453,7 @@ impl IFMSRPD0003 {
 
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let symbol = Symbol::Isin(isin_code.clone());
-        buffer.id = InstId::new(symbol, Venue::KRX);
+        buffer.id = ID::new(symbol, Venue::KRX);
 
         let converter = get_krx_stock_order_converter();
         let timestamp_converter = get_krx_timestamp_converter();

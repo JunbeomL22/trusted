@@ -13,6 +13,7 @@ use serde::{
 };
 use std::hash::{Hash, Hasher};
 use std::ptr::eq as ptr_eq;
+use once_cell::sync::Lazy;
 
 /// Venue means the first channel of the market
 /// For example, if we trade with brocker KIS, the venue is KIS
@@ -58,50 +59,53 @@ lazy_static! {
 
         Mutex::new(map)
     };
-
-    static ref DEFAULT_ID_PTR: &'static IdData = ID_CACHE.lock().unwrap().get(&IdData::default()).unwrap();
 }
 
 /// ID is a pointer to { (Symbol, Venue) }
 #[derive(Clone, Serialize, Copy)]
-pub struct InstId {
+pub struct ID {
     #[serde(flatten)]
     id_ptr: &'static IdData,
 }
 
-impl std::fmt::Debug for InstId {
+impl std::fmt::Debug for ID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InstId")
+        f.debug_struct("ID")
             .field("symbol", &self.id_ptr.symbol)
             .field("venue", &self.id_ptr.venue)
             .finish()
     }
 }
 
-impl Default for InstId {
+impl Default for ID {
     fn default() -> Self {
-        InstId { id_ptr: *DEFAULT_ID_PTR }
+        static DEFAULT_ID_PTR: Lazy<&'static IdData> = Lazy::new(|| {
+            let cache = ID_CACHE.lock().unwrap();
+            cache.get(&IdData::default()).unwrap()
+        });
+
+        ID { id_ptr: *DEFAULT_ID_PTR }
     }
 }
 
-impl<'de> Deserialize<'de> for InstId {
-    fn deserialize<D>(deserializer: D) -> Result<InstId, D::Error>
+impl<'de> Deserialize<'de> for ID {
+    fn deserialize<D>(deserializer: D) -> Result<ID, D::Error>
     where D: Deserializer<'de>,
     {
         let id_data = IdData::deserialize(deserializer)?;
         let mut cache = ID_CACHE.lock().unwrap();
         let interned = cache.entry(id_data.clone()).or_insert_with(|| Box::leak(Box::new(id_data.clone())));
 
-        Ok(InstId { id_ptr: *interned })
+        Ok(ID { id_ptr: *interned })
     }
 }
 
-impl InstId {
+impl ID {
     pub fn new(symbol: Symbol, venue: Venue) -> Self {
         let mut cache = ID_CACHE.lock().unwrap();
         let interned = cache.entry(IdData { symbol: symbol.clone(), venue }).or_insert_with(|| Box::leak(Box::new(IdData { symbol, venue })));
 
-        InstId { id_ptr: *interned }
+        ID { id_ptr: *interned }
     }
 
     #[inline]
@@ -128,15 +132,15 @@ impl InstId {
     }
 }
 
-impl PartialEq for InstId {
+impl PartialEq for ID {
     fn eq(&self, other: &Self) -> bool {
         ptr_eq(self.id_ptr, other.id_ptr)
     }
 }
 
-impl Eq for InstId {}
+impl Eq for ID {}
 
-impl Hash for InstId {
+impl Hash for ID {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id_ptr.hash(state);
     }
@@ -153,19 +157,19 @@ mod tests {
         let isin = IsinCode::new(b"US0378331005").unwrap();
         let symbol = Symbol::Isin(isin);
         let venue = Venue::KRX;
-        let prod_id = InstId::new(symbol, venue);
+        let prod_id = ID::new(symbol, venue);
 
         let isin = IsinCode::new(b"US0378331005").unwrap();
         let symbol = Symbol::Isin(isin);
         let venue = Venue::KRX;
-        let prod_id2 = InstId::new(symbol, venue);
+        let prod_id2 = ID::new(symbol, venue);
         assert_eq!(prod_id, prod_id2);
 
 
         let ticker = Ticker::new(b"005930").unwrap();
         let symbol = Symbol::Ticker(ticker);
         let venue = Venue::KRX;
-        let prod_id3 = InstId::new(symbol, venue);
+        let prod_id3 = ID::new(symbol, venue);
         assert_ne!(prod_id, prod_id3);
         // check length of ID_CACHE
         let cache = ID_CACHE.lock().unwrap();
@@ -177,20 +181,20 @@ mod tests {
         let isin = IsinCode::new(b"US0378331005").unwrap();
         let symbol = Symbol::Isin(isin);
         let venue = Venue::KRX;
-        let prod_id = InstId::new(symbol, venue);
+        let prod_id = ID::new(symbol, venue);
 
         let serialized = serde_json::to_string(&prod_id).unwrap();
-        let deserialized: InstId = serde_json::from_str(&serialized).unwrap();
+        let deserialized: ID = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(prod_id, deserialized);
 
         let ticker = Ticker::new(b"005930").unwrap();
         let symbol = Symbol::Ticker(ticker);
         let venue = Venue::KRX;
-        let prod_id = InstId::new(symbol, venue);
+        let prod_id = ID::new(symbol, venue);
 
         let serialized = serde_json::to_string(&prod_id).unwrap();
-        let deserialized: InstId = serde_json::from_str(&serialized).unwrap();
+        let deserialized: ID = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(prod_id, deserialized);
 
@@ -202,18 +206,18 @@ mod tests {
         let isin = IsinCode::new(b"US0378331005").unwrap();
         let symbol = Symbol::Isin(isin);
         let venue = Venue::KRX;
-        let prod_id = InstId::new(symbol, venue);
+        let prod_id = ID::new(symbol, venue);
 
         let isin = IsinCode::new(b"US0378331005").unwrap();
         let symbol = Symbol::Isin(isin);
         let venue = Venue::KRX;
-        let prod_id2 = InstId::new(symbol, venue);
+        let prod_id2 = ID::new(symbol, venue);
         assert_eq!(prod_id, prod_id2);
 
         let ticker = Ticker::new(b"005930").unwrap();
         let symbol = Symbol::Ticker(ticker);
         let venue = Venue::KRX;
-        let prod_id3 = InstId::new(symbol, venue);
+        let prod_id3 = ID::new(symbol, venue);
         assert_ne!(prod_id, prod_id3);
         // check length of ID_CACHE
         let cache = ID_CACHE.lock().unwrap();
@@ -224,10 +228,10 @@ mod tests {
         map.insert(prod_id.clone(), 1);
         map.insert(prod_id3.clone(), 2);
 
-        let test_key = InstId::new(Symbol::Isin(IsinCode::new(b"US0378331005").unwrap()), Venue::KRX);
+        let test_key = ID::new(Symbol::Isin(IsinCode::new(b"US0378331005").unwrap()), Venue::KRX);
         assert_eq!(map.get(&test_key), Some(&1));
 
-        let test_key = InstId::new(Symbol::Ticker(Ticker::new(b"005930").unwrap()), Venue::KRX);
+        let test_key = ID::new(Symbol::Ticker(Ticker::new(b"005930").unwrap()), Venue::KRX);
         assert_eq!(map.get(&test_key), Some(&2));
 
     }

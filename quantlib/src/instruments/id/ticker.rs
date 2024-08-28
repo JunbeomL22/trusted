@@ -24,6 +24,13 @@ impl Default for Ticker {
     }
 }
 
+impl From<&str> for Ticker {
+    fn from(s: &str) -> Self {
+        let bytes = s.as_bytes();
+        Ticker::new(bytes).expect("Ticker::from(&str) failed")
+    }
+}
+
 impl Ticker {
     pub fn new(bytes: &[u8]) -> Result<Self> {
         if bytes.len() > 32 {

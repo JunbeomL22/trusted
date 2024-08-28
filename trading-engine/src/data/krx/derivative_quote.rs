@@ -2,7 +2,7 @@ use crate::data::quote::QuoteSnapshot;
 use crate::types::{
     base::{LevelSnapshot, Slice},
     id::{
-        InstId,
+        ID,
         Symbol,
         ticker::Ticker,
         isin_code::IsinCode,
@@ -141,7 +141,7 @@ impl IFMSRPD0034 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
         
         let timestamp_converter = get_krx_timestamp_converter();
         let order_counter = get_krx_base_order_counter();
@@ -204,7 +204,7 @@ impl IFMSRPD0034 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        buffer.id = InstId::new(symbol, Venue::KRX);
+        buffer.id = ID::new(symbol, Venue::KRX);
 
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -391,7 +391,7 @@ impl IFMSRPD0035 {
 
         let symbol = Symbol::Isin(isin_code);
 
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
 
         let timestamp_converter = get_krx_timestamp_converter();
         let order_counter = get_krx_base_order_counter();
@@ -451,7 +451,7 @@ impl IFMSRPD0035 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        buffer.id = InstId::new(symbol, Venue::KRX);
+        buffer.id = ID::new(symbol, Venue::KRX);
 
         
         let order_counter = get_krx_base_order_counter();

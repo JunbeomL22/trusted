@@ -23,7 +23,7 @@ pub use utils::find_index_ndarray::{
 //pub use macros::{vectordatasample, valuedatasample, surfacedatasample};
 
 pub use crate::instruments::id::{
-    InstId,
+    ID,
     Symbol,
     isin_code::IsinCode,
     ticker::Ticker,
@@ -37,3 +37,17 @@ pub use crate::instruments::{
 };
 
 pub use crate::currency::Currency;
+
+pub use crate::utils::string_arithmetic::{
+    add_period,
+    sub_period,
+};
+pub use crate::time::period::{
+    Period,
+    FinerPeriod,
+    Tenor,
+};
+
+pub use crate::time::calendars::nullcalendar::NullCalendar;
+use once_cell::sync::Lazy;
+static NULL_CALENDAR: Lazy<NullCalendar> = Lazy::new(|| NullCalendar::default());

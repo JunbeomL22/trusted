@@ -6,7 +6,7 @@ use crate::types::{
     },
     enums::TradeType,
     timestamp::TimeStamp,
-    id::InstId,
+    id::ID,
 };
 use crate::utils::numeric_converter::{
     OrderConverter,
@@ -20,7 +20,7 @@ use crate::data::krx::krx_converter::{
 
 #[derive(Debug, Clone)]
 pub struct TradeData {
-    pub id: InstId,
+    pub id: ID,
     //
     pub timestamp: TimeStamp,
     pub system_timestamp: TimeStamp,
@@ -37,7 +37,7 @@ pub struct TradeData {
 impl Default for TradeData {
     fn default() -> Self {
         TradeData {
-            id: InstId::default(),
+            id: ID::default(),
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),
             trade_price: 0,
@@ -55,7 +55,7 @@ impl Default for TradeData {
 impl TradeData {
     pub fn with_capacity(_n: usize) -> Self {
         TradeData {
-            id: InstId::default(),
+            id: ID::default(),
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),
             //

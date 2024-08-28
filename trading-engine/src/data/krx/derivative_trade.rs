@@ -5,7 +5,7 @@ use crate::types::{
     enums::TradeType,
     id::{
         isin_code::IsinCode,
-        InstId,
+        ID,
         Symbol,
     },
     venue::Venue,
@@ -179,7 +179,7 @@ impl IFMSRPD0037 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
         
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -276,7 +276,7 @@ impl IFMSRPD0037 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        data_buffer.id = InstId::new(symbol, Venue::KRX);
+        data_buffer.id = ID::new(symbol, Venue::KRX);
 
         let timestamp_converter = get_krx_timestamp_converter();
         let order_counter = get_krx_base_order_counter();
@@ -524,7 +524,7 @@ impl IFMSRPD0038 {
         
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
         let symbol = Symbol::Isin(isin_code);
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
 
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -615,7 +615,7 @@ impl IFMSRPD0038 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        data_buffer.id = InstId::new(symbol, Venue::KRX);
+        data_buffer.id = ID::new(symbol, Venue::KRX);
 
         let order_counter = get_krx_base_order_counter();
         let timestamp_converter = get_krx_timestamp_converter();
@@ -769,7 +769,7 @@ impl IFMSRPD0036 {
         let isin_code = IsinCode::new(&payload[self.isin_code_slice.start..self.isin_code_slice.end])?;
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
         let symbol = Symbol::Isin(isin_code);
-        let id = InstId::new(symbol, Venue::KRX);
+        let id = ID::new(symbol, Venue::KRX);
 
         let timestamp_converter = get_krx_timestamp_converter();
 
@@ -829,7 +829,7 @@ impl IFMSRPD0036 {
         let converter = get_krx_derivative_converter(&payload[..5], &isin_code);
 
         let symbol = Symbol::Isin(isin_code);
-        data_buffer.id = InstId::new(symbol, Venue::KRX);
+        data_buffer.id = ID::new(symbol, Venue::KRX);
 
         let timestamp_converter = get_krx_timestamp_converter();
 

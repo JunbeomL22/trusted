@@ -7,9 +7,7 @@ pub trait FromU8 {
         Self: Sized;
 }
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default, PartialOrd, Ord)]
 pub enum OrderSide {
     #[default]
     Ask = 1,
@@ -22,6 +20,23 @@ impl FromU8 for OrderSide {
             1 => Ok(OrderSide::Ask),
             2 => Ok(OrderSide::Bid),
             _ => Err(anyhow!("Invalid OrderSide in from_u8")),
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum PositionSide {
+    #[default]
+    Long = 1,
+    Short = -1,
+}
+
+impl From<OrderSide> for PositionSide {
+    fn from(v: OrderSide) -> Self {
+        match v {
+            OrderSide::Ask => PositionSide::Short,
+            OrderSide::Bid => PositionSide::Long,
         }
     }
 }

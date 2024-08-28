@@ -6,7 +6,7 @@ use crate::types::{
     },
     enums::TradeType,
     timestamp::TimeStamp,
-    id::InstId,
+    id::ID,
     venue::Venue,
 };
 use crate::utils::numeric_converter::{
@@ -26,7 +26,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 //Serialize // this struct will not be in database directly. It will be converted to another struct
 pub struct TradeQuoteSnapshot {
-    pub id: InstId,
+    pub id: ID,
     //
     pub timestamp: TimeStamp,
     pub system_timestamp: TimeStamp, // this is the timestamp when the data is received by the system
@@ -55,7 +55,7 @@ pub struct TradeQuoteSnapshot {
 impl Default for TradeQuoteSnapshot {
     fn default() -> Self {
         TradeQuoteSnapshot {
-            id: InstId::default(),
+            id: ID::default(),
             //
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),
@@ -80,7 +80,7 @@ impl Default for TradeQuoteSnapshot {
 impl TradeQuoteSnapshot {
     pub fn with_quote_level(level: usize) -> Self {
         TradeQuoteSnapshot {
-            id: InstId::default(),
+            id: ID::default(),
             //
             
             timestamp: TimeStamp::default(),

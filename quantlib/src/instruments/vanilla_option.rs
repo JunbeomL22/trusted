@@ -2,7 +2,10 @@ use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
 use crate::instrument::InstrumentTrait;
-use crate::InstInfo;
+use crate::{
+    InstInfo,
+    ID,
+};
 //
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -10,22 +13,15 @@ use time::OffsetDateTime;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VanillaOption {
-    inst_info: InstInfo,
-    strike: Real,
-    //unit_notional: Real,
-    //issue_date: OffsetDateTime,
-    //last_trade_date: OffsetDateTime,
-    //maturity: OffsetDateTime,
-    settlement_date: OffsetDateTime,
-    underlying_codes: Vec<String>,
-    underlying_currency: Currency,
-    //currency: Currency,
-    quanto_fx_code: Option<FxCode>,
-    option_type: OptionType,
-    exercise_type: OptionExerciseType,
-    daily_settlement_type: OptionDailySettlementType,
-    //name: String,
-    //code: String,
+    pub inst_info: InstInfo,
+    pub strike: Real,
+    pub settlement_date: OffsetDateTime,
+    pub underlying_ids: Vec<ID>,
+    pub underlying_currency: Currency,
+    pub quanto_fx_code: Option<FxCode>,
+    pub option_type: OptionType,
+    pub exercise_type: OptionExerciseType,
+    pub daily_settlement_type: OptionDailySettlementType,
 }
 
 impl Default for VanillaOption {
@@ -36,7 +32,7 @@ impl Default for VanillaOption {
             inst_info,
             strike: 0.0,
             settlement_date,
-            underlying_codes: vec![],
+            underlying_ids: vec![],
             underlying_currency: Currency::KRW,
             quanto_fx_code: None,
             exercise_type: OptionExerciseType::European,
@@ -51,12 +47,8 @@ impl VanillaOption {
     pub fn new(
         inst_info: InstInfo,
         strike: Real,
-        //unit_notional: Real,
-        //issue_date: OffsetDateTime,
-        //last_trade_date: OffsetDateTime,
-        //maturity: OffsetDateTime,
         settlement_date: Option<OffsetDateTime>,
-        underlying_codes: Vec<String>,
+        underlying_id: ID,
         underlying_currency: Currency,
         option_type: OptionType,
         exercise_type: OptionExerciseType,
@@ -72,11 +64,13 @@ impl VanillaOption {
             None
         };
 
+        let underlying_ids = vec![underlying_id];
+
         VanillaOption {
             inst_info,
             strike,
             settlement_date,
-            underlying_codes,
+            underlying_ids,
             underlying_currency,
             quanto_fx_code,
             option_type,
@@ -91,8 +85,8 @@ impl VanillaOption {
 }
 
 impl InstrumentTrait for VanillaOption {
-    fn get_name(&self) -> &String {
-        &self.name
+    fn get_inst_info(&self) -> &InstInfo {
+        &self.inst_info
     }
 
     fn get_type_name(&self) -> &'static str {
@@ -102,27 +96,12 @@ impl InstrumentTrait for VanillaOption {
         }
     }
 
-    fn get_unit_notional(&self) -> Real {
-        self.unit_notional
-    }
-    fn get_code(&self) -> &String {
-        &self.code
+    fn get_underlying_currency(&self) -> Result<Currency> {
+        Ok(self.underlying_currency)
     }
 
-    fn get_currency(&self) -> &Currency {
-        &self.currency
-    }
-
-    fn get_underlying_currency(&self) -> Result<&Currency> {
-        Ok(&self.underlying_currency)
-    }
-
-    fn get_maturity(&self) -> Option<&OffsetDateTime> {
-        Some(&self.maturity)
-    }
-
-    fn get_underlying_codes(&self) -> Vec<&String> {
-        vec![&self.underlying_codes[0]]
+    fn get_underlying_ids(&self) -> Vec<ID> {
+        vec![self.underlying_ids[0]]
     }
 
     fn get_option_type(&self) -> Result<OptionType> {
@@ -137,14 +116,65 @@ impl InstrumentTrait for VanillaOption {
         Ok(self.strike)
     }
 
-    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> {
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(ID, &FxCode)> {
         match &self.quanto_fx_code {
-            Some(fx_code) => vec![(&self.underlying_codes[0], fx_code)],
+            Some(fx_code) => vec![(self.underlying_ids[0], fx_code)],
             None => vec![],
         }
     }
 
-    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> {
-        vec![&self.underlying_codes[0]]
+    fn get_underlying_ids_requiring_volatility(&self) -> Vec<ID> {
+        vec![self.underlying_ids[0]]
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::currency::Currency;
+    use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
+    use crate::InstInfo;
+    use crate::ID;
+    use time::macros::datetime;
+
+    #[test]
+    fn test_vanilla_option_new() {
+        let id = ID::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"AAPL").unwrap()), 
+            crate::Venue::KIS,
+        );
+        let inst_info = InstInfo::new(
+            id, 
+            "AAPL".to_string(),
+            crate::InstType::VanillaOption,
+            Currency::USD,
+            1.0,
+            Some(datetime!(2021-01-01 00:00:00 +00:00)),
+            Some(datetime!(2022-01-01 00:00:00 +00:00)),
+            crate::AccountingLevel::L1,
+        );
+
+        let und_id = ID::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"AAPL").unwrap()),
+            crate::Venue::KIS,
+        );
+
+        let option = VanillaOption::new(
+            inst_info,
+            100.0,
+            None,
+            und_id,
+            Currency::USD,
+            OptionType::Call,
+            OptionExerciseType::European,
+            OptionDailySettlementType::NotSettled,
+        );
+
+        let ser = serde_json::to_string(&option).unwrap();
+        let de: VanillaOption = serde_json::from_str(&ser).unwrap();
+
+        assert_eq!(option, de);
+
     }
 }

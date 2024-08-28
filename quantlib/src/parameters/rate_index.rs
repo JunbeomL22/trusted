@@ -1,6 +1,5 @@
 use crate::time::calendar_trait::CalendarTrait;
 use crate::time::conventions::{BusinessDayConvention, DayCountConvention};
-//use crate::enums::RateIndexCode;
 use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::enums::Compounding;
@@ -9,6 +8,8 @@ use crate::parameters::{past_price::DailyClosePrice, zero_curve::ZeroCurve};
 use crate::time::jointcalendar::JointCalendar;
 use crate::util::min_offsetdatetime;
 use crate::utils::string_arithmetic::add_period;
+use crate::Tenor;
+use crate::ID;
 //
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -25,44 +26,47 @@ use time::{Duration, OffsetDateTime};
 /// Theoretically, the compound tenor can be greater than the tenor,
 /// but I have not seen such a case in the market, so I chose not to allow such case (return error)
 pub struct RateIndex {
-    curve_tenor: String,
+    id: ID,
+    curve_tenor: Tenor,
     currency: Currency,
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
-    code: String, // USD3M, EUR6M, CD91, etc
 }
 
 impl RateIndex {
     pub fn new(
-        curve_tenor: String,
+        id: ID,
+        curve_tenor: Tenor,
         currency: Currency,
         name: String,
-        code: String,
     ) -> Result<RateIndex> {
         Ok(RateIndex {
+            id,
             curve_tenor,
             currency,
-            code,
             name,
         })
     }
 
-    pub fn get_code(&self) -> &String {
-        &self.code
+    #[inline]
+    #[must_use]
+    pub fn get_id(&self) -> ID {
+        self.id
     }
 
+    #[inline]
     pub fn get_name(&self) -> &String {
         &self.name
     }
 
-    pub fn get_rate_index_code(&self) -> &String {
-        &self.code
+    pub fn get_rate_index_symbol_str(&self) -> &str {
+        self.id.symbol_str()
     }
 
-    pub fn get_currency(&self) -> &Currency {
-        &self.currency
+    pub fn get_currency(&self) -> Currency {
+        self.currency
     }
 
-    pub fn get_curve_tenor(&self) -> &String {
+    pub fn get_curve_tenor(&self) -> &Tenor {
         &self.curve_tenor
     }
 
@@ -91,7 +95,8 @@ impl RateIndex {
             None => {
                 // None means that it is not a overnight type index
                 let fixing_date = base_schedule.get_fixing_date();
-                let curve_end_date = add_period(fixing_date, self.curve_tenor.as_str());
+                //let curve_end_date = add_period(fixing_date, self.curve_tenor.as_str());
+                let curve_end_date = self.curve_tenor.apply(fixing_date);
                 let res: Real = if fixing_date < pricing_date {
                     match close_data.get(&(fixing_date.date())) {
                         Some(rate) => *rate,
@@ -133,7 +138,8 @@ impl RateIndex {
                 if fixing_date >= pricing_date {
                     // if the fixing date is after the evaluation date, the rate is calculated by the forward curve
                     // the value is taken as the average of the first and last fixing for performance
-                    let curve_end_date = add_period(fixing_date, self.curve_tenor.as_str());
+                    //let curve_end_date = add_period(fixing_date, self.curve_tenor.as_str());
+                    let curve_end_date = self.curve_tenor.apply(fixing_date);   
 
                     let first_rate = forward_curve.borrow().get_forward_rate_between_dates(
                         fixing_date,
@@ -145,7 +151,8 @@ impl RateIndex {
                         *base_schedule.get_calc_end_date() - Duration::days(fixing_days);
                     let last_rate = forward_curve.borrow().get_forward_rate_between_dates(
                         &last_fixing_date,
-                        &add_period(&last_fixing_date, self.curve_tenor.as_str()),
+                        //&add_period(&last_fixing_date, self.curve_tenor.as_str()),
+                        &self.curve_tenor.apply(&last_fixing_date),
                         Compounding::Simple,
                     )?;
 
@@ -200,7 +207,8 @@ impl RateIndex {
                     } else {
                         rate = forward_curve.borrow().get_forward_rate_between_dates(
                             &fixing_date,
-                            &add_period(&fixing_date, self.curve_tenor.as_str()),
+                            //&add_period(&fixing_date, self.curve_tenor.as_str()),
+                            &self.curve_tenor.apply(&fixing_date),
                             Compounding::Simple,
                         )?;
                     };
@@ -241,9 +249,14 @@ mod tests {
         Duration, UtcOffset,
     };
 
+    use crate::{
+        ID,
+        Ticker,
+    };
+
     #[test]
     fn test_rate_index() -> Result<()> {
-        let dt = datetime!(2024-01-02 16:30:00 -05:00);
+        let dt = datetime!(2024-01-01 16:30:00 +19:00);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(dt.clone())));
         let _payment_frequency = PaymentFrequency::Quarterly;
         let _business_day_convention = BusinessDayConvention::ModifiedFollowing;
@@ -255,12 +268,14 @@ mod tests {
             UnitedStatesType::Sofr,
         ))])?;
         let currency = Currency::USD;
-        let code = "SOFR1D".to_string();
+        let ticker = Ticker::new(b"SOFR1D").unwrap();
+        let id = ID::new(crate::Symbol::Ticker(ticker), crate::Venue::Undefined);
+
         let name = "SOFR1D".to_string();
         let rate_index = RateIndex::new(
-            "1D".to_string(), // "1D" means "1D" forward curve calculation period
+            id,
+            Tenor::new_from_string("1D")?,
             currency,
-            code,
             name,
         )?;
 

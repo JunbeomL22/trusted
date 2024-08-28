@@ -34,6 +34,6 @@ pub use types::id::isin_code::IsinCode;
 pub use types::enums::Currency;
 pub use types::venue::Venue;
 pub use types::id::ticker::Ticker;
-pub use types::id::InstId;
+pub use types::id::ID;
 pub use utils::lazy_string::LazyString;
 

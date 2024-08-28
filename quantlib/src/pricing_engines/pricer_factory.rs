@@ -13,8 +13,10 @@ use crate::pricing_engines::{
     option_analytic_pricer::OptionAnalyticPricer, plain_swap_pricer::PlainSwapPricer,
     pricer::Pricer, unit_pricer::UnitPricer,
 };
+use crate::ID;
 //
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
+use rustc_hash::FxHashMap;
 
 use anyhow::{anyhow, Result};
 
@@ -22,12 +24,12 @@ use anyhow::{anyhow, Result};
 /// dividend is in herent in equities
 pub struct PricerFactory {
     evaluation_date: Rc<RefCell<EvaluationDate>>,
-    fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
-    equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
-    zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-    underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
-    quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>, // (underlying_code, fx_code) -> Quanto
-    past_close_data: HashMap<String, Rc<DailyClosePrice>>,
+    fxs: FxHashMap<FxCode, Rc<RefCell<MarketPrice>>>,
+    equities: FxHashMap<ID, Rc<RefCell<MarketPrice>>>,
+    zero_curves: FxHashMap<ID, Rc<RefCell<ZeroCurve>>>,
+    underlying_volatilities: FxHashMap<ID, Rc<RefCell<Volatility>>>,
+    quantos: FxHashMap<(ID, FxCode), Rc<RefCell<Quanto>>>, // (underlying_code, fx_code) -> Quanto
+    past_close_data: FxHashMap<ID, Rc<DailyClosePrice>>,
     match_parameter: Rc<MatchParameter>,
     calculation_configuration: Rc<CalculationConfiguration>,
 }
@@ -36,12 +38,12 @@ impl PricerFactory {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         evaluation_date: Rc<RefCell<EvaluationDate>>,
-        fxs: HashMap<FxCode, Rc<RefCell<MarketPrice>>>,
-        equities: HashMap<String, Rc<RefCell<MarketPrice>>>,
-        zero_curves: HashMap<String, Rc<RefCell<ZeroCurve>>>,
-        underlying_volatilities: HashMap<String, Rc<RefCell<Volatility>>>,
-        quantos: HashMap<(String, FxCode), Rc<RefCell<Quanto>>>,
-        past_close_data: HashMap<String, Rc<DailyClosePrice>>,
+        fxs: FxHashMap<FxCode, Rc<RefCell<MarketPrice>>>,
+        equities: FxHashMap<ID, Rc<RefCell<MarketPrice>>>,
+        zero_curves: FxHashMap<ID, Rc<RefCell<ZeroCurve>>>,
+        underlying_volatilities: FxHashMap<ID, Rc<RefCell<Volatility>>>,
+        quantos: FxHashMap<(ID, FxCode), Rc<RefCell<Quanto>>>,
+        past_close_data: FxHashMap<ID, Rc<DailyClosePrice>>,
         match_parameter: Rc<MatchParameter>,
         calculation_configuration: Rc<CalculationConfiguration>,
     ) -> PricerFactory {
@@ -84,18 +86,18 @@ impl PricerFactory {
     }
 
     fn get_bond_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
-        let discount_curve_name = self.match_parameter.get_discount_curve_name(instrument)?;
+        let discount_curve_id = self.match_parameter.get_discount_curve_id(instrument)?;
         let discount_curve = self
             .zero_curves
-            .get(discount_curve_name)
+            .get(discount_curve_id)
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "{}:{} (PricerFactory::get_bond_pricer)\n\
-                    failed to get discount curve of {}. self.zero_curves does not have {}",
+                    failed to get discount curve of {}. self.zero_curves does not have {:?}",
                     file!(),
                     line!(),
-                    instrument.get_code(),
-                    discount_curve_name,
+                    instrument.get_symbol_str(),
+                    discount_curve_id.symbol_str(),
                 )
             })?
             .clone();
@@ -386,7 +388,7 @@ impl PricerFactory {
                 let past_fixing_data = self.past_close_data.get(rate_index.get_name())
                     .ok_or_else(|| anyhow::anyhow!(
                         "({}:{}) failed to get past fixing data of {}.\nself.past_close_data does not have {}",
-                        file!(), line!(), instrument.get_code(), rate_index.get_code(),
+                        file!(), line!(), instrument.get_symbol_str(), rate_index.get_rate_index_symbol_str(),
                     ))?.clone();
                 Some(past_fixing_data)
             }
@@ -399,7 +401,7 @@ impl PricerFactory {
             Some(fx_code) => {
                 let fx = self
                     .fxs
-                    .get(fx_code)
+                    .get(&fx_code)
                     .ok_or_else(|| {
                         anyhow::anyhow!(
                             "({}:{}) failed to get FX of {}.\nself.fxs does not have {:?}",
@@ -429,7 +431,7 @@ impl PricerFactory {
     fn get_stock_pricer(&self, instrument: &Rc<Instrument>) -> Result<Pricer> {
         let equity = self
             .equities
-            .get(instrument.get_code())
+            .get(instrument.get_id())
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "({}:{}) failed to get equity of {}.\nself.equities does not have {}",

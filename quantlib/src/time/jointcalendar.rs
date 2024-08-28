@@ -15,7 +15,7 @@ pub struct JointCalendar {
 impl Default for JointCalendar {
     fn default() -> JointCalendar {
         let sk = SouthKorea::new(SouthKoreaType::Settlement);
-        let sk_cal = Calendar::SouthKorea(sk);
+        let sk_cal = Calendar::SouthKorea(sk.clone());
         JointCalendar {
             name: sk.calendar_name().clone(),
             calendars: vec![sk_cal],

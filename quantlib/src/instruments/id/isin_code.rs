@@ -13,6 +13,13 @@ impl Default for IsinCode {
     }
 }
 
+impl From<&str> for IsinCode {
+    fn from(s: &str) -> Self {
+        let bytes = s.as_bytes();
+        IsinCode::new(bytes).expect("IsinCode::from(&str) failed")
+    }
+}
+
 impl IsinCode {
     pub fn new(bytes: &[u8]) -> Result<Self> {
         if bytes.contains(&b' ') || bytes.contains(&b'\t') {

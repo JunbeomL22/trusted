@@ -21,7 +21,7 @@ mod tests {
         DecomposedOrder,
     };
     use trading_engine::types::id::{
-        InstId,
+        ID,
         Symbol,
     };
     use anyhow::Result;
@@ -65,7 +65,7 @@ mod tests {
 
         let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
         let venue = Venue::KRX;
-        let id = InstId::new(Symbol::Isin(isin_code.clone()), venue);
+        let id = ID::new(Symbol::Isin(isin_code.clone()), venue);
         let mut original_orderbook_series = Vec::<OrderBook>::default();
         let mut ask_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();
         let mut bid_level_snapshots_series = Vec::<Vec<LevelSnapshot>>::default();

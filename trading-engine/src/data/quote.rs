@@ -4,7 +4,7 @@ use crate::types::{
         BookQuantity,
     },
     timestamp::TimeStamp,
-    id::InstId,
+    id::ID,
 };
 
 use crate::utils::numeric_converter::{
@@ -21,7 +21,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QuoteSnapshot {
-    pub id: InstId,
+    pub id: ID,
     //
     pub timestamp: TimeStamp,
     pub system_timestamp: TimeStamp, // this is stamped in parsing the packet
@@ -41,7 +41,7 @@ pub struct QuoteSnapshot {
 impl Default for QuoteSnapshot {
     fn default() -> Self {
         QuoteSnapshot {
-            id: InstId::default(),
+            id: ID::default(),
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),
             ask_quote_data: Vec::new(),
@@ -60,7 +60,7 @@ impl Default for QuoteSnapshot {
 impl QuoteSnapshot {
     pub fn with_quote_level(level: usize) -> Self {
         QuoteSnapshot {
-            id: InstId::default(),
+            id: ID::default(),
             //
             timestamp: TimeStamp::default(),
             system_timestamp: TimeStamp::default(),

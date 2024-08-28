@@ -1,4 +1,4 @@
-use crate::currency::Currency;
+use crate::ID;
 use crate::definitions::Real;
 use crate::enums::{CreditRating, IssuerType, RankType};
 use crate::instrument::InstrumentTrait;
@@ -21,7 +21,7 @@ use time::OffsetDateTime;
 pub struct BondInfo {
     pub issuer_type: IssuerType,
     pub credit_rating: CreditRating,
-    pub issuer_name: String,
+    pub issuer_id: ID,
     pub rank: RankType,
 }
 /// None effective_date means issue date
@@ -60,7 +60,7 @@ impl Default for Bond {
             bond_info: BondInfo {
                 issuer_type: IssuerType::Undefined,
                 credit_rating: CreditRating::Undefined,
-                issuer_name: "".to_string(),
+                issuer_id: ID::default(),
                 rank: RankType::Undefined,
             },
             //
@@ -224,16 +224,6 @@ impl Bond {
         fixing_gap_days: i64,
         payment_gap_days: i64,
     ) -> Result<Bond> {
-        let maturity = inst_info.get_maturity().ok_or_else(|| {
-            anyhow!(
-                "{}:{} id = {:?},\n\
-                Failed to get maturity date",
-                file!(),
-                line!(),
-                &inst_info.id
-            )
-        })?;
-
         let effective_date = match effective_date {
             Some(date) => date,
             None => {
@@ -345,8 +335,8 @@ impl InstrumentTrait for Bond {
         Ok(self.bond_info.issuer_type)
     }
 
-    fn get_issuer_name(&self) -> Result<&String> {
-        Ok(&self.bond_info.issuer_name)
+    fn get_issuer_id(&self) -> Result<ID> {
+        Ok(self.bond_info.issuer_id)
     }
 
     fn is_coupon_strip(&self) -> Result<bool> {

@@ -1,5 +1,6 @@
 use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
+use crate::ID;
 use crate::enums::{
     CreditRating, IssuerType, OptionDailySettlementType, OptionType, RankType,
 };
@@ -39,6 +40,7 @@ use time::OffsetDateTime;
 pub trait InstrumentTrait {
     // The following methods are mandatory for all instruments
     fn get_inst_info(&self) -> &InstInfo;
+    fn get_id(&self) -> ID { self.get_inst_info().id }
     fn get_name(&self) -> &String { self.get_inst_info().get_name() }
     fn get_symbol_str(&self) -> &str { self.get_inst_info().symbol_str() }
     fn get_currency(&self) -> Currency { self.get_inst_info().currency }
@@ -53,13 +55,13 @@ pub trait InstrumentTrait {
     fn get_issue_date(&self) -> Option<&OffsetDateTime> { self.get_inst_info().get_issue_date() }
     // There is an instrument that does not have underlying names,
     // so the default action is to return an empty vector
-    fn get_underlying_codes(&self) -> Vec<&String> { vec![] }
+    fn get_underlying_ids(&self) -> Vec<ID> { vec![] }
 
-    fn get_quanto_fxcode_und_pair(&self) -> Vec<(&String, &FxCode)> { vec![] }
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(ID, &FxCode)> { vec![] }
 
     fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> { vec![] }
 
-    fn get_underlying_codes_requiring_volatility(&self) -> Vec<&String> { vec![] }
+    fn get_underlying_ids_requiring_volatility(&self) -> Vec<ID> { vec![] }
     /// only for bonds, so None must be allowed
     fn get_credit_rating(&self) -> Result<CreditRating> {
         let err = || anyhow!(
@@ -88,7 +90,7 @@ pub trait InstrumentTrait {
         Err(lazy_err())
     }
     // only for bonds, so None must be allowed
-    fn get_issuer_name(&self) -> Result<&String> {
+    fn get_issuer_id(&self) -> Result<ID> {
         let err = || anyhow!(
             "({}:{}) not supported instrument type on get_issuer_name",
             file!(),
@@ -107,7 +109,7 @@ pub trait InstrumentTrait {
         Err(err())
     }
 
-    fn get_bond_futures_borrowing_curve_codes(&self) -> Vec<&String> {
+    fn get_bond_futures_borrowing_curve_ids(&self) -> Vec<ID> {
         vec![]
     }
 
@@ -281,17 +283,17 @@ impl Instruments {
         res
     }
 
-    pub fn get_all_underlying_codes(&self) -> Vec<&String> {
-        let mut underlying_codes = Vec::<&String>::new();
+    pub fn get_all_underlying_ids(&self) -> Vec<ID> {
+        let mut underlying_ids = Vec::<ID>::new();
         for instrument in self.instruments.iter() {
-            let names = instrument.get_underlying_codes();
-            for name in names.iter() {
-                if !underlying_codes.contains(name) {
-                    underlying_codes.push(name);
+            let ids = instrument.get_underlying_ids();
+            for id in ids.iter() {
+                if !underlying_ids.contains(id) {
+                    underlying_ids.push(*id);
                 }
             }
         }
-        underlying_codes
+        underlying_ids
     }
 
     pub fn get_all_fxcodes_for_pricing(&self) -> Vec<FxCode> {
@@ -307,8 +309,8 @@ impl Instruments {
         fxcodes
     }
 
-    pub fn get_all_quanto_fxcode_und_pairs(&self) -> HashSet<(&String, &FxCode)> {
-        let mut fxcodes = HashSet::<(&String, &FxCode)>::new();
+    pub fn get_all_quanto_fxcode_und_pairs(&self) -> HashSet<(ID, &FxCode)> {
+        let mut fxcodes = HashSet::new();
         for instrument in self.instruments.iter() {
             let codes = instrument.get_quanto_fxcode_und_pair();
             for code in codes.iter() {
@@ -374,15 +376,15 @@ impl Instruments {
 
     pub fn instruments_with_underlying(
         &self,
-        und_code: &String,
+        und_id: ID,
         exclude_type: Option<Vec<&str>>,
     ) -> Vec<Rc<Instrument>> {
         let exclude_type = exclude_type.unwrap_or_default();
         let mut res = Vec::<Rc<Instrument>>::new();
         for instrument in self.instruments.iter() {
-            let names = instrument.get_underlying_codes();
+            let ids = instrument.get_underlying_ids();
             let type_name = instrument.get_type_name();
-            if names.contains(&und_code) && !exclude_type.contains(&type_name) {
+            if ids.contains(&und_id) && !exclude_type.contains(&type_name) {
                 res.push(instrument.clone());
             }
         }
@@ -412,7 +414,7 @@ impl Instruments {
 
     pub fn instruments_using_curve(
         &self,
-        curve_name: &String,
+        curve_id: ID,
         match_parameter: &MatchParameter,
         exclude_type: Option<Vec<&str>>,
     ) -> Result<Vec<Rc<Instrument>>> {
@@ -427,26 +429,26 @@ impl Instruments {
                 continue;
             }
             // 1)
-            if match_parameter.get_discount_curve_name(instrument)? == curve_name {
+            if match_parameter.get_discount_curve_id(instrument)? == curve_id {
                 res.push(instrument.clone());
             }
             // 2)
             if match_parameter
-                .get_collateral_curve_names(instrument)?
-                .contains(&curve_name)
+                .get_collateral_curve_ids(instrument)?
+                .contains(&curve_id)
             {
                 res.push(instrument.clone());
             }
             // 3) forward curve
-            if match_parameter.get_rate_index_curve_name(instrument)? == curve_name {
+            if match_parameter.get_rate_index_curve_id(instrument)? == curve_id {
                 res.push(instrument.clone());
             }
             // 4) crs curve
-            if match_parameter.get_crs_curve_name(instrument)? == curve_name {
+            if match_parameter.get_crs_curve_id(instrument)? == curve_id {
                 res.push(instrument.clone());
             }
             // 5) floating crs curve
-            if match_parameter.get_floating_crs_curve_name(instrument)? == curve_name {
+            if match_parameter.get_floating_crs_curve_id(instrument)? == curve_id {
                 res.push(instrument.clone());
             }
         }
@@ -454,21 +456,21 @@ impl Instruments {
     }
 
     // all curve names including discount, collateral, and rate index forward curves
-    pub fn get_all_curve_names<'a>(
+    pub fn get_all_curve_ids<'a>(
         &'a self,
         match_parameter: &'a MatchParameter,
-    ) -> Result<Vec<&String>> {
-        let mut res = Vec::<&String>::new();
-        let dummy = String::from("Dummy");
+    ) -> Result<Vec<ID>> {
+        let mut res = Vec::<ID>::new();
+        let dummy_id = ID::default();
         for instrument in self.instruments.iter() {
-            let discount_curve_name = match_parameter.get_discount_curve_name(instrument)?;
-            if !res.contains(&discount_curve_name) && discount_curve_name != &dummy {
-                res.push(discount_curve_name);
+            let discount_curve_id = match_parameter.get_discount_curve_id(instrument)?;
+            if !res.contains(&discount_curve_id) && discount_curve_id != dummy_id {
+                res.push(discount_curve_id);
             }
-            let collateral_curve_names = match_parameter.get_collateral_curve_names(instrument)?;
-            for name in collateral_curve_names.iter() {
-                if !res.contains(name) && *name != &dummy {
-                    res.push(name);
+            let collateral_curve_ids = match_parameter.get_collateral_curve_ids(instrument)?;
+            for id in collateral_curve_ids.iter() {
+                if !res.contains(id) && *id != &dummy_id {
+                    res.push(*id);
                 }
             }
             let rate_index_curve_name = match_parameter.get_rate_index_curve_name(instrument)?;

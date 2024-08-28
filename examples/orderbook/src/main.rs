@@ -9,7 +9,7 @@ use trading_engine::types::{
     id::Symbol,
     enums::OrderSide,
     id::isin_code::IsinCode,
-    id::InstId,
+    id::ID,
     venue::Venue,
 };
 use trading_engine::orderbook::half_book::HalfBook;
@@ -63,7 +63,7 @@ fn orderbook_example() {
 
     let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
     let venue = Venue::KRX;
-    let inst_id = InstId::new(Symbol::Isin(isin_code), venue);
+    let inst_id = ID::new(Symbol::Isin(isin_code), venue);
 
     let mut order_book = OrderBook::initialize_with_id(inst_id);
 

@@ -615,9 +615,7 @@ mod tests {
 
     #[test]
     fn test_crs() -> Result<()> {
-        let fixed_currency = Currency::KRW;
         let floating_currency = Currency::USD;
-        let unit_notional = 10_000_000.0;
         let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
         let evaluation_date = Rc::new(RefCell::new(EvaluationDate::new(issue_date.clone())));
         let effective_date = datetime!(2024-01-03 16:30:00 +09:00);
@@ -631,11 +629,17 @@ mod tests {
 
         let fixed_rate = 0.04;
         let fx_rate = 1_330.0;
+        let tenor = crate::Tenor::new(0, 3, 0);
+        let id = crate::ID::new(
+            crate::Symbol::Ticker(crate::Ticker::new(b"USD Libor 3M")?),
+            crate::Venue::KRX,
+        );
+
         let rate_index = RateIndex::new(
-            String::from("3M"),
+            id,
+            tenor,
             Currency::USD,
             String::from("USD Libor 3M"),
-            String::from("USD Libor 3M"), // this is just a mock code
         )?;
 
         let initial_fixed_side_endorsement = Some(fx_rate);
@@ -643,13 +647,13 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let instid = crate::InstId::new(
+        let ID = crate::ID::new(
             crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
             crate::Venue::KRX,
         );
 
         let inst_info = crate::InstInfo::new(
-            instid,
+            ID,
             "MockCRS".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,
@@ -755,7 +759,6 @@ mod tests {
     }
     #[test]
     fn test_fx_swap() -> Result<()> {
-        let fixed_currency = Currency::KRW;
         let floating_currency = Currency::USD;
         let _unit_notional = 10_000_000.0;
         let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
@@ -775,12 +778,12 @@ mod tests {
         let last_fixed_side_payment = Some(last_fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let instid = crate::InstId::new(
+        let ID = crate::ID::new(
             crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
             crate::Venue::KRX,
         );
         let inst_info = crate::InstInfo::new(
-            instid,
+            ID,
             "MockFxSwap".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,
@@ -862,7 +865,6 @@ mod tests {
 
     #[test]
     fn test_fx_spot() -> Result<()> {
-        let fixed_currency = Currency::KRW;
         let floating_currency = Currency::USD;
         let _unit_notional = 10_000_000.0;
         let issue_date = datetime!(2024-01-02 16:30:00 +09:00);
@@ -881,13 +883,13 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let instid = crate::InstId::new(
+        let ID = crate::ID::new(
             crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
             crate::Venue::KRX,
         );
 
         let inst_info = crate::InstInfo::new(
-            instid,
+            ID,
             "MockFxSpot".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,

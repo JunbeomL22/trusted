@@ -138,7 +138,7 @@ mod tests {
 
         // same datetime but with different offset
         let start_date = datetime!(2021-12-3 00:00:00 UTC); // Friday, 3rd December 2021
-        let end_date = datetime!(2021-12-3 00:00:00 -12:00); // Friday, 3rd December 2021
+        let end_date = datetime!(2021-12-2 00:00:00 +12:00); // Friday, 3rd December 2021
         let res = calendar.get_time_difference(&start_date, &end_date);
         assert!(
             (res - 0.5 / 365.0).abs() < 1e-5,
@@ -151,7 +151,7 @@ mod tests {
 
         // one year difference where the start_date is leap_year with different offset
         let start_date = datetime!(2020-01-01 00:00:00 UTC);
-        let end_date = datetime!(2021-01-01 00:00:00 -06:00);
+        let end_date = datetime!(2020-12-31 00:00:00 +18:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
         let expected: Time = 1.0 + 0.25 / 365.;
         assert!(
@@ -165,7 +165,7 @@ mod tests {
 
         // one year and one day difference where the start_date is leap_year with different offset
         let start_date = datetime!(2020-01-02 00:00:00 UTC);
-        let end_date = datetime!(2021-01-01 00:00:00 -06:00);
+        let end_date = datetime!(2020-12-31 00:00:00 +18:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
         let expected: Time = 1.0 + 0.25 / 365. - 1.0 / 366.; // leap_year
         assert!(
@@ -179,7 +179,7 @@ mod tests {
 
         // one year and one day difference where the start_date is leap_year with different offset
         let start_date = datetime!(2020-01-01 00:00:00 UTC);
-        let end_date = datetime!(2021-01-02 00:00:00 -06:00);
+        let end_date = datetime!(2021-01-01 00:00:00 +18:00);
         let res = calendar.get_time_difference(&start_date, &end_date);
         let expected: Time = 1.0 + 0.25 / 365. + 1.0 / 365.; // leap_year
         assert!(

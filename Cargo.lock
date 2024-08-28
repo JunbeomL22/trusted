@@ -2012,6 +2012,7 @@ dependencies = [
  "log",
  "ndarray 0.16.1",
  "num-traits",
+ "once_cell",
  "rand",
  "rand_distr",
  "rayon",

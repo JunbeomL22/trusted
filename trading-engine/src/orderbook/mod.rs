@@ -18,7 +18,7 @@ use crate::data::{
 };
 use crate::topics::LogTopic;
 use crate::types::{
-    id::InstId,
+    id::ID,
     base::{
         OrderId,
         BookPrice,
@@ -40,7 +40,7 @@ use anyhow::{
 pub struct OrderBook {
     pub asks: HalfBook,
     pub bids: HalfBook,
-    id: InstId,
+    id: ID,
     virtual_id_counter: VirtualOrderId,
     timestamp: TimeStamp,
     system_time: TimeStamp,
@@ -98,7 +98,7 @@ impl OrderBook {
         self.asks.check_validity_quantity() && self.bids.check_validity_quantity()
     }
 
-    fn check_id(&self, id: InstId) -> Result<()> {
+    fn check_id(&self, id: ID) -> Result<()> {
         if self.id == id {
             Ok(())
         } else {
@@ -176,7 +176,7 @@ impl OrderBook {
     }
 
     #[inline]
-    pub fn initialize_with_id(id: InstId) -> Self {
+    pub fn initialize_with_id(id: ID) -> Self {
         OrderBook {
             asks: HalfBook::initialize(OrderSide::Ask),
             bids: HalfBook::initialize(OrderSide::Bid),
@@ -410,7 +410,7 @@ mod tests {
     
         let isin_code = IsinCode::new(b"KRXXXXXXXXXX").unwrap();
         let venue = Venue::KRX;
-        let id = InstId::new(Symbol::Isin(isin_code), venue);
+        let id = ID::new(Symbol::Isin(isin_code), venue);
         let mut order_book = OrderBook::initialize_with_id(id);
     
         for order in bid_order_vec.clone().into_iter() {

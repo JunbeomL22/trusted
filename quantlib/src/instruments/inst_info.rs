@@ -4,14 +4,14 @@ use crate::utils::number_format::write_number_with_commas;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use crate::{
-    InstId,
+    ID,
     InstType,
     AccountingLevel,
 };
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstInfo {
-    pub id: InstId,
+    pub id: ID,
     pub name: String, // "" where not given
     pub inst_type: InstType,
     pub currency: Currency,
@@ -24,7 +24,7 @@ pub struct InstInfo {
 impl Default for InstInfo {
     fn default() -> InstInfo {
         InstInfo {
-            id: InstId::default(),
+            id: ID::default(),
             name: "".to_string(),
             inst_type: InstType::default(),
             currency: Currency::default(),
@@ -39,7 +39,7 @@ impl Default for InstInfo {
 impl std::fmt::Debug for InstInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        writeln!(f, "    instid: {:?},", self.id)?;
+        writeln!(f, "    ID: {:?},", self.id)?;
         writeln!(f, "    name: {:?},", self.name)?;
         writeln!(f, "    instrument_type: {:?},", self.inst_type)?;
         writeln!(f, "    currency: {:?},", self.currency)?;
@@ -64,7 +64,7 @@ impl std::fmt::Debug for InstInfo {
 
 impl InstInfo {
     pub fn new(
-        id: InstId,
+        id: ID,
         name: String,
         inst_type: InstType,
         currency: Currency,
@@ -129,7 +129,7 @@ mod tests {
         let venue = Venue::KIS;
 
         let instrument_info = InstInfo {
-            id: InstId::new(Symbol::Ticker(ticker), venue),
+            id: ID::new(Symbol::Ticker(ticker), venue),
             name: "Apple Inc.".to_string(),
             inst_type: InstType::Stock,
             currency: Currency::USD,

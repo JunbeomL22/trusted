@@ -85,7 +85,7 @@ mod tests {
     use crate::currency::Currency;
     use crate::{
         InstType,
-        InstId,
+        ID,
         Symbol,
         Ticker,
         Venue,
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn test_serde() {
         let inst_info = InstInfo::new(
-            InstId::new(Symbol::Ticker(Ticker::new(b"USD_KRW").unwrap()), Venue::KRX),
+            ID::new(Symbol::Ticker(Ticker::new(b"USD_KRW").unwrap()), Venue::KRX),
             String::from("USD_KRW"),
             InstType::FxFutures,
             Currency::KRW,

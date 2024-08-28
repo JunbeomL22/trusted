@@ -2,6 +2,7 @@ use crate::definitions::{Integer, Real};
 use crate::instrument::InstrumentTrait;
 use crate::instruments::bond::Bond;
 use crate::time::conventions::PaymentFrequency;
+use crate::ID;
 //
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -54,7 +55,7 @@ pub struct KTBF {
     pub settlement_date: Option<OffsetDateTime>,
     pub virtual_bond: KtbfVirtualBond,
     pub underlying_bonds: Vec<Bond>,
-    pub borrowing_curve_code: String,
+    pub borrowing_curve_id: ID,
 }
 
 impl KTBF {
@@ -64,7 +65,7 @@ impl KTBF {
         settlement_date: Option<OffsetDateTime>,
         virtual_bond: KtbfVirtualBond,
         underlying_bonds: Vec<Bond>,
-        borrowing_curve_code: String,
+        borrowing_curve_id: ID,
     ) -> Result<KTBF> {
         // all underlying_bonds should have the same pricing date as the maturity
         for bond in underlying_bonds.iter() {
@@ -81,13 +82,14 @@ impl KTBF {
             let maturity = bond.get_maturity().unwrap();
             if pricing_date.unwrap() != maturity {
                 let err = || anyhow!(
-                    "({}:{}) The pricing date of the underlying bond {} ({}) in ktbf ({:?}) is not the same as the ktbf maturity",
+                    "({}:{}) The pricing date of the underlying bond {} ({}) in ktbf ({:?}) \
+                    is not the same as the ktbf maturity",
                     file!(), line!(),
                     bond.get_name(),
                     bond.get_code(),
                     inst_info.id,
                 );
-                return Err(err()),
+                return Err(err());
             }
         }
 
@@ -96,7 +98,7 @@ impl KTBF {
             settlement_date,
             virtual_bond,
             underlying_bonds,
-            borrowing_curve_code,
+            borrowing_curve_id,
         })
     }
     pub fn get_underlying_bonds(&self) -> &Vec<Bond> {
@@ -121,8 +123,8 @@ impl InstrumentTrait for KTBF {
         Ok(&self.underlying_bonds)
     }
 
-    fn get_bond_futures_borrowing_curve_codes(&self) -> Vec<&String> {
-        vec![&self.borrowing_curve_code]
+    fn get_bond_futures_borrowing_curve_ids(&self) -> Vec<ID> {
+        vec![self.borrowing_curve_id]
     }
 }
 
@@ -131,17 +133,11 @@ mod tests {
     use super::*;
     use crate::{
         Currency,
-        InstId,
+        ID,
         InstType,
         IsinCode,
         Symbol,
         Venue,
-    };
-    
-    use crate::enums::{
-        IssuerType,
-        RankType,
-        CreditRating,
     };
     
     use anyhow::Result;
@@ -150,7 +146,7 @@ mod tests {
     #[test]
     fn test_serde() -> Result<()> {
         let isin_code = IsinCode::new(b"KR7005930003")?;
-        let inst_id = InstId::new(Symbol::Isin(isin_code), Venue::KRX);
+        let inst_id = ID::new(Symbol::Isin(isin_code), Venue::KRX);
         let inst_info = InstInfo {
             id: inst_id,
             inst_type: InstType::KTBF,
@@ -166,13 +162,17 @@ mod tests {
             5, 0.03, PaymentFrequency::SemiAnnually, 100.0
         );
         let bond = Bond::default();
-        let borrowing_curve_code = String::from("NIL");
+        let borrowing_curve_id = crate::ID::new(
+            crate::Symbol::Isin(crate::IsinCode::new(b"KR7005930003")?),
+            crate::Venue::KRX,
+        );
+        
         let ktbf = KTBF::new(
             inst_info,
             None,
             virtual_bond,
             vec![bond],
-            borrowing_curve_code,
+            borrowing_curve_id,
         )?;
         let serialized = serde_json::to_string(&ktbf)?;
         let deserialized: KTBF = serde_json::from_str(&serialized)?;

@@ -1,5 +1,5 @@
 use crate::Currency;
-use crate::InstId;
+use crate::ID;
 use serde::{Deserialize, Serialize};
 use rustc_hash::FxHashMap;
 
@@ -35,7 +35,7 @@ impl BaseInstInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct BaseInstMap {
-    pub map: FxHashMap<InstId, BaseInstInfo>,    
+    pub map: FxHashMap<ID, BaseInstInfo>,    
 }
 
 impl BaseInstMap {
@@ -45,11 +45,11 @@ impl BaseInstMap {
         }
     }
 
-    pub fn insert(&mut self, inst_id: InstId, inst_info: BaseInstInfo) {
+    pub fn insert(&mut self, inst_id: ID, inst_info: BaseInstInfo) {
         self.map.insert(inst_id, inst_info);
     }
 
-    pub fn get(&self, inst_id: InstId) -> Option<&BaseInstInfo> {
+    pub fn get(&self, inst_id: ID) -> Option<&BaseInstInfo> {
         self.map.get(&inst_id)
     }
 }

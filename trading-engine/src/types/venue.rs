@@ -19,6 +19,7 @@ impl Venue {
             Venue::KRX => "KRX",
             Venue::KIS => "KIS",
             Venue::SI => "SI",
+            Venue::OTC => "OTC",
         }
     }
 }
