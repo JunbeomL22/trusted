@@ -4,7 +4,7 @@ use core_affinity;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::thread;
 use time;
-use trading_engine::timer::{
+use trading_engine::utils::timer::{
     convert_unix_nano_to_date_and_time, get_thread_local_unix_nano, get_unix_nano,
 };
 
@@ -13,17 +13,11 @@ fn bench_nows(c: &mut Criterion) {
     quanta::Instant::now();
 
     let mut group = c.benchmark_group("Instant::now()");
-    group.bench_function("minstant", |b| {
-        b.iter(minstant::Instant::now);
-    });
 
     group.bench_function("systemtime", |b| {
         b.iter(std::time::Instant::now);
     });
 
-    group.bench_function("time crate", |b| {
-        b.iter(time::Instant::now);
-    });
 
     group.bench_function("quanta now", |b| {
         b.iter(quanta::Instant::now);
@@ -38,17 +32,9 @@ fn bench_nows(c: &mut Criterion) {
 }
 
 fn bench_unix_nanos(c: &mut Criterion) {
-    let anchor = minstant::Anchor::new();
     let mut group = c.benchmark_group("Instant::as_unix_nanos()");
     let _ = get_unix_nano();
     let _ = get_thread_local_unix_nano();
-
-    group.bench_function("minstant", |b| {
-        b.iter(|| {
-            let instant = minstant::Instant::now();
-            instant.as_unix_nanos(&anchor)
-        });
-    });
 
     group.bench_function("systemtime", |b| {
         b.iter(|| {
@@ -71,11 +57,8 @@ fn bench_unix_nanos(c: &mut Criterion) {
 }
 
 fn bench_datetime_conversion_from_unix_nano(c: &mut Criterion) {
-    let anchor = minstant::Anchor::new();
-    let instant = minstant::Instant::now();
-    let unix_nano = instant.as_unix_nanos(&anchor);
     let local_offset = time::UtcOffset::from_hms(9, 0, 0).expect("failed to create UtcOffset");
-
+    let unix_nano = get_unix_nano();
     let mut group = c.benchmark_group("from nanos to datetime");
     group.bench_function("chrono::DateTime Local", |b| {
         b.iter(|| DateTime::<Local>::from(Local.timestamp_nanos(unix_nano as i64)));

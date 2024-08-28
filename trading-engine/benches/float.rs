@@ -1,7 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use decimal::Decimal;
 use fixed::types::I32F32;
-use rust_decimal::prelude::*;
-use rust_decimal::Decimal;
 use ryu;
 
 fn dot_product_fixed(x_vec: Vec<I32F32>, y_vec: Vec<I32F32>) -> I32F32 {
