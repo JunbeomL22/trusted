@@ -134,6 +134,16 @@ mod tests {
         calendars::southkorea::{SouthKorea, SouthKoreaType},
         jointcalendar::JointCalendar,
     };
+    use crate::{
+        ID,
+        IsinCode,
+        Ticker,
+        Venue,
+        InstType,
+        InstInfo,
+    };
+    use crate::instruments::bond::BondInfo;
+    
     //use crate::enums::RateIndexCode;
     //
     use anyhow::Result;
@@ -180,20 +190,43 @@ mod tests {
 
         let calendar = JointCalendar::new(vec![sk])?;
 
-        let bond = Bond::new_from_conventions(
-            IssuerType::Government,
-            CreditRating::None,
-            issuer_name.to_string(),
-            RankType::Senior,
+        let bondid = ID::new(
+            crate::Symbol::Isin(IsinCode::new(b"KR1234567890").unwrap()),
+            Venue::KRX,
+        );
+
+        let issuer_id = ID::new(
+            crate::Symbol::Ticker(Ticker::from("Korea Gov")),
+            Venue::Undefined,
+        );
+
+        let inst_info = InstInfo::new(
+            bondid,
+            bond_name.to_string(),
+            InstType::Bond,
             Currency::KRW,
-            //
             10_000.0,
+            Some(issuedate.clone()),
+            Some(maturity.clone()),
+            crate::AccountingLevel::L1,
+        );
+
+        let bond_info = BondInfo {
+            issuer_type: IssuerType::Government,
+            credit_rating: CreditRating::None,
+            issuer_id: issuer_id,
+            rank: RankType::Undefined,
+        };
+
+        let bond = Bond::new_from_conventions(
+            inst_info,
+            bond_info,
+            //
             false,
             //
-            issuedate.clone(),
-            issuedate.clone(),
             None,
-            maturity,
+            None,
+            None,
             //
             Some(0.03),
             None,
@@ -209,8 +242,6 @@ mod tests {
             //
             0,
             0,
-            bond_name.to_string(),
-            bond_code.to_string(),
         )?;
 
         let cashflows = bond.get_cashflows(&bond_pricing_date, None, None)?;
@@ -322,6 +353,19 @@ mod tests {
         let bond_code = "KR1234567890";
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         let calendar = JointCalendar::new(vec![sk])?;
+
+        let cd = RateIndex::new(
+            index_id,
+            index_tenor,
+            Currency::KRW,
+            "CD 91D".to_string(),
+        )?;
+
+        let swap_id = ID::new(
+            crate::Symbol::Ticker(Ticker::from("KRWIRS")),
+            crate::Venue::KRX,
+        );
+        
         let rate_index = RateIndex::new(
             String::from("91D"),
             Currency::KRW,

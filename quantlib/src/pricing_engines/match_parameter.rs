@@ -292,7 +292,7 @@ impl MatchParameter {
                 match rate_index {
                     None => Ok(ID::default()),
                     Some(rate_index) => {
-                        let res = self.rate_index_forward_curve_map.get(rate_index.get_code())
+                        let res = self.rate_index_forward_curve_map.get(&rate_index.get_id())
                         .ok_or_else(|| anyhow!(
                             "Rate index forward curve is not found for {:?}",
                             rate_index.get_id()
@@ -326,30 +326,45 @@ mod tests {
     use crate::time::calendars::southkorea::{SouthKorea, SouthKoreaType};
     use crate::time::conventions::{BusinessDayConvention, DayCountConvention, PaymentFrequency};
     use crate::time::jointcalendar::JointCalendar;
+    use crate::InstType;
+    use crate::Ticker;
     use anyhow::Result;
     use std::collections::HashMap;
     use time::macros::datetime;
 
     #[test]
     fn test_match_parameter() -> Result<()> {
-        let mut collateral_curve_map: HashMap<String, String> = HashMap::new();
-        let borrowing_curve_map: HashMap<String, String> = HashMap::new();
-        let bond_discount_curve_map: HashMap<(String, IssuerType, CreditRating, Currency), String> =
-            HashMap::new();
-        let mut rate_index_forward_curve_map: HashMap<String, String> = HashMap::new();
+        let mut collateral_curve_map: FxHashMap<ID, ID> = FxHashMap::default();
+        let borrowing_curve_map: FxHashMap<ID, ID> = FxHashMap::default();
+        let bond_discount_curve_map: FxHashMap<(ID, IssuerType, CreditRating, Currency), ID> = FxHashMap::default();
+        let mut rate_index_forward_curve_map: FxHashMap<ID, ID> = FxHashMap::default();
 
+        let stockid = ID::new(
+            crate::Symbol::Ticker(Ticker::from("AAPL")),
+            crate::Venue::KIS,
+        );
+
+        let inst_id = ID::new(crate::Symbol::Ticker(Ticker::from("APPL_Fut")), crate::Venue::KoreaInvSec);
+
+        let maturity_date = datetime!(2021-12-31 00:00:00 +00:00);
+
+        let inst_info = crate::InstInfo {
+            id: inst_id,
+            name: "AAPL_Fut".to_string(),
+            inst_type: InstType::Futures,
+            currency: Currency::USD,
+            unit_notional: 50.0,
+            maturity: Some(maturity_date.clone()),
+            issue_date: Some(datetime!(2021-01-01 00:00:00 +00:00)),
+            accounting_level: crate::AccountingLevel::L1,
+        };
+        
         let stock_futures = Futures::new(
+            inst_info,
             100.0,
-            datetime!(2021-01-01 00:00:00 +00:00),
-            datetime!(2021-12-31 00:00:00 +00:00),
-            datetime!(2021-12-31 00:00:00 +00:00),
-            datetime!(2021-12-31 00:00:00 +00:00),
-            100.0,
+            Some(maturity_date.clone()),
             Currency::USD,
-            Currency::USD,
-            "AAPL".to_string(),
-            "AAPL".to_string(),
-            "AAPL".to_string(),
+            stockid,
         );
 
         // let's make SouthKorea - Setlement calendar
@@ -359,18 +374,37 @@ mod tests {
         let calendar = Calendar::SouthKorea(sk);
         let joint_calendar = JointCalendar::new(vec![calendar])?;
 
+        let index_id = ID::new(crate::Symbol::Ticker(Ticker::from("CD 91D")), crate::Venue::KAP);
+        let index_tenor = crate::Tenor::new_from_string("3M")?;
         // make a CD 3M RateIndex
         let cd = RateIndex::new(
-            String::from("91D"),
+            index_id,
+            index_tenor,
             Currency::KRW,
-            "CD 91D".to_string(),
             "CD 91D".to_string(),
         )?;
 
+        let swap_id = ID::new(
+            crate::Symbol::Ticker(Ticker::from("KRWIRS")),
+            crate::Venue::KRX,
+        );
+
         let issue_date = datetime!(2021-01-01 00:00:00 +00:00);
         let maturity_date = datetime!(2021-12-31 00:00:00 +00:00);
+
+        let swap_info = crate::InstInfo {
+            id: swap_id,
+            name: "KRWIRS".to_string(),
+            inst_type: InstType::PlainSwap,
+            currency: Currency::KRW,
+            unit_notional: 10_000_000_000.0,
+            maturity: Some(maturity_date.clone()),
+            issue_date: Some(issue_date.clone()),
+            accounting_level: crate::AccountingLevel::L2,
+        };
+
         let irs = PlainSwap::new_from_conventions(
-            Currency::KRW,
+            swap_info,
             Currency::KRW,
             //
             None,
@@ -378,10 +412,7 @@ mod tests {
             None,
             None,
             //
-            10_000_000_000.0,
             issue_date.clone(),
-            issue_date.clone(),
-            maturity_date.clone(),
             //
             Some(0.02),
             Some(cd.clone()),
@@ -395,23 +426,31 @@ mod tests {
             PaymentFrequency::Quarterly,
             PaymentFrequency::Quarterly,
             //
-            1,
             0,
-            //
-            joint_calendar,
-            "IRS".to_string(),
-            "IRS".to_string(),
+            0,
+            joint_calendar.clone(),
         )?;
 
-        collateral_curve_map.insert("AAPL".to_string(), String::from("USDGOV"));
-        rate_index_forward_curve_map.insert("CD 91D".to_string(), "KRWIRS".to_string());
+        let usdgov_curve_id = ID::new(
+            crate::Symbol::Ticker(Ticker::from("USDGOV")),
+            crate::Venue::KAP,
+        );
 
-        let funding_cost_map: HashMap<Currency, String> = HashMap::new();
+        let krwirs_curve_id = ID::new(
+            crate::Symbol::Ticker(Ticker::from("KRWIRS")),
+            crate::Venue::KAP,
+        );
+
+        collateral_curve_map.insert(stockid, usdgov_curve_id);
+        rate_index_forward_curve_map.insert(index_id, krwirs_curve_id);
+
+        let funding_cost_map: FxHashMap<Currency, ID> = FxHashMap::default();
+
         let match_parameter = MatchParameter::new(
             collateral_curve_map,
             borrowing_curve_map,
             bond_discount_curve_map,
-            HashMap::new(),
+            FxHashMap::default(),
             rate_index_forward_curve_map,
             funding_cost_map,
         );
@@ -420,36 +459,30 @@ mod tests {
         let irs_inst = Instrument::PlainSwap(irs);
 
         assert_eq!(
-            match_parameter
-                .get_collateral_curve_id(&stock_futures_inst, &String::from("AAPL"))?
-                .clone(),
-            String::from("USDGOV"),
+            match_parameter.get_collateral_curve_id(&stock_futures_inst, stockid)?,
+            usdgov_curve_id,
             "EquityFutures has underlying code AAPL but it returns a curve name: {}",
-            match_parameter
-                .get_collateral_curve_id(&stock_futures_inst, &String::from("AAPL"))?
+            match_parameter.get_collateral_curve_id(&stock_futures_inst, stockid)?
         );
 
         assert_eq!(
-            match_parameter
-                .get_discount_curve_id(&stock_futures_inst)?
-                .clone(),
-            String::from("Dummy"),
+            match_parameter.get_discount_curve_id(&stock_futures_inst)?,
+            ID::default(),
             "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_discount_curve_id(&stock_futures_inst)?
         );
 
         assert_eq!(
             match_parameter
-                .get_rate_index_curve_id(&stock_futures_inst)?
-                .clone(),
-            String::from("Dummy"),
+                .get_rate_index_curve_id(&stock_futures_inst)?,
+            ID::default(),
             "EquityFutures does not need to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_id(&stock_futures_inst)?
         );
 
         assert_eq!(
-            match_parameter.get_discount_curve_id(&irs_inst)?.clone(),
-            String::from("KRWIRS"),
+            match_parameter.get_discount_curve_id(&irs_inst)?,
+            krwirs_curve_id,
             "IRS needs to be discounted but it returns a curve name: {}",
             match_parameter.get_discount_curve_id(&irs_inst)?
         );
@@ -458,7 +491,7 @@ mod tests {
             match_parameter
                 .get_rate_index_curve_id(&irs_inst)?
                 .clone(),
-            String::from("KRWIRS"),
+            krwirs_curve_id,
             "IRS needs to be discounted but it returns a curve name: {}",
             match_parameter.get_rate_index_curve_id(&irs_inst)?
         );

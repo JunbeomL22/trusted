@@ -1003,6 +1003,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "flashlog"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e848dc1657a391fdd5b9d990cafea94f3f91174392e80b1cc0ebba7e0b044690"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "chrono-tz",
+ "core_affinity 0.8.1",
+ "criterion",
+ "crossbeam-channel",
+ "crossbeam-utils",
+ "ftlog",
+ "lazy_static",
+ "log",
+ "once_cell",
+ "quanta",
+ "serde",
+ "serde_json",
+ "time",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2141,6 +2164,7 @@ dependencies = [
  "chrono",
  "criterion",
  "enum_dispatch",
+ "flashlog",
  "korean-lunar-calendar",
  "lazy_static",
  "log",
@@ -2799,6 +2823,7 @@ dependencies = [
  "crossbeam-utils",
  "enum_dispatch",
  "fixed",
+ "flashlog",
  "flexstr",
  "itoa",
  "joinery",

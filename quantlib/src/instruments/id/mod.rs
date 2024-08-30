@@ -24,8 +24,12 @@ use once_cell::sync::Lazy;
 pub enum Venue {
     #[default]
     KRX,
-    KIS, 
+    KoreaInvSec,
     SI,
+    KAP,
+    KIS, 
+    NICE,
+    FNP,
     Undefined,
 }
 
@@ -74,6 +78,18 @@ impl std::fmt::Debug for ID {
             .field("symbol", &self.id_ptr.symbol)
             .field("venue", &self.id_ptr.venue)
             .finish()
+    }
+}
+
+impl std::fmt::Display for ID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.id_ptr.symbol {
+            Symbol::Isin(isin) => writeln!(f, "{:?}", isin),
+            Symbol::Ticker(ticker) => writeln!(f, "{:?}", ticker),
+        }?;
+        writeln!(f, "{:?}", self.id_ptr.venue)?;
+
+        Ok(())
     }
 }
 
