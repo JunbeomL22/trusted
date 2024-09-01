@@ -1,4 +1,3 @@
-use crate::ID;
 use crate::definitions::Real;
 use crate::enums::{CreditRating, IssuerType, RankType};
 use crate::instrument::InstrumentTrait;
@@ -11,6 +10,7 @@ use crate::time::{
     jointcalendar::JointCalendar,
 };
 use crate::InstInfo;
+use static_id::StaticId;
 //
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ use time::OffsetDateTime;
 pub struct BondInfo {
     pub issuer_type: IssuerType,
     pub credit_rating: CreditRating,
-    pub issuer_id: ID,
+    pub issuer_id: StaticId,
     pub rank: RankType,
 }
 /// None effective_date means issue date
@@ -60,7 +60,7 @@ impl Default for Bond {
             bond_info: BondInfo {
                 issuer_type: IssuerType::Undefined,
                 credit_rating: CreditRating::Undefined,
-                issuer_id: ID::default(),
+                issuer_id: StaticId::default(),
                 rank: RankType::Undefined,
             },
             //
@@ -335,7 +335,7 @@ impl InstrumentTrait for Bond {
         Ok(self.bond_info.issuer_type)
     }
 
-    fn get_issuer_id(&self) -> Result<ID> {
+    fn get_issuer_id(&self) -> Result<StaticId> {
         Ok(self.bond_info.issuer_id)
     }
 

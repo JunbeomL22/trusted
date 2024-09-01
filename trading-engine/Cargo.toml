@@ -84,6 +84,6 @@ thiserror = "1.0"
 flexstr = {version = "0.9", features = ["fast_format", "fp_convert", "int_convert", "serde"]}
 smallvec = "1.13"
 lazy_static = "1.5"
-rust_decimal = "1.36"
+rust_decimal = "1.10"
 fixed = "1.28"
 flashlog = "0.1"

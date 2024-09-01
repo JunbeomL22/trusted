@@ -4,14 +4,14 @@ use crate::utils::number_format::write_number_with_commas;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use crate::{
-    ID,
     InstType,
     AccountingLevel,
 };
+use static_id::StaticId;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct InstInfo {
-    pub id: ID,
+    pub id: StaticId,
     pub name: String, // "" where not given
     pub inst_type: InstType,
     pub currency: Currency,
@@ -24,7 +24,7 @@ pub struct InstInfo {
 impl Default for InstInfo {
     fn default() -> InstInfo {
         InstInfo {
-            id: ID::default(),
+            id: StaticId::default(),
             name: "".to_string(),
             inst_type: InstType::default(),
             currency: Currency::default(),
@@ -64,7 +64,7 @@ impl std::fmt::Debug for InstInfo {
 
 impl InstInfo {
     pub fn new(
-        id: ID,
+        id: StaticId,
         name: String,
         inst_type: InstType,
         currency: Currency,
@@ -97,7 +97,7 @@ impl InstInfo {
 
     #[inline]
     pub fn symbol_str(&self) -> &str {
-        self.id.symbol_str()
+        self.id.get_id().code.as_str()
     }
 
     pub fn get_issue_date(&self) -> Option<&OffsetDateTime> {
@@ -113,23 +113,15 @@ impl InstInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        Ticker,
-        Venue,
-        Symbol,
-    };
-    use serde_json;
-
     use crate::currency::Currency;
+    //
+    use serde_json;
     use anyhow::Result;
 
     #[test]
     fn test_instrument_info_serialization() -> Result<()> {
-        let ticker = Ticker::new(b"AAPL").unwrap();
-        let venue = Venue::KIS;
-
         let instrument_info = InstInfo {
-            id: ID::new(Symbol::Ticker(ticker), venue),
+            id: StaticId::from_str("AAPL", "KIS"),
             name: "Apple Inc.".to_string(),
             inst_type: InstType::Stock,
             currency: Currency::USD,

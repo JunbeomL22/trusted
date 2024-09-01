@@ -1,4 +1,4 @@
-use crate::ID;
+use static_id::StaticId;
 use crate::definitions::Real;
 use crate::enums::StockRankType;
 use crate::instrument::InstrumentTrait;
@@ -8,14 +8,14 @@ use crate::InstInfo;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Stock {
     pub inst_info: InstInfo,
-    pub underlying_ids: Vec<ID>,
+    pub underlying_ids: Vec<StaticId>,
     pub rank_type: StockRankType,
 }
 
 impl Stock {
     pub fn new(
         inst_info: InstInfo,
-        underlying_id: ID,
+        underlying_id: StaticId,
         rank_type: Option<StockRankType>,
     ) -> Stock {
         let rank_type = rank_type.unwrap_or(StockRankType::Undefined);
@@ -41,7 +41,7 @@ impl InstrumentTrait for Stock {
         1.0
     }
 
-    fn get_underlying_ids(&self) -> Vec<ID> {
+    fn get_underlying_ids(&self) -> Vec<StaticId> {
         vec![self.underlying_ids[0]]
     }
 }
@@ -51,17 +51,13 @@ mod tests {
     use super::*;
     use crate::currency::Currency;
     use crate::InstInfo;
-    use crate::enums::StockRankType;
 
     #[test]
     fn test_stock() {
-        let ID = crate::ID::new(
-            crate::Symbol::Isin(crate::IsinCode::new(b"stock1").unwrap()),
-            crate::Venue::KRX,
-        );
+        let id = StaticId::from_str("stock1", "KRX");
 
         let inst_info = InstInfo::new(
-            ID,
+            id,
             "stock1".to_string(),
             crate::InstType::Stock,
             Currency::KRW,
@@ -71,7 +67,7 @@ mod tests {
             crate::AccountingLevel::L1,
         );
 
-        let id = ID::default();
+        let id = StaticId::default();
         
         let stock = Stock::new(inst_info, id, None);
         

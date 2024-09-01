@@ -2,7 +2,7 @@ use crate::definitions::{Integer, Real};
 use crate::instrument::InstrumentTrait;
 use crate::instruments::bond::Bond;
 use crate::time::conventions::PaymentFrequency;
-use crate::ID;
+use static_id::StaticId;
 //
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -55,7 +55,7 @@ pub struct KTBF {
     pub settlement_date: Option<OffsetDateTime>,
     pub virtual_bond: KtbfVirtualBond,
     pub underlying_bonds: Vec<Bond>,
-    pub borrowing_curve_id: ID,
+    pub borrowing_curve_id: StaticId,
 }
 
 impl KTBF {
@@ -65,7 +65,7 @@ impl KTBF {
         settlement_date: Option<OffsetDateTime>,
         virtual_bond: KtbfVirtualBond,
         underlying_bonds: Vec<Bond>,
-        borrowing_curve_id: ID,
+        borrowing_curve_id: StaticId,
     ) -> Result<KTBF> {
         // all underlying_bonds should have the same pricing date as the maturity
         for bond in underlying_bonds.iter() {
@@ -123,7 +123,7 @@ impl InstrumentTrait for KTBF {
         Ok(&self.underlying_bonds)
     }
 
-    fn get_bond_futures_borrowing_curve_ids(&self) -> Vec<ID> {
+    fn get_bond_futures_borrowing_curve_ids(&self) -> Vec<StaticId> {
         vec![self.borrowing_curve_id]
     }
 }
@@ -133,11 +133,7 @@ mod tests {
     use super::*;
     use crate::{
         Currency,
-        ID,
         InstType,
-        IsinCode,
-        Symbol,
-        Venue,
     };
     
     use anyhow::Result;
@@ -145,8 +141,7 @@ mod tests {
 
     #[test]
     fn test_serde() -> Result<()> {
-        let isin_code = IsinCode::new(b"KR7005930003")?;
-        let inst_id = ID::new(Symbol::Isin(isin_code), Venue::KRX);
+        let inst_id = StaticId::from_str("KR7005930003", "KRX");
         let inst_info = InstInfo {
             id: inst_id,
             inst_type: InstType::KTBF,
@@ -162,10 +157,7 @@ mod tests {
             5, 0.03, PaymentFrequency::SemiAnnually, 100.0
         );
         let bond = Bond::default();
-        let borrowing_curve_id = crate::ID::new(
-            crate::Symbol::Isin(crate::IsinCode::new(b"KR7005930003")?),
-            crate::Venue::KRX,
-        );
+        let borrowing_curve_id = StaticId::from_str("KR7005930003", "KRX");
         
         let ktbf = KTBF::new(
             inst_info,

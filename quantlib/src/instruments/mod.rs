@@ -9,7 +9,6 @@ pub mod plain_swap;
 pub mod schedule;
 pub mod stock;
 pub mod vanilla_option;
-pub mod id;
 
 use serde::{Deserialize, Serialize};
 

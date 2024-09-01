@@ -630,10 +630,7 @@ mod tests {
         let fixed_rate = 0.04;
         let fx_rate = 1_330.0;
         let tenor = crate::Tenor::new(0, 3, 0);
-        let id = crate::ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"USD Libor 3M")?),
-            crate::Venue::KRX,
-        );
+        let id = static_id::StaticId::from_str("USD Libor 3M", "KRX");
 
         let rate_index = RateIndex::new(
             id,
@@ -647,13 +644,11 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let ID = crate::ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
-            crate::Venue::KRX,
-        );
+        let id = static_id::StaticId::from_str("PlainSwap:XXX", "KRX");
+        
 
         let inst_info = crate::InstInfo::new(
-            ID,
+            id,
             "MockCRS".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,
@@ -778,12 +773,9 @@ mod tests {
         let last_fixed_side_payment = Some(last_fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let ID = crate::ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
-            crate::Venue::KRX,
-        );
+        let id = static_id::StaticId::from_str("PlainSwap:XXX", "KRX");
         let inst_info = crate::InstInfo::new(
-            ID,
+            id,
             "MockFxSwap".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,
@@ -883,13 +875,10 @@ mod tests {
         let last_fixed_side_payment = Some(fx_rate);
         let last_floating_side_endorsement = Some(1.0);
 
-        let ID = crate::ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"PlainSwap:XXX")?),
-            crate::Venue::KRX,
-        );
+        let id = static_id::StaticId::from_str("PlainSwap:XXX", "KRX");
 
         let inst_info = crate::InstInfo::new(
-            ID,
+            id,
             "MockFxSpot".to_string(),
             crate::InstType::PlainSwap,
             Currency::KRW,

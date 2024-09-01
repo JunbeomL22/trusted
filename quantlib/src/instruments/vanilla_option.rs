@@ -2,21 +2,19 @@ use crate::currency::{Currency, FxCode};
 use crate::definitions::Real;
 use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
 use crate::instrument::InstrumentTrait;
-use crate::{
-    InstInfo,
-    ID,
-};
+use crate::InstInfo;
 //
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use static_id::StaticId;
 //
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VanillaOption {
     pub inst_info: InstInfo,
     pub strike: Real,
     pub settlement_date: OffsetDateTime,
-    pub underlying_ids: Vec<ID>,
+    pub underlying_ids: Vec<StaticId>,
     pub underlying_currency: Currency,
     pub quanto_fx_code: Option<FxCode>,
     pub option_type: OptionType,
@@ -48,7 +46,7 @@ impl VanillaOption {
         inst_info: InstInfo,
         strike: Real,
         settlement_date: Option<OffsetDateTime>,
-        underlying_id: ID,
+        underlying_id: StaticId,
         underlying_currency: Currency,
         option_type: OptionType,
         exercise_type: OptionExerciseType,
@@ -100,7 +98,7 @@ impl InstrumentTrait for VanillaOption {
         Ok(self.underlying_currency)
     }
 
-    fn get_underlying_ids(&self) -> Vec<ID> {
+    fn get_underlying_ids(&self) -> Vec<StaticId> {
         vec![self.underlying_ids[0]]
     }
 
@@ -116,14 +114,14 @@ impl InstrumentTrait for VanillaOption {
         Ok(self.strike)
     }
 
-    fn get_quanto_fxcode_und_pair(&self) -> Vec<(ID, &FxCode)> {
+    fn get_quanto_fxcode_und_pair(&self) -> Vec<(StaticId, &FxCode)> {
         match &self.quanto_fx_code {
             Some(fx_code) => vec![(self.underlying_ids[0], fx_code)],
             None => vec![],
         }
     }
 
-    fn get_underlying_ids_requiring_volatility(&self) -> Vec<ID> {
+    fn get_underlying_ids_requiring_volatility(&self) -> Vec<StaticId> {
         vec![self.underlying_ids[0]]
     }
 }
@@ -135,15 +133,13 @@ mod tests {
     use crate::currency::Currency;
     use crate::enums::{OptionDailySettlementType, OptionExerciseType, OptionType};
     use crate::InstInfo;
-    use crate::ID;
+    //
     use time::macros::datetime;
 
     #[test]
     fn test_vanilla_option_new() {
-        let id = ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"AAPL").unwrap()), 
-            crate::Venue::KIS,
-        );
+        let id = StaticId::from_str("AAPL", "KIS");
+        
         let inst_info = InstInfo::new(
             id, 
             "AAPL".to_string(),
@@ -155,10 +151,7 @@ mod tests {
             crate::AccountingLevel::L1,
         );
 
-        let und_id = ID::new(
-            crate::Symbol::Ticker(crate::Ticker::new(b"AAPL").unwrap()),
-            crate::Venue::KIS,
-        );
+        let und_id = StaticId::from_str("AAPL", "KIS");
 
         let option = VanillaOption::new(
             inst_info,

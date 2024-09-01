@@ -135,17 +135,12 @@ mod tests {
         jointcalendar::JointCalendar,
     };
     use crate::{
-        ID,
-        IsinCode,
-        Ticker,
-        Venue,
         InstType,
         InstInfo,
     };
     use crate::instruments::bond::BondInfo;
-    
-    //use crate::enums::RateIndexCode;
     //
+    use static_id::StaticId;
     use anyhow::Result;
     use ndarray::array;
     use std::{cell::RefCell, rc::Rc};
@@ -190,15 +185,8 @@ mod tests {
 
         let calendar = JointCalendar::new(vec![sk])?;
 
-        let bondid = ID::new(
-            crate::Symbol::Isin(IsinCode::new(b"KR1234567890").unwrap()),
-            Venue::KRX,
-        );
-
-        let issuer_id = ID::new(
-            crate::Symbol::Ticker(Ticker::from("Korea Gov")),
-            Venue::Undefined,
-        );
+        let bondid = StaticId::from_str("KR1234567890", "KRX");
+        let issuer_id = StaticId::from_str("Korea Gov", "KRX");
 
         let inst_info = InstInfo::new(
             bondid,
@@ -354,6 +342,8 @@ mod tests {
         let sk = Calendar::SouthKorea(SouthKorea::new(SouthKoreaType::Settlement));
         let calendar = JointCalendar::new(vec![sk])?;
 
+        let index_id = StaticId::from_str("CD91D", "KRX");
+        let index_tenor = crate::Tenor::new_from_string("98D")?;
         let cd = RateIndex::new(
             index_id,
             index_tenor,
@@ -361,35 +351,38 @@ mod tests {
             "CD 91D".to_string(),
         )?;
 
-        let swap_id = ID::new(
-            crate::Symbol::Ticker(Ticker::from("KRWIRS")),
-            crate::Venue::KRX,
-        );
-        
-        let rate_index = RateIndex::new(
-            String::from("91D"),
-            Currency::KRW,
-            String::from("CD 91D"),
-            String::from("CD 91D"),
-        )?;
+        let bond_id = StaticId::from_str(bond_code, "KRX");
 
-        let bond = Bond::new_from_conventions(
-            IssuerType::Government,
-            CreditRating::None,
-            issuer_name.to_string(),
-            RankType::Senior,
+        let inst_info = InstInfo::new(
+            bond_id,
+            bond_name.to_string(),
+            InstType::Bond,
             Currency::KRW,
-            //
             10_000.0,
+            Some(issuedate.clone()),
+            Some(maturity.clone()),
+            crate::AccountingLevel::L1,
+        );
+
+        let bond_info = BondInfo {
+            issuer_type: IssuerType::Government,
+            credit_rating: CreditRating::None,
+            issuer_id: StaticId::from_str("Korea Gov", "KRX"),
+            rank: RankType::Undefined,
+        };
+        
+        let bond = Bond::new_from_conventions(
+            inst_info,
+            bond_info,
+            //
             false,
             //
-            issuedate.clone(),
-            effective_date,
+            Some(effective_date.clone()),
+            Some(evaluation_date.borrow().get_date_clone()),
             None,
-            maturity,
             //
-            None,
             Some(0.00),
+            Some(0.0),
             Some(rate_index),
             None, //Some(String::from("1D")),
             //
@@ -402,8 +395,6 @@ mod tests {
             //
             1,
             0,
-            bond_name.to_string(),
-            bond_code.to_string(),
         )?;
 
         let cashflows = bond.get_cashflows(&dt, Some(forward_curve.clone()), None)?;

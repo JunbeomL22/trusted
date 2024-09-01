@@ -2,7 +2,7 @@ use crate::currency::Currency;
 use crate::definitions::Real;
 use crate::instrument::InstrumentTrait;
 use crate::InstInfo;
-use crate::ID;
+use static_id::StaticId;
 //
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ pub struct Futures {
     pub average_trade_price: Real,
     pub settlement_date: OffsetDateTime,
     pub underlying_currency: Currency,
-    pub underlying_ids: Vec<ID>,
+    pub underlying_ids: Vec<StaticId>,
 }
 
 impl Default for Futures {
@@ -24,7 +24,7 @@ impl Default for Futures {
             average_trade_price: 0.0,
             settlement_date: OffsetDateTime::now_utc(),
             underlying_currency: Currency::KRW,
-            underlying_ids: vec![ID::default()],
+            underlying_ids: vec![StaticId::default()],
         }
     }
 }
@@ -36,7 +36,7 @@ impl Futures {
         average_trade_price: Real,
         settlement_date: Option<OffsetDateTime>,
         underlying_currency: Currency,
-        underlying_id: ID,
+        underlying_id: StaticId,
     ) -> Futures {
         let settlement_date = match settlement_date {
             Some(date) => date,
@@ -66,7 +66,7 @@ impl InstrumentTrait for Futures {
         "Futures"
     }
 
-    fn get_underlying_ids(&self) -> Vec<ID> {
+    fn get_underlying_ids(&self) -> Vec<StaticId> {
         vec![self.underlying_ids[0]]
     }
 
@@ -81,17 +81,14 @@ mod tests {
     use super::*;
     use time::macros::datetime;
     use crate::{
-        ID,
         InstType,
-        IsinCode,
-        Symbol,
-        Venue,
         AccountingLevel,
     };
+    use static_id::StaticId;
     #[test]
     fn test_stock_futures_serialization() {
-        let isin_code = IsinCode::new(b"KR7005930003").unwrap();
-        let inst_id = ID::new(Symbol::Isin(isin_code), Venue::KRX);
+        let inst_id = StaticId::from_str("KR7005930003", "KRX");
+        
         let inst_info = InstInfo {
             id: inst_id,
             inst_type: InstType::Futures,
@@ -103,9 +100,8 @@ mod tests {
             unit_notional: 100.0,
         };
 
-        let und_id = ID::new(
-            Symbol::Ticker(crate::Ticker::new(b"KOSPI2").unwrap()), Venue::KRX
-        );
+        let und_id = StaticId::from_str("KOSPI2", "KRX");
+        
         let stock_futures = Futures {
             inst_info: inst_info,
             average_trade_price: 100.0,

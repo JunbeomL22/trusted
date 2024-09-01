@@ -1,6 +1,6 @@
 use crate::currency::Currency;
 use crate::definitions::{Integer, Real};
-use crate::instruments::inst_info::InstrumentInfo;
+use crate::instruments::inst_info::InstInfo;
 use crate::pricing_engines::npv_result::NpvResult;
 use crate::utils::number_format::{formatted_number, write_number_with_commas};
 use anyhow::{anyhow, Result};
@@ -8,6 +8,7 @@ use ndarray::Array2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use time::OffsetDateTime;
+use static_id::StaticId;
 
 /// CalculationResult is a struct that holds the result of the calculation.
 /// It is used to store the result of the calculation of the pricing engine.
@@ -23,21 +24,21 @@ use time::OffsetDateTime;
 /// fx_exposure: Option<Real>:
 #[derive(Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct CalculationResult {
-    instrument_info: Option<InstrumentInfo>,
+    instrument_info: Option<InstInfo>,
     evaluation_date: Option<OffsetDateTime>,
     npv_result: Option<NpvResult>,
     value: Option<Real>,
     fx_exposure: Option<HashMap<Currency, Real>>,
-    delta: Option<HashMap<String, Real>>,
-    gamma: Option<HashMap<String, Real>>,
-    vega: Option<HashMap<String, Real>>,
-    vega_strucure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on vega_tenor in CalculationConfiguration
-    vega_matrix: Option<HashMap<String, Array2<Real>>>, // underlying code -> Vec<Vec<Real>> vega_matrix
+    delta: Option<HashMap<StaticId, Real>>,
+    gamma: Option<HashMap<StaticId, Real>>,
+    vega: Option<HashMap<StaticId, Real>>,
+    vega_strucure: Option<HashMap<StaticId, Vec<Real>>>, // underlying code -> Vec::<Real> on vega_tenor in CalculationConfiguration
+    vega_matrix: Option<HashMap<StaticId, Array2<Real>>>, // underlying code -> Vec<Vec<Real>> vega_matrix
     theta: Option<Real>,
-    div_delta: Option<HashMap<String, Real>>,
-    div_structure: Option<HashMap<String, Vec<Real>>>, // underlying code -> Vec::<Real> on div_tenor in CalculationConfiguration
-    rho: Option<HashMap<String, Real>>,                // Curve Code -> rho
-    rho_structure: Option<HashMap<String, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
+    div_delta: Option<HashMap<StaticId, Real>>,
+    div_structure: Option<HashMap<StaticId, Vec<Real>>>, // underlying code -> Vec::<Real> on div_tenor in CalculationConfiguration
+    rho: Option<HashMap<StaticId, Real>>,                // Curve Code -> rho
+    rho_structure: Option<HashMap<StaticId, Vec<Real>>>, // curve code -> Vec::<Real> on rho_tenor in CalculationConfig
     theta_day: Option<Integer>,
     #[serde(skip)]
     cashflows: Option<HashMap<OffsetDateTime, Real>>, //expected cashflow inbetween
@@ -398,23 +399,23 @@ impl CalculationResult {
         self.fx_exposure.as_ref()
     }
 
-    pub fn get_delta(&self) -> Option<&HashMap<String, Real>> {
+    pub fn get_delta(&self) -> Option<&HashMap<StaticId, Real>> {
         self.delta.as_ref()
     }
 
-    pub fn get_gamma(&self) -> Option<&HashMap<String, Real>> {
+    pub fn get_gamma(&self) -> Option<&HashMap<StaticId, Real>> {
         self.gamma.as_ref()
     }
 
-    pub fn get_vega(&self) -> Option<&HashMap<String, Real>> {
+    pub fn get_vega(&self) -> Option<&HashMap<StaticId, Real>> {
         self.vega.as_ref()
     }
 
-    pub fn get_vega_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+    pub fn get_vega_structure(&self) -> Option<&HashMap<StaticId, Vec<Real>>> {
         self.vega_strucure.as_ref()
     }
 
-    pub fn get_vega_matrix(&self) -> Option<&HashMap<String, Array2<Real>>> {
+    pub fn get_vega_matrix(&self) -> Option<&HashMap<StaticId, Array2<Real>>> {
         self.vega_matrix.as_ref()
     }
 
@@ -422,11 +423,11 @@ impl CalculationResult {
         self.theta
     }
 
-    pub fn get_rho(&self) -> Option<&HashMap<String, Real>> {
+    pub fn get_rho(&self) -> Option<&HashMap<StaticId, Real>> {
         self.rho.as_ref()
     }
 
-    pub fn get_rho_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+    pub fn get_rho_structure(&self) -> Option<&HashMap<StaticId, Vec<Real>>> {
         self.rho_structure.as_ref()
     }
 
@@ -434,11 +435,11 @@ impl CalculationResult {
         self.cashflows.as_ref()
     }
 
-    pub fn get_div_delta(&self) -> Option<&HashMap<String, Real>> {
+    pub fn get_div_delta(&self) -> Option<&HashMap<StaticId, Real>> {
         self.div_delta.as_ref()
     }
 
-    pub fn get_div_structure(&self) -> Option<&HashMap<String, Vec<Real>>> {
+    pub fn get_div_structure(&self) -> Option<&HashMap<StaticId, Vec<Real>>> {
         self.div_structure.as_ref()
     }
 
@@ -483,7 +484,7 @@ impl CalculationResult {
             None => None,
         };
 
-        let delta: Option<HashMap<String, f32>> = match &self.delta {
+        let delta: Option<HashMap<StaticId, f32>> = match &self.delta {
             Some(delta) => {
                 let mut new_delta = HashMap::new();
                 for (und_code, v) in delta {
@@ -494,7 +495,7 @@ impl CalculationResult {
             None => None,
         };
 
-        let gamma: Option<HashMap<String, f32>> = match &self.gamma {
+        let gamma: Option<HashMap<StaticId, f32>> = match &self.gamma {
             Some(gamma) => {
                 let mut new_gamma = HashMap::new();
                 for (und_code, v) in gamma {
@@ -505,7 +506,7 @@ impl CalculationResult {
             None => None,
         };
 
-        let vega: Option<HashMap<String, Real>> = match &self.vega {
+        let vega: Option<HashMap<StaticId, Real>> = match &self.vega {
             Some(vega) => {
                 let mut new_vega = HashMap::new();
                 for (und_code, v) in vega {
@@ -515,7 +516,7 @@ impl CalculationResult {
             }
             None => None,
         };
-        let vega_strucure: Option<HashMap<String, Vec<Real>>> = match &self.vega_strucure {
+        let vega_strucure: Option<HashMap<StaticId, Vec<Real>>> = match &self.vega_strucure {
             Some(vega_structure) => {
                 let mut new_vega_structure = HashMap::new();
                 for (und_code, v) in vega_structure {
@@ -526,7 +527,7 @@ impl CalculationResult {
             }
             None => None,
         };
-        let vega_matrix: Option<HashMap<String, Array2<Real>>> = match &self.vega_matrix {
+        let vega_matrix: Option<HashMap<StaticId, Array2<Real>>> = match &self.vega_matrix {
             Some(vega_matrix) => {
                 let mut new_vega_matrix = HashMap::new();
                 for (und_code, v) in vega_matrix {
@@ -539,7 +540,7 @@ impl CalculationResult {
         };
 
         let theta: Option<Real> = self.theta.map(|x| x * fx_rate);
-        let div_delta: Option<HashMap<String, Real>> = match &self.div_delta {
+        let div_delta: Option<HashMap<StaticId, Real>> = match &self.div_delta {
             Some(div_delta) => {
                 let mut new_div_delta = HashMap::new();
                 for (und_code, v) in div_delta {
@@ -549,9 +550,9 @@ impl CalculationResult {
             }
             None => None,
         };
-        let div_structure: Option<HashMap<String, Vec<Real>>> = match &self.div_structure {
+        let div_structure: Option<HashMap<StaticId, Vec<Real>>> = match &self.div_structure {
             Some(div_structure) => {
-                let mut new_div_structure: HashMap<String, Vec<f32>> = HashMap::new();
+                let mut new_div_structure: HashMap<StaticId, Vec<f32>> = HashMap::new();
                 for (und_code, v) in div_structure {
                     let new_v = v.iter().map(|x| x * fx_rate).collect();
                     new_div_structure.insert(und_code.clone(), new_v);
@@ -560,7 +561,7 @@ impl CalculationResult {
             }
             None => None,
         };
-        let rho: Option<HashMap<String, Real>> = match &self.rho {
+        let rho: Option<HashMap<StaticId, Real>> = match &self.rho {
             Some(rho) => {
                 let mut new_rho = HashMap::new();
                 for (curve_code, v) in rho {
@@ -570,7 +571,7 @@ impl CalculationResult {
             }
             None => None,
         };
-        let rho_structure: Option<HashMap<String, Vec<Real>>> = match &self.rho_structure {
+        let rho_structure: Option<HashMap<StaticId, Vec<Real>>> = match &self.rho_structure {
             Some(rho_structure) => {
                 let mut new_rho_structure = HashMap::new();
                 for (curve_code, v) in rho_structure {

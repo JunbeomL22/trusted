@@ -9,8 +9,8 @@ use crate::time::jointcalendar::JointCalendar;
 use crate::util::min_offsetdatetime;
 use crate::utils::string_arithmetic::add_period;
 use crate::Tenor;
-use crate::ID;
 //
+use static_id::StaticId;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, rc::Rc};
@@ -26,7 +26,7 @@ use time::{Duration, OffsetDateTime};
 /// Theoretically, the compound tenor can be greater than the tenor,
 /// but I have not seen such a case in the market, so I chose not to allow such case (return error)
 pub struct RateIndex {
-    id: ID,
+    id: StaticId,
     curve_tenor: Tenor,
     currency: Currency,
     name: String, // USD LIBOR 3M, EURIBOR 6M, CD91, etc
@@ -34,7 +34,7 @@ pub struct RateIndex {
 
 impl RateIndex {
     pub fn new(
-        id: ID,
+        id: StaticId,
         curve_tenor: Tenor,
         currency: Currency,
         name: String,
@@ -49,7 +49,7 @@ impl RateIndex {
 
     #[inline]
     #[must_use]
-    pub fn get_id(&self) -> ID {
+    pub fn get_id(&self) -> StaticId {
         self.id
     }
 
@@ -59,7 +59,7 @@ impl RateIndex {
     }
 
     pub fn get_rate_index_symbol_str(&self) -> &str {
-        self.id.symbol_str()
+        self.id.code_str()
     }
 
     pub fn get_currency(&self) -> Currency {
@@ -248,11 +248,7 @@ mod tests {
         macros::{date, datetime},
         Duration, UtcOffset,
     };
-
-    use crate::{
-        ID,
-        Ticker,
-    };
+    
 
     #[test]
     fn test_rate_index() -> Result<()> {
@@ -268,8 +264,7 @@ mod tests {
             UnitedStatesType::Sofr,
         ))])?;
         let currency = Currency::USD;
-        let ticker = Ticker::new(b"SOFR1D").unwrap();
-        let id = ID::new(crate::Symbol::Ticker(ticker), crate::Venue::Undefined);
+        let id = StaticId::from_str("SOFR1D", "Undefined");
 
         let name = "SOFR1D".to_string();
         let rate_index = RateIndex::new(

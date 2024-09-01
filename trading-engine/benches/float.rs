@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use decimal::Decimal;
+use rust_decimal::Decimal;
 use fixed::types::I32F32;
 use ryu;
 

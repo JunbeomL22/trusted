@@ -85,18 +85,15 @@ mod tests {
     use crate::currency::Currency;
     use crate::{
         InstType,
-        ID,
-        Symbol,
-        Ticker,
-        Venue,
         AccountingLevel,
     };
+    use static_id::StaticId;
     use time::macros::datetime;
 
     #[test]
     fn test_serde() {
         let inst_info = InstInfo::new(
-            ID::new(Symbol::Ticker(Ticker::new(b"USD_KRW").unwrap()), Venue::KRX),
+            StaticId::from_str("USD_KRW", "KRX"),
             String::from("USD_KRW"),
             InstType::FxFutures,
             Currency::KRW,
